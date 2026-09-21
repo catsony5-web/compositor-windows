@@ -1,3 +1,13 @@
+# Morupixel 0.2.0-preview.19 local candidate — 2026-09-22
+
+The Release source build has zero warnings and errors; **357/357** self-tests pass. Added coverage exercises real current-user named pipes, bounded UTF-8 messages, session lifecycle, disconnect/stop cancellation, CLI JSON output, both supported MCP protocol versions, typed command schemas, and actual offscreen editor transactions. Document revisions, inactive tabs, locked parents, native modal-window disabling, no-op text/history preservation, file overwrite protection, and cancelled requests are covered. Source report: `artifacts/automation/self-tests-final.txt`.
+
+`tools/qa/automation-smoke.cjs` starts only its own hidden editor host and stdio MCP process. The executable integration run exercised all 19 tools and the non-MCP CLI: created an editable Korean composition, placed a photo, transformed/reordered layers, added an adjustment, checked undo/redo and stale revisions, returned an MCP PNG image block, saved a native project, exported the composition and a text layer, rejected an existing output, switched documents, and generated a background-removal mask with the bundled local model. Evidence: `artifacts/automation/smoke-04/result.json` and `ai-edit-preview.png`. The resulting preview was visually reviewed.
+
+The portable packaging script also runs the self-test suite on its output before making the ZIP. This candidate adds no dependency and has not been published remotely. Existing applications, open documents, and portable releases were left intact. The MCP adapter is a local stdio server, not a built-in chatbot or an Adobe application bridge. [Connection scope and setup](AI_CONNECTION.md).
+
+---
+
 # Morupixel 0.2.0-preview.18 validation — 2026-09-21
 
 The Release source build has zero warnings and errors, and **329/329** self-tests pass. New coverage includes a WIC-authored 10,000 x 2,000 PNG import/export/native-project round trip with exact pixel samples, a 480 MB logical layer budget, integer-overflow rejection before allocation, 65,535 x 2 and 2 x 65,535 PNG decode and offscreen WPF rendering, bounded thumbnails, small fit/zoom, and PSD format-specific export preflight. Existing A2/300 DPI and 9,000px assumptions were updated to the expanded limits. Source report: `artifacts/test-results/preview18-source-self-test.txt`. The publish script independently runs the suite against the portable executable before creating its ZIP.

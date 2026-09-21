@@ -1,4 +1,13 @@
-# Morupixel 0.2.0 Preview 18
+# Morupixel 0.2.0 Preview 19 — local candidate
+
+- **AI editing connection.** Enable **AI 연결 → 로컬 연결 켜기** to control the running editor through MCP stdio or local JSON commands. No additional runtime or SDK is bundled.
+- **19 tools.** Inspect documents, create/open work, add images/editable text/shapes, transform/reorder/delete layers, add adjustments, remove a background with the local model, preview, save/export, and undo/redo.
+- **Concurrent work protection.** Commands check document identity and revision, respect locks and active dialogs, commit through undo history, and require explicit file overwrite. Connections are restricted to the current Windows account and can be turned off in the editor.
+- **Background use.** An explicit headless host is available for command-line jobs. Normal startup remains empty with AI control off.
+
+This candidate has not been uploaded to GitHub or the website. [Connection guide](AI_CONNECTION.md). The public download below is the earlier release.
+
+## Morupixel 0.2.0 Preview 18
 
 Larger images and projects in the same Windows workspace.
 

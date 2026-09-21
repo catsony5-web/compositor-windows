@@ -74,6 +74,7 @@ public sealed partial class MainWindow
             var item = new MenuItem { Header = label }; if (requiresDocument) DocumentControl(item);
             item.Click += (_, _) => { if (!requiresDocument || HasDocument) Guard(action); }; view.Items.Add(item);
         }
+        menu.Items.Add(BuildAutomationMenu());
         return menu;
     }
 }

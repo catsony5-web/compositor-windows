@@ -31,6 +31,15 @@ AI 배경 제거에는 [Microsoft Visual C++ x64 런타임](https://learn.micros
 
 </details>
 
+<details>
+<summary>AI 연결 · Preview 19 로컬 검증 후보</summary>
+
+이 작업 브랜치에는 Codex 등 외부 AI가 Morupixel의 문서·레이어·텍스트·도형·보정·저장 도구를 호출하는 로컬 연결 기능이 들어 있습니다. 앱에서 **AI 연결 → 로컬 연결 켜기**를 선택하고 MCP 서버로 `Morupixel.exe --mcp`를 등록합니다. Morupixel에 API 키를 입력할 필요는 없습니다.
+
+현재 로컬 검증 후보이며 위 공개 다운로드에 배포되었다는 뜻은 아닙니다. [MCP·Codex 설정과 PowerShell 사용 안내](docs/AI_CONNECTION.md)
+
+</details>
+
 [사용·개발 안내](https://github.com/catsony5-web/compositor-windows/blob/main/docs/GUIDE.md) · [검증 기록](docs/VALIDATION.md) · [MIT 라이선스](LICENSE)
 
 Robbie Tilton / Wonder Assembly LLC의 [Compositor](https://github.com/robbietilton/Compositor) 일부 코드와 알고리즘을 바탕으로 만든 독립 프로젝트입니다. 원작의 공식 Windows 배포판이 아닙니다. [원작 고지](NOTICE.md) · [함께 사용한 오픈소스](THIRD_PARTY_NOTICES.md)

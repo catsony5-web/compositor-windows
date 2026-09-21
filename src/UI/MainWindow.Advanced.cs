@@ -14,6 +14,7 @@ public sealed partial class MainWindow
 {
     sealed class WorkspaceTab
     {
+        public readonly Guid Id = Guid.NewGuid();
         public Document Document = null!;
         public History History = null!;
         public Selection? Selection;

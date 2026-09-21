@@ -57,6 +57,9 @@ public static class SelfTests
         ImportExportTests.Run(Test);
         LargeImageTests.Run(Test, directory);
         CapacityFormatTests.Run(Test);
+        AutomationTransportTests.Run(Test, directory);
+        AutomationProtocolTests.Run(Test);
+        MainWindow.RunAutomationCommandTests(Test, directory);
         MainWindow.RunCommandTests(Test, directory);
         MainWindow.RunBucketCommandTests(Test);
         MainWindow.RunRenderingLifecycleTests(Test);
