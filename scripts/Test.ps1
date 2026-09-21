@@ -13,7 +13,7 @@ if (-not $SkipBuild) {
     & (Join-Path $PSScriptRoot 'Build.ps1') -Configuration $Configuration
 }
 
-$reportDirectory = Join-Path $ReleaseRoot 'test-results'
+$reportDirectory = Join-Path $ArtifactRoot 'test-results'
 $reportPath = Join-Path $reportDirectory 'self-test.txt'
 New-Item -ItemType Directory -Path $reportDirectory -Force | Out-Null
 Remove-GeneratedFile -Path $reportPath -Parent $reportDirectory

@@ -27,6 +27,7 @@ tests/*.moruproj
 tests/*.tmp
 tests/atomic.txt
 tests/test-results.txt
+tests/performance-self-test.txt
 
 # Operating system files
 .DS_Store

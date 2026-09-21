@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained Condition="'$(SelfContained)' == ''">false</SelfContained>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Morupixel</AssemblyName>
-    <Version>0.2.0-preview.1</Version>
+    <Version>0.2.0-preview.17</Version>
     <Product>Morupixel</Product>
     <Description>Independent Windows image editor derived in part from Compositor</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -14,7 +16,15 @@
     <StartupObject>Compositor.Windows.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\assets\samples\sea-window.png" LogicalName="Morupixel.Sample.SeaWindow" />
+    <EmbeddedResource Include="..\tools\qa\compatibility\fixtures\*.psd" LogicalName="Morupixel.Compatibility.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\tools\qa\compatibility\fixtures\*.dwg" LogicalName="Morupixel.Compatibility.%(Filename)%(Extension)" />
+    <Resource Include="..\assets\fonts\Pretendard-Regular.otf" Link="assets\fonts\Pretendard-Regular.otf" />
+    <Resource Include="..\assets\fonts\Pretendard-Medium.otf" Link="assets\fonts\Pretendard-Medium.otf" />
+    <Resource Include="..\assets\fonts\Pretendard-SemiBold.otf" Link="assets\fonts\Pretendard-SemiBold.otf" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <PackageReference Include="ACadSharp" Version="3.7.16" />
+    <PackageReference Include="PsdSharp" Version="1.2.0" />
     <Content Include="..\models\*" Link="models\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

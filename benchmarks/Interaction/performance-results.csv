@@ -1,0 +1,3 @@
+scenario,legacy_median_ms,current_median_ms,samples,events,legacy_full_composites,current_full_composites,legacy_canvas_draws,current_canvas_draws
+text_move,162.947,66.853,5,24,24,1,24,24
+unchanged_brush_hud,292.207,0.002,5,120,0,0,120,0

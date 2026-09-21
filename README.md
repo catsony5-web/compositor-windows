@@ -6,14 +6,19 @@
 
 레이어, 색상, 합성을 위한 Windows 이미지 편집기입니다.
 
+**Preview 17 · Windows 10 2004 이상 / Windows 11 x64**
+
 [Windows 다운로드](https://github.com/catsony5-web/compositor-windows/releases) · [홈페이지](https://morupixel.arch-t.chatgpt.site/) · [릴리스](https://github.com/catsony5-web/compositor-windows/releases)
 
 ![푸른 바다의 빛과 파도 — Morupixel 브랜드 이미지](https://raw.githubusercontent.com/catsony5-web/compositor-windows/main/.github/media/ocean-wave.png)
 
-- **쌓고 합성하기** — 레이어 그룹, 혼합 모드, 마스크와 클리핑.
-- **색 다듬기** — 조정 레이어, 레벨·곡선, 선택과 리터칭.
+- **사진과 디자인 함께하기** — 같은 문서에서 사진·문자·사각형·타원을 편집하고, 작업에 맞는 도구와 패널로 전환.
+- **쌓고 합성하기** — 레이어 그룹, 혼합 모드, 마스크와 클리핑, 선택 레이어 이미지 출력.
+- **빛과 색 다듬기** — 사진 현상·조정 레이어, 사용자 이미지 브러시, 선택한 색의 톤과 추천 조합.
 - **배경 지우기** — 기기에서 처리하는 AI, 다시 수정할 수 있는 마스크.
-- **작업 마무리하기** — PNG·JPEG·TIFF, ICC 프로필을 적용한 CMYK TIFF 출력.
+- **파일 주고받기** — PDF·PDF 호환 AI·PSD/PSB·DWG/DXF 가져오기, PNG·JPEG·TIFF·PDF·PSD와 ICC 기반 CMYK TIFF 출력. [보존 범위와 제한](docs/FILE_COMPATIBILITY.md)
+
+빈 작업 화면에서 **새 문서 / 열기 / 배우기**로 시작하세요. Preview 17은 문서를 닫을 때 이름과 저장 여부를 확인하는 어두운 테마의 안내창을 제공합니다. [이번 버전의 변경 사항](docs/RELEASE_NOTES.md)
 
 <details>
 <summary>시작하기</summary>
