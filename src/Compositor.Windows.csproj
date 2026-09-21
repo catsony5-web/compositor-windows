@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Morupixel</AssemblyName>
-    <Version>0.2.0-preview.17</Version>
+    <Version>0.2.0-preview.18</Version>
     <Product>Morupixel</Product>
     <Description>Independent Windows image editor derived in part from Compositor</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>

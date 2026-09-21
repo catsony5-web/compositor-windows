@@ -1,22 +1,19 @@
-# Morupixel 0.2.0 Preview 17
+# Morupixel 0.2.0 Preview 18
 
-Layers, color, and composition — in a Windows workspace.
+Larger images and projects in the same Windows workspace.
 
-This release collects the changes since the previous public Preview 1, bringing photo and design work into the same document.
+[Download for Windows x64](https://github.com/catsony5-web/compositor-windows/releases/download/v0.2.0-preview.18/Morupixel-0.2.0-preview.18-win-x64.zip) · [Website](https://morupixel.arch-t.chatgpt.site/)
 
-[Download for Windows x64](https://github.com/catsony5-web/compositor-windows/releases/download/v0.2.0-preview.17/Morupixel-0.2.0-preview.17-win-x64.zip) · [Website](https://morupixel.arch-t.chatgpt.site/)
+- **Expanded image capacity.** Images and canvases can be up to **65,535px per side** and **536,870,897 total pixels (about 536.9MP)**, with an **8GiB combined layer-pixel and mask budget**. Both dimension and pixel limits apply.
+- **Larger input files and projects.** PDF/AI, PSD/PSB and DWG/DXF input files can be up to 8GiB; native project PNG entries can be up to 4GiB per layer. Ordinary image opening has no separate encoded-file byte cap. PSB input uses the expanded raster limits; PSD output retains its 30,000px-per-side format limit.
+- **Large-image handling.** Layer thumbnails use small preview buffers, large project images use temporary disk staging, and canvas fit and wheel zoom reach 0.1%. Size controls and help reflect the shared limits.
 
-- **A clearer start and close.** Preview 16 opens an empty workspace with New Document, Open and Learn. The bundled sample opens only when requested, and closing the last document returns to the empty workspace. Preview 17 adds a dark save-before-close dialog with the document name and explicit Save Then Close, Close Without Saving and Cancel actions. Escape, window dismissal, a cancelled save or a failed save keeps the document open.
-- **Photo and design workspaces.** Switch the preferred tools and panels while keeping images, editable text, rectangles and ellipses together. Character and paragraph controls, canvas alignment, movable panels, layer dragging and full command labels make the workspace easier to arrange.
-- **Brushes, color and photo development.** Use built-in or imported image tips with angle and spacing controls, resize brushes with Alt-drag, choose selected-color tones and harmony palettes, and apply 13 photo-development adjustments as an editable layer. Numeric sliders offer continuous movement or selectable steps.
-- **More file exchange.** Import PDF pages, PDF-compatible AI, RGB/gray 8-bit PSD/PSB and DWG/DXF previews. Export selected layers as an image, or the document as an RGB image PDF or supported pixel-layer PSD. ICC-managed CMYK proof and TIFF output remain available alongside sRGB editing.
+Actual usable size depends on available memory, the decoder and the operation: decoding, rendering and editing still need full-size buffers. The 128-layer ceiling and undo budget of up to 50 entries / 192MiB exclusively retained pixels remain. Large edits can exceed the undo budget and leave no undo entry. The maximum pixel ceiling was checked arithmetically, not benchmarked with a full-size allocation.
+
+**Validation:** the Preview 18 source and local portable executable each passed **329/329 automated checks**. A **110MP (10,000 × 11,000)** image was opened through the editor, composited, rendered offscreen, saved as a native project and reopened with dimensions and edge pixels verified. [Validation details](https://github.com/catsony5-web/compositor-windows/blob/main/docs/VALIDATION.md)
 
 Windows 10 version 2004 (build 19041) or later / Windows 11, x64. Extract the entire ZIP and run `Morupixel.exe`; .NET and the local AI model are included. AI background removal also requires the [Microsoft Visual C++ x64 runtime](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist).
 
-Development preview · Unsigned · RGB 8-bit editing. PDF/AI/CAD imports are rendered images, with limited CAD-layer separation; PSD retains only supported basic pixel layers or a stored composite. Native AI/CAD object editing, DWG/DXF export, arbitrary vector paths, camera RAW decoding and native CMYK/16/32-bit editing are not supported. Keep editable work in `.moruproj`. See the [file compatibility matrix](https://github.com/catsony5-web/compositor-windows/blob/main/docs/FILE_COMPATIBILITY.md) for exact limits.
-
-**Validation:** the Preview 17 source suite passed **321/321 automated checks**. The close dialog passed 12 offscreen layouts at 100%/150%/200% DPI with no detected glyph or action-label clipping. These checks do not replace physical desktop input or native file-picker testing. [Validation details](https://github.com/catsony5-web/compositor-windows/blob/main/docs/VALIDATION.md)
-
-[User and developer guide](https://github.com/catsony5-web/compositor-windows/blob/main/docs/GUIDE.md) · [Supported features](https://github.com/catsony5-web/compositor-windows/blob/main/docs/PORTING.md) · [Complete version history](https://github.com/catsony5-web/compositor-windows/blob/main/docs/RELEASE_NOTES_ARCHIVE.md)
+Development preview · Unsigned · RGB 8-bit editing. No dependency changed. [File compatibility](https://github.com/catsony5-web/compositor-windows/blob/main/docs/FILE_COMPATIBILITY.md) · [User and developer guide](https://github.com/catsony5-web/compositor-windows/blob/main/docs/GUIDE.md) · [Complete version history](https://github.com/catsony5-web/compositor-windows/blob/main/docs/RELEASE_NOTES_ARCHIVE.md)
 
 Based in part on [Compositor](https://github.com/robbietilton/Compositor) by Robbie Tilton / Wonder Assembly LLC. Independent project, MIT license. [Attribution](https://github.com/catsony5-web/compositor-windows/blob/main/NOTICE.md)

@@ -9,7 +9,7 @@ Reference source: [Compositor snapshot 9d5582dc59429501e270828b27879de9ca30a853]
 | Area | Morupixel implemented scope | Differences from upstream / limits |
 | --- | --- | --- |
 | Workspace | Up to 8 document tabs, per-document history and view, dark Korean UI, guides and snapping | No assertion of equivalent keyboard coverage, accessibility or measured responsiveness |
-| Layers | Up to 128, groups, multiple selection, opacity, visibility, locking and reordering | 384MB source layer/mask limit; groups composite in isolation, unlike upstream pass-through |
+| Layers | Up to 128, groups, multiple selection, opacity, visibility, locking and reordering | 8GiB source layer/mask limit; groups composite in isolation, unlike upstream pass-through |
 | Blends | Normal, Multiply, Screen, Overlay, Soft Light, Darken, Lighten, Difference, Color Dodge, Color Burn, Hue, Saturation, Color, Luminosity | CPU 8-bit sRGB rendering; platform/rounding differences possible |
 | Transforms | Numeric and gesture move/scale/rotate/flip, nonuniform scale, multiple layers, four-corner projective warp | Boundary antialiasing and sampling differ from CoreGraphics/CoreImage; not every upstream transform interaction is reproduced |
 | Masks | Layer and isolated-group masks, clipping to lower layer, brush editing | No independently placed/unlinked masks or arbitrary live mask reference graph |
@@ -26,7 +26,7 @@ Reference source: [Compositor snapshot 9d5582dc59429501e270828b27879de9ca30a853]
 | Print export | ICC-profiled CMYK TIFF with DPI setting and an sRGB round-trip preview | Native editing remains 8-bit sRGB; this is not a CMYK editing workspace or a press-certified proof. See [CMYK](CMYK.md). |
 | Projects | `.moruproj` v2; reads prior `.cwproj` v1/v2; atomic saves | Separate format; unsupported versions are rejected |
 | Upstream packages | Restricted `.comp` directory import/export (see below) | Explicitly partial, never blanket compatibility |
-| Limits | 8192px per side, 16,777,216 total canvas pixels, 128 layers; 50 undo entries/192MB exclusively retained pixels | Lower than upstream's 30,000px/100MP and layer bounds; full app memory can exceed history/source limits due to rendering buffers |
+| Limits | 65,535px per side, 536,870,897 total canvas pixels (~536.9MP), 128 layers, 8GiB layer pixels/masks; up to 50 undo entries/192MiB exclusively retained pixels | Dimension and pixel limits both apply. Large edits can exceed the undo budget and leave no undo entry; decoding, rendering and editing need additional full-size buffers, so actual usable size depends on available memory |
 
 ## Upstream `.comp` bridge
 
@@ -57,6 +57,8 @@ An import succeeds only when the complete document validates. Unsupported files 
 `.moruproj` is a ZIP containing `document.json`, ordered `layers/<index>.png` and optional raw `layers/<index>.mask`. Version 2 adds layer kind, parent IDs, clipping, nonuniform transforms, text, adjustments and warp metadata. Version 1 remains readable. It is not the `.comp` schema, even when some pixels/metadata can be exchanged by the bridge.
 
 Saves validate before writing, stage a sibling temporary file, flush and replace atomically. The reader checks dimensions, layer counts, names, IDs, parent graph and finite numeric values. Source rasters and masks are immutable by convention so history can share buffers safely.
+
+Native project PNG entries can contain up to 4GiB of encoded data per layer; decoded pixels and masks still share the 8GiB document budget. PDF/AI, PSD/PSB and DWG/DXF imports accept files up to 8GiB. Ordinary image loading has no separate encoded-file byte cap, but every decoded raster must fit the dimension and pixel limits. PSB input uses those raster limits; PSD output retains its 30,000px-per-side format limit. These are validation ceilings, not a guarantee that every file at the limit can be decoded, rendered or edited in available memory.
 
 ## Build and packaging
 

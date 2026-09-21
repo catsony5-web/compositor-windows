@@ -14,7 +14,7 @@ public static class PdfCompatibility
     static void CheckHeader(string path)
     {
         CompatibilityImport.ValidateFile(path);
-        using var stream = File.OpenRead(path); var header = new byte[Math.Min(1024, (int)stream.Length)]; stream.ReadExactly(header);
+        using var stream = File.OpenRead(path); var header = new byte[(int)Math.Min(1024L, stream.Length)]; stream.ReadExactly(header);
         if (!Encoding.ASCII.GetString(header).Contains("%PDF-", StringComparison.Ordinal))
             throw new NotSupportedException("PDF 데이터가 없는 파일입니다. Illustrator에서 ‘PDF 호환 파일 만들기’를 켜서 AI를 저장하거나 PDF로 내보내 주세요. EPS / 이전 PostScript AI는 지원하지 않습니다.");
     }
