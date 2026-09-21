@@ -12,6 +12,7 @@ public enum Tool { Move, Brush, Eraser, RectangleSelect, EllipseSelect, Crop, Re
 
 public sealed class MainWindow : Window
 {
+    const string AppTitle = "Compositor for Windows · Preview 2";
     Document doc = Demo.Create();
     readonly History history = new();
     readonly CanvasView canvas = new();
@@ -20,11 +21,12 @@ public sealed class MainWindow : Window
     readonly Dictionary<Tool, Button> toolButtons = [];
     readonly Button colorButton;
     readonly Slider sizeSlider;
+    readonly CheckBox autoSelectToggle;
     readonly TextBlock brushLabel = Theme.Label("", 11, Theme.Muted);
     Tool tool = Tool.Move;
     Color foreground = Color.FromRgb(162, 232, 205);
     double brushSize = 42, hardness = .8, brushOpacity = 1;
-    bool maskEditing, dragging, panning;
+    bool maskEditing, dragging, panning, moveStarted;
     Point start, screenStart;
     Vector initialPan;
     Document? beforeGesture;
@@ -37,7 +39,7 @@ public sealed class MainWindow : Window
     public MainWindow(string? path)
     {
         startupPath = path;
-        Title = "Compositor for Windows"; Width = 1400; Height = 940; MinWidth = 1080; MinHeight = 720;
+        Title = AppTitle; Width = 1400; Height = 940; MinWidth = 1080; MinHeight = 720;
         WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Theme.Panel; Foreground = Theme.Text;
         FontFamily = new FontFamily("Malgun Gothic"); FontSize = 12; UseLayoutRounding = true;
         var root = new Grid(); Content = root;
@@ -46,7 +48,7 @@ public sealed class MainWindow : Window
         var brand = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(18, 0, 0, 0) };
         brand.Children.Add(new Border { Background = Theme.Accent, CornerRadius = new CornerRadius(6), Width = 28, Height = 28, Child = new TextBlock { Text = "C", FontWeight = FontWeights.Bold, FontSize = 20, Foreground = Theme.Brush("#18352D"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } });
         brand.Children.Add(new TextBlock { Text = "  Compositor", FontSize = 18, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-        brand.Children.Add(Theme.Label("  WINDOWS / 0.1", 10, Theme.Muted)); DockPanel.SetDock(brand, Dock.Left); header.Children.Add(brand);
+        brand.Children.Add(Theme.Label("  WINDOWS / PREVIEW 2", 10, Theme.Muted)); DockPanel.SetDock(brand, Dock.Left); header.Children.Add(brand);
         var headActions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 4, 12, 4) };
         headActions.Children.Add(Theme.Button("이미지 가져오기", () => Guard(Import), "Ctrl+Shift+O · 현재 작업에 이미지 레이어 추가"));
         headActions.Children.Add(Theme.Button("작업 저장", () => Save(false), "Ctrl+S · 레이어를 보존하는 .cwproj 파일"));
@@ -65,6 +67,9 @@ public sealed class MainWindow : Window
         options.Children.Add(Theme.Button("↶", Undo, "실행 취소 · Ctrl+Z")); options.Children.Add(Theme.Button("↷", Redo, "다시 실행 · Ctrl+Shift+Z"));
         options.Children.Add(Theme.Button("화면 맞춤", () => { canvas.Fit(); UpdateStatus(); }, "Ctrl+0"));
         options.Children.Add(Theme.Button("100%", () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); }));
+        autoSelectToggle = new CheckBox { Content = "자동 선택", IsChecked = true, Foreground = Theme.Text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 4, 0), ToolTip = "이동 도구(V): 클릭한 대상의 레이어 선택. 끄면 목록에서 선택한 레이어만 이동합니다." };
+        System.Windows.Automation.AutomationProperties.SetName(autoSelectToggle, "캔버스 레이어 자동 선택");
+        options.Children.Add(autoSelectToggle);
 
         var body = new Grid(); Grid.SetRow(body, 3); root.Children.Add(body);
         body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(74) }); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(282) });
@@ -157,6 +162,7 @@ public sealed class MainWindow : Window
         CancelGesture(); tool = next;
         foreach (var pair in toolButtons) { pair.Value.Background = pair.Key == tool ? Theme.Brush("#31564A") : Theme.Panel; pair.Value.BorderBrush = pair.Key == tool ? Theme.Accent : Theme.Panel; }
         canvas.ShowLayerBounds = tool == Tool.Move; canvas.Cursor = tool == Tool.Hand ? Cursors.Hand : tool == Tool.Move ? Cursors.SizeAll : Cursors.Cross;
+        autoSelectToggle.IsEnabled = tool == Tool.Move;
         Refresh(false);
     }
     void Refresh(bool render = true)
@@ -165,7 +171,7 @@ public sealed class MainWindow : Window
         if (render) { composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap(); }
         canvas.InvalidateVisual();
         documentTitle.Text = $"{(history.Dirty(doc) ? "●  " : "")}{doc.Name}   ·   {doc.Width} × {doc.Height} px";
-        Title = $"{(history.Dirty(doc) ? "* " : "")}{doc.Name} — Compositor for Windows";
+        Title = $"{(history.Dirty(doc) ? "* " : "")}{doc.Name} — {AppTitle}";
         BuildProperties(); BuildLayers(); UpdateStatus();
     }
     void RenderGesture()
@@ -174,7 +180,7 @@ public sealed class MainWindow : Window
     }
     void UpdateStatus()
     {
-        var hint = tool switch { Tool.Move => "선택 레이어를 드래그하여 이동 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Gradient => "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
+        var hint = tool switch { Tool.Move => "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Gradient => "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
         status.Text = (maskEditing ? "마스크 편집 · " : "") + hint + "    |    휠: 확대/축소 · Space+드래그: 화면 이동";
         zoomLabel.Text = $"{doc.Layers.Count} 레이어    {canvas.Zoom * 100:0}%";
     }
@@ -182,7 +188,7 @@ public sealed class MainWindow : Window
     {
         properties.Children.Clear(); properties.Children.Add(Theme.Label("속성", 13));
         var l = doc.Active;
-        if (l == null) { properties.Children.Add(Theme.Label("레이어를 추가하세요.", 12, Theme.Muted)); return; }
+        if (l == null) { properties.Children.Add(Theme.Label("캔버스 또는 목록에서 레이어를 선택하세요.", 12, Theme.Muted)); return; }
         properties.Children.Add(Theme.Label(l.Name.Length > 25 ? l.Name[..25] + "…" : l.Name, 12, Theme.Muted));
         var blend = new ComboBox { ItemsSource = Enum.GetValues<BlendMode>(), SelectedItem = l.Blend, Margin = new Thickness(3), Padding = new Thickness(5) };
         blend.SelectionChanged += (_, _) => { if (blend.SelectedItem is BlendMode b && b != doc.Active?.Blend) EditLayer("혼합 모드", active => active.Blend = b); }; properties.Children.Add(blend);
@@ -201,17 +207,17 @@ public sealed class MainWindow : Window
         layerList.Children.Clear();
         foreach (var l in doc.Layers.AsEnumerable().Reverse())
         {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2), Background = l.Id == doc.ActiveId ? Theme.Brush("#35483F") : Theme.Brush("#272C35"), Height = 61 };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) }); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(49) }); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
-            var visible = new CheckBox { IsChecked = l.Visible, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, ToolTip = "레이어 표시" };
-            visible.Click += (_, _) => Edit("레이어 표시", () => l.Visible = visible.IsChecked == true); grid.Children.Add(visible);
-            var thumb = new Image { Source = l.Pixels.Bitmap(), Width = 40, Height = 38, Stretch = Stretch.Uniform, Margin = new Thickness(3) }; Grid.SetColumn(thumb, 1); grid.Children.Add(thumb);
-            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            text.Children.Add(new TextBlock { Text = l.Name, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(7, 0, 3, 3), FontSize = 11 }); text.Children.Add(new TextBlock { Text = $"{l.Blend} · {l.Opacity * 100:0}%{(l.Mask != null ? " · 마스크" : "")}", Foreground = Theme.Muted, FontSize = 9, Margin = new Thickness(7, 0, 0, 0) }); Grid.SetColumn(text, 2); grid.Children.Add(text);
-            var locked = Theme.Button(l.Locked ? "●" : "○", () => Edit("잠금", () => l.Locked = !l.Locked), "레이어 잠금 / 해제"); locked.FontSize = 13; locked.Padding = new Thickness(0); locked.Margin = new Thickness(2, 12, 3, 12); Grid.SetColumn(locked, 3); grid.Children.Add(locked);
-            grid.MouseLeftButtonDown += (_, e) => { if (e.OriginalSource is not CheckBox && e.OriginalSource is not Button) { doc.ActiveId = l.Id; maskEditing = false; Refresh(false); e.Handled = true; } };
-            layerList.Children.Add(grid);
+            var id = l.Id;
+            layerList.Children.Add(new LayerRow(l, id == doc.ActiveId,
+                () => SelectLayer(id),
+                visible => Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible),
+                () => Edit("잠금", () => { var layer = doc.Layers.Single(item => item.Id == id); layer.Locked = !layer.Locked; })));
         }
+    }
+    void SelectLayer(Guid id)
+    {
+        CancelGesture(); doc.ActiveId = id; maskEditing = false;
+        Refresh(false); canvas.Focus();
     }
 
     void NewDocument()
@@ -377,12 +383,23 @@ public sealed class MainWindow : Window
         canvas.Focus(); var screen = e.GetPosition(canvas); var p = canvas.ToDocument(screen);
         if (e.ChangedButton == MouseButton.Middle || tool == Tool.Hand || Keyboard.IsKeyDown(Key.Space))
         { panning = true; screenStart = screen; initialPan = canvas.Pan; canvas.CaptureMouse(); e.Handled = true; return; }
-        if (e.ChangedButton != MouseButton.Left || p.X < 0 || p.Y < 0 || p.X >= doc.Width || p.Y >= doc.Height) return;
+        if (e.ChangedButton != MouseButton.Left) return;
+        if (p.X < 0 || p.Y < 0 || p.X >= doc.Width || p.Y >= doc.Height)
+        {
+            if (tool == Tool.Move && autoSelectToggle.IsChecked == true) SelectLayer(Guid.Empty);
+            return;
+        }
         if (tool == Tool.Eyedropper)
         { if (composite != null) { int i = ((int)p.Y * doc.Width + (int)p.X) * 4; foreground = Color.FromRgb(composite.Data[i + 2], composite.Data[i + 1], composite.Data[i]); UpdateColor(); } return; }
         if (tool == Tool.Text) { Guard(() => TextAt(p)); return; }
+        if (tool == Tool.Move && autoSelectToggle.IsChecked == true)
+        {
+            var picked = LayerPicking.Pick(doc, p);
+            SelectLayer(picked?.Id ?? Guid.Empty);
+            if (picked == null) return;
+        }
         if (tool is Tool.Brush or Tool.Eraser or Tool.Move && (doc.Active == null || doc.Active.Locked)) { status.Text = "편집할 레이어를 선택하거나 잠금을 해제하세요."; return; }
-        beforeGesture = doc.Snapshot(); start = p; dragging = true;
+        beforeGesture = doc.Snapshot(); start = p; screenStart = screen; dragging = true; moveStarted = false;
         if (tool is Tool.Brush or Tool.Eraser)
         { stroke = new BrushStroke(doc.Active!, selection, foreground, brushSize, hardness, brushOpacity, tool == Tool.Eraser, maskEditing); stroke.Point(p); RenderGesture(); }
         canvas.CaptureMouse(); e.Handled = true;
@@ -395,7 +412,12 @@ public sealed class MainWindow : Window
         var p = canvas.ToDocument(e.GetPosition(canvas));
         if (stroke != null) { stroke.Point(p); RenderGesture(); return; }
         if (tool == Tool.Move && doc.Active != null && beforeGesture?.Active != null)
-        { doc.Active.X = Math.Clamp(beforeGesture.Active.X + p.X - start.X, -100000, 100000); doc.Active.Y = Math.Clamp(beforeGesture.Active.Y + p.Y - start.Y, -100000, 100000); RenderGesture(); return; }
+        {
+            var delta = e.GetPosition(canvas) - screenStart;
+            if (!moveStarted && Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            moveStarted = true;
+            doc.Active.X = Math.Clamp(beforeGesture.Active.X + p.X - start.X, -100000, 100000); doc.Active.Y = Math.Clamp(beforeGesture.Active.Y + p.Y - start.Y, -100000, 100000); RenderGesture(); return;
+        }
         canvas.GestureBounds = Between(start, new Point(Math.Clamp(p.X, 0, doc.Width), Math.Clamp(p.Y, 0, doc.Height))); canvas.EllipseGesture = tool is Tool.Ellipse or Tool.EllipseSelect; canvas.InvalidateVisual();
     }
     void OnUp(object sender, MouseButtonEventArgs e)
@@ -474,7 +496,8 @@ public sealed class MainWindow : Window
         if (action != null) { e.Handled = true; Guard(action); }
     }
     void Help() => MessageBox.Show(this,
-        "Compositor for Windows 0.1 — 비공식 Windows 재구현\n\n" +
+        "Compositor for Windows 0.1 Preview 2 — 비공식 Windows 재구현\n\n" +
+        "이동 도구(V): 캔버스 대상을 클릭해 레이어 선택, 드래그하여 이동\n목록: 썸네일·이름·빈 공간을 클릭해 선택 / 체크박스는 표시·숨김만 변경\n자동 선택을 끄면 목록에서 고른 레이어를 유지합니다.\n\n" +
         "PNG/JPEG/BMP/TIFF/GIF 열기 · 레이어/마스크/혼합 · 브러시/지우개 · 선택/자르기 · 도형/텍스트 · 색상 보정\n\n" +
         "Ctrl+S: 레이어를 보존한 .cwproj 저장\nCtrl+Shift+E: PNG/JPEG 내보내기\nCtrl+T: 위치·배율·회전 / Ctrl+Z: 실행 취소\n마스크: 흰색은 표시, 검정은 숨김 (D/X로 전환)\n\n" +
         "현재 제한: PSD 및 Mac 작업 파일 호환, AI 배경 제거, 복구/복제 도장, 그룹, 곡선, 다중 문서 탭은 미지원. 텍스트는 추가 시 래스터화됩니다.\n" +

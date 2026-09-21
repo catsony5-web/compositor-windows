@@ -49,6 +49,7 @@ public static class SelfTests
         Test("oversize allocation rejected", () => { bool rejected = false; try { _ = new Raster(8192, 8192); } catch (InvalidDataException) { rejected = true; } Assert(rejected); });
         Test("demo render and project export", () => { var d = Demo.Create(); ProjectStore.Save(d, Path.Combine(directory, "sample.cwproj")); ProjectStore.Export(d, Path.Combine(directory, "sample.png")); var read = ProjectStore.Load(Path.Combine(directory, "sample.cwproj")); Assert(read.Layers.Count == 5 && Imaging.Render(read).Data.SequenceEqual(Imaging.Render(d).Data)); });
         PersistenceTests.Run(Test);
+        LayerPickingTests.Run(Test);
         results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }

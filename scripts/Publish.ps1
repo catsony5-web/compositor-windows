@@ -67,6 +67,9 @@ $packageDocuments = @(
     @{ Source = (Join-Path $RepositoryRoot 'THIRD_PARTY_NOTICES.md'); Destination = (Join-Path $stagingPath 'THIRD_PARTY_NOTICES.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\PORTING.md'); Destination = (Join-Path $stagingPath 'docs\PORTING.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\RELEASE_NOTES.md'); Destination = (Join-Path $stagingPath 'docs\RELEASE_NOTES.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\SELECTION_FIX.md'); Destination = (Join-Path $stagingPath 'docs\SELECTION_FIX.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\validation\preview2-source-self-test.txt'); Destination = (Join-Path $stagingPath 'docs\validation\preview2-source-self-test.txt') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\validation\preview2-published-self-test.txt'); Destination = (Join-Path $stagingPath 'docs\validation\preview2-published-self-test.txt') },
     @{ Source = (Join-Path $PSScriptRoot 'README.distribution.txt'); Destination = (Join-Path $stagingPath 'PACKAGING-README.txt') }
 )
 
