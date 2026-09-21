@@ -6,7 +6,7 @@
 
 레이어, 색상, 합성을 위한 Windows 이미지 편집기입니다.
 
-[Windows 다운로드](https://github.com/catsony5-web/compositor-windows/releases/download/v0.2.0-preview.1/Morupixel-0.2.0-preview.1-win-x64.zip) · [홈페이지](https://morupixel.arch-t.chatgpt.site/) · [릴리스](https://github.com/catsony5-web/compositor-windows/releases/tag/v0.2.0-preview.1)
+[Windows 다운로드](https://github.com/catsony5-web/compositor-windows/releases) · [홈페이지](https://morupixel.arch-t.chatgpt.site/) · [릴리스](https://github.com/catsony5-web/compositor-windows/releases)
 
 ![푸른 바다의 빛과 파도 — Morupixel 브랜드 이미지](https://raw.githubusercontent.com/catsony5-web/compositor-windows/main/.github/media/ocean-wave.png)
 
@@ -18,7 +18,7 @@
 <details>
 <summary>시작하기</summary>
 
-Windows x64용 **0.2.0 Preview 1**입니다. ZIP 전체를 압축 해제하고 `Morupixel.exe`를 실행하세요. .NET 실행 환경과 AI 모델이 포함되어 있습니다.
+최신 릴리스에서 Windows x64용 ZIP 전체를 압축 해제하고 `Morupixel.exe`를 실행하세요. .NET 실행 환경과 AI 모델이 포함되어 있습니다.
 
 AI 배경 제거에는 [Microsoft Visual C++ x64 런타임](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)이 필요합니다.
 

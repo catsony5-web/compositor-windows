@@ -12,20 +12,47 @@ on:
 permissions:
   contents: read
 
+# Serialize main builds so version selection sees the preceding completed release.
+# SelectRelease compares against the last published source, so a queued docs-only
+# push cannot hide app changes when GitHub replaces an older pending run.
+concurrency:
+  group: morupixel-ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build, self-test, and package
     runs-on: windows-latest
     timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      publish: ${{ steps.version.outputs.publish }}
+      automatic: ${{ steps.version.outputs.automatic }}
+      commit: ${{ steps.version.outputs.commit }}
 
     steps:
-      - name: Check out source
+      - name: Check out source and release tags
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+
+      - name: Test release policy
+        shell: pwsh
+        run: .\scripts\TestReleaseAutomation.ps1
+
+      - name: Select package and release version
+        id: version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .\scripts\SelectRelease.ps1
 
       - name: Build
         shell: pwsh
@@ -35,26 +62,14 @@ jobs:
         shell: pwsh
         run: .\scripts\Test.ps1 -Configuration Release -SkipBuild
 
-      - name: Select package version
-        id: version
-        shell: pwsh
-        run: |
-          if ($env:GITHUB_REF_TYPE -eq 'tag') {
-            $version = $env:GITHUB_REF_NAME -replace '^v', ''
-          }
-          else {
-            [xml] $project = Get-Content -LiteralPath '.\src\Compositor.Windows.csproj' -Raw
-            $version = [string] $project.Project.PropertyGroup.Version
-          }
-          "value=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-      - name: Publish portable package
+      # Publish.ps1 runs the packaged Morupixel.exe --self-test before creating its ZIP.
+      - name: Publish and test portable package
         shell: pwsh
         env:
-          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+          PACKAGE_VERSION: ${{ steps.version.outputs.version }}
         run: .\scripts\Publish.ps1 -Configuration Release -Version $env:PACKAGE_VERSION -SkipTests
 
-      - name: Upload package artifact
+      - name: Upload tested package artifact
         uses: actions/upload-artifact@v4
         with:
           name: morupixel-package
@@ -65,60 +80,42 @@ jobs:
           retention-days: 14
 
   release:
-    name: Publish GitHub release
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish verified GitHub release
+    if: needs.build.outputs.publish == 'true' && github.event_name == 'push'
     needs: build
     runs-on: windows-latest
     timeout-minutes: 10
+    concurrency:
+      group: morupixel-publish
+      cancel-in-progress: false
     permissions:
       contents: write
 
     steps:
-      - name: Check out release notes
+      - name: Check out the tested source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+          persist-credentials: false
 
-      - name: Download package artifact
+      - name: Download tested package artifact
         uses: actions/download-artifact@v4
         with:
           name: morupixel-package
           path: release-download
 
-      - name: Create release and upload files
+      - name: Upload draft, verify checksums, and publish
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          PACKAGE_VERSION: ${{ needs.build.outputs.version }}
+          SOURCE_COMMIT: ${{ needs.build.outputs.commit }}
+          AUTOMATIC_RELEASE: ${{ needs.build.outputs.automatic }}
         run: |
-          $files = @(Get-ChildItem -LiteralPath '.\release-download' -File |
-            Where-Object { $_.Name -match '\.(zip|sha256)$' } |
-            ForEach-Object { $_.FullName })
-          if ($files.Count -lt 2) {
-            throw 'Expected a ZIP archive and SHA-256 file.'
+          $arguments = @{
+            Version = $env:PACKAGE_VERSION
+            Commit = $env:SOURCE_COMMIT
+            PackageDirectory = 'release-download'
+            Automatic = ($env:AUTOMATIC_RELEASE -eq 'true')
           }
-          $tag = $env:GITHUB_REF_NAME
-          $repository = $env:GITHUB_REPOSITORY
-          $releaseJson = gh release view $tag --repo $repository --json assets 2>$null
-          $releaseExists = $LASTEXITCODE -eq 0
-          if ($releaseExists) {
-            $existingAssets = @(($releaseJson | ConvertFrom-Json).assets | ForEach-Object { $_.name })
-            $missingFiles = @($files | Where-Object { [System.IO.Path]::GetFileName($_) -notin $existingAssets })
-            if ($missingFiles.Count -gt 0) {
-              gh release upload $tag --repo $repository @missingFiles
-              if ($LASTEXITCODE -ne 0) {
-                throw "GitHub CLI exited with code $LASTEXITCODE."
-              }
-            }
-            else {
-              Write-Host 'Release assets already exist; leaving them unchanged.'
-            }
-          }
-          else {
-            $arguments = @('release', 'create', $tag, '--repo', $repository, '--verify-tag', '--notes-file', '.\docs\RELEASE_NOTES.md')
-            if ($tag.Contains('-')) {
-              $arguments += '--prerelease'
-            }
-            $arguments += $files
-            gh @arguments
-            if ($LASTEXITCODE -ne 0) {
-              throw "GitHub CLI exited with code $LASTEXITCODE."
-            }
-          }
+          .\scripts\PublishGitHubRelease.ps1 @arguments
