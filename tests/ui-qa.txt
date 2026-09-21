@@ -15,6 +15,10 @@ PASS Saved UI smoke project exists on disk and contains seven layers.
 PASS Alt+F4 closes the saved application normally.
 
 Screenshot: docs/screenshots/editor.png (initial sample, actual application capture).
-The final persistence-validation/no-op/slider-sync patches were applied after this UI pass;
-those patches are covered by the subsequent integrated build/tests where applicable.
+Final package verification (after persistence-validation/no-op/slider-sync patches):
+PASS Self-contained release/staging/Compositor.Windows-0.1.0-preview.1-win-x64/Compositor.Windows.exe starts.
+PASS Packaged app opens tests/ui-smoke.cwproj through Ctrl+O / native file dialog.
+PASS All seven layers and the saved horizontal gradient restore, with no dirty indicator.
+PASS Packaged app closes normally after reopening the project.
+Final integrated build: zero warnings/errors; source and published EXE each pass 38/38 self-tests.
 Windows 10, touch/pen input, multi-monitor DPI and clean-machine installation were not tested.

@@ -10,6 +10,8 @@ Windows x64용 ZIP의 **전체 파일을 압축 해제한 다음 `Compositor.Win
 
 ![Windows에서 실행한 Compositor 편집 화면](docs/screenshots/editor.png)
 
+Windows 11에서 실제 실행·저장·재열기를 확인했고, 소스와 배포 EXE의 자동 테스트 38개씩 및 GitHub Actions 빌드가 통과했습니다. 자세한 결과는 [검증 기록](docs/VALIDATION.md)에 있습니다. [X·Instagram·Threads 공유 문안](docs/SOCIAL_POSTS.ko.md)도 제공합니다.
+
 ## 한국어 안내
 
 이 포트는 .NET 8 WPF로 작성한 단일 문서 이미지 편집기 미리보기입니다. 레이어를 보존하는 Windows 전용 `.cwproj` 작업 파일을 저장하고 PNG/JPEG로 결과를 내보낼 수 있습니다. 원작의 macOS `.comp` 파일을 열거나 저장하는 호환 계층은 제공하지 않습니다.

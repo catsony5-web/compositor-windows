@@ -14,6 +14,16 @@ The [published executable test report](validation/published-self-test.txt) recor
 
 ## Interactive checks
 
-The native WPF window was opened on Windows. Layer creation, brush strokes, Ctrl+Z, the G shortcut, horizontal gradient dragging, and Ctrl+S with a real project save were exercised. The UI-generated project contains seven layers. The [editor screenshot](screenshots/editor.png) was captured from the running Windows application.
+The native WPF window was opened on Windows. Layer creation, brush strokes, Ctrl+Z, the G shortcut, horizontal gradient dragging, and Ctrl+S with a real project save were exercised. The final packaged application then reopened the seven-layer UI-generated project through its native Open dialog, restored the gradient and selection, and closed normally. The [editor screenshot](screenshots/editor.png) was captured from the running Windows application. Detailed steps are recorded in [UI QA](../tests/ui-qa.txt).
 
 The screenshot and interactive checks are smoke tests. Clean-machine setup, Windows 10, ARM64, pen pressure, large-image stress tests, ICC color management, EXIF orientation, and full Mac feature parity have not been verified or implemented as applicable. See [release limitations](RELEASE_NOTES.md).
+
+## Published artifact
+
+The [Windows preview release](https://github.com/catsony5-web/compositor-windows/releases/tag/v0.1.0-preview.1) contains a 72,200,833-byte ZIP. GitHub's reported asset SHA-256 matches the locally tested package:
+
+```text
+3088cd7474c1636b368f6d33656d22e9a4bea9fd4f8769e061aaf51661d74eb2
+```
+
+Release source commit: `40f55d9927721c2f5d68cfb5eff98cc3a3bdb359`. The independent [GitHub Actions Windows build](https://github.com/catsony5-web/compositor-windows/actions/runs/35561185879) also passed.
