@@ -12,6 +12,8 @@ public sealed class CanvasView : FrameworkElement
     public Rect? GestureBounds { get; set; }
     public bool EllipseGesture { get; set; }
     public bool ShowLayerBounds { get; set; }
+    public Guid? HoveredLayerId { get; set; }
+    public IReadOnlyList<MagneticGuide> SnapGuides { get; set; } = [];
     public bool PixelGrid { get; set; }
     public List<(bool Vertical, double Position)> Guides { get; } = [];
     public IReadOnlyList<Point>? GesturePoints { get; set; }
@@ -31,6 +33,7 @@ public sealed class CanvasView : FrameworkElement
     // the small text bitmap. The normal composite replaces this on mouse-up.
     public BitmapSource? MovePreviewBackground { get; set; }
     public BitmapSource? MovePreviewLayer { get; set; }
+    public BitmapSource? MovePreviewForeground { get; set; }
     public Matrix MovePreviewMatrix { get; set; } = Matrix.Identity;
     public double MovePreviewOpacity { get; set; } = 1;
     public double Zoom { get; set; } = .65;
@@ -77,6 +80,8 @@ public sealed class CanvasView : FrameworkElement
             dc.DrawImage(moving, new Rect(0, 0, moving.PixelWidth, moving.PixelHeight));
             dc.Pop(); dc.Pop();
         }
+        if (MovePreviewLayer != null && MovePreviewForeground is { } above)
+            dc.DrawImage(above, new Rect(0, 0, Document.Width, Document.Height));
         if (PixelGrid && Zoom >= 8)
         {
             var pen = new Pen(new SolidColorBrush(Color.FromArgb(65, 180, 190, 200)), 1 / Zoom);
@@ -105,6 +110,16 @@ public sealed class CanvasView : FrameworkElement
             var pen = new Pen(Theme.Brush("#68C9FF"), 1 / Zoom);
             dc.DrawLine(pen, guide.Vertical ? new Point(guide.Position, 0) : new Point(0, guide.Position), guide.Vertical ? new Point(guide.Position, Document.Height) : new Point(Document.Width, guide.Position));
         }
+        foreach (var guide in SnapGuides)
+        {
+            var pen = new Pen(Theme.Brush("#E4A8FF"), 1 / Zoom);
+            var a = guide.Vertical ? new Point(guide.Position, guide.Start) : new Point(guide.Start, guide.Position);
+            var b = guide.Vertical ? new Point(guide.Position, guide.End) : new Point(guide.End, guide.Position);
+            dc.DrawLine(pen, a, b);
+            double r = 3 / Zoom;
+            foreach (var p in new[] { a, b })
+            { dc.DrawLine(pen, p + new Vector(-r, -r), p + new Vector(r, r)); dc.DrawLine(pen, p + new Vector(-r, r), p + new Vector(r, -r)); }
+        }
         if (BrushPoint is { } brush)
         {
             if (BrushTipPreview is { } stamp)
@@ -126,6 +141,14 @@ public sealed class CanvasView : FrameworkElement
             }
         }
         dc.Pop();
+        if (ShowLayerBounds && HoveredLayerId is { } hoverId && hoverId != Document.ActiveId && Document.Layers.FirstOrDefault(l => l.Id == hoverId) is { } hovered)
+        {
+            var points = TransformHandles.Points(Document, hovered, Zoom);
+            var shadow = new Pen(Theme.Brush("#303E55"), 2 / Zoom);
+            var accent = new Pen(Theme.Brush("#90C5FF"), 1 / Zoom);
+            for (int i = 0; i < 4; i++)
+            { dc.DrawLine(shadow, points[i], points[(i + 1) % 4]); dc.DrawLine(accent, points[i], points[(i + 1) % 4]); }
+        }
         if (ShowLayerBounds && Document.Active is { } layer)
         {
             var points = TransformHandles.Points(Document, layer, Zoom);

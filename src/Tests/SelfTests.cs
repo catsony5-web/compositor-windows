@@ -50,6 +50,10 @@ public static class SelfTests
         Test("demo render and project export", () => { var d = Demo.Create(); ProjectStore.Save(d, Path.Combine(directory, "sample.moruproj")); ProjectStore.Export(d, Path.Combine(directory, "sample.png")); var read = ProjectStore.Load(Path.Combine(directory, "sample.moruproj")); Assert(read.Layers.Count == d.Layers.Count && read.Layers.Any(l => l.Kind == LayerKind.Text) && Imaging.Render(read).Data.SequenceEqual(Imaging.Render(d).Data)); });
         PersistenceTests.Run(Test);
         LayerPickingTests.Run(Test);
+        MagneticPickingTests.Run(Test);
+        MagneticSnapTests.Run(Test);
+        MainWindow.RunMovePreviewTests(Test);
+        MainWindow.RunPointerFeedbackTests(Test, directory);
         EngineFeatureTests.Run(Test);
         AdvancedToolTests.Run(Test);
         FillToolsTests.Run(Test);
@@ -86,6 +90,7 @@ public static class SelfTests
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
+        LayeredCompatibilityTests.Run(Test, directory);
         results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }

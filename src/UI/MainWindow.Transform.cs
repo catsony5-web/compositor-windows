@@ -70,7 +70,7 @@ public sealed partial class MainWindow
             int handle = TransformHandles.HitTest(doc, layer, documentPoint, canvas.Zoom);
             if (handle >= 0) return TransformHandles.CursorForHandle(doc, layer, handle, canvas.Zoom);
         }
-        return Cursors.SizeAll;
+        return dragging && moveStarted ? Cursors.SizeAll : Cursors.Arrow;
     }
 
     bool TryBeginTransformHandle(Point point, Point screen)
