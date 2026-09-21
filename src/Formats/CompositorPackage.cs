@@ -44,7 +44,7 @@ public static class CompositorPackage
             {
                 var imageName = String(record, "imageFile");
                 if (!imageName.Equals(id.ToString().ToUpperInvariant() + ".png", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("레이어 이미지 경로가 올바르지 않습니다.");
-                using var s = File.OpenRead(SafeFile(root, Path.Combine("images", imageName), 100L * 1024 * 1024)); pixels = Raster.Load(s);
+                using var s = File.OpenRead(SafeFile(root, Path.Combine("images", imageName), Raster.MaxEncodedBytes)); pixels = Raster.Load(s);
             }
             var layer = new Layer { Id = id, Name = name, Pixels = pixels, Kind = group ? LayerKind.Group : adjustment ? LayerKind.Adjustment : LayerKind.Raster,
                 Visible = Boolean(record, "isVisible", true), Opacity = Number(record, "opacity", 1), Blend = ParseBlend(String(record, "blendMode", "Normal")),
@@ -71,7 +71,7 @@ public static class CompositorPackage
             {
                 string file = String(record, "maskFile");
                 if (!file.Equals(id.ToString().ToUpperInvariant() + ".mask.png", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("마스크 경로가 올바르지 않습니다.");
-                using var s = File.OpenRead(SafeFile(root, Path.Combine("images", file), 100L * 1024 * 1024));
+                using var s = File.OpenRead(SafeFile(root, Path.Combine("images", file), Raster.MaxEncodedBytes));
                 var decoder = BitmapDecoder.Create(s, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnDemand);
                 var frame = decoder.Frames[0]; Raster.ValidateSize(frame.PixelWidth, frame.PixelHeight);
                 if (frame.Format != PixelFormats.Gray8) throw new InvalidDataException("Compositor 마스크는 8비트 회색조 PNG여야 합니다.");

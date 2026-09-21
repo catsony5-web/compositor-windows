@@ -1,3 +1,13 @@
+# Morupixel 0.2.0-preview.18 validation — 2026-09-21
+
+The Release source build has zero warnings and errors, and **329/329** self-tests pass. New coverage includes a WIC-authored 10,000 x 2,000 PNG import/export/native-project round trip with exact pixel samples, a 480 MB logical layer budget, integer-overflow rejection before allocation, 65,535 x 2 and 2 x 65,535 PNG decode and offscreen WPF rendering, bounded thumbnails, small fit/zoom, and PSD format-specific export preflight. Existing A2/300 DPI and 9,000px assumptions were updated to the expanded limits. Source report: `artifacts/test-results/preview18-source-self-test.txt`. The publish script independently runs the suite against the portable executable before creating its ZIP.
+
+An opt-in **10,000 x 11,000 (110 MP)** check opened the image through `MainWindow.OpenImage`, composited all pixels, rendered the editor offscreen, saved a native project using disk-backed staging, and reopened it with dimensions and edge pixels intact. The final run completed in 4.4 seconds with approximately 2,643 MiB peak working set on this machine. Evidence: `artifacts/large-image-preview18/large-image-qa.txt` and `110mp-editor.png`; runner: `tools/qa/large-image`. The editor capture was visually reviewed, including the adaptive ruler spacing.
+
+The 536,870,897-pixel ceiling is validated arithmetically against `Array.MaxLength / 4`; a full image at that ceiling was not allocated or benchmarked. Actual capacity and processing time depend on memory, decoder and operation. Undo retains its 192 MiB budget. No dependency was changed. All checks were headless or offscreen; existing portable releases and user sessions were preserved.
+
+---
+
 # Morupixel 0.2.0-preview.17 validation — 2026-09-21
 
 The source suite passes **321/321** checks. Two focused close-confirmation regressions exercise the actual three button click events, default/cancel keyboard configuration, cancellation on unchosen window dismissal, clean/empty-document bypass, the current document name, dirty-state and history preservation, cancelled/unsuccessful save rejection, and a successful real project write before close is allowed. Test seams supply decisions and a false save outcome without opening native dialogs; the successful save is independently loaded from disk and its edited value verified.

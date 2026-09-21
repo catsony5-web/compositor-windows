@@ -33,7 +33,7 @@ public static class PersistenceTests
 
         test("image decoder rejects an oversized bitmap header", () =>
         {
-            const int width = 8193, height = 1;
+            const int width = Raster.MaxDimension + 1, height = 1;
             using var stream = new MemoryStream();
             using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
             {

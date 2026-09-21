@@ -12,8 +12,8 @@ public sealed partial class MainWindow
         var content = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
         content.Children.Add(Theme.Section("도형 크기 · px"));
         content.Children.Add(TransformRow(layer,
-            ("너비", shape.Width, 1, 8192, "도형 너비", (l, v) => VectorShapes.Update(l, l.Shape! with { Width = (int)Math.Round(v) })),
-            ("높이", shape.Height, 1, 8192, "도형 높이", (l, v) => VectorShapes.Update(l, l.Shape! with { Height = (int)Math.Round(v) }))));
+            ("너비", shape.Width, 1, Raster.MaxDimension, "도형 너비", (l, v) => VectorShapes.Update(l, l.Shape! with { Width = (int)Math.Round(v) })),
+            ("높이", shape.Height, 1, Raster.MaxDimension, "도형 높이", (l, v) => VectorShapes.Update(l, l.Shape! with { Height = (int)Math.Round(v) }))));
         var boundDocument = doc; long version = inspectorVersion;
         bool Current() => ReferenceEquals(doc, boundDocument) && inspectorVersion == version && doc.ActiveId == layer.Id && !IsLockedWithParents(layer);
         void ColorRow(string name, bool enabled, uint argb, bool fill)

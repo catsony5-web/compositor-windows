@@ -51,12 +51,12 @@ public sealed class CanvasView : FrameworkElement
     public void Fit()
     {
         if (Document == null) return;
-        Zoom = Math.Clamp(Math.Min((ActualWidth - 96) / Document.Width, (ActualHeight - 96) / Document.Height), .03, 8); Pan = new Vector(); InvalidateVisual();
+        Zoom = Math.Clamp(Math.Min((ActualWidth - 96) / Document.Width, (ActualHeight - 96) / Document.Height), .001, 8); Pan = new Vector(); InvalidateVisual();
     }
     public void ZoomAt(double factor, Point screenPoint)
     {
         if (Document == null) return;
-        var before = ToDocument(screenPoint); Zoom = Math.Clamp(Zoom * factor, .03, 16);
+        var before = ToDocument(screenPoint); Zoom = Math.Clamp(Zoom * factor, .001, 16);
         var after = new Point(Origin.X + before.X * Zoom, Origin.Y + before.Y * Zoom); Pan += screenPoint - after; InvalidateVisual();
     }
     protected override void OnRender(DrawingContext dc)
@@ -153,11 +153,16 @@ public sealed class CanvasView : FrameworkElement
             dc.DrawText(label, new Point(x + 11, y + 7));
         }
         dc.DrawRectangle(Theme.Header, null, new Rect(0, 0, ActualWidth, 22));
-        double step = Zoom > 1.5 ? 50 : Zoom > .5 ? 100 : 250;
-        for (double x = 0; x <= Document.Width; x += step)
+        // Use readable 1/2/5 intervals with at least 60 screen pixels between labels.
+        double requestedStep = Math.Max(1, 60 / Zoom);
+        double magnitude = Math.Pow(10, Math.Floor(Math.Log10(requestedStep)));
+        double normalizedStep = requestedStep / magnitude;
+        double step = (normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10) * magnitude;
+        double firstTick = Math.Ceiling(Math.Max(0, -origin.X / Zoom) / step) * step;
+        double lastTick = Math.Min(Document.Width, (ActualWidth - origin.X) / Zoom);
+        for (double x = firstTick; x <= lastTick; x += step)
         {
             double sx = origin.X + x * Zoom;
-            if (sx < 0 || sx > ActualWidth) continue;
             dc.DrawLine(new Pen(Theme.Line, 1), new Point(sx, 15), new Point(sx, 22));
             dc.DrawText(new FormattedText(x.ToString("0"), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 9, Theme.Muted, VisualTreeHelper.GetDpi(this).PixelsPerDip), new Point(sx + 4, 3));
         }

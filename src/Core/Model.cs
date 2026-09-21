@@ -8,7 +8,10 @@ namespace Compositor.Windows;
 
 public sealed class Raster
 {
-    public const int MaxPixels = 16_777_216;
+    public const int MaxDimension = 65_535;
+    // Largest BGRA surface that fits in one .NET byte[] with signed-int indexing.
+    public static readonly int MaxPixels = Array.MaxLength / 4;
+    public const long MaxEncodedBytes = 4L * 1024 * 1024 * 1024;
     public int Width { get; }
     public int Height { get; }
     // Straight (not premultiplied) BGRA. Published rasters are immutable; edits clone first.
@@ -18,18 +21,44 @@ public sealed class Raster
         ValidateSize(width, height);
         Width = width; Height = height;
         if (data != null && data.Length != (long)width * height * 4) throw new InvalidDataException("픽셀 데이터 크기가 잘못되었습니다.");
-        Data = data ?? new byte[width * height * 4];
+        Data = data ?? new byte[checked(width * height * 4)];
     }
     public static void ValidateSize(int w, int h)
     {
-        if (w < 1 || h < 1 || w > 8192 || h > 8192 || (long)w * h > MaxPixels)
-            throw new InvalidDataException("이미지는 한 변 8,192px, 전체 1,677만 픽셀 이하로 사용하세요.");
+        if (w < 1 || h < 1 || w > MaxDimension || h > MaxDimension || (long)w * h > MaxPixels)
+            throw new InvalidDataException($"이미지는 한 변 {MaxDimension:N0}px, 전체 {MaxPixels:N0}픽셀 이하로 사용하세요. 실제로 열 수 있는 크기는 사용 가능한 메모리에 따라 달라집니다.");
     }
     public Raster Clone() => new(Width, Height, (byte[])Data.Clone());
     public BitmapSource Bitmap(double dpi = 96)
     {
         var b = BitmapSource.Create(Width, Height, dpi, dpi, PixelFormats.Bgra32, null, Data, Width * 4);
         b.Freeze(); return b;
+    }
+    public BitmapSource Thumbnail(int maxSide = 68)
+    {
+        if (maxSide < 1 || maxSide > 1024) throw new ArgumentOutOfRangeException(nameof(maxSide));
+        double scale = Math.Min(1, maxSide / (double)Math.Max(Width, Height));
+        if (scale == 1) return Bitmap();
+        int w = Math.Max(1, (int)Math.Round(Width * scale)), h = Math.Max(1, (int)Math.Round(Height * scale));
+        var preview = new Raster(w, h);
+        // Sample directly into a small preview. A layer-list icon must not retain a
+        // second full-resolution WIC bitmap (up to 2 GiB for a large source).
+        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+        {
+            double b = 0, g = 0, r = 0, a = 0;
+            for (int sy = 0; sy < 4; sy++) for (int sx = 0; sx < 4; sx++)
+            {
+                int px = Math.Min(Width - 1, (int)((x + (sx + .5) / 4) * Width / w));
+                int py = Math.Min(Height - 1, (int)((y + (sy + .5) / 4) * Height / h));
+                int i = (py * Width + px) * 4;
+                double alpha = Data[i + 3];
+                b += Data[i] * alpha; g += Data[i + 1] * alpha; r += Data[i + 2] * alpha; a += alpha;
+            }
+            int d = (y * w + x) * 4;
+            if (a > 0) { preview.Data[d] = Imaging.Byte(b / a); preview.Data[d + 1] = Imaging.Byte(g / a); preview.Data[d + 2] = Imaging.Byte(r / a); }
+            preview.Data[d + 3] = Imaging.Byte(a / 16);
+        }
+        return preview.Bitmap();
     }
     public static Raster FromBitmap(BitmapSource b)
     {
@@ -53,7 +82,10 @@ public sealed class Raster
     {
         // WIC encoders need a seekable stream; ZipArchive entry streams are not seekable.
         var enc = new PngBitmapEncoder(); enc.Frames.Add(BitmapFrame.Create(Bitmap()));
-        using var buffer = new MemoryStream(); enc.Save(buffer); buffer.Position = 0; buffer.CopyTo(s);
+        if (s.CanSeek) { enc.Save(s); return; }
+        using Stream buffer = Data.LongLength <= ImageStaging.MemoryThresholdBytes
+            ? new MemoryStream() : ImageStaging.CreateTemporaryStream();
+        enc.Save(buffer); buffer.Position = 0; buffer.CopyTo(s);
     }
     public static Raster Solid(int w, int h, Color color)
     {
@@ -116,7 +148,7 @@ public sealed class Layer
 public sealed class Document
 {
     public const int MaxLayers = 128;
-    public const long MaxLayerBytes = 384L * 1024 * 1024;
+    public const long MaxLayerBytes = 8L * 1024 * 1024 * 1024;
     readonly long layerByteLimit;
     public int Width { get; set; } = 1280;
     public int Height { get; set; } = 800;
@@ -140,7 +172,7 @@ public sealed class Document
         if (Layers.Any(l => l.Id == layer.Id)) throw new InvalidOperationException("레이어 ID가 중복되었습니다.");
         var bytes = Layers.Sum(l => (long)l.Pixels.Data.Length + (l.Mask?.Length ?? 0));
         var incoming = (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
-        if (bytes + incoming > layerByteLimit) throw new InvalidOperationException("레이어 메모리 한도(384MB)를 초과합니다.");
+        if (bytes + incoming > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         Layers.Add(layer); ActiveId = layer.Id;
     }
     public void Validate() => ValidateCore(true);
@@ -162,7 +194,7 @@ public sealed class Document
             ValidateLayer(layer, validateRasterDimensions);
             if (!ids.Add(layer.Id)) throw new InvalidDataException("레이어 ID가 중복되었습니다.");
             bytes += (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
-            if (bytes > layerByteLimit) throw new InvalidDataException("레이어 메모리 한도(384MB)를 초과합니다.");
+            if (bytes > layerByteLimit) throw new InvalidDataException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         }
         if (ActiveId != Guid.Empty && !ids.Contains(ActiveId)) throw new InvalidDataException("활성 레이어가 존재하지 않습니다.");
         var lookup = Layers.ToDictionary(l => l.Id);

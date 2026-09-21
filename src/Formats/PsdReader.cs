@@ -81,7 +81,7 @@ internal sealed class PsdReader : IDisposable
             if (record.Complex || !PhotoshopCompatibility.Blends.ContainsKey(record.Blend)) throw new NotSupportedException("그룹·조정 레이어 또는 지원하지 않는 혼합 모드가 있습니다. ‘합성 이미지’로 가져와 주세요.");
             if (record.Width == 0 || record.Height == 0) continue;
             Raster.ValidateSize(record.Width, record.Height); memory = checked(memory + (long)record.Width * record.Height * 5);
-            if (memory > Document.MaxLayerBytes) throw new InvalidDataException("PSD 레이어 메모리가 384MB를 초과합니다. 합성 이미지로 가져와 주세요.");
+            if (memory > Document.MaxLayerBytes) throw new InvalidDataException($"PSD 레이어 메모리가 {Document.MaxLayerBytes / (1024L * 1024 * 1024):N0}GB를 초과합니다. 합성 이미지로 가져와 주세요.");
         }
         var doc = new Document { Width = width, Height = height, Name = Path.GetFileNameWithoutExtension(path), Dpi = dpi };
         foreach (var record in records.AsEnumerable().Reverse())
@@ -208,29 +208,74 @@ internal sealed class PsdReader : IDisposable
     {
         // Restrict the compressed input to this channel; limit expansion to exactly its dimensions.
         if (end - stream.Position > CompatibilityImport.MaxFileBytes) throw new InvalidDataException("PSD 압축 채널이 너무 큽니다.");
-        using var input = new MemoryStream(Bytes(checked((int)(end - stream.Position))), false); using var zlib = new ZLibStream(input, CompressionMode.Decompress);
-        zlib.ReadExactly(destination); if (zlib.ReadByte() != -1) throw new InvalidDataException("PSD ZIP 데이터가 픽셀 크기를 초과합니다.");
+        using (var input = new BoundedReadStream(stream, end - stream.Position, token))
+        using (var zlib = new ZLibStream(input, CompressionMode.Decompress))
+        {
+            ReadPlane(zlib, destination, predict, w);
+            if (zlib.ReadByte() != -1) throw new InvalidDataException("PSD ZIP 데이터가 픽셀 크기를 초과합니다.");
+        }
+        // Preserve the channel boundary even when zlib finishes before padding.
+        stream.Position = end;
+    }
+    void ReadPlane(Stream input, byte[] destination, bool predict, int w)
+    {
+        for (int offset = 0; offset < destination.Length;)
+        {
+            token.ThrowIfCancellationRequested(); int count = Math.Min(1024 * 1024, destination.Length - offset);
+            input.ReadExactly(destination.AsSpan(offset, count)); offset += count;
+        }
         if (predict) for (int start = 0; start < destination.Length; start += w) { token.ThrowIfCancellationRequested(); for (int x = 1; x < w; x++) destination[start + x] = unchecked((byte)(destination[start + x] + destination[start + x - 1])); }
     }
     Raster DecodeMerged(long offset)
     {
         stream.Position = offset; int compression = U16(); var raster = new Raster(width, height); for (int i = 3; i < raster.Data.Length; i += 4) raster.Data[i] = 255;
         int planeBytes = checked(width * height), colorChannels = mode == 3 ? 3 : 1; uint[]? rows = compression == 1 ? RowLengths(checked(height * channels), stream.Length) : null;
-        byte[]? expanded = null;
-        if (compression is 2 or 3)
-        {
-            long count = (long)planeBytes * channels; if (count > Document.MaxLayerBytes) throw new InvalidDataException("PSD 합성 채널이 메모리 한도를 초과합니다.");
-            expanded = new byte[(int)count]; Inflate(expanded, stream.Length, compression == 3, width);
-        }
-        else if (compression is not (0 or 1)) throw new NotSupportedException("지원하지 않는 PSD 압축입니다.");
+        if (compression is < 0 or > 3) throw new NotSupportedException("지원하지 않는 PSD 압축입니다.");
+        // ZIP channels share one stream. Reuse one plane instead of allocating
+        // channels × pixels bytes, which can exceed a managed array's length.
+        using var input = compression is 2 or 3 ? new BoundedReadStream(stream, stream.Length - stream.Position, token) : null;
+        using var zlib = input != null ? new ZLibStream(input, CompressionMode.Decompress) : null;
+        var plane = new byte[planeBytes];
         for (int c = 0; c < channels; c++)
         {
-            token.ThrowIfCancellationRequested(); var plane = new byte[planeBytes];
-            if (expanded != null) Buffer.BlockCopy(expanded, c * planeBytes, plane, 0, planeBytes);
-            else if (compression == 0) stream.ReadExactly(plane);
+            token.ThrowIfCancellationRequested();
+            if (zlib != null) ReadPlane(zlib, plane, compression == 3, width);
+            else if (compression == 0) ReadPlane(stream, plane, false, width);
             else for (int y = 0; y < height; y++) Unpack(plane.AsSpan(y * width, width), rows![c * height + y], stream.Length);
             if (c < colorChannels) Put(raster, plane, c); else if (c == colorChannels && mergedAlpha) Put(raster, plane, -1);
         }
+        if (zlib != null && zlib.ReadByte() != -1) throw new InvalidDataException("PSD ZIP 데이터가 픽셀 크기를 초과합니다.");
         return raster;
+    }
+
+    // Leave the owning PSD stream open, and prevent decoder read-ahead from
+    // consuming another channel or section. Lengths stay 64-bit throughout.
+    sealed class BoundedReadStream : Stream
+    {
+        readonly Stream source;
+        readonly long length;
+        readonly CancellationToken cancellationToken;
+        long remaining;
+        public BoundedReadStream(Stream source, long length, CancellationToken cancellationToken)
+        {
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+            this.source = source; this.length = remaining = length; this.cancellationToken = cancellationToken;
+        }
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => length;
+        public override long Position { get => length - remaining; set => throw new NotSupportedException(); }
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+        public override int Read(Span<byte> buffer)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int count = (int)Math.Min(buffer.Length, remaining);
+            int read = source.Read(buffer[..count]); remaining -= read; return read;
+        }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

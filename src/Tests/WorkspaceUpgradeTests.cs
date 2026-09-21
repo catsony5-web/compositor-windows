@@ -28,9 +28,11 @@ public sealed partial class MainWindow
             }
             var a4 = NewDocumentDialog.Dimensions("210", "297", true, "300"); Check(a4.Width == 2480 && a4.Height == 3508, "A4 300 DPI incorrect");
         });
-        test("oversize A2 resolution and invalid DPI are rejected before allocation", () =>
+        test("A2 at 300 DPI is accepted while oversized resolution and invalid DPI are rejected before allocation", () =>
         {
-            foreach (var args in new[] { ("420", "594", "300"), ("210", "297", "0"), ("210", "297", "NaN") })
+            var a2 = NewDocumentDialog.Dimensions("420", "594", true, "300");
+            Check(a2.Width == 4961 && a2.Height == 7016, "A2 300 DPI dimensions changed");
+            foreach (var args in new[] { ("420", "594", "1200"), ("210", "297", "0"), ("210", "297", "NaN") })
             { bool rejected = false; try { NewDocumentDialog.Dimensions(args.Item1, args.Item2, true, args.Item3); } catch { rejected = true; } Check(rejected, "Unsafe dimensions accepted"); }
         });
         test("document DPI survives project snapshot and RGB image export", () =>
