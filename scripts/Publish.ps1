@@ -91,7 +91,7 @@ $modelPath = Join-Path $stagingPath 'models\u2netp.onnx'
 foreach ($documentName in @('GUIDE', 'RELEASE_NOTES_ARCHIVE', 'FILE_COMPATIBILITY', 'MAINTENANCE', 'DESIGN_REFERENCES', 'AI_CONNECTION')) {
     $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "docs\$documentName.md"); Destination = (Join-Path $stagingPath "docs\$documentName.md") }
 }
-foreach ($licenseName in @('ACadSharp-LICENSE.txt', 'PsdSharp-LICENSE.txt', 'psd-tools-LICENSE.txt', 'CsWinRT-LICENSE.txt', 'WindowsSDK-License.rtf')) {
+foreach ($licenseName in @('ACadSharp-LICENSE.txt', 'PsdSharp-LICENSE.txt', 'psd-tools-LICENSE.txt', 'CsWinRT-LICENSE.txt', 'WindowsSDK-License.rtf', 'PDFsharp-LICENSE.txt', 'Microsoft-PdfDependencies-LICENSE.txt')) {
     $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "licenses\$licenseName"); Destination = (Join-Path $stagingPath "licenses\$licenseName") }
 }
 foreach ($imageName in @('startup', 'save-changes', 'color-palette', 'text-properties', 'shape-properties', 'image-properties', 'design', 'brush-settings', 'photo-develop', 'quick-exposure', 'quick-levels', 'quick-saturation', 'quick-blur')) {

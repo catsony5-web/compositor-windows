@@ -69,24 +69,24 @@ public sealed partial class MainWindow
                 window.doc.Add(new Layer { Pixels = new Raster(320, 180), X = 40, Y = 60, ParentId = group.Id });
                 window.history.Reset(window.doc); window.tabs.Clear(); window.selectedLayers.Clear(); window.InitializeWorkspace();
                 window.NudgeSelected(new Vector(1, 0)); window.Undo();
-                window.tool = Tool.Move; window.canvas.ShowLayerBounds = true; window.canvas.Zoom = 1; window.canvas.Cursor = Cursors.SizeAll;
+                window.tool = Tool.Move; window.canvas.ShowLayerBounds = true; window.canvas.Zoom = 1; window.canvas.Cursor = Cursors.Arrow;
                 var layer = window.doc.Active!; group = window.doc.Layers.Single(item => item.Id == group.Id);
                 var revision = window.doc.Revision; var pixels = layer.Pixels;
                 var points = TransformHandles.Points(window.doc, layer, 1);
                 var center = points[0] + (points[2] - points[0]) * .5;
                 Expect(window.CanvasCursorAt(points[0]), Cursors.SizeNWSE, "corner hover");
-                Expect(window.CanvasCursorAt(center), Cursors.SizeAll, "layer center");
+                Expect(window.CanvasCursorAt(center), Cursors.Arrow, "layer center");
                 layer.Locked = true;
-                Expect(window.CanvasCursorAt(points[0]), Cursors.SizeAll, "locked layer");
+                Expect(window.CanvasCursorAt(points[0]), Cursors.Arrow, "locked layer");
                 layer.Locked = false; group.Locked = true;
-                Expect(window.CanvasCursorAt(points[0]), Cursors.SizeAll, "locked parent");
+                Expect(window.CanvasCursorAt(points[0]), Cursors.Arrow, "locked parent");
                 group.Locked = false; layer.Kind = LayerKind.Adjustment;
-                Expect(window.CanvasCursorAt(points[0]), Cursors.SizeAll, "adjustment layer");
+                Expect(window.CanvasCursorAt(points[0]), Cursors.Arrow, "adjustment layer");
                 layer.Kind = LayerKind.Raster; window.canvas.ShowLayerBounds = false;
-                Expect(window.CanvasCursorAt(points[0]), Cursors.SizeAll, "hidden bounds");
+                Expect(window.CanvasCursorAt(points[0]), Cursors.Arrow, "hidden bounds");
                 window.canvas.ShowLayerBounds = true;
                 window.jobCts = new CancellationTokenSource();
-                Expect(window.CanvasCursorAt(points[0]), Cursors.SizeAll, "active background edit");
+                Expect(window.CanvasCursorAt(points[0]), Cursors.Arrow, "active background edit");
                 window.jobCts.Dispose(); window.jobCts = null;
                 Expect(window.CanvasCursorAt(points[0], panModifier: true), Cursors.Hand, "pan modifier");
                 window.panning = true;
@@ -98,7 +98,7 @@ public sealed partial class MainWindow
                 window.dragging = true;
                 Expect(window.CanvasCursorAt(new Point(5000, 5000)), Cursors.SizeNWSE, "active handle outside layer");
                 window.handleGesture = null; window.dragging = false;
-                Expect(window.CanvasCursorAt(new Point(5000, 5000)), Cursors.SizeAll, "finished handle gesture");
+                Expect(window.CanvasCursorAt(new Point(5000, 5000)), Cursors.Arrow, "finished handle gesture");
                 window.tool = Tool.Brush; window.canvas.Cursor = Cursors.Cross;
                 Expect(window.CanvasCursorAt(points[0]), Cursors.Cross, "brush tool over transform corner");
                 window.tool = Tool.Hand;
@@ -110,11 +110,11 @@ public sealed partial class MainWindow
                 };
                 window.canvas.RaiseEvent(query);
                 Expect(query.Cursor, Cursors.Hand, "routed prehandled cursor query");
-                window.tool = Tool.Move; window.canvas.Cursor = Cursors.SizeAll;
+                window.tool = Tool.Move; window.canvas.Cursor = Cursors.Arrow;
                 if (layer.X != 40 || layer.Y != 60 || layer.ScaleX != 1 || layer.ScaleY != 1 || layer.Rotation != 0
                     || !ReferenceEquals(pixels, layer.Pixels) || window.doc.Revision != revision
                     || window.history.CanUndo || !window.history.CanRedo || window.history.Dirty(window.doc)
-                    || !ReferenceEquals(window.canvas.Cursor, Cursors.SizeAll))
+                    || !ReferenceEquals(window.canvas.Cursor, Cursors.Arrow))
                     throw new Exception("Cursor queries changed document geometry, pixels, history or the persistent tool cursor");
             }
             finally

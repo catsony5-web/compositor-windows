@@ -363,16 +363,6 @@ public sealed partial class MainWindow
         var f = Dialogs.Fields(this, "가이드 추가", ("방향 (가로 / 세로)", "세로"), ("위치 (px)", (doc.Width / 2).ToString())); if (f == null) return;
         canvas.Guides.Add((f[0] == "세로", Dialogs.Number(f[1], 0, Math.Max(doc.Width, doc.Height)))); canvas.InvalidateVisual();
     }
-    double Snap(double value, bool horizontal)
-    {
-        if (!snapping || Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) return value;
-        double length = horizontal ? doc.Width : doc.Height;
-        var positions = new List<double> { 0, length / 2, length };
-        positions.AddRange(canvas.Guides.Where(g => g.Vertical == horizontal).Select(g => g.Position));
-        foreach (var layer in doc.Layers.Where(l => !selectedLayers.Contains(l.Id) && l.Id != doc.ActiveId && l.Visible))
-        { double start = horizontal ? layer.X : layer.Y, size = horizontal ? layer.Pixels.Width * layer.Scale * layer.ScaleX : layer.Pixels.Height * layer.Scale * layer.ScaleY; positions.Add(start); positions.Add(start + size); positions.Add(start + size / 2); }
-        double closest = positions.MinBy(x => Math.Abs(x - value)); return Math.Abs(closest - value) * canvas.Zoom <= 6 ? closest : value;
-    }
     static bool IsRetouch(Tool t) => t is Tool.CloneStamp or Tool.Heal or Tool.Smudge or Tool.Liquify or Tool.BlurBrush;
     void RetouchAt(Point point)
     {

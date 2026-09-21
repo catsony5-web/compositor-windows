@@ -2,7 +2,8 @@ using System.IO;
 
 namespace Compositor.Windows;
 
-public sealed record CompatibilityOptions(int Page = 1, double Dpi = 150, int CadLongEdge = 2400, bool SeparateLayers = false);
+public sealed record CompatibilityOptions(int Page = 1, double Dpi = 150, int CadLongEdge = 2400, bool SeparateLayers = false,
+    string? CadLayout = null, bool PreservePdfLayers = true, bool RetainVectors = true);
 public sealed record CompatibilityResult(Document Document, IReadOnlyList<string> Warnings);
 
 public static class CompatibilityImport
@@ -44,5 +45,20 @@ public static class CompatibilityImport
     {
         var doc = new Document { Name = Path.GetFileNameWithoutExtension(path), Width = raster.Width, Height = raster.Height, Dpi = dpi };
         doc.Add(new Layer { Name = layerName, Pixels = raster }); return doc;
+    }
+    public static IReadOnlyList<Layer> PlacementLayers(Document imported, int width, int height)
+    {
+        imported.Validate();
+        double scale = Math.Min(1, Math.Min(width / (double)imported.Width, height / (double)imported.Height));
+        var group = new Layer { Name = imported.Name, Kind = LayerKind.Group, Pixels = new Raster(imported.Width, imported.Height),
+            Scale = scale, X = (width - imported.Width * scale) / 2, Y = (height - imported.Height * scale) / 2 };
+        var ids = imported.Layers.ToDictionary(l => l.Id, _ => Guid.NewGuid());
+        var layers = new List<Layer> { group };
+        foreach (var original in imported.Layers)
+        {
+            var copy = original.Snapshot(); copy.Id = ids[original.Id]; copy.ParentId = original.ParentId is { } parent ? ids[parent] : group.Id;
+            layers.Add(copy);
+        }
+        return layers;
     }
 }

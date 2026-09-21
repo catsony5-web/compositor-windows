@@ -1,4 +1,13 @@
-# Morupixel 0.2.0 Preview 19 — local candidate
+# Morupixel 0.2.0 Preview 20 — local candidate
+
+- **Selection cursor and preselection.** Move-tool idle/hover uses the selection arrow. A four-way cursor appears only after a drag starts; resize, rotation and pan retain their directional cursors. Hover outlines identify the prospective target without changing selection or undo history.
+- **Thin-line acquisition.** Objects within four screen pixels are easier to select at any zoom. Nearby selection preserves masks, clipping, hierarchy and the center hit's occlusion boundary; a locked page background no longer prevents acquiring nearby CAD lines.
+- **Magnetic alignment.** Drag a selection by its edges or center to other objects, the canvas or guides. Snap capture and release have separate thresholds to resist jitter. Temporary alignment guides show the attachment. Hold Alt to bypass snapping and Shift to constrain an axis.
+- **Responsive movement.** Simple normal-blend single-layer moves cache the fixed layers below and above the moving object and update its display transform per pointer event. Complex compositing and large cache allocations retain the full compositor.
+
+Includes the local CAD/PDF layer, vector-content and interface improvements, alongside Preview 19's MCP/local-command connection. Existing open application folders remain unchanged. This candidate has not been uploaded to the public website or GitHub release.
+
+## Morupixel 0.2.0 Preview 19 — local AI candidate
 
 - **AI editing connection.** Enable **AI 연결 → 로컬 연결 켜기** to control the running editor through MCP stdio or local JSON commands. No additional runtime or SDK is bundled.
 - **19 tools.** Inspect documents, create/open work, add images/editable text/shapes, transform/reorder/delete layers, add adjustments, remove a background with the local model, preview, save/export, and undo/redo.

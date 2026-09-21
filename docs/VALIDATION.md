@@ -1,3 +1,15 @@
+# Morupixel 0.2.0-preview.20 local candidate — 2026-09-22
+
+The Release source build has zero warnings/errors and **400/400** checks pass. The source combines the existing CAD/PDF/vector/interface work with the AI connection before adding pointer interaction. New tests cover four-DIP thin-line picking above a locked background, occlusion and hierarchy, zoom-independent snapping, six-DIP capture/ten-DIP release hysteresis, multi-selection, transformed parents, Shift/Alt behavior, cursor priorities, hover/history isolation, cache compositing order and cancellation. Source evidence: `artifacts/pointer/self-tests-final.txt`.
+
+Actual CanvasView renders of hover and magnetic movement were reviewed: `artifacts/pointer/pointer-feedback/hover.png` and `magnetic-move.png`. Offscreen move-preview pixel checks verify the original position is cleared, the moving layer follows its transform, and the fixed foreground still occludes it. Rendering tests use interior pixel samples so normal interpolation at enlarged boundaries is not mistaken for incorrect stacking.
+
+A separate benchmark used 93 sparse line layers plus a locked white background, 200 warmups and 1,000 queries per case at 0.5×, 1× and 4× zoom. Mixed-case picking averaged **0.323 / 0.202 / 0.187 ms**, with **0.676 / 0.279 / 0.233 ms p95** on this PC. Empty-area full-probe cases averaged about 0.2 ms. This measures target acquisition, not a whole-frame FPS guarantee. Evidence: `artifacts/pointer-pick-benchmark/results.json`.
+
+The fast move display is limited to one unmasked, unwarped root layer in a simple normal-blend stack with a bounded cache allocation; interdependent groups, adjustments, clipping, CMYK preview and larger cache requirements use the existing accurate compositor. No operating-system pointer warping or simulated desktop input is used. All verification was offscreen/background, preserving the user's running editors.
+
+---
+
 # Morupixel 0.2.0-preview.19 local candidate — 2026-09-22
 
 The Release source build has zero warnings and errors; **357/357** self-tests pass. Added coverage exercises real current-user named pipes, bounded UTF-8 messages, session lifecycle, disconnect/stop cancellation, CLI JSON output, both supported MCP protocol versions, typed command schemas, and actual offscreen editor transactions. Document revisions, inactive tabs, locked parents, native modal-window disabling, no-op text/history preservation, file overwrite protection, and cancelled requests are covered. Source report: `artifacts/automation/self-tests-final.txt`.

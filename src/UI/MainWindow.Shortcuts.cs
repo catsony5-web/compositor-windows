@@ -16,6 +16,9 @@ public sealed partial class MainWindow
         // the window can turn them into layer movement. OriginalSource also covers
         // routed input before a newly focused control is reported by Keyboard.
         if (e.OriginalSource is Thumb or GlassSwitch || Keyboard.FocusedElement is TextBoxBase or ComboBox or System.Windows.Controls.Slider or SaturationValuePad or Thumb or GlassSwitch) return;
+        if (tool == Tool.Move && dragging && key is Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift)
+        { if (key is Key.LeftAlt or Key.RightAlt) suppressAltMenu = true; UpdatePointerModifiers(); e.Handled = true; return; }
+        if (key == Key.Space) { ClearPointerHover(); Mouse.UpdateCursor(); }
         if (resizingBrush) { e.Handled = true; return; }
         if (polygonInProgress && key is Key.Enter or Key.Back)
         {

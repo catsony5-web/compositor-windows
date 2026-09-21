@@ -26,6 +26,10 @@ The local inference preprocessing follows the U²-Net model contract also docume
 
 The bundled DWG/DXF reader is [ACadSharp](https://github.com/DomCR/ACadSharp), Copyright (c) 2026 Albert Domenech, under the MIT license. The full notice is in [licenses/ACadSharp-LICENSE.txt](licenses/ACadSharp-LICENSE.txt). The embedded `block-rotation.dwg` self-test fixture is from its `samples/dynamic-blocks/BLOCKROTATIONPARAMETER.dwg` at revision `3feabba4b2cbcb226f10b288aaee32442b03af6f`, under the same license.
 
+## PDFsharp 6.2.4
+
+[PDFsharp](https://github.com/empira/PDFsharp/tree/v6.2.4), Copyright (c) 2001-2026 empira Software GmbH, is used to read PDF optional-content layers and prepare layer-specific content for the Windows renderer. Its MIT notice is in [licenses/PDFsharp-LICENSE.txt](licenses/PDFsharp-LICENSE.txt). The NuGet dependencies Microsoft.Extensions.Logging.Abstractions 8.0.3, Microsoft.Extensions.DependencyInjection.Abstractions 8.0.2 and System.Security.Cryptography.Pkcs 8.0.1 are MIT-licensed .NET Foundation components; see [licenses/Microsoft-PdfDependencies-LICENSE.txt](licenses/Microsoft-PdfDependencies-LICENSE.txt).
+
 ## PSD verification dependencies and fixtures
 
 [PsdSharp 1.2.0](https://github.com/kaelon141/PsdSharp), Copyright (c) 2025 Jordy de Koning, is included for an independent PSD header/layout check in the built-in self-tests. See [licenses/PsdSharp-LICENSE.txt](licenses/PsdSharp-LICENSE.txt) (MIT). Production PSD/PSB import and PSD export use Morupixel's own bounded format implementation.

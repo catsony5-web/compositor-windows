@@ -109,22 +109,28 @@ public sealed partial class MainWindow
     }
     bool TryPreviewTextMove()
     {
-        if (renderShutdown || cmykProof || textPreviewFailed || !dragging || !moveStarted || tool != Tool.Move || doc.Active is not { } layer ||
-            !CanPreviewTextMove(doc, layer, MovableSelectedLayers().Count())) return false;
+        if (renderShutdown || cmykProof || !dragging || !moveStarted || tool != Tool.Move || doc.Active is not { } layer ||
+            !CanPreviewLayerMove(doc, layer, MovableSelectedLayers().Count()))
+        {
+            // A distortion, mode change or canceled gesture must not leave a
+            // stale fast preview covering the accurate composite underneath.
+            if (textPreviewDocument != null) ClearTextMovePreview();
+            return false;
+        }
+        if (textPreviewFailed) return false;
         if (!ReferenceEquals(textPreviewDocument, doc) || textPreviewLayerId != layer.Id)
         {
             ClearTextMovePreview();
-            // The cached background replaces any in-flight whole-document frame.
+            // Prepare fixed layers on either side of the moving object once.
+            // Pointer events only update its matrix, even while caches load.
             ++renderGeneration; renderCts?.Cancel(); pendingGestureRender = false; pendingFullRender = false;
             gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick;
             textPreviewDocument = doc; textPreviewLayerId = layer.Id;
-            textPreviewBitmap = layer.Pixels.Bitmap();
             canvas.MovePreviewOpacity = layer.Opacity;
-            var snapshot = doc.Snapshot();
-            snapshot.Layers.RemoveAll(l => l.Id == layer.Id);
+            var (below, above) = CreateLayerMovePreviewStacks(doc, layer.Id);
             var cts = textPreviewCts = new CancellationTokenSource();
             long generation = textPreviewGeneration;
-            _ = RenderTextMoveBackground(snapshot, doc, activeTab, generation, cts);
+            _ = RenderTextMoveBackground(below, above, layer.Pixels, doc, activeTab, generation, cts);
         }
         canvas.MovePreviewMatrix = layer.Matrix;
         canvas.InvalidateVisual();
@@ -134,21 +140,66 @@ public sealed partial class MainWindow
         movingCount == 1 && layer.Kind == LayerKind.Text && layer.Visible &&
         layer.ParentId == null && !layer.Clipped && layer.Mask == null && layer.Warp == null &&
         layer.Blend == BlendMode.Normal && document.Layers.LastOrDefault(l => l.ParentId == null) == layer;
-    async Task RenderTextMoveBackground(Document snapshot, Document document, int tab, long generation, CancellationTokenSource cts)
+
+    internal static bool CanPreviewLayerMove(Document document, Layer layer, int movingCount)
+    {
+        if (movingCount != 1 || !layer.Visible || layer.Opacity <= 0 || layer.Locked ||
+            layer.Kind is not (LayerKind.Raster or LayerKind.Text or LayerKind.Shape or LayerKind.Vector) ||
+            layer.ParentId != null || layer.Clipped || layer.Mask != null || layer.Warp != null ||
+            layer.Blend != BlendMode.Normal || !document.Layers.Contains(layer)) return false;
+        // Bound additional raster/WIC copies without limiting document editing.
+        // Large or interdependent stacks retain the full compositor path.
+        long estimatedBytes = (long)document.Width * document.Height * 16 + layer.Pixels.Data.LongLength;
+        if (estimatedBytes > 512L * 1024 * 1024) return false;
+        return document.Layers.All(item => item.ParentId == null && !item.Clipped &&
+            item.Kind is not (LayerKind.Group or LayerKind.Adjustment) && item.Blend == BlendMode.Normal);
+    }
+
+    internal static (Document Below, Document Above) CreateLayerMovePreviewStacks(Document document, Guid movingId)
+    {
+        int index = document.Layers.FindIndex(layer => layer.Id == movingId);
+        if (index < 0) throw new ArgumentException("이동할 레이어를 찾을 수 없습니다.", nameof(movingId));
+        var below = document.Snapshot(); var above = document.Snapshot();
+        below.Layers.RemoveRange(index, below.Layers.Count - index);
+        above.Layers.RemoveRange(0, index + 1);
+        below.ActiveId = Guid.Empty; above.ActiveId = Guid.Empty;
+        return (below, above);
+    }
+
+    async Task RenderTextMoveBackground(Document below, Document above, Raster moving, Document document, int tab, long generation, CancellationTokenSource cts)
     {
         try
         {
-            var raster = await Task.Run(() => Imaging.Render(snapshot, cts.Token), cts.Token);
+            var cache = await Task.Run(() =>
+            {
+                var background = Imaging.Render(below, cts.Token).Bitmap();
+                cts.Token.ThrowIfCancellationRequested();
+                var foreground = above.Layers.Count == 0 ? null : Imaging.Render(above, cts.Token).Bitmap();
+                cts.Token.ThrowIfCancellationRequested();
+                var bitmap = moving.Bitmap();
+                cts.Token.ThrowIfCancellationRequested();
+                return (Background: background, Foreground: foreground, Layer: bitmap);
+            }, cts.Token);
             if (renderShutdown || cts.IsCancellationRequested || generation != textPreviewGeneration || !ReferenceEquals(doc, document) || activeTab != tab) return;
-            canvas.MovePreviewBackground = raster.Bitmap();
-            canvas.MovePreviewLayer = textPreviewBitmap;
+            // Publish the complete stack together on the dispatcher. Until now,
+            // the old composite stayed visible, with no partial-layer flashes.
+            textPreviewBitmap = cache.Layer;
+            canvas.MovePreviewBackground = cache.Background;
+            canvas.MovePreviewLayer = cache.Layer;
+            canvas.MovePreviewForeground = cache.Foreground;
             canvas.InvalidateVisual();
         }
         catch (OperationCanceledException) { }
         catch (Exception e)
         {
             if (!renderShutdown && generation == textPreviewGeneration)
-            { textPreviewFailed = true; status.Text = "이동 미리보기 실패: " + e.Message; }
+            {
+                ClearTextMovePreview(); textPreviewFailed = true;
+                status.Text = "이동 미리보기 실패: " + e.Message;
+                // Resume the exact renderer even if the pointer has stopped;
+                // do not repeatedly retry a failing cache during this gesture.
+                QueueRender(dragging);
+            }
         }
         finally { cts.Dispose(); if (ReferenceEquals(textPreviewCts, cts)) textPreviewCts = null; }
     }
@@ -157,6 +208,6 @@ public sealed partial class MainWindow
         ++textPreviewGeneration; textPreviewCts?.Cancel(); textPreviewCts = null;
         textPreviewDocument = null; textPreviewLayerId = null; textPreviewBitmap = null;
         textPreviewFailed = false;
-        canvas.MovePreviewBackground = null; canvas.MovePreviewLayer = null;
+        canvas.MovePreviewBackground = null; canvas.MovePreviewLayer = null; canvas.MovePreviewForeground = null;
     }
 }

@@ -96,7 +96,7 @@ public sealed class Raster
 }
 
 public enum BlendMode { Normal, Multiply, Screen, Overlay, SoftLight, Darken, Lighten, Difference, ColorDodge, ColorBurn, Hue, Saturation, Color, Luminosity }
-public enum LayerKind { Raster, Text, Adjustment, Group, Shape }
+public enum LayerKind { Raster, Text, Adjustment, Group, Shape, Vector }
 
 public sealed class Layer
 {
@@ -121,6 +121,7 @@ public sealed class Layer
     public double ScaleY { get; set; } = 1;
     public TextSpec? Text { get; set; }
     public ShapeSpec? Shape { get; set; }
+    public VectorContent? Vector { get; set; }
     public AdjustmentSpec? Adjustment { get; set; }
     public WarpQuad? Warp { get; set; }
     public Layer Snapshot()
@@ -173,6 +174,8 @@ public sealed class Document
         var bytes = Layers.Sum(l => (long)l.Pixels.Data.Length + (l.Mask?.Length ?? 0));
         var incoming = (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
         if (bytes + incoming > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
+        if (Layers.Sum(l => l.Vector?.ByteLength ?? 0) + (layer.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes)
+            throw new InvalidOperationException("문서의 벡터 원본이 512MiB를 초과합니다.");
         Layers.Add(layer); ActiveId = layer.Id;
     }
     public void Validate() => ValidateCore(true);
@@ -187,6 +190,7 @@ public sealed class Document
         if (Encoding.UTF8.GetByteCount(Name) > 16_384) throw new InvalidDataException("작업 이름이 너무 깁니다.");
         if (Layers == null || Layers.Count > MaxLayers) throw new InvalidDataException("레이어 수가 올바르지 않습니다.");
         var ids = new HashSet<Guid>();
+        if (Layers.Sum(l => l?.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes) throw new InvalidDataException("문서의 벡터 원본이 512MiB를 초과합니다.");
         long bytes = 0;
         foreach (var layer in Layers)
         {
@@ -226,6 +230,12 @@ public sealed class Document
             !double.IsFinite(layer.Opacity) || layer.Opacity < 0 || layer.Opacity > 1 || !Enum.IsDefined(layer.Blend))
             throw new InvalidDataException("레이어 속성이 올바르지 않습니다.");
         if (!Enum.IsDefined(layer.Kind)) throw new InvalidDataException("레이어 종류가 올바르지 않습니다.");
+        if (layer.Kind == LayerKind.Vector)
+        {
+            if (validateRasterDimensions && (layer.Vector == null || layer.Vector.Width != layer.Pixels.Width || layer.Vector.Height != layer.Pixels.Height))
+                throw new InvalidDataException("벡터 원본과 미리보기의 크기가 다릅니다.");
+        }
+        else if (layer.Vector != null) throw new InvalidDataException("벡터 레이어 종류가 일치하지 않습니다.");
         if (layer.Kind == LayerKind.Shape)
         {
             var shape = layer.Shape ?? throw new InvalidDataException("도형 정보가 없습니다.");
@@ -296,7 +306,7 @@ public sealed class History
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend ||
                 x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY ||
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
-                x.Shape != y.Shape || x.Text != y.Text || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
+                x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;
