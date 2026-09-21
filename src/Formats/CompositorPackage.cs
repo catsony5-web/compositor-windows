@@ -95,7 +95,10 @@ public static class CompositorPackage
     /// <summary>Creates a new directory package only. Existing projects are never replaced.</summary>
     public static IReadOnlyList<string> Export(Document doc, string path)
     {
-        doc.Validate(); ValidateGroupInterop(doc); string full = Path.GetFullPath(path);
+        doc.Validate();
+        if (doc.Layers.Count > Document.MaxLayers)
+            throw new InvalidDataException($".comp 호환 내보내기는 그룹을 포함해 {Document.MaxLayers}개 항목까지 지원합니다. 객체 구조는 .moruproj로 저장해 주세요.");
+        ValidateGroupInterop(doc); string full = Path.GetFullPath(path);
         if (File.Exists(full) || Directory.Exists(full)) throw new IOException("대상 .comp 폴더가 이미 있습니다. 새 이름을 사용하세요.");
         var layers = new List<object>(); var warnings = new List<string>();
         foreach (var layer in doc.Layers)

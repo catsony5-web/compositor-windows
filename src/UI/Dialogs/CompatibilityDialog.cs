@@ -6,13 +6,22 @@ using Microsoft.Win32;
 
 namespace Compositor.Windows;
 
-internal sealed class CompatibilityDialog : Window
+internal sealed partial class CompatibilityDialog : Window
 {
     readonly string path;
     readonly bool pdf, cad;
     readonly TextBox page = new() { Text = "1" }, dpi = new() { Text = "150" }, edge = new() { Text = "2400" };
     readonly CheckBox separate = new() { Margin = new Thickness(3, 12, 3, 12) };
     readonly ComboBox space = new() { DisplayMemberPath = "Name", SelectedValuePath = "Key" };
+    sealed record StructureChoice(CadImportStructure Value, string Name)
+    {
+        public override string ToString() => Name;
+    }
+    readonly ComboBox structure = new() { DisplayMemberPath = "Name", ItemsSource = new[] {
+        new StructureChoice(CadImportStructure.Objects, "객체별 · 원본 레이어를 그룹으로"),
+        new StructureChoice(CadImportStructure.Layers, "레이어별 · 레이어마다 한 객체"),
+        new StructureChoice(CadImportStructure.Combined, "전체 · 도면을 한 객체로") }, SelectedIndex = 0 };
+    readonly TextBlock structureHint = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 0, 3, 10) };
     readonly StackPanel settings = new();
     readonly Image preview = new() { Stretch = Stretch.Uniform, Margin = new Thickness(12) };
     readonly TextBlock details = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 8, 3, 12) };
@@ -23,7 +32,7 @@ internal sealed class CompatibilityDialog : Window
     Raster? preparedComposite;
     bool closed, busy;
     public Document? Result { get; private set; }
-    public CompatibilityDialog(Window owner, string file, bool placeAsLayer = false)
+    public CompatibilityDialog(Window? owner, string file, bool placeAsLayer = false)
     {
         path = file; string extension = Path.GetExtension(path).ToLowerInvariant(); pdf = extension is ".pdf" or ".ai"; cad = extension is ".dwg" or ".dxf";
         Owner = owner; Title = "Morupixel · 호환 파일 가져오기"; Width = 940; Height = 700; MinWidth = 780; MinHeight = 570;
@@ -48,7 +57,8 @@ internal sealed class CompatibilityDialog : Window
         {
             details.Text = "도면 배치와 외부참조를 확인하는 중…"; render.IsEnabled = false;
             Field("가져올 공간 / 배치", space);
-            Field("도면의 긴 변 · px (256~4096)", edge); separate.Content = "CAD 레이어별로 이미지 분리"; separate.IsChecked = true; settings.Children.Add(separate);
+            Field("도면의 긴 변 · px (256~4096)", edge);
+            Field("객체 구분", structure); settings.Children.Add(structureHint); DescribeStructure();
         }
         else
         {
@@ -61,6 +71,7 @@ internal sealed class CompatibilityDialog : Window
         foreach (var box in new[] { page, dpi, edge }) box.TextChanged += (_, _) => InvalidatePrepared();
         separate.Checked += (_, _) => InvalidatePrepared(); separate.Unchecked += (_, _) => InvalidatePrepared();
         space.SelectionChanged += (_, _) => InvalidatePrepared();
+        structure.SelectionChanged += (_, _) => { DescribeStructure(); InvalidatePrepared(); };
         Loaded += async (_, _) =>
         {
             if (!pdf && !cad) return;
@@ -76,7 +87,7 @@ internal sealed class CompatibilityDialog : Window
                 {
                     var spaces = await Task.Run(() => CadCompatibility.Inspect(path), lifetime.Token);
                     if (closed) return; space.ItemsSource = new[] { new CadCompatibility.Space("", "자동 선택") }.Concat(spaces); space.SelectedIndex = 0;
-                    details.Text = "모델 공간·배치·외부참조를 2D 이미지로 변환";
+                    details.Text = "모델 공간·배치·외부참조 · 2D 벡터 유지";
                 }
                 render.IsEnabled = true; await RenderAsync();
             }
@@ -85,16 +96,24 @@ internal sealed class CompatibilityDialog : Window
         };
         Closed += (_, _) => { closed = true; lifetime.Cancel(); };
     }
+    void DescribeStructure() => structureHint.Text = SelectedStructure switch
+    {
+        CadImportStructure.Objects => "폴리라인은 하나로, 독립된 선은 개별 선택",
+        CadImportStructure.Layers => "같은 CAD 레이어의 객체를 함께 선택합니다.",
+        _ => "도면 전체를 함께 선택합니다."
+    };
+    CadImportStructure SelectedStructure => structure.SelectedItem is StructureChoice choice ? choice.Value : CadImportStructure.Objects;
+    CompatibilityOptions ReadOptions() => new(Page: pdf ? Integer(page.Text, 1, 100000) : 1, Dpi: pdf ? Dialogs.Number(dpi.Text, 36, 600) : 96,
+        CadLongEdge: cad ? Integer(edge.Text, 256, 4096) : 2400, SeparateLayers: separate.IsChecked == true,
+        CadLayout: cad && space.SelectedItem is CadCompatibility.Space selected && selected.Key.Length > 0 ? selected.Key : null,
+        PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null);
     void InvalidatePrepared() { prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null; messages.Text = "미리보기 필요"; }
     async Task RenderAsync()
     {
         if (busy || closed) return; busy = true; render.IsEnabled = false; accept.IsEnabled = false; settings.IsEnabled = false; prepared = null;
         try
         {
-            var options = new CompatibilityOptions(Page: pdf ? Integer(page.Text, 1, 100000) : 1, Dpi: pdf ? Dialogs.Number(dpi.Text, 36, 600) : 96,
-                CadLongEdge: cad ? Integer(edge.Text, 256, 4096) : 2400, SeparateLayers: separate.IsChecked == true,
-                CadLayout: cad && space.SelectedItem is CadCompatibility.Space selected && selected.Key.Length > 0 ? selected.Key : null,
-                PreservePdfLayers: pdf && separate.IsChecked == true);
+            var options = ReadOptions();
             messages.Text = "미리보기 생성 중…";
             var result = await CompatibilityImport.ReadAsync(path, options, lifetime.Token);
             var bitmap = await Task.Run(() =>
@@ -103,7 +122,11 @@ internal sealed class CompatibilityDialog : Window
                 return (Full: raster, Preview: (scale < 1 ? ImportExport.Resize(raster, Math.Max(1, (int)(raster.Width * scale)), Math.Max(1, (int)(raster.Height * scale))) : raster).Bitmap());
             }, lifetime.Token);
             if (closed) return; prepared = result; preparedComposite = bitmap.Full; preview.Source = bitmap.Preview; accept.IsEnabled = true;
-            messages.Text = $"{result.Document.Width:N0} × {result.Document.Height:N0}px · {result.Document.Layers.Count} 레이어\n\n" + string.Join("\n\n", result.Warnings);
+            var layers = result.Document.Layers;
+            string count = cad && options.CadStructure == CadImportStructure.Objects
+                ? $"{layers.Count(l => l.Kind == LayerKind.Vector || l.Kind == LayerKind.Raster):N0} 객체 · {layers.Count(l => l.Kind == LayerKind.Group):N0} 그룹"
+                : $"{layers.Count:N0} 레이어";
+            messages.Text = $"{result.Document.Width:N0} × {result.Document.Height:N0}px · {count}\n\n" + string.Join("\n\n", result.Warnings);
         }
         catch (OperationCanceledException) { if (!closed) messages.Text = "가져오기를 취소했습니다."; }
         catch (Exception e) { if (!closed) messages.Text = FriendlyError(e); }
@@ -137,7 +160,10 @@ internal sealed class CompatibilityExportDialog : Window
         {
             0 => "문서 DPI에 맞춘 한 페이지 RGB PDF입니다. 현재 합성 결과를 이미지로 담습니다. Illustrator에서도 열 수 있지만 문자·벡터·레이어를 개별 편집하는 AI 파일은 아닙니다.",
             1 => "현재 합성 결과를 RGB / 8비트 PSD로 저장합니다. 원본 문서의 레이어·문자·벡터를 개별 편집하려면 .moruproj도 함께 보관하세요.",
-            _ => valid ? "레이어 이름·표시·불투명도·혼합 모드를 저장합니다. 문자·도형·변형·마스크는 각 레이어의 픽셀에 적용됩니다. 그룹·조정·클리핑 문서는 합성 PSD로 출력하세요." : "현재 문서에 그룹·조정·클리핑 레이어가 있습니다. 외형 보존을 위해 ‘PSD · 합성 이미지’를 선택해 주세요."
+            _ => valid ? "레이어 이름·표시·불투명도·혼합 모드를 저장합니다. 문자·도형·변형·마스크는 각 레이어의 픽셀에 적용됩니다. 그룹·조정·클리핑 문서는 합성 PSD로 출력하세요."
+                : snapshot.Layers.Count > Document.MaxLayers
+                    ? $"픽셀 레이어 PSD는 최대 {Document.MaxLayers}개 레이어를 지원합니다. ‘PSD · 합성 이미지’를 선택하고 객체 구조는 .moruproj로 보관하세요."
+                    : "현재 문서에 그룹·조정·클리핑 레이어가 있습니다. 외형 보존을 위해 ‘PSD · 합성 이미지’를 선택해 주세요."
         };
     }
     async Task SaveAsync()

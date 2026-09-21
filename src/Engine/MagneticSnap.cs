@@ -41,7 +41,7 @@ public sealed class MagneticSnapSession
             if (layer.Kind != LayerKind.Adjustment && IsVisible(layer, lookup) &&
                 !HasMovingAncestor(layer, lookup, movingIds))
             {
-                var bounds = Bounds(document, layer);
+                var bounds = Bounds(lookup, layer);
                 if (!bounds.IsEmpty) movingBounds.Union(bounds);
             }
         }
@@ -60,7 +60,7 @@ public sealed class MagneticSnapSession
         {
             if (layer.Kind == LayerKind.Adjustment || movingIds.Contains(layer.Id) || ancestors.Contains(layer.Id) ||
                 HasMovingAncestor(layer, lookup, movingIds) || !IsVisible(layer, lookup)) continue;
-            var bounds = Bounds(document, layer);
+            var bounds = Bounds(lookup, layer);
             if (!bounds.IsEmpty) AddTargets(bounds, horizontal, vertical);
         }
         horizontalTargets = horizontal.ToArray();
@@ -150,13 +150,19 @@ public sealed class MagneticSnapSession
         return false;
     }
 
-    static Rect Bounds(Document document, Layer layer)
+    static Rect Bounds(IReadOnlyDictionary<Guid, Layer> lookup, Layer layer)
     {
         var bounds = Rect.Empty;
         foreach (var local in new[] { new Point(), new Point(layer.Pixels.Width, 0),
             new Point(layer.Pixels.Width, layer.Pixels.Height), new Point(0, layer.Pixels.Height) })
         {
-            var point = DocumentFeatures.ToDocumentSpace(document, layer, local);
+            var point = layer.Document(local);
+            var parent = layer.ParentId;
+            for (int depth = 0; parent is { } id && depth < 16; depth++)
+            {
+                if (!lookup.TryGetValue(id, out var group)) return Rect.Empty;
+                point = group.Document(point); parent = group.ParentId;
+            }
             if (!double.IsFinite(point.X) || !double.IsFinite(point.Y)) return Rect.Empty;
             bounds.Union(point);
         }

@@ -2,8 +2,10 @@ using System.IO;
 
 namespace Compositor.Windows;
 
+public enum CadImportStructure { Combined, Layers, Objects }
+
 public sealed record CompatibilityOptions(int Page = 1, double Dpi = 150, int CadLongEdge = 2400, bool SeparateLayers = false,
-    string? CadLayout = null, bool PreservePdfLayers = true, bool RetainVectors = true);
+    string? CadLayout = null, bool PreservePdfLayers = true, bool RetainVectors = true, CadImportStructure? CadStructure = null);
 public sealed record CompatibilityResult(Document Document, IReadOnlyList<string> Warnings);
 
 public static class CompatibilityImport

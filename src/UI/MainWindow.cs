@@ -17,7 +17,8 @@ public sealed partial class MainWindow : Window
     Document doc = new() { Width = 1, Height = 1 };
     History history = new();
     readonly CanvasView canvas = new();
-    readonly StackPanel properties = new(), layerList = new();
+    readonly StackPanel properties = new();
+    readonly LayerList layerList = new();
     readonly TextBlock status = Theme.Label("준비", 11), documentTitle = Theme.Label("", 12), zoomLabel = Theme.Label("", 11);
     readonly Dictionary<Tool, Button> toolButtons = [];
     readonly ColorSwatches colorSwatches;
@@ -191,6 +192,7 @@ public sealed partial class MainWindow : Window
         CancelGesture(); doc.ActiveId = id; maskEditing = false;
         if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) selectedLayers.Clear();
         if (id != Guid.Empty) selectedLayers.Add(id);
+        RevealLayerSelection(id);
         Refresh(false); canvas.Focus();
     }
 
@@ -387,6 +389,6 @@ public sealed partial class MainWindow : Window
         "Morupixel · 모루픽셀 0.2 Preview\n독립적인 Windows 이미지 편집기\n\n" +
         "레이어 그룹·클리핑·14 혼합 모드·마스크·6종 조정 레이어·편집 가능한 텍스트\n올가미·마술봉·페더·복제·복구·스머지·액화·내용 인식 채우기·AI 배경 제거\n\n" +
         "Ctrl+S: .moruproj 저장 / Ctrl+Shift+E: 내보내기 미리보기\nCtrl+T: 변형 값 입력 / 모서리: 크기 / Ctrl+모서리: 원근 / 원형 핸들: 회전\nShift+레이어 클릭: 다중 선택 / Ctrl+G: 그룹\nAlt+클릭: 복제·복구 원본 지정 / Shift·Alt: 선택 추가·빼기\n마스크: 흰색 표시·검정 숨김 / D: 검정·흰색 초기화 / X: 전경·배경 교환\nAlt+좌우 드래그: 브러시 크기 (1~1000px) / Esc: 크기 변경 취소\nAlt+Delete: 전경색 채우기 / Ctrl+Delete: 배경색 채우기 (Backspace도 가능)\nG: 버킷 채우기 / Shift+G: 그라데이션\n텍스트 속성: Enter 줄바꿈 / Ctrl+Enter 적용 / 숫자·글꼴 입력 Enter 적용\n\n" +
-        $"8개 문서 탭 · 최대 {Document.MaxLayers} 레이어 · 한 변 {Raster.MaxDimension:N0}px · {Raster.MaxPixels / 1_000_000.0:N1}MP · 레이어 메모리 {Document.MaxLayerBytes / (1024.0 * 1024 * 1024):0.#}GiB\n실제 작업 가능 크기는 사용 가능한 메모리와 편집 작업에 따라 달라집니다.\nICC 입력은 sRGB로 변환합니다. HEIC는 Windows 코덱이 필요합니다.\nCompositor .comp 파일은 지원하는 속성만 호환됩니다. 자세한 범위는 배포본 docs/PORTING.md를 확인하세요.\n\n" +
+        $"8개 문서 탭 · 최대 {Document.MaxNodes:N0}개 객체·그룹 (이미지·조정 {Document.MaxLayers}개) · 한 변 {Raster.MaxDimension:N0}px · {Raster.MaxPixels / 1_000_000.0:N1}MP · 레이어 메모리 {Document.MaxLayerBytes / (1024.0 * 1024 * 1024):0.#}GiB\n실제 작업 가능 크기는 사용 가능한 메모리와 편집 작업에 따라 달라집니다.\nICC 입력은 sRGB로 변환합니다. HEIC는 Windows 코덱이 필요합니다.\nCompositor .comp 파일은 지원하는 속성만 호환됩니다. 자세한 범위는 배포본 docs/PORTING.md를 확인하세요.\n\n" +
         "Compositor 참고: github.com/robbietilton/Compositor\nCopyright © 2026 Wonder Assembly LLC · MIT License\nAI 모델: U²-NetP · Apache-2.0 · 모든 편집은 로컬에서 처리됩니다.", "Morupixel 도움말", MessageBoxButton.OK, MessageBoxImage.Information);
 }

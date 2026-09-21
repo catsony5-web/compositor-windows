@@ -1,4 +1,12 @@
-# Morupixel 0.2.0 Preview 20 — local candidate
+# Morupixel 0.2.0 Preview 21 — local candidate
+
+- **CAD object import.** DWG/DXF import offers individual source objects, one object per CAD layer, or one combined drawing. Individual objects are the default in the import dialog. Closed polylines stay whole; independent LINE entities remain separate, even when endpoints touch.
+- **Source layer groups.** Objects retain their source layer names as folders. Repeated blocks remain separate instances, and paper-space viewport clips are preserved. Interleaved layers use separate group runs to preserve drawing order. Save to `.moruproj` to keep this structure.
+- **Working with many objects.** Up to 32,768 document nodes, within existing pixel/vector memory limits and the 128 raster/adjustment-layer cap. The layer panel creates visible rows on demand, reveals selected children, and initially collapses imported groups. Simple full-canvas CAD groups support cached individual-object movement.
+
+Reimport an existing flattened drawing from its original DWG/DXF to use the new object mode. This does not reconstruct native objects from ordinary bitmap images, change PDF/PSD import granularity, or add DWG/DXF output. This local candidate has not been published to GitHub or the website.
+
+## Morupixel 0.2.0 Preview 20 — local candidate
 
 - **Selection cursor and preselection.** Move-tool idle/hover uses the selection arrow. A four-way cursor appears only after a drag starts; resize, rotation and pan retain their directional cursors. Hover outlines identify the prospective target without changing selection or undo history.
 - **Thin-line acquisition.** Objects within four screen pixels are easier to select at any zoom. Nearby selection preserves masks, clipping, hierarchy and the center hit's occlusion boundary; a locked page background no longer prevents acquiring nearby CAD lines.

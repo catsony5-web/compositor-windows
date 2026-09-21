@@ -63,6 +63,7 @@ public static class LayerPicking
         readonly Dictionary<Layer, int> order = [];
         readonly Dictionary<Layer, int> lastDescendantOrder = [];
         readonly Dictionary<Layer, System.Windows.Media.Matrix> inverse = [];
+        readonly Dictionary<Layer, Rect> footprints = [];
         public int LastOrder => order.Count - 1;
 
         public Picker(Document document)
@@ -83,6 +84,25 @@ public static class LayerPicking
                 if (!order.TryAdd(layer, order.Count)) continue;
                 if (layer.Kind == LayerKind.Group) Index(Children(layer), depth + 1);
                 lastDescendantOrder[layer] = order.Count - 1;
+                // Conservative bounds prune whole CAD group runs before the
+                // nearby-hit probes inspect individual raster samples. A full
+                // canvas group has only its children's visible footprint here.
+                if (layer.Warp == null)
+                {
+                    var local = new Rect(-1, -1, layer.Pixels.Width + 2d, layer.Pixels.Height + 2d);
+                    if (layer.Kind == LayerKind.Group)
+                    {
+                        Rect occupied = Rect.Empty;
+                        foreach (var child in Children(layer))
+                        {
+                            if (!child.Visible || child.Opacity <= 0 || child.Kind == LayerKind.Adjustment) continue;
+                            if (!footprints.TryGetValue(child, out var childBounds)) { occupied = local; break; }
+                            occupied.Union(childBounds);
+                        }
+                        local.Intersect(occupied);
+                    }
+                    footprints[layer] = local.IsEmpty ? Rect.Empty : new System.Windows.Media.MatrixTransform(layer.Matrix).TransformBounds(local);
+                }
             }
         }
 
@@ -105,6 +125,7 @@ public static class LayerPicking
         double LayerAlpha(Layer layer, Point parentPoint, int depth)
         {
             if (depth > 16 || !layer.Visible || layer.Opacity <= 0 || layer.Kind == LayerKind.Adjustment) return 0;
+            if (footprints.TryGetValue(layer, out var bounds) && !bounds.Contains(parentPoint)) return 0;
             var local = Local(layer, parentPoint);
             if (!double.IsFinite(local.X) || !double.IsFinite(local.Y)) return 0;
             if (layer.Kind != LayerKind.Group) return Sample(layer, local, false) * layer.Opacity;
@@ -122,6 +143,7 @@ public static class LayerPicking
             for (int i = stack.Length - 1; i >= 0; i--)
             {
                 var layer = stack[i]; if (!layer.Visible || layer.Opacity <= 0 || layer.Kind == LayerKind.Adjustment) continue;
+                if (footprints.TryGetValue(layer, out var bounds) && !bounds.Contains(parentPoint)) continue;
                 // The exact center hit is an occlusion floor. Searching nearby
                 // must never reach through that object to a layer beneath it.
                 if (minimumOrder >= 0 && (layer.Kind == LayerKind.Group && !layer.Locked
@@ -133,14 +155,18 @@ public static class LayerPicking
                     if (baseIndex < 0) continue;
                     clip = LayerAlpha(stack[baseIndex], parentPoint, depth);
                 }
-                double effective = LayerAlpha(layer, parentPoint, depth) * inheritedAlpha * clip;
-                if (effective <= MinimumEffectiveAlpha) continue;
                 if (layer.Kind == LayerKind.Group && !layer.Locked)
                 {
                     var local = Local(layer, parentPoint);
-                    var picked = PickStack(Children(layer), local, inheritedAlpha * clip * layer.Opacity * Sample(layer, local, true), depth + 1, minimumOrder);
+                    double coverage = inheritedAlpha * clip * layer.Opacity * Sample(layer, local, true);
+                    if (coverage <= MinimumEffectiveAlpha) continue;
+                    // A visible child establishes group coverage already. Avoid
+                    // scanning thousands of siblings first just to pick it again.
+                    var picked = PickStack(Children(layer), local, coverage, depth + 1, minimumOrder);
                     if (picked != null) return picked;
                 }
+                double effective = LayerAlpha(layer, parentPoint, depth) * inheritedAlpha * clip;
+                if (effective <= MinimumEffectiveAlpha) continue;
                 if (order[layer] > minimumOrder) return layer;
             }
             return null;

@@ -12,6 +12,9 @@ public sealed partial class MainWindow
     static readonly Brush inspectorInvalid = Theme.Brush("#D67A79");
     long inspectorVersion;
     Action? pendingInspectorCommit;
+    Document? layerPanelDocument;
+    Guid layerPanelActive;
+    Guid? pendingLayerReveal;
 
     void CommitFocusedInspectorField()
     {
@@ -87,14 +90,9 @@ public sealed partial class MainWindow
         layerList.ToolTip = "레이어를 드래그하여 순서 변경";
         Grid.SetRow(heading, 2); panel.Children.Add(heading);
 
-        var layerScroll = new ScrollViewer
-        {
-            Content = layerList,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Margin = new Thickness(7, 0, 7, 0)
-        };
-        Grid.SetRow(layerScroll, 3); panel.Children.Add(layerScroll);
+        layerList.CreateRow = CreateLayerRow;
+        layerList.Margin = new Thickness(7, 0, 7, 0);
+        Grid.SetRow(layerList, 3); panel.Children.Add(layerList);
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         Button ActionButton(string glyph, string tip, Action action)
@@ -291,21 +289,46 @@ public sealed partial class MainWindow
         return box;
     }
 
+    void RevealLayerSelection(Guid id)
+    {
+        if (id == Guid.Empty) return;
+        var byId = doc.Layers.ToDictionary(layer => layer.Id);
+        if (!byId.TryGetValue(id, out var selected)) return;
+        var parent = selected.ParentId;
+        for (int depth = 0; parent is { } parentId && depth < 16; depth++)
+        {
+            collapsedGroups.Remove(parentId);
+            knownLayerGroups.Add(parentId);
+            parent = byId.TryGetValue(parentId, out var group) ? group.ParentId : null;
+        }
+        pendingLayerReveal = id;
+    }
+
     void BuildLayers()
     {
-        layerList.Children.Clear();
+        foreach (var group in doc.Layers.Where(layer => layer.Kind == LayerKind.Group))
+            if (knownLayerGroups.Add(group.Id)) collapsedGroups.Add(group.Id);
+        // Canvas multiselection can change ActiveId without calling SelectLayer.
+        if (ReferenceEquals(layerPanelDocument, doc) && layerPanelActive != doc.ActiveId)
+            RevealLayerSelection(doc.ActiveId);
+        layerPanelDocument = doc; layerPanelActive = doc.ActiveId;
         layerCountLabel.Text = HasDocument ? $"{doc.Layers.Count}개" : "";
-        foreach (var layer in LayerDisplayOrder(null))
-        {
-            var id = layer.Id;
-            var row = new LayerRow(layer, selectedLayers.Contains(id) || id == doc.ActiveId,
-                () => SelectLayer(id),
-                visible => Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible),
-                () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
-                !collapsedGroups.Contains(id), () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); });
-            row.Margin = new Thickness(Math.Min(4, LayerDepth(layer)) * 10, 1, 0, 1); row.AllowDrop = true;
-            EnableLayerDrag(row, id);
-            layerList.Children.Add(row);
-        }
+        var entries = HasDocument ? LayerDisplayRows().Select(item => new LayerListEntry(item.Layer, item.Depth,
+            selectedLayers.Contains(item.Layer.Id) || item.Layer.Id == doc.ActiveId,
+            !collapsedGroups.Contains(item.Layer.Id))).ToArray() : [];
+        layerList.SetEntries(entries, pendingLayerReveal); pendingLayerReveal = null;
+    }
+
+    LayerRow CreateLayerRow(LayerListEntry entry)
+    {
+        var id = entry.Layer.Id;
+        var row = new LayerRow(entry.Layer, entry.Selected,
+            () => SelectLayer(id),
+            visible => Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible),
+            () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
+            entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); });
+        row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;
+        EnableLayerDrag(row, id);
+        return row;
     }
 }

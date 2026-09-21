@@ -145,21 +145,53 @@ public sealed partial class MainWindow
     {
         if (movingCount != 1 || !layer.Visible || layer.Opacity <= 0 || layer.Locked ||
             layer.Kind is not (LayerKind.Raster or LayerKind.Text or LayerKind.Shape or LayerKind.Vector) ||
-            layer.ParentId != null || layer.Clipped || layer.Mask != null || layer.Warp != null ||
+            layer.Clipped || layer.Mask != null || layer.Warp != null ||
             layer.Blend != BlendMode.Normal || !document.Layers.Contains(layer)) return false;
         // Bound additional raster/WIC copies without limiting document editing.
         // Large or interdependent stacks retain the full compositor path.
         long estimatedBytes = (long)document.Width * document.Height * 16 + layer.Pixels.Data.LongLength;
         if (estimatedBytes > 512L * 1024 * 1024) return false;
-        return document.Layers.All(item => item.ParentId == null && !item.Clipped &&
-            item.Kind is not (LayerKind.Group or LayerKind.Adjustment) && item.Blend == BlendMode.Normal);
+        if (!document.Layers.All(item => !item.Clipped && item.Kind != LayerKind.Adjustment && item.Blend == BlendMode.Normal &&
+            (item.Kind != LayerKind.Group || IsMovePreviewContainer(document, item)))) return false;
+        var lookup = document.Layers.ToDictionary(item => item.Id);
+        var parent = layer.ParentId; int depth = 0;
+        while (parent is { } id)
+        {
+            if (++depth > 16 || !lookup.TryGetValue(id, out var group) || group.Kind != LayerKind.Group || group.Locked) return false;
+            parent = group.ParentId;
+        }
+        return true;
     }
+
+    static bool IsMovePreviewContainer(Document document, Layer group) =>
+        group.Visible && group.Opacity == 1 && group.Mask == null && group.Warp == null && group.Matrix.IsIdentity &&
+        group.Pixels.Width == document.Width && group.Pixels.Height == document.Height;
 
     internal static (Document Below, Document Above) CreateLayerMovePreviewStacks(Document document, Guid movingId)
     {
-        int index = document.Layers.FindIndex(layer => layer.Id == movingId);
+        // Source-layer folders from CAD import do not transform or crop their
+        // children. Flatten only these preview snapshots, in actual paint order.
+        var source = document.Snapshot();
+        if (source.Layers.Any(layer => layer.Kind == LayerKind.Group))
+        {
+            if (source.Layers.Any(layer => layer.Kind == LayerKind.Group && !IsMovePreviewContainer(document, layer)))
+                throw new InvalidOperationException("그룹 변형에는 전체 합성 미리보기가 필요합니다.");
+            var children = source.Layers.ToLookup(layer => layer.ParentId);
+            var flattened = new List<Layer>();
+            void Append(Guid? parent, int depth)
+            {
+                if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
+                foreach (var item in children[parent])
+                {
+                    if (item.Kind == LayerKind.Group) Append(item.Id, depth + 1);
+                    else { item.ParentId = null; flattened.Add(item); }
+                }
+            }
+            Append(null, 0); source.Layers = flattened;
+        }
+        int index = source.Layers.FindIndex(layer => layer.Id == movingId);
         if (index < 0) throw new ArgumentException("이동할 레이어를 찾을 수 없습니다.", nameof(movingId));
-        var below = document.Snapshot(); var above = document.Snapshot();
+        var below = source; var above = source.Snapshot();
         below.Layers.RemoveRange(index, below.Layers.Count - index);
         above.Layers.RemoveRange(0, index + 1);
         below.ActiveId = Guid.Empty; above.ActiveId = Guid.Empty;

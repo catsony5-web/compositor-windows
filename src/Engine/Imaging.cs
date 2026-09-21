@@ -55,8 +55,34 @@ public static class Imaging
     }
     public static Raster Render(Document doc, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var root = doc.Layers.Where(l => l.ParentId == null).ToArray();
         var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
+        var directGroups = new Dictionary<(Guid Id, int Width, int Height), bool>();
+        bool CanCompositeGroupDirectly(Layer group, int width, int height, int depth)
+        {
+            if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
+            cancellationToken.ThrowIfCancellationRequested();
+            var key = (group.Id, width, height);
+            if (directGroups.TryGetValue(key, out var cached)) return cached;
+            bool direct = group.Opacity == 1 && group.Blend == BlendMode.Normal && !group.Clipped &&
+                group.Mask == null && group.Warp == null && group.Matrix.IsIdentity &&
+                group.Pixels.Width == width && group.Pixels.Height == height;
+            if (direct)
+            {
+                foreach (var child in children.GetValueOrDefault(group.Id) ?? [])
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    // Normal source-over is associative. Any operation that
+                    // reads the group's isolated backdrop must keep that surface.
+                    if (child.Clipped || child.Blend != BlendMode.Normal || child.Kind == LayerKind.Adjustment ||
+                        child.Kind == LayerKind.Group && !CanCompositeGroupDirectly(child, width, height, depth + 1))
+                    { direct = false; break; }
+                }
+            }
+            directGroups[key] = direct;
+            return direct;
+        }
         Raster LayerImage(Layer layer, int width, int height, int depth)
         {
             if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
@@ -67,6 +93,12 @@ public static class Imaging
         Raster Stack(Layer[] stack, int width, int height, int depth)
         {
             var output = new Raster(width, height);
+            CompositeStack(stack, output, depth);
+            return output;
+        }
+        void CompositeStack(Layer[] stack, Raster output, int depth)
+        {
+            int width = output.Width, height = output.Height;
             for (int index = 0; index < stack.Length; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested(); var layer = stack[index];
@@ -75,6 +107,13 @@ public static class Imaging
                 if (!layer.Visible || layer.Opacity <= 0) { index = end - 1; continue; }
                 if (layer.Kind == LayerKind.Adjustment) ApplyAdjustment(output, layer, cancellationToken);
                 else if (end == index + 1 && layer.Kind != LayerKind.Group) Composite(output, layer, cancellationToken);
+                else if (end == index + 1 && CanCompositeGroupDirectly(layer, width, height, depth))
+                {
+                    // Imported CAD groups are identity containers for tight
+                    // object rasters. Reuse the destination rather than create
+                    // two full-canvas intermediates for every source-layer run.
+                    CompositeStack(children.GetValueOrDefault(layer.Id) ?? [], output, depth + 1);
+                }
                 else
                 {
                     // An un-clipped layer and its following clipped layers form an alpha-preserving stack.
@@ -89,7 +128,6 @@ public static class Imaging
                 }
                 index = end - 1;
             }
-            return output;
         }
         return Stack(root, doc.Width, doc.Height, 0);
     }

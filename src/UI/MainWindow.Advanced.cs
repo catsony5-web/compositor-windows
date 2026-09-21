@@ -27,6 +27,7 @@ public sealed partial class MainWindow
     readonly StackPanel tabsBar = new() { Orientation = Orientation.Horizontal };
     readonly HashSet<Guid> selectedLayers = [];
     readonly HashSet<Guid> collapsedGroups = [];
+    readonly HashSet<Guid> knownLayerGroups = [];
     int activeTab = -1;
     CancellationTokenSource? jobCts;
     readonly List<Point> lassoPoints = [];
@@ -146,16 +147,22 @@ public sealed partial class MainWindow
         catch (Exception e) { if (ReferenceEquals(document, doc)) MessageBox.Show(this, e.Message, name, MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally { if (ReferenceEquals(jobCts, cts)) jobCts = null; cts.Dispose(); }
     }
-    IEnumerable<Layer> LayerDisplayOrder(Guid? parent)
+    IEnumerable<(Layer Layer, int Depth)> LayerDisplayRows()
     {
-        foreach (var layer in doc.Layers.Where(l => l.ParentId == parent).Reverse())
-        { yield return layer; if (layer.Kind == LayerKind.Group && !collapsedGroups.Contains(layer.Id)) foreach (var child in LayerDisplayOrder(layer.Id)) yield return child; }
-    }
-    int LayerDepth(Layer layer)
-    {
-        int depth = 0; Guid? p = layer.ParentId;
-        while (p != null && depth < 16) { depth++; p = doc.Layers.Find(l => l.Id == p)?.ParentId; }
-        return depth;
+        // Build the hierarchy once. Large CAD groups must not scan the entire
+        // document again for every visible row or ancestor.
+        var children = doc.Layers.ToLookup(layer => layer.ParentId);
+        return Walk(null, 0);
+        IEnumerable<(Layer Layer, int Depth)> Walk(Guid? parent, int depth)
+        {
+            if (depth > 16) yield break;
+            foreach (var layer in children[parent].Reverse())
+            {
+                yield return (layer, depth);
+                if (layer.Kind == LayerKind.Group && !collapsedGroups.Contains(layer.Id))
+                    foreach (var child in Walk(layer.Id, depth + 1)) yield return child;
+            }
+        }
     }
     void AddAdvancedProperties(Layer layer)
     {
