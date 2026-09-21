@@ -16,11 +16,13 @@ public static class PhotoshopCompatibility
     };
     public static CompatibilityResult Read(string path, bool layers, CancellationToken token = default) => PsdReader.Read(path, layers, token);
 
-    public static bool CanWriteLayers(Document doc) => doc.Layers.All(l => l.Kind != LayerKind.Group && l.Kind != LayerKind.Adjustment && l.ParentId == null && !l.Clipped);
+    public static bool CanWriteLayers(Document doc) => doc.Layers.Count <= Document.MaxLayers && doc.Layers.All(l => l.Kind != LayerKind.Group && l.Kind != LayerKind.Adjustment && l.ParentId == null && !l.Clipped);
     // PSD v1, RGB/8, raw planar channels. Independent reader tests verify the file layout.
     public static void Write(Document document, Stream output, bool layers, CancellationToken token = default)
     {
         document.Validate();
+        if (layers && document.Layers.Count > Document.MaxLayers)
+            throw new InvalidDataException($"PSD 픽셀 레이어는 {Document.MaxLayers}개까지 내보낼 수 있습니다. 합성 PSD를 선택하고 객체 구조는 .moruproj로 저장해 주세요.");
         if (layers && !CanWriteLayers(document)) throw new NotSupportedException("그룹·조정·클리핑이 있는 문서는 합성 PSD로 내보내 주세요.");
         if (document.Width > 30_000 || document.Height > 30_000)
             throw new InvalidDataException("PSD 내보내기는 한 변 30,000px까지 지원합니다. 더 큰 이미지는 PNG 또는 TIFF로 저장해 주세요.");

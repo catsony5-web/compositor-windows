@@ -73,7 +73,8 @@ public sealed class VectorContent
         {
             if (data == null || data.Data == null || data.Matrix == null || data.Matrix.Length != 6 || data.Matrix.Any(v => !double.IsFinite(v) || Math.Abs(v) > 1e15))
                 throw new InvalidDataException("벡터 경로 좌표가 올바르지 않습니다.");
-            var g = System.Windows.Media.Geometry.Parse(data.Data); var m = data.Matrix;
+            // WPF may return a frozen geometry from its string parser.
+            var g = System.Windows.Media.Geometry.Parse(data.Data).Clone(); var m = data.Matrix;
             g.Transform = new MatrixTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
             var bounds = g.Bounds;
             if (!bounds.IsEmpty && (!double.IsFinite(bounds.X) || !double.IsFinite(bounds.Y) || !double.IsFinite(bounds.Width) || !double.IsFinite(bounds.Height)))

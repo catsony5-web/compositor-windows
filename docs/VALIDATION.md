@@ -1,3 +1,15 @@
+# Morupixel 0.2.0-preview.21 local candidate — 2026-09-22
+
+Release source build: zero warnings/errors; **433/433** automated checks pass. Added cases cover DWG/DXF source topology, independent LINEs versus connected polylines, repeated block/viewport instances, viewport clips, paint-order group runs, individual-object movement, grouping on placement, project roundtrips, capacity/memory limits and invalid native group references. Two thousand virtualized layer entries realize fewer than 40 controls in the test viewport, including after scrolling to the last object. Source report: `artifacts/object-import-final/self-tests.txt`.
+
+A read-only check of the user's anonymous CAD sample drawing at the default 2,400px long edge imported **21,389 objects in 1,484 paint-order groups (22,874 total nodes)**. On this PC import took 6.96s, composite rendering 0.53s, native saving 3.23s and reloading 2.37s. Independent object previews plus one shared group surface used about 83.87MB; retained paths used 25.55MB. The original DWG and external references were not modified. The resulting page render was visually inspected with both sections, key plans and title block present. No user's files are added to the source repository.
+
+An additional native roundtrip matched all parent IDs and the complete composite pixels exactly. Conservative picker bounds retained the same targets on seven visible points while reducing the measured worst case from 231ms to 40.84ms (20.30–40.84ms, mean 30.69ms in this small sample). Snapping resolution was 0.15–0.21ms after building its drag session. These are bounded component checks, not whole-editor FPS guarantees. Actual-file evidence stays local in `artifacts/object-source-probe/cad-sample.json` and `cad-sample-optimized.json`.
+
+The document limit is 32,768 nodes, not unlimited CAD entities; this drawing's larger model space exceeds it and requires selecting its paper layout or splitting the source. Native v4 group-payload references require Preview 21 or later to reopen; older project versions remain readable. Existing image/adjustment and external layered-format caps remain 128. This candidate adds no dependency and has not been published to the website or GitHub.
+
+---
+
 # Morupixel 0.2.0-preview.20 local candidate — 2026-09-22
 
 The Release source build has zero warnings/errors and **400/400** checks pass. The source combines the existing CAD/PDF/vector/interface work with the AI connection before adding pointer interaction. New tests cover four-DIP thin-line picking above a locked background, occlusion and hierarchy, zoom-independent snapping, six-DIP capture/ten-DIP release hysteresis, multi-selection, transformed parents, Shift/Alt behavior, cursor priorities, hover/history isolation, cache compositing order and cancellation. Source evidence: `artifacts/pointer/self-tests-final.txt`.

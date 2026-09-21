@@ -53,14 +53,17 @@ public static class SelfTests
         MagneticPickingTests.Run(Test);
         MagneticSnapTests.Run(Test);
         MainWindow.RunMovePreviewTests(Test);
+        MainWindow.RunGroupedMovePreviewTests(Test);
         MainWindow.RunPointerFeedbackTests(Test, directory);
         EngineFeatureTests.Run(Test);
         AdvancedToolTests.Run(Test);
         FillToolsTests.Run(Test);
         RenderingTests.Run(Test);
+        GroupedRenderingTests.Run(Test);
         ImportExportTests.Run(Test);
         LargeImageTests.Run(Test, directory);
         CapacityFormatTests.Run(Test);
+        ObjectCapacityTests.Run(Test, directory);
         AutomationTransportTests.Run(Test, directory);
         AutomationProtocolTests.Run(Test);
         MainWindow.RunAutomationCommandTests(Test, directory);
@@ -71,6 +74,7 @@ public static class SelfTests
         MainWindow.RunCloseConfirmationTests(Test, directory);
         MainWindow.RunInspectorTests(Test);
         MainWindow.RunPanelNavigationTests(Test);
+        MainWindow.RunObjectLayerPanelTests(Test);
         MainWindow.RunTransformCursorTests(Test);
         ThemeFontTests.Run(Test);
         MainWindow.RunStudioTests(Test);
@@ -91,6 +95,8 @@ public static class SelfTests
         VectorShapeTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);
+        CadObjectImportTests.Run(Test, directory);
+        CompatibilityDialog.RunStructureTests(Test, directory);
         results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }

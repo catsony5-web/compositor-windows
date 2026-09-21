@@ -148,7 +148,10 @@ public sealed class Layer
 
 public sealed class Document
 {
+    // Keep the bitmap/adjustment ceiling used by legacy image importers. CAD
+    // entities and their groups have a separate, bounded scene-node allowance.
     public const int MaxLayers = 128;
+    public const int MaxNodes = 32768;
     public const long MaxLayerBytes = 8L * 1024 * 1024 * 1024;
     readonly long layerByteLimit;
     public int Width { get; set; } = 1280;
@@ -169,11 +172,13 @@ public sealed class Document
     {
         ArgumentNullException.ThrowIfNull(layer);
         ValidateLayer(layer);
-        if (Layers.Count >= MaxLayers) throw new InvalidOperationException($"최대 {MaxLayers}개 레이어를 지원합니다.");
+        if (Layers.Count >= MaxNodes) throw new InvalidOperationException($"최대 {MaxNodes:N0}개 객체와 그룹을 지원합니다.");
+        if (UsesBitmapSlot(layer) && Layers.Count(UsesBitmapSlot) >= MaxLayers)
+            throw new InvalidOperationException($"이미지와 조정 레이어는 최대 {MaxLayers}개를 지원합니다.");
         if (Layers.Any(l => l.Id == layer.Id)) throw new InvalidOperationException("레이어 ID가 중복되었습니다.");
-        var bytes = Layers.Sum(l => (long)l.Pixels.Data.Length + (l.Mask?.Length ?? 0));
-        var incoming = (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
-        if (bytes + incoming > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
+        var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
+        var bytes = Layers.Sum(l => StorageBytes(l, groupPixels)) + StorageBytes(layer, groupPixels);
+        if (bytes > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         if (Layers.Sum(l => l.Vector?.ByteLength ?? 0) + (layer.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes)
             throw new InvalidOperationException("문서의 벡터 원본이 512MiB를 초과합니다.");
         Layers.Add(layer); ActiveId = layer.Id;
@@ -188,16 +193,19 @@ public sealed class Document
         if (!double.IsFinite(Dpi) || Dpi < 1 || Dpi > 9600) throw new InvalidDataException("해상도는 1~9600 DPI로 입력하세요.");
         if (string.IsNullOrWhiteSpace(Name)) throw new InvalidDataException("작업 이름이 비어 있습니다.");
         if (Encoding.UTF8.GetByteCount(Name) > 16_384) throw new InvalidDataException("작업 이름이 너무 깁니다.");
-        if (Layers == null || Layers.Count > MaxLayers) throw new InvalidDataException("레이어 수가 올바르지 않습니다.");
+        if (Layers == null || Layers.Count > MaxNodes) throw new InvalidDataException("객체와 그룹 수가 지원 한도를 초과합니다.");
+        if (Layers.Count(l => l != null && UsesBitmapSlot(l)) > MaxLayers)
+            throw new InvalidDataException($"이미지와 조정 레이어는 최대 {MaxLayers}개를 지원합니다.");
         var ids = new HashSet<Guid>();
         if (Layers.Sum(l => l?.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes) throw new InvalidDataException("문서의 벡터 원본이 512MiB를 초과합니다.");
         long bytes = 0;
+        var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
         foreach (var layer in Layers)
         {
             if (layer == null) throw new InvalidDataException("레이어 정보가 없습니다.");
             ValidateLayer(layer, validateRasterDimensions);
             if (!ids.Add(layer.Id)) throw new InvalidDataException("레이어 ID가 중복되었습니다.");
-            bytes += (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
+            bytes += StorageBytes(layer, groupPixels);
             if (bytes > layerByteLimit) throw new InvalidDataException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         }
         if (ActiveId != Guid.Empty && !ids.Contains(ActiveId)) throw new InvalidDataException("활성 레이어가 존재하지 않습니다.");
@@ -214,7 +222,12 @@ public sealed class Document
             }
         }
     }
-    static void ValidateLayer(Layer layer, bool validateRasterDimensions = true)
+    // Empty CAD folders share a coordinate-space surface. Count that immutable
+    // buffer once while retaining the conservative per-layer bitmap/mask budget.
+    internal static long StorageBytes(Layer layer, HashSet<byte[]> groupPixels) =>
+        (layer.Kind != LayerKind.Group || groupPixels.Add(layer.Pixels.Data) ? layer.Pixels.Data.LongLength : 0) + (layer.Mask?.LongLength ?? 0);
+    static bool UsesBitmapSlot(Layer layer) => layer.Kind is LayerKind.Raster or LayerKind.Adjustment;
+    internal static void ValidateLayer(Layer layer, bool validateRasterDimensions = true)
     {
         if (layer.Id == Guid.Empty) throw new InvalidDataException("레이어 ID가 비어 있습니다.");
         if (string.IsNullOrWhiteSpace(layer.Name)) throw new InvalidDataException("레이어 이름이 비어 있습니다.");
