@@ -22,8 +22,21 @@ public static class PhotoshopCompatibility
     {
         document.Validate();
         if (layers && !CanWriteLayers(document)) throw new NotSupportedException("그룹·조정·클리핑이 있는 문서는 합성 PSD로 내보내 주세요.");
+        if (document.Width > 30_000 || document.Height > 30_000)
+            throw new InvalidDataException("PSD 내보내기는 한 변 30,000px까지 지원합니다. 더 큰 이미지는 PNG 또는 TIFF로 저장해 주세요.");
         long layerBytes = (long)document.Width * document.Height * 4 * document.Layers.Count;
-        if (layers && layerBytes > Document.MaxLayerBytes) throw new InvalidDataException("PSD 레이어 출력이 384MB를 초과합니다. 합성 이미지로 출력해 주세요.");
+        if (layers && layerBytes > Document.MaxLayerBytes) throw new InvalidDataException($"PSD 레이어 출력이 {Document.MaxLayerBytes / (1024L * 1024 * 1024):N0}GB를 초과합니다. 합성 이미지로 출력해 주세요.");
+        // The v1 writer below stores signed 32-bit section lengths. Check the
+        // outer layer section, including names and channel headers, before rendering.
+        long sectionBytes = 10; // inner section length, layer count, global mask length
+        foreach (string name in layers ? document.Layers.Select(l => l.Name) : [document.Name])
+        {
+            int asciiBytes = Encoding.ASCII.GetByteCount(name.Length > 255 ? name[..255] : name);
+            int pascalBytes = (asciiBytes + 4) / 4 * 4;
+            sectionBytes += (long)document.Width * document.Height * 4 + 90 + pascalBytes + (long)name.Length * 2;
+        }
+        if (sectionBytes > int.MaxValue)
+            throw new InvalidDataException("PSD 레이어 섹션이 2GB를 초과합니다. 합성 PSD 또는 PNG·TIFF로 저장해 주세요.");
         using var writer = new BinaryWriter(output, Encoding.ASCII, true);
         void U16(int n) { Span<byte> b = stackalloc byte[2]; BinaryPrimitives.WriteUInt16BigEndian(b, checked((ushort)n)); writer.Write(b); }
         void I16(short n) { Span<byte> b = stackalloc byte[2]; BinaryPrimitives.WriteInt16BigEndian(b, n); writer.Write(b); }

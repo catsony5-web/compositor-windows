@@ -18,7 +18,8 @@ public sealed partial class MainWindow
             var doc = NewDocumentDialog.CreateDocument("  测试  ", "12", "8", 0);
             if (doc.Width != 12 || doc.Height != 8 || doc.Name != "测试" || doc.Active!.Pixels.Data.Any(b => b != 0)) throw new Exception("Document setup mismatch");
             if (NewDocumentDialog.CreateDocument("", "1", "1", 1).Active!.Pixels.Data.Any(b => b != 255)) throw new Exception("White background mismatch");
-            foreach (string w in new[] { "0", "-1", "2.5", "9000" })
+            if (NewDocumentDialog.CreateDocument("wide", "9000", "1", 0).Width != 9000) throw new Exception("Wide document rejected");
+            foreach (string w in new[] { "0", "-1", "2.5", (Raster.MaxDimension + 1).ToString() })
             { bool rejected = false; try { NewDocumentDialog.CreateDocument("test", w, "1", 0); } catch { rejected = true; } if (!rejected) throw new Exception("Invalid dimensions accepted"); }
         });
         test("studio navigation and brush settings preserve pixels and redo", () =>

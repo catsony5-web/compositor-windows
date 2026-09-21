@@ -36,7 +36,7 @@ public sealed class LayerRow : Grid
         {
             content.Children.Add(new Image
             {
-                Source = layer.Pixels.Bitmap(), Width = 34, Height = 34,
+                Source = layer.Pixels.Thumbnail(), Width = 34, Height = 34,
                 Stretch = Stretch.Uniform, Margin = new Thickness(2)
             });
         }

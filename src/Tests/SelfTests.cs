@@ -46,7 +46,7 @@ public static class SelfTests
         Test("JPEG flattens transparency to white", () => { var d = Single(Colors.Transparent); string file = Path.Combine(directory, "white.jpg"); ProjectStore.Export(d, file); var r = Raster.Load(file); Assert(r.Data[0] >= 253 && r.Data[2] >= 253 && r.Data[3] == 255); });
         Test("atomic write preserves file on failure", () => { string file = Path.Combine(directory, "atomic.txt"); File.WriteAllText(file, "original"); try { ProjectStore.AtomicWrite(file, s => { s.WriteByte(1); throw new IOException("injected"); }); } catch (IOException) { } Assert(File.ReadAllText(file) == "original"); });
         Test("invalid project version rejected", () => { string file = Path.Combine(directory, "invalid.cwproj"); using (var fileStream = File.Create(file)) using (var z = new ZipArchive(fileStream, ZipArchiveMode.Create)) using (var w = new StreamWriter(z.CreateEntry("document.json").Open())) w.Write("{\"Version\":999}"); bool rejected = false; try { ProjectStore.Load(file); } catch (InvalidDataException) { rejected = true; } Assert(rejected); });
-        Test("oversize allocation rejected", () => { bool rejected = false; try { _ = new Raster(8192, 8192); } catch (InvalidDataException) { rejected = true; } Assert(rejected); });
+        Test("oversize allocation rejected before allocation", () => { bool rejected = false; try { _ = new Raster(Raster.MaxDimension, Raster.MaxDimension); } catch (InvalidDataException) { rejected = true; } Assert(rejected); });
         Test("demo render and project export", () => { var d = Demo.Create(); ProjectStore.Save(d, Path.Combine(directory, "sample.moruproj")); ProjectStore.Export(d, Path.Combine(directory, "sample.png")); var read = ProjectStore.Load(Path.Combine(directory, "sample.moruproj")); Assert(read.Layers.Count == d.Layers.Count && read.Layers.Any(l => l.Kind == LayerKind.Text) && Imaging.Render(read).Data.SequenceEqual(Imaging.Render(d).Data)); });
         PersistenceTests.Run(Test);
         LayerPickingTests.Run(Test);
@@ -55,6 +55,8 @@ public static class SelfTests
         FillToolsTests.Run(Test);
         RenderingTests.Run(Test);
         ImportExportTests.Run(Test);
+        LargeImageTests.Run(Test, directory);
+        CapacityFormatTests.Run(Test);
         MainWindow.RunCommandTests(Test, directory);
         MainWindow.RunBucketCommandTests(Test);
         MainWindow.RunRenderingLifecycleTests(Test);

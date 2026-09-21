@@ -87,9 +87,13 @@ public static class ProjectStore
         {
             var l = layers[index]!;
             var imageEntry = zip.GetEntry($"layers/{index}.png") ?? throw new InvalidDataException("레이어 이미지가 없습니다.");
-            if (imageEntry.Length > 100L * 1024 * 1024) throw new InvalidDataException("레이어 이미지가 너무 큽니다.");
+            if (imageEntry.Length > Raster.MaxEncodedBytes) throw new InvalidDataException("레이어 이미지가 너무 큽니다.");
             Raster pixels;
-            using (var s = imageEntry.Open()) using (var ms = new MemoryStream()) { s.CopyTo(ms); ms.Position = 0; pixels = Raster.Load(ms); }
+            using (var s = imageEntry.Open())
+            using (Stream staged = imageEntry.Length <= ImageStaging.MemoryThresholdBytes ? new MemoryStream() : ImageStaging.CreateTemporaryStream())
+            {
+                s.CopyTo(staged); staged.Position = 0; pixels = Raster.Load(staged);
+            }
             byte[]? mask = null;
             if (l.HasMask)
             {
