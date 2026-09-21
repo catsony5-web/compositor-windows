@@ -1,3 +1,11 @@
+# 0.2.0-preview.18 — Larger image and project capacity
+
+Image and canvas limits increase to 65,535px per side and 536,870,897 total pixels (about 536.9MP), with an 8GiB combined layer-pixel and mask budget. Both dimension and pixel limits apply. PDF/AI, PSD/PSB and DWG/DXF input files can be up to 8GiB, and native project PNG entries can be up to 4GiB per layer. Ordinary image opening has no separate encoded-file byte cap. PSB input uses the larger raster limits; PSD output retains its 30,000px-per-side format limit.
+
+Canvas/image size fields, shape dimension controls and help use the shared limits. Canvas fit and wheel zoom reach 0.1% so large images can fit the viewport. The 128-layer ceiling and the undo budget of up to 50 entries/192MiB exclusively retained pixels remain; a large edit can exceed that history budget. Decoding, rendering and editing still use full-size buffers, so actual usable size depends on available memory and the requested operation.
+
+---
+
 # 0.2.0-preview.17 — Save-before-close dialog
 
 Closing a modified document now uses a themed Morupixel dialog instead of the Windows Yes/No message box. It shows the document name and explicit Cancel, Close Without Saving and Save Then Close actions, with readable spacing and a blue primary save button. The document name wraps, with scrolling available for exceptionally long names.

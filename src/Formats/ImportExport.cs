@@ -83,7 +83,7 @@ public static class ImportExport
     {
         if (maxSide < 1 || maxSide > 8192) throw new ArgumentOutOfRangeException(nameof(maxSide));
         document.Validate();
-        using var encoded = new MemoryStream();
+        using Stream encoded = (long)document.Width * document.Height * 4 <= ImageStaging.MemoryThresholdBytes ? new MemoryStream() : ImageStaging.CreateTemporaryStream();
         Write(Imaging.Render(document), encoded, format, quality, document.Dpi);
         long bytes = encoded.Length; encoded.Position = 0;
         var decoded = Raster.Load(encoded);
@@ -115,7 +115,11 @@ public static class ImportExport
         }
         encoder.Frames.Add(BitmapFrame.Create(output.Bitmap(dpi)));
         if (stream.CanSeek) encoder.Save(stream);
-        else { using var buffer = new MemoryStream(); encoder.Save(buffer); buffer.Position = 0; buffer.CopyTo(stream); }
+        else
+        {
+            using Stream buffer = raster.Data.LongLength <= ImageStaging.MemoryThresholdBytes ? new MemoryStream() : ImageStaging.CreateTemporaryStream();
+            encoder.Save(buffer); buffer.Position = 0; buffer.CopyTo(stream);
+        }
     }
 
     /// <summary>Separable Lanczos-3, widened on reduction, in premultiplied alpha. The smaller intermediate is selected.</summary>
