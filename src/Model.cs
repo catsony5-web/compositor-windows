@@ -48,7 +48,7 @@ public sealed class Raster
         ValidateSize(frame.PixelWidth, frame.PixelHeight);
         return FromBitmap(frame);
     }
-    public static Raster Load(string path) { using var s = File.OpenRead(path); return Load(s); }
+    public static Raster Load(string path) => ImportExport.LoadImage(path);
     public void WritePng(Stream s)
     {
         // WIC encoders need a seekable stream; ZipArchive entry streams are not seekable.
@@ -63,7 +63,8 @@ public sealed class Raster
     }
 }
 
-public enum BlendMode { Normal, Multiply, Screen, Overlay, SoftLight, Darken, Lighten, Difference, ColorDodge, ColorBurn }
+public enum BlendMode { Normal, Multiply, Screen, Overlay, SoftLight, Darken, Lighten, Difference, ColorDodge, ColorBurn, Hue, Saturation, Color, Luminosity }
+public enum LayerKind { Raster, Text, Adjustment, Group }
 
 public sealed class Layer
 {
@@ -81,7 +82,20 @@ public sealed class Layer
     public double Rotation { get; set; }
     public bool FlipX { get; set; }
     public bool FlipY { get; set; }
-    public Layer Snapshot() => (Layer)MemberwiseClone();
+    public LayerKind Kind { get; set; }
+    public Guid? ParentId { get; set; }
+    public bool Clipped { get; set; }
+    public double ScaleX { get; set; } = 1;
+    public double ScaleY { get; set; } = 1;
+    public TextSpec? Text { get; set; }
+    public AdjustmentSpec? Adjustment { get; set; }
+    public WarpQuad? Warp { get; set; }
+    public Layer Snapshot()
+    {
+        var copy = (Layer)MemberwiseClone();
+        if (Adjustment != null) copy.Adjustment = Adjustment.Snapshot();
+        return copy;
+    }
     // Port of LayerTransform / BrushRaster.pixelToDocument: rotate/flip around center.
     public Matrix Matrix
     {
@@ -89,17 +103,18 @@ public sealed class Layer
         {
             var m = Matrix.Identity;
             m.Translate(-Pixels.Width / 2.0, -Pixels.Height / 2.0);
-            m.Scale(Scale * (FlipX ? -1 : 1), Scale * (FlipY ? -1 : 1));
-            m.Rotate(Rotation); m.Translate(X + Pixels.Width * Scale / 2, Y + Pixels.Height * Scale / 2);
+            m.Scale(Scale * ScaleX * (FlipX ? -1 : 1), Scale * ScaleY * (FlipY ? -1 : 1));
+            m.Rotate(Rotation); m.Translate(X + Pixels.Width * Scale * ScaleX / 2, Y + Pixels.Height * Scale * ScaleY / 2);
             return m;
         }
     }
-    public Point Local(Point p) { var m = Matrix; m.Invert(); return m.Transform(p); }
+    public Point Local(Point p) { var m = Matrix; m.Invert(); var q = m.Transform(p); return Warp == null ? q : Warp.Inverse(q, Pixels.Width, Pixels.Height); }
+    public Point Document(Point p) => Matrix.Transform(Warp == null ? p : Warp.Forward(p, Pixels.Width, Pixels.Height));
 }
 
 public sealed class Document
 {
-    public const int MaxLayers = 32;
+    public const int MaxLayers = 128;
     public const long MaxLayerBytes = 384L * 1024 * 1024;
     readonly long layerByteLimit;
     public int Width { get; set; } = 1280;
@@ -119,7 +134,7 @@ public sealed class Document
     {
         ArgumentNullException.ThrowIfNull(layer);
         ValidateLayer(layer);
-        if (Layers.Count >= MaxLayers) throw new InvalidOperationException("이 버전은 최대 32개 레이어를 지원합니다.");
+        if (Layers.Count >= MaxLayers) throw new InvalidOperationException($"최대 {MaxLayers}개 레이어를 지원합니다.");
         if (Layers.Any(l => l.Id == layer.Id)) throw new InvalidOperationException("레이어 ID가 중복되었습니다.");
         var bytes = Layers.Sum(l => (long)l.Pixels.Data.Length + (l.Mask?.Length ?? 0));
         var incoming = (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
@@ -143,6 +158,18 @@ public sealed class Document
             if (bytes > layerByteLimit) throw new InvalidDataException("레이어 메모리 한도(384MB)를 초과합니다.");
         }
         if (ActiveId != Guid.Empty && !ids.Contains(ActiveId)) throw new InvalidDataException("활성 레이어가 존재하지 않습니다.");
+        var lookup = Layers.ToDictionary(l => l.Id);
+        foreach (var layer in Layers)
+        {
+            var chain = new HashSet<Guid> { layer.Id }; var parent = layer.ParentId;
+            while (parent is { } id)
+            {
+                if (!lookup.TryGetValue(id, out var folder) || folder.Kind != LayerKind.Group || !chain.Add(id))
+                    throw new InvalidDataException("그룹 계층에 순환 또는 잘못된 부모가 있습니다.");
+                if (chain.Count > 17) throw new InvalidDataException("그룹은 16단계까지 중첩할 수 있습니다.");
+                parent = folder.ParentId;
+            }
+        }
     }
     static void ValidateLayer(Layer layer)
     {
@@ -154,9 +181,17 @@ public sealed class Document
             throw new InvalidDataException("마스크 크기가 레이어 이미지와 다릅니다.");
         if (!double.IsFinite(layer.X) || !double.IsFinite(layer.Y) || Math.Abs(layer.X) > 100_000 || Math.Abs(layer.Y) > 100_000 ||
             !double.IsFinite(layer.Scale) || layer.Scale < .01 || layer.Scale > 20 ||
+            !double.IsFinite(layer.ScaleX) || layer.ScaleX < .01 || layer.ScaleX > 20 ||
+            !double.IsFinite(layer.ScaleY) || layer.ScaleY < .01 || layer.ScaleY > 20 ||
             !double.IsFinite(layer.Rotation) || Math.Abs(layer.Rotation) > 36_000 ||
             !double.IsFinite(layer.Opacity) || layer.Opacity < 0 || layer.Opacity > 1 || !Enum.IsDefined(layer.Blend))
             throw new InvalidDataException("레이어 속성이 올바르지 않습니다.");
+        if (!Enum.IsDefined(layer.Kind)) throw new InvalidDataException("레이어 종류가 올바르지 않습니다.");
+        if (layer.Kind == LayerKind.Text) (layer.Text ?? throw new InvalidDataException("텍스트 정보가 없습니다.")).Validate();
+        else if (layer.Text != null) throw new InvalidDataException("텍스트 레이어 종류가 일치하지 않습니다.");
+        if (layer.Kind == LayerKind.Adjustment) (layer.Adjustment ?? throw new InvalidDataException("조정 정보가 없습니다.")).Validate();
+        else if (layer.Adjustment != null) throw new InvalidDataException("조정 레이어 종류가 일치하지 않습니다.");
+        layer.Warp?.Validate();
     }
 }
 
@@ -213,6 +248,8 @@ public sealed class History
             var x = a.Layers[i]; var y = b.Layers[i];
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend ||
                 x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY ||
+                x.Kind != y.Kind || x.ParentId != y.ParentId || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
+                x.Text != y.Text || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;
@@ -233,11 +270,22 @@ public sealed class History
 
 public sealed record Selection(Rect Bounds, bool Ellipse = false)
 {
-    public bool Contains(double x, double y)
+    public byte[]? Coverage { get; init; }
+    public int CanvasWidth { get; init; }
+    public int CanvasHeight { get; init; }
+    public double Weight(double x, double y)
     {
-        if (!Bounds.Contains(x, y)) return false;
-        if (!Ellipse) return true;
+        if (!Bounds.Contains(x, y)) return 0;
+        if (Coverage != null)
+        {
+            int ix = (int)Math.Floor(x), iy = (int)Math.Floor(y);
+            if (ix < 0 || iy < 0 || ix >= CanvasWidth || iy >= CanvasHeight) return 0;
+            return Coverage[iy * CanvasWidth + ix] / 255.0;
+        }
+        if (!Ellipse) return 1;
+        if (Bounds.Width <= 0 || Bounds.Height <= 0) return 0;
         double dx = (x - Bounds.X - Bounds.Width / 2) / (Bounds.Width / 2), dy = (y - Bounds.Y - Bounds.Height / 2) / (Bounds.Height / 2);
-        return dx * dx + dy * dy <= 1;
+        return dx * dx + dy * dy <= 1 ? 1 : 0;
     }
+    public bool Contains(double x, double y) => Weight(x, y) > 0;
 }

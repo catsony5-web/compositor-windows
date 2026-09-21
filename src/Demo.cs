@@ -30,15 +30,18 @@ public static class Demo
             Polygon(dc, "#163D3C", new Point(0, 660), new Point(198, 592), new Point(310, 620), new Point(385, 701), new Point(650, 800), new Point(0, 800));
             Polygon(dc, "#123435", new Point(910, 800), new Point(1110, 697), new Point(1280, 679), new Point(1280, 800));
         }) });
-        doc.Add(new Layer { Name = "05 · 타이포그래피", Pixels = Imaging.Draw(1280, 800, dc =>
+        var typography = DocumentFeatures.CreateGroup(doc, "05 · 타이포그래피"); doc.Add(typography);
+        void EditableText(string content, string name, double x, double y, double size, uint color, string font)
         {
-            Text(dc, "F I E L D   N O T E S     /     0 1", 67, 61, 17, "#DCEAD6", "Segoe UI");
-            Text(dc, "고요한 풍경", 62, 113, 66, "#F3EEDA", "Malgun Gothic");
-            Text(dc, "A little space to create.", 68, 218, 23, "#D3E0CE", "Segoe UI");
-            dc.DrawLine(new Pen(Theme.Brush("#DAE3CF"), 1), new Point(68, 705), new Point(1212, 705));
-            Text(dc, "COMPOSITOR     /     MADE ON WINDOWS", 68, 727, 14, "#E5E8D4", "Segoe UI");
-            Text(dc, "레이어를 선택하고, 나만의 장면을 만들어보세요.", 820, 725, 14, "#D3DECB", "Malgun Gothic");
-        }) });
+            var layer = DocumentFeatures.CreateText(new TextSpec { Content = content, FontSize = size, ColorArgb = color, FontFamily = font }, x - 4, y - 4);
+            layer.Name = name; layer.ParentId = typography.Id; doc.Add(layer);
+        }
+        EditableText("F I E L D   N O T E S     /     0 1", "컬렉션", 67, 61, 17, 0xFFDCEAD6, "Segoe UI");
+        EditableText("고요한 풍경", "제목 · 텍스트 편집(T)", 62, 113, 66, 0xFFF3EEDA, "Malgun Gothic");
+        EditableText("A little space to create.", "부제", 68, 218, 23, 0xFFD3E0CE, "Segoe UI");
+        EditableText("MORUPIXEL     /     MADE ON WINDOWS", "Morupixel", 68, 727, 14, 0xFFE5E8D4, "Segoe UI");
+        EditableText("레이어를 선택하고, 나만의 장면을 만들어보세요.", "편집 안내", 820, 725, 14, 0xFFD3DECB, "Malgun Gothic");
+        doc.Add(new Layer { Name = "구분선", ParentId = typography.Id, X = 68, Y = 705, Pixels = Raster.Solid(1144, 1, (Color)ColorConverter.ConvertFromString("#DAE3CF")) });
         doc.ActiveId = doc.Layers[1].Id; return doc;
     }
     static void Text(DrawingContext dc, string text, double x, double y, double size, string color, string font)

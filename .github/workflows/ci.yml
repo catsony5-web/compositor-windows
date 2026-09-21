@@ -57,7 +57,7 @@ jobs:
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: compositor-windows-package
+          name: morupixel-package
           path: |
             release/*.zip
             release/*.zip.sha256
@@ -80,7 +80,7 @@ jobs:
       - name: Download package artifact
         uses: actions/download-artifact@v4
         with:
-          name: compositor-windows-package
+          name: morupixel-package
           path: release-download
 
       - name: Create release and upload files

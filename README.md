@@ -1,85 +1,64 @@
-# Compositor for Windows
+# Morupixel · 모루픽셀
 
-**0.1.0-preview.1 · Windows x64 · 비공식 커뮤니티 포트**
+**0.2.0-preview.1 · Windows x64 · 독립 이미지 편집기**
 
-Compositor for Windows는 [Robbie Tilton / Wonder Assembly LLC의 Compositor](https://github.com/robbietilton/Compositor)를 참고해 만든 독립적인 Windows용 커뮤니티 포트입니다. 원작자 또는 Wonder Assembly LLC가 이 포트를 보증하거나 배포하는 프로젝트가 아닙니다.
+모루픽셀은 [Robbie Tilton / Wonder Assembly LLC의 Compositor](https://github.com/robbietilton/Compositor) 일부 코드와 알고리즘을 바탕으로 만든 Windows 이미지 편집기입니다. 독자적인 이름과 C#·WPF 구현을 사용하며 원작의 공식 Windows 제품이 아닙니다.
 
-[Windows ZIP 다운로드](https://github.com/catsony5-web/compositor-windows/releases/tag/v0.1.0-preview.1) · [원작](https://github.com/robbietilton/Compositor) · [지원 범위](docs/PORTING.md) · [릴리스 안내](docs/RELEASE_NOTES.md)
+ZIP의 **모든 파일을 압축 해제한 뒤 `Morupixel.exe`를 실행**하세요. .NET 런타임과 로컬 AI 배경 제거 모델을 포함합니다. 사진 편집이나 AI 추론에 네트워크 연결이 필요하지 않습니다.
 
-Windows x64용 ZIP의 **전체 파일을 압축 해제한 다음 `Compositor.Windows.exe`를 실행**하세요. .NET 런타임을 포함하므로 별도 런타임 설치가 필요하지 않습니다. 코드 서명이 없는 초기 프리뷰입니다.
+AI 배경 제거에는 [Microsoft Visual C++ x64 재배포 런타임](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)이 필요합니다. 이미 설치되어 있으면 그대로 사용하고, AI 엔진을 불러오지 못한다는 안내가 나오면 공식 최신 x64 패키지를 설치하세요. 이 ZIP에는 해당 시스템 런타임 설치 프로그램이 포함되지 않습니다.
 
-![Windows에서 실행한 Compositor 편집 화면](docs/screenshots/editor.png)
+[기능·호환성 비교](docs/PORTING.md) · [변경 사항](docs/RELEASE_NOTES.md) · [AI 모델 설명](docs/BACKGROUND_REMOVAL.md) · [원작 출처](NOTICE.md)
 
-Windows 11에서 실제 실행·저장·재열기를 확인했고, 소스와 배포 EXE의 자동 테스트 38개씩 및 GitHub Actions 빌드가 통과했습니다. 자세한 결과는 [검증 기록](docs/VALIDATION.md)에 있습니다. [X·Instagram·Threads 공유 문안](docs/SOCIAL_POSTS.ko.md)도 제공합니다.
+![Morupixel 편집 화면 — 실제 WPF 컨트롤의 오프스크린 렌더](docs/screenshots/editor.png)
 
-## 한국어 안내
+## 편집 기능
 
-이 포트는 .NET 8 WPF로 작성한 단일 문서 이미지 편집기 미리보기입니다. 레이어를 보존하는 Windows 전용 `.cwproj` 작업 파일을 저장하고 PNG/JPEG로 결과를 내보낼 수 있습니다. 원작의 macOS `.comp` 파일을 열거나 저장하는 호환 계층은 제공하지 않습니다.
-
-### 현재 소스에서 확인되는 기능
-
-| 영역 | 0.1.0 Preview에서 제공되는 범위 |
+| 영역 | 제공 기능 |
 | --- | --- |
-| 캔버스 | 새 캔버스, 캔버스 크기, 비율을 유지한 이미지 크기 조정, 선택 영역으로 자르기 |
-| 레이어 | 추가, 선택, 이름 변경, 복제, 삭제, 순서 변경, 표시/숨김, 잠금, 최대 32개 |
-| 레이어 외관 | 불투명도와 Normal, Multiply, Screen, Overlay, Soft Light, Darken, Lighten, Difference, Color Dodge, Color Burn |
-| 변형 | 이동, 수치 입력, 배율, 회전, 가로/세로 뒤집기 |
-| 마스크 | 레이어별 8비트 마스크, 흰색 표시/검정 숨김, 추가·반전·제거, 브러시/채우기 편집 |
-| 선택 | 사각형·타원 선택, 전체 선택, 선택 해제, 선택 영역 제한 편집 |
-| 그리기 | 브러시, 지우개, 브러시 크기·경도·농도, 전경색 선택, 사각형·타원 도형, 전경색→투명 그라데이션 |
-| 문자·색상 | 클릭해 텍스트를 래스터 레이어로 추가, 색상 추출, 합성 이미지 복사 및 이미지 붙여넣기 |
-| 보정 | Levels, Exposure, Saturation, Grayscale, Invert, Gaussian Blur |
-| 파일 | PNG/JPEG/BMP/TIFF/GIF 열기·가져오기, `.cwproj` 저장/열기, PNG/JPEG 내보내기 |
-| 실행 취소 | 불변에 가까운 문서 스냅샷 기반 Undo/Redo, 원자적 작업 파일 저장; 과거 최대 50개·기록 전용 픽셀 192MB |
+| 작업 공간 | 문서 탭 최대 8개, 확대/이동, 안내선·스냅, 히스토리 기반 실행 취소/다시 실행 |
+| 레이어 | 레이어 그룹, 순서·이름·표시·잠금·불투명도, 14개 혼합 모드, 여러 레이어 선택·변형 |
+| 변형 | 이동·회전·비균일 크기 조절·뒤집기, 네 꼭짓점 원근 왜곡 |
+| 마스크 | 래스터 마스크, 그룹 마스크, 아래 레이어에 클리핑, 브러시로 수정 |
+| 선택 | 사각·타원·올가미·다각형·마술봉, 추가·빼기·교차·반전, 페더·확장·축소, 알파 선택 |
+| 그리기·보정 | 브러시·지우개·복제 도장·복구·스머지·액화·흐림 브러시, 도형·그라데이션, 내용 인식 채우기 |
+| 텍스트 | 다시 편집 가능한 내용·글꼴·크기·굵게·기울임·정렬·색상 |
+| 조정 레이어 | RGB 전체·빨강·초록·파랑 채널별 레벨·곡선, 색조/채도, 노출·오프셋·감마, 그라디언트 맵, 그레인 |
+| 필터 | 가우시안·모션 흐림, 노이즈·렌즈 왜곡 등 |
+| 배경 제거 | 번들 U²-NetP 모델을 Microsoft ONNX Runtime CPU로 실행, 결과를 수정 가능한 마스크로 적용 |
+| 이미지 파일 | PNG/JPEG/BMP/TIFF/GIF, EXIF 방향 보정, 내장 ICC→sRGB 변환, Windows 코덱이 설치된 HEIC/HEIF |
+| 내보내기 | PNG·TIFF·품질 조절 JPEG, 파일 크기·이미지 미리보기, 투명도 유지 또는 JPEG 흰색 배경 |
+| 인쇄용 출력 | ICC 프로필을 포함한 CMYK TIFF, 프로필 변환 미리보기·DPI 설정 ([사용 안내](docs/CMYK.md)) |
+| 작업 저장 | `.moruproj` 버전 2, 이전 `.cwproj` 버전 1/2 읽기, 원본 `.comp` 일부 기능 가져오기/내보내기 |
 
-### 원작 기능과의 차이 및 제한
+## 원작과의 차이
 
-이 버전에는 원작의 폴더/그룹, clipping mask, adjustment layer, lasso·polygon lasso·magic wand, content-aware fill, spot healing, clone stamp, curves, gradient map, grain/noise, motion blur, lens correction, background removal, 다중 문서 탭, snapping/guides, HEIC 입력, PSD 입력이 포함되어 있지 않습니다. 텍스트는 편집 가능한 원작 텍스트 메타데이터가 아니라 추가 시 래스터화됩니다.
+이 버전은 기능을 확장한 개발 프리뷰입니다. **원작과 모든 기능·화질·속도가 같다는 검증을 마친 제품은 아닙니다.** 세부적인 색 처리와 마스크·그룹 렌더링, 텍스트 줄바꿈, 복구 및 내용 인식 채우기 결과는 원작과 다를 수 있습니다.
 
-`.cwproj`와 원작 `.comp`는 서로 다른 형식이므로 원작 작업 파일 호환을 약속하지 않습니다. EXIF 자동 회전, ICC 색상 관리, 인쇄용 CMYK도 지원 범위에 포함되지 않습니다. AI 배경 제거 또는 기타 AI 기능은 제공하지 않으며, 프로그램은 네트워크 연결 없이 로컬 편집을 전제로 합니다.
+- 그룹은 분리 합성 방식입니다. 원작의 패스스루 그룹과 혼합 결과가 다를 수 있습니다.
+- 텍스트 문단 상자·자간·행간, 편집 가능한 벡터 도형, 색상 범위별 HSV, 일부 레이어 효과·라이브/연결 해제 마스크는 미지원입니다.
+- `.comp` 상호 변환은 지원 부분만 제공합니다. 지원하지 않는 의미를 가진 파일은 임의로 평탄화하지 않고 오류와 이유를 표시합니다. 텍스트를 수정할 때 OS별 글꼴 차이가 발생할 수 있습니다.
+- AI 배경 제거는 320×320 U²-NetP를 사용합니다. 머리카락·털·투명 물체·복잡한 배경은 수동 마스크 수정이 필요할 수 있습니다. Apple Vision과 같은 모델이나 결과는 아닙니다.
+- PSD, CMYK 편집, 16/32비트 작업 공간, 원본 ICC/PPI 메타데이터 보존, HEIC 내보내기는 미지원입니다. GIF/TIFF 등 다중 프레임 파일은 첫 프레임을 사용합니다.
+- 한 변 8,192px, 총 16,777,216픽셀, 최대 128개 레이어와 레이어 픽셀/마스크 합계 384MB 제한이 있습니다. 실행 취소는 50개 항목과 별도 보관 픽셀 192MB 범위입니다.
 
-크기 제한은 한 변 최대 8,192px, 총 최대 16,777,216픽셀, 최대 32개 레이어입니다. 큰 이미지의 편집 성능, 소수 픽셀 이동·회전 경계의 안티앨리어싱은 개선이 필요합니다. 흐림 효과는 레이어 경계를 확장하지 않습니다.
+## 빌드와 검증
 
-실행 취소 기록은 소스에서 최대 50개 과거 항목과 기록이 독점적으로 보유하는 픽셀 데이터 192MB 범위에서 정리됩니다. 이 값도 원작의 기록 한도와 동일하다고 볼 수 없습니다.
-
-## 빌드
-
-소스 빌드에는 Windows와 .NET 8 SDK가 필요합니다. 프로젝트는 `net8.0-windows`와 WPF를 사용합니다.
-
-```powershell
-dotnet restore .\src\Compositor.Windows.csproj
-dotnet build .\src\Compositor.Windows.csproj -c Release
-```
-
-다음 스크립트는 빌드, 자동 테스트, 런타임을 포함한 Windows x64 ZIP 생성을 수행합니다. 게시된 EXE에도 자동 테스트를 실행하고 SHA-256 체크섬을 생성합니다.
+Windows와 .NET 8 SDK가 필요합니다. 첫 복원 시 공식 NuGet에서 ONNX Runtime을 받습니다. 모델은 `models/`에 체크섬과 라이선스를 포함해 보관합니다.
 
 ```powershell
 .\scripts\Build.ps1
 .\scripts\Test.ps1
-.\scripts\Publish.ps1 -Version 0.1.0-preview.1
+.\scripts\Publish.ps1 -Version 0.2.0-preview.1
 ```
 
-`Publish.ps1`는 `win-x64`와 `--self-contained true`로 게시하고 `release\Compositor.Windows-<버전>-win-x64.zip` 및 SHA-256 파일을 만듭니다. 별도 스크립트를 쓰지 않으면 다음처럼 .NET 8 SDK에서 직접 빌드할 수 있습니다.
+배포 파일은 `release\Morupixel-0.2.0-preview.1-win-x64.zip`입니다. 패키징 스크립트는 모델 SHA-256을 확인하고 실제 배포 EXE의 자동 테스트도 실행합니다.
 
 ```powershell
-dotnet restore .\src\Compositor.Windows.csproj
-dotnet build .\src\Compositor.Windows.csproj -c Release --no-restore
+.\Morupixel.exe --self-test .\self-test.txt
+.\Morupixel.exe --render-preview .\preview.png
 ```
 
-실행 시 이미지 또는 `.cwproj` 경로를 첫 번째 인자로 넘길 수 있습니다. `--self-test <결과 파일>`로 자동 테스트를 직접 실행할 수도 있습니다. Windows 10 및 새 PC에서의 별도 호환성 검증은 아직 수행하지 않았습니다.
+`--render-preview`는 창을 표시하지 않고 WPF 화면 레이아웃을 이미지로 그리는 개발 검증입니다. 실제 마우스/키보드 조작 검증을 대체하지 않습니다. [검증 기록](docs/VALIDATION.md)은 해당 버전과 검증 방식을 구분합니다.
 
-## 작업 파일
-
-`.cwproj`는 이 포트의 버전 1 형식입니다. ZIP 안에 `document.json`, `layers/<순번>.png`, 선택적인 `layers/<순번>.mask`를 둡니다. 이는 원작의 `.comp` 패키지와 다른 형식이며, 형식 버전 1만 읽습니다. 자세한 포팅 범위와 원작 알고리즘 출처는 [`docs/PORTING.md`](docs/PORTING.md)를 참고하세요.
-
-## 라이선스 및 출처
-
-원작의 MIT 고지는 [LICENSE](LICENSE)에 보존되어 있습니다. 원작 출처와 포트의 성격은 [NOTICE.md](NOTICE.md), 의존성별 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 기록되어 있습니다. 이 문서의 기능 목록은 현재 소스 기준이며, 원작의 전체 기능 목록이나 동등성 선언이 아닙니다.
-
-## Short English
-
-Compositor for Windows 0.1.0 Preview is an independent, unofficial Windows community port inspired by [Compositor by Robbie Tilton / Wonder Assembly LLC](https://github.com/robbietilton/Compositor). It is not endorsed by the original author or company.
-
-The WPF/.NET 8 app provides raster layers, masks, transforms, selections, brush/eraser, shapes, text rasterization, basic adjustments, `.cwproj` project storage, and PNG/JPEG export. This early preview has a smaller feature set than the macOS app; AI features and PSD/`.comp` compatibility are unsupported. Download the Windows x64 ZIP from [Releases](https://github.com/catsony5-web/compositor-windows/releases), extract all files, and run `Compositor.Windows.exe`.
-
-Build from source with the .NET 8 SDK using `.\scripts\Build.ps1` or `dotnet build .\src\Compositor.Windows.csproj -c Release`. See [`docs/PORTING.md`](docs/PORTING.md) for the compatibility matrix and algorithm attribution.
+원작 MIT 고지는 [LICENSE](LICENSE), 제품 관계는 [NOTICE.md](NOTICE.md), 의존성·모델 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다. 저장소 주소에 남아 있는 `compositor-windows`와 내부 네임스페이스는 이전 버전의 개발 식별자이며 제품명은 Morupixel입니다.

@@ -1,53 +1,19 @@
-# SNS 공유 문안
+# Morupixel 공유 초안
 
-사용자가 복사하여 게시할 수 있는 초안입니다. 이 작업에서 SNS 계정에 직접 게시하지 않았습니다. 실제 앱 화면은 `screenshots/editor.png`입니다.
+아래 문안은 초안이며 SNS에 자동 게시하지 않았습니다. 실제 검증 결과와 다운로드 링크를 확인한 뒤 사용하세요. 저장소 이름 변경/새 릴리스 게시를 마치기 전에는 기존 0.1 다운로드를 새 버전으로 소개하지 마세요.
 
-## X
+## 짧은 문안
 
-```text
-Compositor Windows 프리뷰 공개 🪟
-레이어·마스크·브러시·PNG/JPEG 편집.
-Robbie Tilton 원작 기반 비공식 MIT 포트입니다. 전체 기능 이식은 진행 중입니다.
+Windows용 독립 이미지 편집기 **Morupixel(모루픽셀)**을 개발하고 있습니다. 레이어·마스크·편집 가능한 텍스트·조정 레이어·로컬 AI 배경 제거를 담았습니다. 원작 Compositor의 일부 오픈소스 코드와 알고리즘을 바탕으로 만든 개발 프리뷰이며 원작의 공식 Windows 제품은 아닙니다.
 
-Windows: https://github.com/catsony5-web/compositor-windows
+소스: https://github.com/catsony5-web/compositor-windows
 원작: https://github.com/robbietilton/Compositor
-```
 
-## Instagram
+## 게시 전 확인할 사실
 
-```text
-Mac용 오픈소스 이미지 편집기 Compositor를 Windows에서도.
-
-Windows용 0.1.0 Preview를 공개합니다. 레이어, 마스크, 브러시와 지우개, 선택·자르기, 도형·텍스트, 기본 색상 보정과 PNG/JPEG 내보내기를 사용할 수 있습니다. 작업은 .cwproj 파일에 레이어를 보존해 저장합니다.
-
-원작은 Robbie Tilton / Wonder Assembly LLC의 Compositor입니다. MIT 라이선스와 원작 출처를 보존한 비공식 커뮤니티 포트이며, 원작 전체 기능은 아직 지원하지 않습니다. PSD·Mac 작업 파일 호환과 AI 배경 제거도 미지원입니다.
-
-Windows 다운로드·소스:
-https://github.com/catsony5-web/compositor-windows
-
-원작:
-https://github.com/robbietilton/Compositor
-
-#Compositor #Windows #OpenSource #ImageEditor #오픈소스 #이미지편집
-```
-
-## Threads
-
-```text
-Compositor Windows 프리뷰를 공개합니다 🪟
-
-레이어·마스크·브러시·선택·자르기·기본 보정과 PNG/JPEG 내보내기를 지원합니다. 작업은 .cwproj로 저장합니다.
-
-Robbie Tilton / Wonder Assembly LLC의 MIT 오픈소스 Compositor를 바탕으로 만든 비공식 포트입니다. 원작의 전체 기능, PSD·Mac 작업 파일 호환, AI 배경 제거는 아직 지원하지 않습니다.
-
-Windows: https://github.com/catsony5-web/compositor-windows
-원작: https://github.com/robbietilton/Compositor
-```
-
-## 첨부 자료
-
-- 실제 Windows 앱 화면: `screenshots/editor.png`
-- 다운로드: https://github.com/catsony5-web/compositor-windows/releases/tag/v0.1.0-preview.1
-- 기능과 한계: `PORTING.md`
-
-스크린샷을 편집하거나 자막을 추가할 때도 ‘비공식 Windows 프리뷰’ 표기를 유지하면 원작의 공식 출시와 혼동을 줄일 수 있습니다.
+- 제품명과 실행 파일은 Morupixel입니다.
+- 0.2.0-preview.1의 실제 배포 링크를 넣어주세요.
+- 자동 테스트 수는 최종 보고서 기준으로 쓰세요.
+- 원작과 동일 기능·동일 성능·동일 화질을 검증했다고 표현하지 마세요.
+- AI는 번들 U²-NetP 모델로 로컬 실행하며 Apple Vision과 다릅니다.
+- screenshot은 새 버전의 화면인지 확인하세요.

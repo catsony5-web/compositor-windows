@@ -25,7 +25,7 @@ if (-not $SkipTests) {
 }
 
 $runtime = 'win-x64'
-$artifactBase = "Compositor.Windows-$Version-$runtime"
+$artifactBase = "Morupixel-$Version-$runtime"
 $stagingParent = Join-Path $ReleaseRoot 'staging'
 $stagingPath = Join-Path $stagingParent $artifactBase
 $archivePath = Join-Path $ReleaseRoot "$artifactBase.zip"
@@ -66,9 +66,22 @@ $packageDocuments = @(
     @{ Source = (Join-Path $RepositoryRoot 'NOTICE.md'); Destination = (Join-Path $stagingPath 'NOTICE.md') },
     @{ Source = (Join-Path $RepositoryRoot 'THIRD_PARTY_NOTICES.md'); Destination = (Join-Path $stagingPath 'THIRD_PARTY_NOTICES.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\PORTING.md'); Destination = (Join-Path $stagingPath 'docs\PORTING.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\CMYK.md'); Destination = (Join-Path $stagingPath 'docs\CMYK.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\VALIDATION.md'); Destination = (Join-Path $stagingPath 'docs\VALIDATION.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\VALIDATION-0.1.md'); Destination = (Join-Path $stagingPath 'docs\VALIDATION-0.1.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\UPSTREAM_FEATURES.ko.md'); Destination = (Join-Path $stagingPath 'docs\UPSTREAM_FEATURES.ko.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\RELEASE_NOTES.md'); Destination = (Join-Path $stagingPath 'docs\RELEASE_NOTES.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\BACKGROUND_REMOVAL.md'); Destination = (Join-Path $stagingPath 'docs\BACKGROUND_REMOVAL.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'licenses\ONNXRuntime-LICENSE.txt'); Destination = (Join-Path $stagingPath 'licenses\ONNXRuntime-LICENSE.txt') },
+    @{ Source = (Join-Path $RepositoryRoot 'licenses\ONNXRuntime-THIRD-PARTY-NOTICES.txt'); Destination = (Join-Path $stagingPath 'licenses\ONNXRuntime-THIRD-PARTY-NOTICES.txt') },
     @{ Source = (Join-Path $PSScriptRoot 'README.distribution.txt'); Destination = (Join-Path $stagingPath 'PACKAGING-README.txt') }
 )
+
+$modelPath = Join-Path $stagingPath 'models\u2netp.onnx'
+if (-not (Test-Path -LiteralPath $modelPath -PathType Leaf) -or
+    (Get-FileHash -LiteralPath $modelPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne '309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8') {
+    throw 'The bundled U2NetP model is missing or its pinned checksum differs.'
+}
 
 foreach ($document in $packageDocuments) {
     if (-not (Test-Path -LiteralPath $document.Source -PathType Leaf)) {
@@ -96,7 +109,7 @@ foreach ($document in $dotnetDocuments) {
 $publishedTestDirectory = Join-Path $ReleaseRoot 'published-self-test'
 $publishedTestDirectory = Reset-GeneratedDirectory -Path $publishedTestDirectory -Parent $ReleaseRoot
 $publishedReportPath = Join-Path $publishedTestDirectory 'self-test.txt'
-$publishedExe = Join-Path $stagingPath 'Compositor.Windows.exe'
+$publishedExe = Join-Path $stagingPath 'Morupixel.exe'
 if (-not (Test-Path -LiteralPath $publishedExe -PathType Leaf)) {
     throw "Published executable is missing: $publishedExe"
 }

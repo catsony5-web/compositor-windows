@@ -1,29 +1,15 @@
-# 0.1.0-preview.1
+# Morupixel 0.2.0-preview.1
 
-첫 번째 비공식 Windows 프리뷰입니다. Robbie Tilton의 [Compositor](https://github.com/robbietilton/Compositor)를 바탕으로 C#과 WPF에서 재구현했으며, 원작의 전체 기능과 동등한 버전은 아닙니다.
+The application now has an independent product name: **Morupixel / 모루픽셀**. Run `Morupixel.exe`; save editable work as `.moruproj`. Old `.cwproj` files remain readable. The upstream Compositor MIT attribution is retained.
 
-## 포함 기능
+This update adds document tabs, grouped layers and clipping masks, 14 blend modes, nonuniform/projective transforms, editable text, non-destructive adjustment layers, advanced selections and retouch tools, additional filters, local AI background removal, image I/O improvements, and restricted upstream `.comp` interoperability.
 
-- 레이어, 불투명도, 10개 혼합 모드와 래스터 마스크
-- 브러시, 지우개, 사각형·타원 선택, 자르기, 도형, 그라데이션, 래스터 텍스트
-- 레이어 이동·크기·회전·반전, 실행 취소·다시 실행
-- 레벨, 노출, 채도, 흑백, 반전, 가우시안 흐림
-- 레이어를 보존하는 `.cwproj` 저장, PNG/JPEG 내보내기
-- 한국어 Windows 데스크톱 UI와 단축키
+AI background removal works offline using the bundled 4.6MB U²-NetP model and Microsoft ONNX Runtime CPU. No image upload or subscription is used. EXIF orientation and embedded ICC-to-sRGB conversion are handled on import; JPEG quality preview and TIFF export are available. The separate print dialog adds ICC-managed CMYK TIFF output, DPI selection and a profile-conversion preview; the native editing workspace remains sRGB.
 
-## 다운로드와 실행
+This is a development preview, not a claim of complete Compositor parity. Fine text layout, live/unlinked masks, pass-through group compositing, vector shape metadata, range-specific HSV adjustments, layer effects, PSD and native high-bit-depth/CMYK editing workflows remain incomplete or unsupported. The lightweight segmentation model has limitations on fine and transparent edges. Package interoperability is intentionally strict about unsupported semantics. See [the complete matrix](PORTING.md).
 
-Windows x64용 ZIP을 폴더에 모두 압축 해제하고 `Compositor.Windows.exe`를 실행합니다. ZIP에는 .NET 런타임이 포함됩니다. 관리자 설치는 필요하지 않습니다. 이 프리뷰는 코드 서명이 되어 있지 않습니다.
+The source and self-contained published executable each passed **149/149 automated checks**, including native ONNX inference, project round trips, CMYK profile output and offscreen editor transactions. The WPF screen was rendered offscreen and visually inspected. This is separate from live mouse/keyboard testing and does not establish full upstream quality parity. See [validation details](VALIDATION.md).
 
-## 알려진 제한
+Extract the complete portable ZIP before running. The distribution includes .NET, ONNX Runtime, the model, and applicable licenses. No GitHub publication or repository rename is implied by a local build.
 
-- PSD 및 원본 Mac 작업 파일과 호환되지 않습니다.
-- 레이어 그룹, 클리핑 마스크, 조정 레이어, 곡선, 올가미·자동 선택, 복제 도장·복구, AI 배경 제거, 콘텐츠 인식 채우기, 여러 문서 탭은 미지원입니다.
-- 텍스트는 추가할 때 픽셀로 변환됩니다. 보정은 선택 레이어에 직접 적용합니다.
-- EXIF 자동 회전, ICC 색상 관리, CMYK는 미지원입니다.
-- 소수 픽셀 이동·회전 경계의 안티앨리어싱과 큰 이미지의 편집 성능은 개선이 필요합니다. 가우시안 흐림은 원본 레이어 경계를 확장하지 않습니다.
-- 최대 32개 레이어, 한 변 8,192px, 이미지 전체 16,777,216픽셀을 지원합니다.
-
-## 원작과 라이선스
-
-Original Compositor by Robbie Tilton / Wonder Assembly LLC. Copyright (c) 2026 Wonder Assembly LLC. MIT License. 원작의 저작권·허가 문구는 배포물에 포함된 LICENSE에 보존합니다. Windows 포트는 원작자의 공식 배포 또는 보증을 뜻하지 않습니다.
+AI inference also requires the system Microsoft Visual C++ x64 runtime, which is not bundled. A missing-runtime error includes the official installation link; see [AI setup](BACKGROUND_REMOVAL.md).

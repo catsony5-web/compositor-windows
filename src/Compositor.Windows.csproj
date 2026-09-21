@@ -5,11 +5,16 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>Compositor.Windows</AssemblyName>
-    <Version>0.1.0-preview.1</Version>
-    <Product>Compositor for Windows — Community Preview</Product>
-    <Description>Unofficial Windows port of Robbie Tilton's Compositor</Description>
+    <AssemblyName>Morupixel</AssemblyName>
+    <Version>0.2.0-preview.1</Version>
+    <Product>Morupixel</Product>
+    <Description>Independent Windows image editor derived in part from Compositor</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\assets\morupixel.ico</ApplicationIcon>
     <StartupObject>Compositor.Windows.Program</StartupObject>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <Content Include="..\models\*" Link="models\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

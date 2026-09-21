@@ -1,29 +1,27 @@
-# Preview validation — 2026-09-21
+# Morupixel validation — 2026-09-21
 
-Version: `0.1.0-preview.1`
+Version under validation: `0.2.0-preview.1`.
 
-Environment: Windows 11 25H2, build 26200.9457, x64; .NET SDK 8.0.424. The self-contained package includes .NET and Windows Desktop runtime 8.0.30.
+## Integrated source validation
 
-## Automated checks
+Release build: zero errors and zero warnings. The integrated self-test run passed **149/149** checks on this Windows development machine, including the real bundled ONNX model, ICC/EXIF image input, CMYK TIFF profile/DPI/preview consistency, all-channel adjustments, layer hierarchy and project round trips.
 
-`scripts/Publish.ps1 -Version 0.1.0-preview.1` completed successfully. Release build: 0 warnings and 0 errors. All 38 self-tests passed in both the source build and the published self-contained executable.
+The self-contained **published `Morupixel.exe` also passed 149/149 checks**. Source and published reports are in `release/test-results/self-test.txt` and `release/published-self-test/self-test.txt`. The portable ZIP includes the runtime, native ONNX libraries, pinned model, documentation and licenses. NuGet vulnerability metadata initially could not be fetched within the network sandbox; a subsequent successful online restore and transitive package audit reported no known vulnerable packages from the configured NuGet source on this date.
 
-The checks cover alpha compositing and blend modes, layer visibility/masks/transforms, levels, brush coverage/selection/eraser, blur transparency, undo/redo and memory limits, PNG/JPEG output, project round-trip, atomic-write failure preservation, invalid save preservation, metadata validation, and oversized image rejection.
+Twelve offscreen command tests call the editor's actual transactions for groups, duplication/deletion, per-tab history, soft masks, multi-selection moves, cancellation, editable text and saved project lifecycle. Two additional tests protect against reopening the same project in multiple tabs / overwriting another tab's path, and asynchronous filters bypassing a parent's lock; these are included in the twelve. Two dialog rendering tests verify the before/after toggle and selection coverage. No desktop mouse/keyboard input or foreground window changes were used for this validation.
 
-The [published executable test report](validation/published-self-test.txt) records the individual results. Run `scripts/Test.ps1` to repeat the source checks; `scripts/Publish.ps1` additionally tests the published EXE.
+The sample WPF screen was rendered offscreen and visually inspected at 1480×920. It verifies layout, labels, thumbnails and transform handles, not physical mouse interaction. The sample stores grouped, editable text layers and uses the Morupixel brand and icon.
 
-## Interactive checks
+A separate background benchmark on a 4096×4096 raster with a 42px brush and 32 interpolated dabs measured local blur at 58ms / 65.1MiB allocated, smudge at 80ms / 64.3MiB and cloning at 66ms / 64.0MiB. This is a single development-machine measurement, not a cross-device performance claim. Each batch copies the full raster once, with local footprint buffers for intermediate dabs.
 
-The native WPF window was opened on Windows. Layer creation, brush strokes, Ctrl+Z, the G shortcut, horizontal gradient dragging, and Ctrl+S with a real project save were exercised. The final packaged application then reopened the seven-layer UI-generated project through its native Open dialog, restored the gradient and selection, and closed normally. The [editor screenshot](screenshots/editor.png) was captured from the running Windows application. Detailed steps are recorded in [UI QA](../tests/ui-qa.txt).
+## Image I/O, interoperability and AI subsystem
 
-The screenshot and interactive checks are smoke tests. Clean-machine setup, Windows 10, ARM64, pen pressure, large-image stress tests, ICC color management, EXIF orientation, and full Mac feature parity have not been verified or implemented as applicable. See [release limitations](RELEASE_NOTES.md).
+An independent Windows .NET 8/WPF harness built the engine and I/O sources without the UI and passed 14/14 checks. These include all EXIF orientations and a real JPEG orientation metadata fixture; embedded sRGB ICC import; exact PNG/TIFF RGBA round trips; JPEG quality and white matte; alpha-correct Lanczos downsampling; a hand-authored Compositor v7 package; unsupported-feature and path validation; five supported adjustment round trips; grouped editable text and grayscale masks; mask composition; a generated ONNX graph with known output; and real inference with the pinned bundled U²-NetP model.
 
-## Published artifact
+Model SHA-256: `309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8` (4,574,861 bytes). The checksum and inference are also part of the main self-test suite.
 
-The [Windows preview release](https://github.com/catsony5-web/compositor-windows/releases/tag/v0.1.0-preview.1) contains a 72,200,833-byte ZIP. GitHub's reported asset SHA-256 matches the locally tested package:
+The full build and packaged executable use `scripts/Test.ps1` and `scripts/Publish.ps1`; their generated reports are the source of truth for the final integrated test count. `--render-preview` produces an offscreen WPF layout image without displaying a window. It does not exercise mouse/keyboard interaction. Manual 0.2 UI verification, fresh-machine installation, Windows 10 and macOS `.comp` round trips must be recorded separately if performed.
 
-```text
-3088cd7474c1636b368f6d33656d22e9a4bea9fd4f8769e061aaf51661d74eb2
-```
+## Historical verification
 
-Release source commit: `40f55d9927721c2f5d68cfb5eff98cc3a3bdb359`. The independent [GitHub Actions Windows build](https://github.com/catsony5-web/compositor-windows/actions/runs/35561185879) also passed.
+The previous 0.1 build's 38 tests, interactive UI smoke checks, published hash and GitHub CI run are preserved in [VALIDATION-0.1.md](VALIDATION-0.1.md). Those earlier results do not certify the 0.2 implementation or its additional features.

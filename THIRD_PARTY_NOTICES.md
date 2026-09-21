@@ -1,27 +1,27 @@
 # Third-party notices
 
-This file records the third-party software and upstream attribution relevant to the current source tree. The project file currently has no `PackageReference` entries.
+## Compositor
 
-## Compositor (upstream project)
+Morupixel contains adaptations of algorithms and format definitions from Compositor by Robbie Tilton / Wonder Assembly LLC. Copyright (c) 2026 Wonder Assembly LLC. MIT license text: [LICENSE](LICENSE). Source: https://github.com/robbietilton/Compositor. See [NOTICE.md](NOTICE.md) and [source mappings](docs/PORTING.md).
 
-The project is an independent Windows port of **Compositor** by **Robbie Tilton / Wonder Assembly LLC**.
+## .NET 8 and WPF
 
-- Source: <https://github.com/robbietilton/Compositor>
-- License: MIT
-- Copyright: `Copyright (c) 2026 Wonder Assembly LLC`
-- Local license text: [`LICENSE`](LICENSE)
+The self-contained Windows build includes Microsoft .NET and WPF. The distribution includes DOTNET-LICENSE.txt and DOTNET-THIRD-PARTY-NOTICES.txt copied from the SDK used for packaging. Official sources: https://github.com/dotnet/runtime and https://github.com/dotnet/wpf.
 
-The upstream license applies to the upstream material and permissions described by that license. This port does not claim that the Windows implementation is an official upstream release or that it is compatible with every upstream feature or file format.
+## Microsoft ONNX Runtime 1.30.0
 
-## .NET and WPF
+CPU inference runtime, NuGet package `Microsoft.ML.OnnxRuntime` 1.30.0 (including its managed binding). MIT license and dependency notices are preserved in [licenses/ONNXRuntime-LICENSE.txt](licenses/ONNXRuntime-LICENSE.txt) and [licenses/ONNXRuntime-THIRD-PARTY-NOTICES.txt](licenses/ONNXRuntime-THIRD-PARTY-NOTICES.txt).
 
-The Windows project targets `net8.0-windows` and uses the WPF framework supplied by the .NET SDK/runtime. A self-contained publish includes the applicable Microsoft .NET runtime components in the output. Consult the notices shipped with the selected .NET SDK/runtime and the official license sources when redistributing a packaged build:
+Official source: https://github.com/microsoft/onnxruntime
 
-- .NET repository license: <https://github.com/dotnet/runtime/blob/main/LICENSE.TXT>
-- WPF repository license: <https://github.com/dotnet/wpf/blob/main/LICENSE.TXT>
+## U²-NetP model
 
-The current source tree does not declare an additional NuGet package or an external image-processing library. Windows codecs and WPF imaging are used through the framework. The exact runtime and framework notices in a future release bundle should be reviewed against the SDK/runtime version used to produce that bundle.
+The unmodified 4,574,861-byte ONNX model is distributed with its original U²-Net Apache-2.0 license, author attribution, retrieval source and checksum in [models/README.md](models/README.md) and [models/U2NET-LICENSE.txt](models/U2NET-LICENSE.txt).
 
-## Project assets
+Original authors: Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane and Martin Jagersand. Original project: https://github.com/xuebinqin/U-2-Net. ONNX asset publisher: https://github.com/danielgatis/rembg/releases/tag/v0.0.0. Model licensing is separate from the rembg application's MIT license; it is not relabeled as Morupixel/MIT.
 
-No separately licensed third-party font, icon pack, stock image, or AI model is declared by the current source tree. Text uses fonts available on the local Windows system; their licenses remain the responsibility of the user or distributor.
+The local inference preprocessing follows the U²-Net model contract also documented by rembg's BaseSession and U2netpSession. No Python/rembg executable or service is bundled.
+
+## Fonts and other assets
+
+Text uses fonts installed on the user's Windows system. No third-party font file is bundled. Demo artwork is constructed in source code. The user's imported photographs and fonts retain their own rights.

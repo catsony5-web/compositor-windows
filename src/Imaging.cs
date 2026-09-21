@@ -23,48 +23,164 @@ public static class Imaging
     {
         if (alpha <= 0) return;
         double da = dst[di + 3] / 255.0, oa = alpha + da * (1 - alpha);
-        double Channel(double source, byte dest)
+        var blended = BlendRgb(dst[di + 2] / 255.0, dst[di + 1] / 255.0, dst[di] / 255.0, r, g, b, mode);
+        double Channel(double source, byte dest, double blend)
         {
             double back = dest / 255.0;
-            return ((1 - alpha) * da * back + (1 - da) * alpha * source + alpha * da * Blend(back, source, mode)) / oa * 255;
+            return ((1 - alpha) * da * back + (1 - da) * alpha * source + alpha * da * blend) / oa * 255;
         }
-        dst[di] = Byte(Channel(b, dst[di])); dst[di + 1] = Byte(Channel(g, dst[di + 1])); dst[di + 2] = Byte(Channel(r, dst[di + 2])); dst[di + 3] = Byte(oa * 255);
+        dst[di] = Byte(Channel(b, dst[di], blended.B)); dst[di + 1] = Byte(Channel(g, dst[di + 1], blended.G)); dst[di + 2] = Byte(Channel(r, dst[di + 2], blended.R)); dst[di + 3] = Byte(oa * 255);
     }
-    public static Raster Render(Document doc)
+    public static (double R, double G, double B) BlendRgb(double br, double bg, double bb, double sr, double sg, double sb, BlendMode mode)
     {
-        var output = new Raster(doc.Width, doc.Height);
-        foreach (var layer in doc.Layers.Where(l => l.Visible && l.Opacity > 0)) Composite(output, layer);
-        return output;
+        if (mode < BlendMode.Hue) return (Blend(br, sr, mode), Blend(bg, sg, mode), Blend(bb, sb, mode));
+        // W3C nonseparable blend operations preserve luminance instead of HSL lightness.
+        static double Lum((double R, double G, double B) c) => .3 * c.R + .59 * c.G + .11 * c.B;
+        static double Sat((double R, double G, double B) c) => Math.Max(c.R, Math.Max(c.G, c.B)) - Math.Min(c.R, Math.Min(c.G, c.B));
+        static (double R, double G, double B) SetLum((double R, double G, double B) c, double l)
+        {
+            double d = l - Lum(c); c = (c.R + d, c.G + d, c.B + d);
+            double n = Math.Min(c.R, Math.Min(c.G, c.B)), x = Math.Max(c.R, Math.Max(c.G, c.B));
+            if (n < 0) c = (l + (c.R - l) * l / (l - n), l + (c.G - l) * l / (l - n), l + (c.B - l) * l / (l - n));
+            if (x > 1) c = (l + (c.R - l) * (1 - l) / (x - l), l + (c.G - l) * (1 - l) / (x - l), l + (c.B - l) * (1 - l) / (x - l));
+            return c;
+        }
+        static (double R, double G, double B) SetSat((double R, double G, double B) c, double s)
+        {
+            double min = Math.Min(c.R, Math.Min(c.G, c.B)), max = Math.Max(c.R, Math.Max(c.G, c.B));
+            return max > min ? ((c.R - min) * s / (max - min), (c.G - min) * s / (max - min), (c.B - min) * s / (max - min)) : (0, 0, 0);
+        }
+        var back = (br, bg, bb); var source = (sr, sg, sb);
+        return mode switch { BlendMode.Hue => SetLum(SetSat(source, Sat(back)), Lum(back)), BlendMode.Saturation => SetLum(SetSat(back, Sat(source)), Lum(back)), BlendMode.Color => SetLum(source, Lum(back)), _ => SetLum(back, Lum(source)) };
     }
-    public static void Composite(Raster output, Layer layer)
+    public static Raster Render(Document doc, CancellationToken cancellationToken = default)
     {
-        var src = layer.Pixels; var map = layer.Matrix;
-        var corners = new[] { new Point(0, 0), new Point(src.Width, 0), new Point(src.Width, src.Height), new Point(0, src.Height) }.Select(map.Transform).ToArray();
-        int left = Math.Clamp((int)Math.Floor(corners.Min(p => p.X)), 0, output.Width);
-        int top = Math.Clamp((int)Math.Floor(corners.Min(p => p.Y)), 0, output.Height);
-        int right = Math.Clamp((int)Math.Ceiling(corners.Max(p => p.X)), 0, output.Width);
-        int bottom = Math.Clamp((int)Math.Ceiling(corners.Max(p => p.Y)), 0, output.Height);
-        map.Invert();
-        Parallel.For(top, bottom, y =>
+        var root = doc.Layers.Where(l => l.ParentId == null).ToArray();
+        var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
+        Raster LayerImage(Layer layer, int width, int height, int depth)
+        {
+            if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
+            var copy = layer.Snapshot(); copy.Opacity = 1; copy.Blend = BlendMode.Normal;
+            if (layer.Kind == LayerKind.Group) copy.Pixels = Stack(children.GetValueOrDefault(layer.Id) ?? [], layer.Pixels.Width, layer.Pixels.Height, depth + 1);
+            var rendered = new Raster(width, height); Composite(rendered, copy, cancellationToken); return rendered;
+        }
+        Raster Stack(Layer[] stack, int width, int height, int depth)
+        {
+            var output = new Raster(width, height);
+            for (int index = 0; index < stack.Length; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested(); var layer = stack[index];
+                if (layer.Clipped) continue; // No underlying base in this stack.
+                int end = index + 1; while (end < stack.Length && stack[end].Clipped) end++;
+                if (!layer.Visible || layer.Opacity <= 0) { index = end - 1; continue; }
+                if (layer.Kind == LayerKind.Adjustment) ApplyAdjustment(output, layer, cancellationToken);
+                else if (end == index + 1 && layer.Kind != LayerKind.Group) Composite(output, layer, cancellationToken);
+                else
+                {
+                    // An un-clipped layer and its following clipped layers form an alpha-preserving stack.
+                    var image = LayerImage(layer, width, height, depth);
+                    for (int j = index + 1; j < end; j++)
+                    {
+                        var clip = stack[j]; if (!clip.Visible || clip.Opacity <= 0) continue;
+                        if (clip.Kind == LayerKind.Adjustment) ApplyAdjustment(image, clip, cancellationToken);
+                        else Merge(image, LayerImage(clip, width, height, depth), clip.Opacity, clip.Blend, true, cancellationToken);
+                    }
+                    Merge(output, image, layer.Opacity, layer.Blend, false, cancellationToken);
+                }
+                index = end - 1;
+            }
+            return output;
+        }
+        return Stack(root, doc.Width, doc.Height, 0);
+    }
+    static void Merge(Raster target, Raster source, double opacity, BlendMode blend, bool clipped, CancellationToken token)
+    {
+        Parallel.For(0, target.Height, new ParallelOptions { CancellationToken = token }, y =>
+        {
+            for (int x = 0; x < target.Width; x++)
+            {
+                int i = (y * target.Width + x) * 4; double a = source.Data[i + 3] / 255.0 * opacity;
+                if (!clipped) Over(target.Data, i, source.Data[i] / 255.0, source.Data[i + 1] / 255.0, source.Data[i + 2] / 255.0, a, blend);
+                else if (target.Data[i + 3] > 0 && a > 0)
+                {
+                    var color = BlendRgb(target.Data[i + 2] / 255.0, target.Data[i + 1] / 255.0, target.Data[i] / 255.0, source.Data[i + 2] / 255.0, source.Data[i + 1] / 255.0, source.Data[i] / 255.0, blend);
+                    target.Data[i] = Byte(target.Data[i] * (1 - a) + color.B * a * 255); target.Data[i + 1] = Byte(target.Data[i + 1] * (1 - a) + color.G * a * 255); target.Data[i + 2] = Byte(target.Data[i + 2] * (1 - a) + color.R * a * 255);
+                }
+            }
+        });
+    }
+    static void ApplyAdjustment(Raster target, Layer layer, CancellationToken token)
+    {
+        var adjusted = DocumentFeatures.ApplyAdjustment(target, layer.Adjustment!, token);
+        var coverageLayer = layer.Snapshot(); coverageLayer.Pixels = Raster.Solid(layer.Pixels.Width, layer.Pixels.Height, Colors.White); coverageLayer.Blend = BlendMode.Normal; coverageLayer.Opacity = 1;
+        var coverage = new Raster(target.Width, target.Height); Composite(coverage, coverageLayer, token);
+        Parallel.For(0, target.Height, new ParallelOptions { CancellationToken = token }, y =>
+        {
+            for (int x = 0; x < target.Width; x++)
+            {
+                int i = (y * target.Width + x) * 4; double a = coverage.Data[i + 3] / 255.0 * layer.Opacity;
+                var rgb = BlendRgb(target.Data[i + 2] / 255.0, target.Data[i + 1] / 255.0, target.Data[i] / 255.0, adjusted.Data[i + 2] / 255.0, adjusted.Data[i + 1] / 255.0, adjusted.Data[i] / 255.0, layer.Blend);
+                target.Data[i] = Byte(target.Data[i] * (1 - a) + rgb.B * a * 255); target.Data[i + 1] = Byte(target.Data[i + 1] * (1 - a) + rgb.G * a * 255); target.Data[i + 2] = Byte(target.Data[i + 2] * (1 - a) + rgb.R * a * 255);
+            }
+        });
+    }
+    public static void Composite(Raster output, Layer layer, CancellationToken cancellationToken = default)
+    {
+        var src = layer.Pixels; var mask = layer.Mask; var map = layer.Matrix;
+        var corners = new[] { new Point(0, 0), new Point(src.Width, 0), new Point(src.Width, src.Height), new Point(0, src.Height) }.Select(layer.Document).ToArray();
+        int sampleFactorX = 1, sampleFactorY = 1;
+        // Pre-filter minification in premultiplied space. Bilinear alone aliases fine details.
+        if (layer.Warp == null)
+        {
+            while (sampleFactorX < 64 && sampleFactorX * 2 * layer.Scale * layer.ScaleX <= 1) sampleFactorX *= 2;
+            while (sampleFactorY < 64 && sampleFactorY * 2 * layer.Scale * layer.ScaleY <= 1) sampleFactorY *= 2;
+            if (sampleFactorX > 1 || sampleFactorY > 1) { src = DownsampleForRender(src, mask, sampleFactorX, sampleFactorY, cancellationToken); mask = null; }
+        }
+        int left = (int)Math.Clamp(Math.Floor(corners.Min(p => p.X)) - 1, 0, output.Width), top = (int)Math.Clamp(Math.Floor(corners.Min(p => p.Y)) - 1, 0, output.Height);
+        int right = (int)Math.Clamp(Math.Ceiling(corners.Max(p => p.X)) + 1, 0, output.Width), bottom = (int)Math.Clamp(Math.Ceiling(corners.Max(p => p.Y)) + 1, 0, output.Height);
+        map.Invert(); var inverseWarp = layer.Warp?.Map().Inverse();
+        Parallel.For(top, bottom, new ParallelOptions { CancellationToken = cancellationToken }, y =>
         {
             for (int x = left; x < right; x++)
             {
                 var p = map.Transform(new Point(x + .5, y + .5));
-                if (p.X < 0 || p.Y < 0 || p.X >= src.Width || p.Y >= src.Height) continue;
-                // Bilinear sampling in premultiplied space avoids dark fringes at transparent edges.
-                double sx = Math.Clamp(p.X - .5, 0, src.Width - 1), sy = Math.Clamp(p.Y - .5, 0, src.Height - 1);
-                int x0 = (int)sx, y0 = (int)sy, x1 = Math.Min(x0 + 1, src.Width - 1), y1 = Math.Min(y0 + 1, src.Height - 1);
+                if (inverseWarp is { } warp) { p = warp.Transform(p); p = new Point(p.X * src.Width, p.Y * src.Height); }
+                else if (sampleFactorX > 1 || sampleFactorY > 1) p = new Point(p.X / sampleFactorX, p.Y / sampleFactorY);
+                if (!double.IsFinite(p.X) || !double.IsFinite(p.Y) || p.X < -.5 || p.Y < -.5 || p.X > src.Width + .5 || p.Y > src.Height + .5) continue;
+                // Transparent extension, rather than a hard geometric cutoff, gives subpixel edge coverage.
+                double sx = p.X - .5, sy = p.Y - .5; int x0 = (int)Math.Floor(sx), y0 = (int)Math.Floor(sy);
                 double fx = sx - x0, fy = sy - y0, a = 0, b = 0, g = 0, r = 0;
                 void Sample(int xx, int yy, double weight)
                 {
+                    if (xx < 0 || yy < 0 || xx >= src.Width || yy >= src.Height || weight <= 0) return;
                     int index = yy * src.Width + xx, i = index * 4;
-                    double aa = src.Data[i + 3] / 255.0 * (layer.Mask == null ? 1 : layer.Mask[index] / 255.0) * weight;
+                    double aa = src.Data[i + 3] / 255.0 * (mask == null ? 1 : mask[index] / 255.0) * weight;
                     a += aa; b += src.Data[i] / 255.0 * aa; g += src.Data[i + 1] / 255.0 * aa; r += src.Data[i + 2] / 255.0 * aa;
                 }
-                Sample(x0, y0, (1 - fx) * (1 - fy)); Sample(x1, y0, fx * (1 - fy)); Sample(x0, y1, (1 - fx) * fy); Sample(x1, y1, fx * fy);
+                Sample(x0, y0, (1 - fx) * (1 - fy)); Sample(x0 + 1, y0, fx * (1 - fy)); Sample(x0, y0 + 1, (1 - fx) * fy); Sample(x0 + 1, y0 + 1, fx * fy);
                 if (a > 0) Over(output.Data, (y * output.Width + x) * 4, b / a, g / a, r / a, a * layer.Opacity, layer.Blend);
             }
         });
+    }
+    static Raster DownsampleForRender(Raster source, byte[]? mask, int factorX, int factorY, CancellationToken token)
+    {
+        var result = new Raster((source.Width + factorX - 1) / factorX, (source.Height + factorY - 1) / factorY);
+        Parallel.For(0, result.Height, new ParallelOptions { CancellationToken = token }, y =>
+        {
+            for (int x = 0; x < result.Width; x++)
+            {
+                double a = 0, b = 0, g = 0, r = 0;
+                for (int yy = y * factorY; yy < Math.Min(source.Height, (y + 1) * factorY); yy++)
+                for (int xx = x * factorX; xx < Math.Min(source.Width, (x + 1) * factorX); xx++)
+                {
+                    int pixel = yy * source.Width + xx, i = pixel * 4; double alpha = source.Data[i + 3] / 255.0 * (mask == null ? 1 : mask[pixel] / 255.0);
+                    a += alpha; b += source.Data[i] * alpha; g += source.Data[i + 1] * alpha; r += source.Data[i + 2] * alpha;
+                }
+                int di = (y * result.Width + x) * 4;
+                if (a > 0) { result.Data[di] = Byte(b / a); result.Data[di + 1] = Byte(g / a); result.Data[di + 2] = Byte(r / a); }
+                result.Data[di + 3] = Byte(a * 255 / (factorX * factorY));
+            }
+        }); return result;
     }
     // Direct C# translation of LevelRange.normalized/apply in upstream Document/Levels.swift.
     public static double Level(double value, double black, double white, double gamma, double outputBlack = 0, double outputWhite = 255)
@@ -78,13 +194,13 @@ public static class Imaging
     }
     public static Raster Adjust(Layer layer, Selection? selection, string kind, double a = 0, double b = 255, double c = 1)
     {
-        var src = layer.Pixels; var result = src.Clone(); var matrix = layer.Matrix;
+        var src = layer.Pixels; var result = src.Clone();
         Parallel.For(0, src.Height, y =>
         {
             for (int x = 0; x < src.Width; x++)
             {
-                var point = matrix.Transform(new Point(x + .5, y + .5));
-                if (selection != null && !selection.Contains(point.X, point.Y)) continue;
+                var point = layer.Document(new Point(x + .5, y + .5));
+                double coverage = selection?.Weight(point.X, point.Y) ?? 1; if (coverage <= 0) continue;
                 int i = (y * src.Width + x) * 4;
                 double blue = src.Data[i] / 255.0, green = src.Data[i + 1] / 255.0, red = src.Data[i + 2] / 255.0;
                 if (kind == "levels") { blue = Level(blue, a, b, c); green = Level(green, a, b, c); red = Level(red, a, b, c); }
@@ -96,7 +212,7 @@ public static class Imaging
                     double luminance = .2126 * red + .7152 * green + .0722 * blue, amount = a / 100 + 1;
                     blue = luminance + (blue - luminance) * amount; green = luminance + (green - luminance) * amount; red = luminance + (red - luminance) * amount;
                 }
-                result.Data[i] = Byte(blue * 255); result.Data[i + 1] = Byte(green * 255); result.Data[i + 2] = Byte(red * 255);
+                result.Data[i] = Byte(src.Data[i] * (1 - coverage) + Math.Clamp(blue, 0, 1) * coverage * 255); result.Data[i + 1] = Byte(src.Data[i + 1] * (1 - coverage) + Math.Clamp(green, 0, 1) * coverage * 255); result.Data[i + 2] = Byte(src.Data[i + 2] * (1 - coverage) + Math.Clamp(red, 0, 1) * coverage * 255);
             }
         });
         return result;
@@ -119,13 +235,13 @@ public static class Imaging
                 temp[di + 3] += (float)(source.Data[si + 3] * weight);
             }
         });
-        var result = source.Clone(); var map = layer.Matrix;
+        var result = source.Clone();
         Parallel.For(0, h, y =>
         {
             for (int x = 0; x < w; x++)
             {
-                var p = map.Transform(new Point(x + .5, y + .5));
-                if (selection != null && !selection.Contains(p.X, p.Y)) continue;
+                var p = layer.Document(new Point(x + .5, y + .5));
+                double coverage = selection?.Weight(p.X, p.Y) ?? 1; if (coverage <= 0) continue;
                 double b = 0, g = 0, r = 0, a = 0;
                 for (int k = -radius; k <= radius; k++)
                 {
@@ -133,9 +249,11 @@ public static class Imaging
                     b += temp[si] * wt; g += temp[si + 1] * wt; r += temp[si + 2] * wt; a += temp[si + 3] * wt;
                 }
                 int di = (y * w + x) * 4;
-                result.Data[di] = a > 0 ? Byte(b * 255 / a) : (byte)0;
-                result.Data[di + 1] = a > 0 ? Byte(g * 255 / a) : (byte)0;
-                result.Data[di + 2] = a > 0 ? Byte(r * 255 / a) : (byte)0; result.Data[di + 3] = Byte(a);
+                // Interpolate the selected effect in premultiplied space as its alpha changes.
+                double originalAlpha = source.Data[di + 3], outAlpha = originalAlpha * (1 - coverage) + a * coverage;
+                result.Data[di] = outAlpha > 0 ? Byte((source.Data[di] * originalAlpha * (1 - coverage) + b * 255 * coverage) / outAlpha) : (byte)0;
+                result.Data[di + 1] = outAlpha > 0 ? Byte((source.Data[di + 1] * originalAlpha * (1 - coverage) + g * 255 * coverage) / outAlpha) : (byte)0;
+                result.Data[di + 2] = outAlpha > 0 ? Byte((source.Data[di + 2] * originalAlpha * (1 - coverage) + r * 255 * coverage) / outAlpha) : (byte)0; result.Data[di + 3] = Byte(outAlpha);
             }
         });
         return result;
@@ -162,7 +280,7 @@ public sealed class BrushStroke
     public BrushStroke(Layer layer, Selection? selection, Color color, double diameter, double hardness, double opacity, bool erase, bool mask)
     {
         this.layer = layer; this.selection = selection; this.color = color; this.hardness = hardness; this.opacity = opacity; this.erase = erase;
-        this.mask = mask && layer.Mask != null; radius = diameter / 2 / layer.Scale;
+        this.mask = mask && layer.Mask != null; radius = diameter / 2;
         original = layer.Pixels; originalMask = layer.Mask;
         coverage = new float[original.Width * original.Height];
         if (this.mask) layer.Mask = (byte[])layer.Mask!.Clone(); else layer.Pixels = original.Clone();
@@ -171,7 +289,7 @@ public sealed class BrushStroke
     public static double Falloff(double u) => Math.Max(0, (Math.Exp(-2.5 * u * u) - Math.Exp(-2.5)) / (1 - Math.Exp(-2.5)));
     public void Point(Point documentPoint)
     {
-        var point = layer.Local(documentPoint);
+        var point = documentPoint;
         if (previous is { } start)
         {
             var delta = point - start; int steps = Math.Max(1, (int)Math.Ceiling(delta.Length / Math.Max(.5, radius * .2)));
@@ -183,16 +301,17 @@ public sealed class BrushStroke
     void Dab(Point point)
     {
         int w = original.Width, h = original.Height;
-        int left = Math.Max(0, (int)Math.Floor(point.X - radius)), right = Math.Min(w - 1, (int)Math.Ceiling(point.X + radius));
-        int top = Math.Max(0, (int)Math.Floor(point.Y - radius)), bottom = Math.Min(h - 1, (int)Math.Ceiling(point.Y + radius));
-        var map = layer.Matrix;
+        var bounds = new[] { new Point(point.X - radius, point.Y - radius), new Point(point.X + radius, point.Y - radius), new Point(point.X + radius, point.Y + radius), new Point(point.X - radius, point.Y + radius) }.Select(layer.Local).ToArray();
+        if (bounds.Any(p => !double.IsFinite(p.X) || !double.IsFinite(p.Y))) return;
+        int left = (int)Math.Clamp(Math.Floor(bounds.Min(p => p.X)), 0, w), right = (int)Math.Clamp(Math.Ceiling(bounds.Max(p => p.X)), -1, w - 1);
+        int top = (int)Math.Clamp(Math.Floor(bounds.Min(p => p.Y)), 0, h), bottom = (int)Math.Clamp(Math.Ceiling(bounds.Max(p => p.Y)), -1, h - 1);
         for (int y = top; y <= bottom; y++) for (int x = left; x <= right; x++)
         {
-            var docPoint = map.Transform(new Point(x + .5, y + .5));
-            if (selection != null && !selection.Contains(docPoint.X, docPoint.Y)) continue;
-            double distance = Math.Sqrt(Math.Pow(x + .5 - point.X, 2) + Math.Pow(y + .5 - point.Y, 2)) / radius;
+            var docPoint = layer.Document(new Point(x + .5, y + .5));
+            double selected = selection?.Weight(docPoint.X, docPoint.Y) ?? 1; if (selected <= 0) continue;
+            double distance = (docPoint - point).Length / radius;
             if (distance > 1) continue;
-            double amount = (distance <= hardness ? 1 : Falloff((distance - hardness) / (1 - hardness))) * opacity;
+            double amount = (distance <= hardness ? 1 : Falloff((distance - hardness) / (1 - hardness))) * opacity * selected;
             int pi = y * w + x, i = pi * 4;
             if (amount <= coverage[pi]) continue;
             coverage[pi] = (float)amount;

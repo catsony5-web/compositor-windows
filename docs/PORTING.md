@@ -1,78 +1,62 @@
-# Windows porting notes
+# Morupixel implementation and compatibility
 
-## Scope and identity
+Morupixel 0.2.0-preview.1 is an independent Windows C#/.NET 8 WPF editor. Its name, executable and document format are independent from Compositor. The original MIT copyright/permission notice remains in LICENSE. Neither complete parity nor endorsement is implied.
 
-Compositor for Windows 0.1.0 Preview is an independent C#/.NET 8 WPF implementation for Windows. It is a community port inspired by the open-source macOS project [Compositor](https://github.com/robbietilton/Compositor), created by Robbie Tilton and released by Wonder Assembly LLC under MIT. It is not an official upstream port and does not promise behavioral, visual, performance, or file-format parity.
+Reference source: [Compositor snapshot 9d5582dc59429501e270828b27879de9ca30a853](https://github.com/robbietilton/Compositor/tree/9d5582dc59429501e270828b27879de9ca30a853), inspected 2026-09-21. The upstream store in this snapshot supports `.comp` package versions 1–7.
 
-The port has a separate application model (`Document`, `Layer`, and `Raster`), a separate renderer, and a separate `.cwproj` storage format. The original project stores `.comp` packages and currently describes versions 1–6; Windows reads and writes only its own `.cwproj` version 1.
+## Feature audit
 
-## Feature matrix
-
-The matrix describes the current Windows source, not the complete upstream feature list.
-
-| Area | Windows 0.1.0 Preview | Upstream relationship / current limitation |
+| Area | Morupixel implemented scope | Differences from upstream / limits |
 | --- | --- | --- |
-| Raster document | Canvas up to 8,192 px per side and 16,777,216 pixels; up to 32 layers | Separate limits from upstream; no parity claim |
-| Layer stack | Add, delete, duplicate, rename, reorder, visibility, lock, opacity | Folders/groups and nested layers are not implemented |
-| Blend modes | Normal, Multiply, Screen, Overlay, Soft Light, Darken, Lighten, Difference, Color Dodge, Color Burn | Matches the corresponding basic names; no Hue/Saturation/Color/Luminosity modes |
-| Transform | Move, scale, rotate, horizontal/vertical flip; numeric entry | No free distort, multi-layer transform, snapping, guides, or sampling setting |
-| Masks | One raster mask per layer; paint, fill, invert, remove; white reveals and black hides | No folder masks, linked/live masks, or clipping masks |
-| Selections | Rectangle and ellipse marquee, select all, deselect, selection-limited edits | No lasso, polygonal lasso, magic wand, feather/expand/contract, or selection move |
-| Paint | Brush and eraser with size, hardness, opacity; selection clipping; undo | No spot healing, clone stamp, smudge/liquify, or content-aware fill |
-| Shapes/gradient | Raster rectangle, ellipse, and foreground-to-transparent gradient | Not the upstream editable shape/text model |
-| Text | Dialog-created text is rendered into a raster layer | No editable text metadata, paragraph boxes, or text clipping-mask behavior |
-| Adjustments | Destructive Levels, Exposure, Saturation, Grayscale, Invert, Gaussian Blur | No adjustment layers, Curves, Gradient Map, Grain/Noise, Motion Blur, Lens Correction, or live preview |
-| Input | PNG, JPEG, BMP, TIFF, GIF through WPF decoding | No HEIC, PSD, or upstream `.comp` input |
-| Output | Flattened PNG/JPEG; JPEG uses a white background for transparency | No upstream project package export; no resolution/ICC/CMYK metadata promise |
-| Clipboard | Copy merged image and paste image as a layer | Windows clipboard image path only |
-| Projects | `.cwproj` ZIP with `document.json`, indexed PNG layers, and optional masks | Incompatible with `.comp`; no multi-document tabs |
-| AI/network | No AI model and no network service | The port does not implement upstream background removal or an AI feature |
+| Workspace | Up to 8 document tabs, per-document history and view, dark Korean UI, guides and snapping | No assertion of equivalent keyboard coverage, accessibility or measured responsiveness |
+| Layers | Up to 128, groups, multiple selection, opacity, visibility, locking and reordering | 384MB source layer/mask limit; groups composite in isolation, unlike upstream pass-through |
+| Blends | Normal, Multiply, Screen, Overlay, Soft Light, Darken, Lighten, Difference, Color Dodge, Color Burn, Hue, Saturation, Color, Luminosity | CPU 8-bit sRGB rendering; platform/rounding differences possible |
+| Transforms | Numeric and gesture move/scale/rotate/flip, nonuniform scale, multiple layers, four-corner projective warp | Boundary antialiasing and sampling differ from CoreGraphics/CoreImage; not every upstream transform interaction is reproduced |
+| Masks | Layer and isolated-group masks, clipping to lower layer, brush editing | No independently placed/unlinked masks or arbitrary live mask reference graph |
+| Selection | Rectangle, ellipse, lasso, polygon, contiguous magic wand, add/subtract/intersect/invert, feather/grow/shrink, alpha selection | CPU coverage mask; no upstream selection-geometry or edge-quality equivalence claim |
+| Retouch | Clone, healing, blur brush, smudge, liquify displacement, bounded content-aware fill | Algorithms and limits differ; complex fills require visual review and manual cleanup |
+| Text | Editable content, system font, size, bold/italic, alignment and color | No paragraph box, tracking or leading controls; WPF metrics differ from AppKit |
+| Shapes | Raster rectangles/ellipses and gradients | Not editable vector shape metadata after creation |
+| Adjustment layers | Composite and individual RGB-channel Levels/Curves, Hue/Saturation, Exposure+Offset+Gamma, Gradient Map, Grain | No range-aware/colorize HSV |
+| Filters | Gaussian blur, motion blur, noise and radial lens distortion | CPU approximations; no professional camera/lens profile calibration |
+| Background removal | Bundled 4.6MB U²-NetP, local ONNX Runtime CPU, editable mask result | Not Apple's Vision model; thin/transparent edges need manual correction; no comparative benchmark establishes equal quality |
+| Import | WIC PNG/JPEG/BMP/TIFF/GIF; EXIF 1–8; embedded ICC conversion to sRGB; HEIC/HEIF with installed Windows codec | First frame only, normalized to 8-bit; no PSD or preserved source PPI/ICC/CMYK editing |
+| Export | PNG, ZIP-compressed TIFF, JPEG quality 1–100, encoded-byte preview; Lanczos3 alpha-aware resizing helper | JPEG transparency uses white matte; no HEIC/PSD output or original metadata preservation |
+| Print export | ICC-profiled CMYK TIFF with DPI setting and an sRGB round-trip preview | Native editing remains 8-bit sRGB; this is not a CMYK editing workspace or a press-certified proof. See [CMYK](CMYK.md). |
+| Projects | `.moruproj` v2; reads prior `.cwproj` v1/v2; atomic saves | Separate format; unsupported versions are rejected |
+| Upstream packages | Restricted `.comp` directory import/export (see below) | Explicitly partial, never blanket compatibility |
+| Limits | 8192px per side, 16,777,216 total canvas pixels, 128 layers; 50 undo entries/192MB exclusively retained pixels | Lower than upstream's 30,000px/100MP and layer bounds; full app memory can exceed history/source limits due to rendering buffers |
 
-## Source mapping and algorithm attribution
+## Upstream `.comp` bridge
 
-Reference snapshot: [`9d5582dc59429501e270828b27879de9ca30a853`](https://github.com/robbietilton/Compositor/tree/9d5582dc59429501e270828b27879de9ca30a853), inspected on 2026-09-21. The upstream MIT license is preserved byte-for-byte in this repository's LICENSE.
+The original format is a directory package containing `manifest.json` and `images/{UUID}.png`, not a ZIP file. On Windows select its folder or the manifest for import. Export creates a new `.comp` directory and refuses to replace an existing package. Copy the complete directory to macOS.
 
-The following relationships are recorded because the Windows source itself names the upstream counterparts. They are attribution and implementation notes, not a claim that the whole upstream application was mechanically translated.
+Supported: raster pixels and transforms; visibility/opacity and the 14 named blends; simple normal groups; enabled linked grayscale masks; basic text with cached pixels; composite and individual RGB-channel Levels and Curves, Exposure (including offset/gamma), Gradient Map and Grain adjustment metadata. Adjustment algorithms are based on upstream implementations, but cross-platform arithmetic/premultiplication can differ at rounding boundaries. Imported mask sizes may be resampled with an explicit warning. Text editing can change appearance if a font is unavailable or OS layout metrics differ.
 
-| Windows source | Upstream reference | What is carried over |
+Rejected rather than silently flattened: unsupported format/color space, live mask source references, separately placed/unlinked or disabled masks, shape metadata, layer effects, group masks, blend or adjustment layers inside groups (upstream pass-through semantics differ), color-range HSV, custom text spacing/paragraph bounds, unsupported curve endpoints/count, and our own projective/clipping features when exporting. Bold/italic or alpha text styles are not exported as native upstream text metadata. Layer locking and print-resolution metadata have explicit warnings because the bridge does not preserve them.
+
+An import succeeds only when the complete document validates. Unsupported files leave the active document and original file intact. Fixture tests include hand-authored upstream JSON, five adjustment round trips, text/group/mask metadata, PNG grayscale masks, path escape rejection and unsupported effects. A macOS application round trip has not been run in this Windows environment; schema/pixel tests do not substitute for it.
+
+## Algorithm attribution
+
+| Morupixel code | Upstream source | Relationship |
 | --- | --- | --- |
-| `src/Model.cs`, `Layer.Matrix` | `Compositor/Document/LayerTransform.swift`, `BrushRaster.pixelToDocument` | Centered layer placement, scale, rotation, and flips. The C# source includes a port comment. |
-| `src/Imaging.cs`, `Imaging.Level` | `Compositor/Document/Levels.swift`, `LevelRange.normalized` and `apply` | Input/output clamping and gamma mapping. The C# source labels this a direct C# translation. |
-| `src/Imaging.cs`, `BrushStroke.Falloff` | `Compositor/Document/BrushStroke.swift`, `BrushRaster.falloff` | Normalized Gaussian-like soft brush falloff and a stroke-wide coverage cap. The C# source labels the falloff as ported. |
-| `src/Imaging.cs`, `Render`/`Composite` | `Compositor/Rendering/LayerRenderer.swift` and `Document/LayerAppearance.swift` | Layer compositing concepts, opacity, transforms, masks, and named blend modes; the Windows code uses its own WPF/BGRA implementation and bilinear premultiplied sampling. |
-| `src/Model.cs`, `History` | `Compositor/Document/DocumentHistory.swift` | Snapshot-based undo/redo and retention-aware trimming; Windows uses C# object snapshots and different 50-entry/192MB limits, while upstream defaults differ. |
-| `src/ProjectStore.cs` | Upstream project-store documentation | Atomic replacement and validation are independent Windows implementation choices. The schema and file extension are different. |
+| `Model.cs`, `Layer.Matrix` | `Document/LayerTransform.swift`, `BrushRaster.pixelToDocument` | Centered placement, scale, rotation and flips |
+| `Imaging.cs`, `Imaging.Level` | `Document/Levels.swift` | Direct translation of clamped input/output gamma mapping |
+| `Imaging.cs`, `BrushStroke.Falloff` | `Document/BrushStroke.swift` | Normalized Gaussian-like falloff and stroke-wide coverage cap |
+| `DocumentFeatures.cs` | `Document/Curves.swift`, `Document/ImageAdjustments.swift` and associated kernels | Monotone Hermite curves, linear-light exposure, gradient mapping and deterministic grain |
+| `CompositorPackage.cs` | `IO/ProjectStore.swift`, document Codable types | Independent reader/writer for a strictly supported subset of v1–7 |
+| `Model.cs`, `History` | `Document/DocumentHistory.swift` | Snapshot and retained backing-store concepts; independent bounds and implementation |
+| `BackgroundRemoval.cs` | U²-Net and rembg session documentation | Independent C# local inference integration, original pretrained weights; model terms in `models/README.md` |
 
-The upstream files above are available in the upstream repository and remain subject to the upstream MIT notice. See [`../NOTICE.md`](../NOTICE.md) and [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
+`ImportExport.cs` implements WIC color conversion/EXIF orientation, encoders and premultiplied Lanczos3 resizing. The engine uses independent managed BGRA surfaces and CPU rendering, not Apple's SwiftUI/Metal/CoreImage frameworks.
 
-## `.cwproj` format
+## Native Morupixel format
 
-Version 1 is a ZIP container containing:
+`.moruproj` is a ZIP containing `document.json`, ordered `layers/<index>.png` and optional raw `layers/<index>.mask`. Version 2 adds layer kind, parent IDs, clipping, nonuniform transforms, text, adjustments and warp metadata. Version 1 remains readable. It is not the `.comp` schema, even when some pixels/metadata can be exchanged by the bridge.
 
-```text
-document.json
-layers/0.png
-layers/0.mask       (optional, raw 8-bit mask bytes)
-layers/1.png
-...
-```
+Saves validate before writing, stage a sibling temporary file, flush and replace atomically. The reader checks dimensions, layer counts, names, IDs, parent graph and finite numeric values. Source rasters and masks are immutable by convention so history can share buffers safely.
 
-`document.json` stores canvas width/height, document name, active layer ID, and ordered layer metadata: ID, name, visibility, lock state, opacity, blend mode, X/Y, scale, rotation, flips, and mask presence. PNG files retain each layer raster and masks use the corresponding layer pixel dimensions. Saving writes a temporary file, flushes it, and replaces the destination atomically.
+## Build and packaging
 
-The loader accepts only manifest version 1, rejects duplicate IDs and invalid finite numeric ranges, limits layers to 32, validates raster dimensions, and rejects missing layer or mask entries. These checks protect this port's format; they do not make a `.cwproj` a reader for an upstream `.comp` document.
-
-## Build and release
-
-The source project targets `net8.0-windows` with WPF. The Windows x64 distribution is a portable ZIP containing the application and .NET runtime. Extract the entire archive before running the executable. The preview is unsigned.
-
-```powershell
-.\scripts\Build.ps1
-.\scripts\Test.ps1
-.\scripts\Publish.ps1 -Version 0.1.0-preview.1
-```
-
-The scripts use `dotnet restore`, `dotnet build`, and `dotnet publish -r win-x64 --self-contained true`. `Publish.ps1` creates `release\Compositor.Windows-<version>-win-x64.zip`, a matching `.sha256` file, and a published self-test report in `release/published-self-test/`. The source also has a `--self-test <result-file>` entry point. The ZIP includes the original MIT notice and the installed .NET SDK's full license and third-party notices. Clean-machine and Windows 10 compatibility checks remain outstanding.
-
-## Rendering limits
-
-The renderer uses premultiplied bilinear color sampling, but fractional translation and rotation do not calculate full pixel coverage at the transformed layer boundary. Edge aliasing is visible in those cases. Gaussian blur stays within the original layer raster rather than expanding it. Large documents are processed on the UI thread with parallel pixel loops; interactive responsiveness still needs improvement. EXIF auto-orientation and ICC/CMYK color management are not implemented.
+Use `scripts/Build.ps1`, `scripts/Test.ps1`, then `scripts/Publish.ps1 -Version 0.2.0-preview.1`. The portable output is `release/Morupixel-0.2.0-preview.1-win-x64.zip`, with a SHA-256 companion. Packaging verifies the pinned model and runs the published EXE self-tests. Source/runtime/model licenses are included. Windows 10 and a clean machine require separate manual verification. The repository URL and internal namespace retain earlier preview identifiers; no public rename is performed by the build.

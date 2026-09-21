@@ -10,7 +10,7 @@ public static class ProjectStore
 {
     public sealed class Manifest
     {
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = 2;
         public int Width { get; set; }
         public int Height { get; set; }
         public string? Name { get; set; } = "";
@@ -32,6 +32,15 @@ public static class ProjectStore
         public bool FlipX { get; set; }
         public bool FlipY { get; set; }
         public bool HasMask { get; set; }
+        public LayerKind Kind { get; set; }
+        public Guid? ParentId { get; set; }
+        public bool Clipped { get; set; }
+        public double ScaleX { get; set; } = 1;
+        public double ScaleY { get; set; } = 1;
+        public TextSpec? Text { get; set; }
+        public AdjustmentSpec? Adjustment { get; set; }
+        public WarpQuad? Warp { get; set; }
+        public Layer ToLayer(Raster pixels, byte[]? mask = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Text = Text, Adjustment = Adjustment, Warp = Warp };
     }
     public static void AtomicWrite(string path, Action<Stream> write)
     {
@@ -54,7 +63,7 @@ public static class ProjectStore
             for (int index = 0; index < doc.Layers.Count; index++)
             {
                 var l = doc.Layers[index];
-                manifest.Layers!.Add(new LayerInfo { Id = l.Id, Name = l.Name, Visible = l.Visible, Locked = l.Locked, Opacity = l.Opacity, Blend = l.Blend, X = l.X, Y = l.Y, Scale = l.Scale, Rotation = l.Rotation, FlipX = l.FlipX, FlipY = l.FlipY, HasMask = l.Mask != null });
+                manifest.Layers!.Add(new LayerInfo { Id = l.Id, Name = l.Name, Visible = l.Visible, Locked = l.Locked, Opacity = l.Opacity, Blend = l.Blend, X = l.X, Y = l.Y, Scale = l.Scale, Rotation = l.Rotation, FlipX = l.FlipX, FlipY = l.FlipY, HasMask = l.Mask != null, Kind = l.Kind, ParentId = l.ParentId, Clipped = l.Clipped, ScaleX = l.ScaleX, ScaleY = l.ScaleY, Text = l.Text, Adjustment = l.Adjustment, Warp = l.Warp });
                 using (var s = zip.CreateEntry($"layers/{index}.png", CompressionLevel.NoCompression).Open()) l.Pixels.WritePng(s);
                 if (l.Mask != null) using (var s = zip.CreateEntry($"layers/{index}.mask", CompressionLevel.Optimal).Open()) s.Write(l.Mask);
             }
@@ -86,7 +95,7 @@ public static class ProjectStore
                 if (maskEntry.Length != pixels.Width * pixels.Height) throw new InvalidDataException("마스크 크기가 다릅니다.");
                 mask = new byte[maskEntry.Length]; using var s = maskEntry.Open(); s.ReadExactly(mask);
             }
-            doc.Add(new Layer { Id = l.Id, Name = l.Name!, Pixels = pixels, Mask = mask, Visible = l.Visible, Locked = l.Locked, Opacity = l.Opacity, Blend = l.Blend, X = l.X, Y = l.Y, Scale = l.Scale, Rotation = l.Rotation, FlipX = l.FlipX, FlipY = l.FlipY });
+            doc.Add(l.ToLayer(pixels, mask));
         }
         doc.ActiveId = manifest.ActiveId;
         doc.Validate();
@@ -94,7 +103,7 @@ public static class ProjectStore
     }
     static void ValidateManifest(Manifest manifest)
     {
-        if (manifest.Version != 1) throw new InvalidDataException("지원하지 않는 작업 파일 버전입니다.");
+        if (manifest.Version is not (1 or 2)) throw new InvalidDataException("지원하지 않는 작업 파일 버전입니다.");
         Raster.ValidateSize(manifest.Width, manifest.Height);
         if (string.IsNullOrWhiteSpace(manifest.Name) || Encoding.UTF8.GetByteCount(manifest.Name) > 16_384)
             throw new InvalidDataException("작업 이름이 올바르지 않습니다.");
@@ -112,6 +121,11 @@ public static class ProjectStore
         }
         if (manifest.ActiveId != Guid.Empty && !ids.Contains(manifest.ActiveId))
             throw new InvalidDataException("활성 레이어가 존재하지 않습니다.");
+        // Validate all structural metadata before decoding image payloads, including cycles.
+        var header = new Document { Width = manifest.Width, Height = manifest.Height, Name = manifest.Name!, ActiveId = manifest.ActiveId };
+        var placeholder = new Raster(1, 1);
+        foreach (var l in manifest.Layers) header.Layers.Add(l!.ToLayer(placeholder));
+        header.Validate();
     }
     public static void Export(Document doc, string path)
     {

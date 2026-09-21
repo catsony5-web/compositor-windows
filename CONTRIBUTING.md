@@ -1,6 +1,6 @@
 # Contributing
 
-This is an independent Windows community port of [Compositor by Robbie Tilton](https://github.com/robbietilton/Compositor). Please report Windows-specific problems in this repository.
+Morupixel is an independent Windows image editor derived in part from [Compositor by Robbie Tilton](https://github.com/robbietilton/Compositor). Please report Windows-specific problems in this repository.
 
 Build on Windows with the .NET 8 SDK and PowerShell:
 

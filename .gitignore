@@ -23,6 +23,7 @@ tests/*.png
 tests/*.jpg
 tests/*.jpeg
 tests/*.cwproj
+tests/*.moruproj
 tests/*.tmp
 tests/atomic.txt
 tests/test-results.txt

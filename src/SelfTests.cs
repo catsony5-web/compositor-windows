@@ -47,8 +47,15 @@ public static class SelfTests
         Test("atomic write preserves file on failure", () => { string file = Path.Combine(directory, "atomic.txt"); File.WriteAllText(file, "original"); try { ProjectStore.AtomicWrite(file, s => { s.WriteByte(1); throw new IOException("injected"); }); } catch (IOException) { } Assert(File.ReadAllText(file) == "original"); });
         Test("invalid project version rejected", () => { string file = Path.Combine(directory, "invalid.cwproj"); using (var fileStream = File.Create(file)) using (var z = new ZipArchive(fileStream, ZipArchiveMode.Create)) using (var w = new StreamWriter(z.CreateEntry("document.json").Open())) w.Write("{\"Version\":999}"); bool rejected = false; try { ProjectStore.Load(file); } catch (InvalidDataException) { rejected = true; } Assert(rejected); });
         Test("oversize allocation rejected", () => { bool rejected = false; try { _ = new Raster(8192, 8192); } catch (InvalidDataException) { rejected = true; } Assert(rejected); });
-        Test("demo render and project export", () => { var d = Demo.Create(); ProjectStore.Save(d, Path.Combine(directory, "sample.cwproj")); ProjectStore.Export(d, Path.Combine(directory, "sample.png")); var read = ProjectStore.Load(Path.Combine(directory, "sample.cwproj")); Assert(read.Layers.Count == 5 && Imaging.Render(read).Data.SequenceEqual(Imaging.Render(d).Data)); });
+        Test("demo render and project export", () => { var d = Demo.Create(); ProjectStore.Save(d, Path.Combine(directory, "sample.moruproj")); ProjectStore.Export(d, Path.Combine(directory, "sample.png")); var read = ProjectStore.Load(Path.Combine(directory, "sample.moruproj")); Assert(read.Layers.Count == d.Layers.Count && read.Layers.Any(l => l.Kind == LayerKind.Text) && Imaging.Render(read).Data.SequenceEqual(Imaging.Render(d).Data)); });
         PersistenceTests.Run(Test);
+        LayerPickingTests.Run(Test);
+        EngineFeatureTests.Run(Test);
+        AdvancedToolTests.Run(Test);
+        ImportExportTests.Run(Test);
+        MainWindow.RunCommandTests(Test, directory);
+        CmykExportTests.Run(Test);
+        EditingDialogTests.Run(Test);
         results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }
