@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Compositor.Windows</AssemblyName>
+    <Version>0.1.0-preview.1</Version>
+    <Product>Compositor for Windows — Community Preview</Product>
+    <Description>Unofficial Windows port of Robbie Tilton's Compositor</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>Compositor.Windows.Program</StartupObject>
+  </PropertyGroup>
+</Project>

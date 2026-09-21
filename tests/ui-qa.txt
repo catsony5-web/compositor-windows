@@ -1,0 +1,20 @@
+Compositor Windows UI smoke verification — 2026-09-21
+Host: Windows 11, .NET 8 WPF, x64. Interaction: computer-use skill / @oai/sky.
+
+PASS Application starts and displays the Korean editor without an error dialog.
+PASS Sample 1280 x 800 document renders five ordered layers; moon is selected.
+PASS Korean menus, toolbar, layer list and properties fit the 1400 x 940 window.
+PASS New transparent layer button adds and selects layer 6; dirty indicator appears.
+PASS Brush tool paints a continuous mint stroke on the added layer.
+PASS Ctrl+Z removes that stroke while retaining the new layer.
+PASS G selects the gradient tool.
+PASS Exactly horizontal drag creates a foreground-to-transparent gradient layer.
+PASS Ctrl+S opens a native SaveFileDialog.
+PASS Saving to tests/ui-smoke.cwproj succeeds, clears dirty indicator, and displays save success.
+PASS Saved UI smoke project exists on disk and contains seven layers.
+PASS Alt+F4 closes the saved application normally.
+
+Screenshot: docs/screenshots/editor.png (initial sample, actual application capture).
+The final persistence-validation/no-op/slider-sync patches were applied after this UI pass;
+those patches are covered by the subsequent integrated build/tests where applicable.
+Windows 10, touch/pen input, multi-monitor DPI and clean-machine installation were not tested.

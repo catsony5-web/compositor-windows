@@ -1,0 +1,124 @@
+name: Build and release
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, self-test, and package
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build
+        shell: pwsh
+        run: .\scripts\Build.ps1 -Configuration Release
+
+      - name: Run self-tests
+        shell: pwsh
+        run: .\scripts\Test.ps1 -Configuration Release -SkipBuild
+
+      - name: Select package version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          }
+          else {
+            [xml] $project = Get-Content -LiteralPath '.\src\Compositor.Windows.csproj' -Raw
+            $version = [string] $project.Project.PropertyGroup.Version
+          }
+          "value=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Publish portable package
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+        run: .\scripts\Publish.ps1 -Configuration Release -Version $env:PACKAGE_VERSION -SkipTests
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compositor-windows-package
+          path: |
+            release/*.zip
+            release/*.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out release notes
+        uses: actions/checkout@v4
+
+      - name: Download package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: compositor-windows-package
+          path: release-download
+
+      - name: Create release and upload files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = @(Get-ChildItem -LiteralPath '.\release-download' -File |
+            Where-Object { $_.Name -match '\.(zip|sha256)$' } |
+            ForEach-Object { $_.FullName })
+          if ($files.Count -lt 2) {
+            throw 'Expected a ZIP archive and SHA-256 file.'
+          }
+          $tag = $env:GITHUB_REF_NAME
+          $repository = $env:GITHUB_REPOSITORY
+          $releaseJson = gh release view $tag --repo $repository --json assets 2>$null
+          $releaseExists = $LASTEXITCODE -eq 0
+          if ($releaseExists) {
+            $existingAssets = @(($releaseJson | ConvertFrom-Json).assets | ForEach-Object { $_.name })
+            $missingFiles = @($files | Where-Object { [System.IO.Path]::GetFileName($_) -notin $existingAssets })
+            if ($missingFiles.Count -gt 0) {
+              gh release upload $tag --repo $repository @missingFiles
+              if ($LASTEXITCODE -ne 0) {
+                throw "GitHub CLI exited with code $LASTEXITCODE."
+              }
+            }
+            else {
+              Write-Host 'Release assets already exist; leaving them unchanged.'
+            }
+          }
+          else {
+            $arguments = @('release', 'create', $tag, '--repo', $repository, '--verify-tag', '--notes-file', '.\docs\RELEASE_NOTES.md')
+            if ($tag.Contains('-')) {
+              $arguments += '--prerelease'
+            }
+            $arguments += $files
+            gh @arguments
+            if ($LASTEXITCODE -ne 0) {
+              throw "GitHub CLI exited with code $LASTEXITCODE."
+            }
+          }

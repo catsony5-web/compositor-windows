@@ -1,0 +1,40 @@
+PASS straight-alpha source-over
+PASS transparent backdrop retains source color
+PASS multiply
+PASS screen
+PASS dodge and burn endpoints
+PASS all blend modes bounded
+PASS layer order and visibility
+PASS layer mask
+PASS translation
+PASS transform round trip
+PASS 90 degree rotation and flip
+PASS levels identity across all 256 values
+PASS levels reference gamma and clipping
+PASS soft brush reference falloff
+PASS brush overlap capped per stroke
+PASS eraser preserves history pixels
+PASS brush respects selection
+PASS mask brush non-destructive
+PASS ellipse selection boundaries
+PASS adjustment alpha and selection
+PASS blur keeps flat color and transparency
+PASS history undo redo and saved revision
+PASS new edit invalidates redo
+PASS project complete round trip
+PASS PNG exact pixel round trip
+PASS JPEG flattens transparency to white
+PASS atomic write preserves file on failure
+PASS invalid project version rejected
+PASS oversize allocation rejected
+PASS demo render and project export
+PASS image decoder rejects an oversized bitmap header
+PASS document rejects malformed masks and duplicate IDs
+PASS document byte budget includes incoming mask
+PASS history removes a sole over-budget entry
+PASS history trims redo after current state changes retained bytes
+PASS no-op history commit preserves redo and saved revision
+PASS invalid save preserves the previous project
+PASS null and dangling manifest metadata are rejected
+
+38/38 passed; 0 failed. 2026-09-21T13:27:17.3564854+09:00
