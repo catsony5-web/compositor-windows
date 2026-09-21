@@ -1,6 +1,6 @@
 # Morupixel implementation and compatibility
 
-Morupixel 0.2.0-preview.1 is an independent Windows C#/.NET 8 WPF editor. Its name, executable and document format are independent from Compositor. The original MIT copyright/permission notice remains in LICENSE. Neither complete parity nor endorsement is implied.
+Morupixel 0.2.0-preview.10 is an independent Windows C#/.NET 8 WPF editor. Its name, executable and document format are independent from Compositor. The original MIT copyright/permission notice remains in LICENSE. Neither complete parity nor endorsement is implied.
 
 Reference source: [Compositor snapshot 9d5582dc59429501e270828b27879de9ca30a853](https://github.com/robbietilton/Compositor/tree/9d5582dc59429501e270828b27879de9ca30a853), inspected 2026-09-21. The upstream store in this snapshot supports `.comp` package versions 1–7.
 
@@ -15,13 +15,14 @@ Reference source: [Compositor snapshot 9d5582dc59429501e270828b27879de9ca30a853]
 | Masks | Layer and isolated-group masks, clipping to lower layer, brush editing | No independently placed/unlinked masks or arbitrary live mask reference graph |
 | Selection | Rectangle, ellipse, lasso, polygon, contiguous magic wand, add/subtract/intersect/invert, feather/grow/shrink, alpha selection | CPU coverage mask; no upstream selection-geometry or edge-quality equivalence claim |
 | Retouch | Clone, healing, blur brush, smudge, liquify displacement, bounded content-aware fill | Algorithms and limits differ; complex fills require visual review and manual cleanup |
-| Text | Editable content, system font, size, bold/italic, alignment and color | No paragraph box, tracking or leading controls; WPF metrics differ from AppKit |
-| Shapes | Raster rectangles/ellipses and gradients | Not editable vector shape metadata after creation |
+| Text | Editable content, system font, size, bold/italic, alignment, leading, tracking and color | No fixed paragraph box or justified text; WPF metrics differ from AppKit |
+| Shapes | Retained rectangles/ellipses with fill/stroke and raster gradients | No Bezier anchors, boolean paths or SVG exchange |
 | Adjustment layers | Composite and individual RGB-channel Levels/Curves, Hue/Saturation, Exposure+Offset+Gamma, Gradient Map, Grain | No range-aware/colorize HSV |
 | Filters | Gaussian blur, motion blur, noise and radial lens distortion | CPU approximations; no professional camera/lens profile calibration |
 | Background removal | Bundled 4.6MB U²-NetP, local ONNX Runtime CPU, editable mask result | Not Apple's Vision model; thin/transparent edges need manual correction; no comparative benchmark establishes equal quality |
-| Import | WIC PNG/JPEG/BMP/TIFF/GIF; EXIF 1–8; embedded ICC conversion to sRGB; HEIC/HEIF with installed Windows codec | First frame only, normalized to 8-bit; no PSD or preserved source PPI/ICC/CMYK editing |
-| Export | PNG, ZIP-compressed TIFF, JPEG quality 1–100, encoded-byte preview; Lanczos3 alpha-aware resizing helper | JPEG transparency uses white matte; no HEIC/PSD output or original metadata preservation |
+| Import | WIC PNG/JPEG/BMP/TIFF/GIF; EXIF 1–8; embedded ICC conversion to sRGB; HEIC/HEIF with installed Windows codec | First frame only, normalized to 8-bit; general raster source ICC/PPI metadata is not preserved |
+| Compatibility import | PDF/PDF-compatible AI pages, RGB/gray 8-bit PSD/PSB composite or basic layers, DWG/DXF model-space images | Limited pixel interchange, not full native Adobe/CAD editing; [exact scope](FILE_COMPATIBILITY.md) |
+| Export | PNG, ZIP-compressed TIFF, JPEG quality 1–100, selected-layer export, single-page image PDF and RGB8 PSD | JPEG uses white matte; no HEIC/AI/DWG/DXF output or original metadata preservation; limited PSD pixel layers |
 | Print export | ICC-profiled CMYK TIFF with DPI setting and an sRGB round-trip preview | Native editing remains 8-bit sRGB; this is not a CMYK editing workspace or a press-certified proof. See [CMYK](CMYK.md). |
 | Projects | `.moruproj` v2; reads prior `.cwproj` v1/v2; atomic saves | Separate format; unsupported versions are rejected |
 | Upstream packages | Restricted `.comp` directory import/export (see below) | Explicitly partial, never blanket compatibility |
@@ -59,4 +60,4 @@ Saves validate before writing, stage a sibling temporary file, flush and replace
 
 ## Build and packaging
 
-Use `scripts/Build.ps1`, `scripts/Test.ps1`, then `scripts/Publish.ps1 -Version 0.2.0-preview.1`. The portable output is `release/Morupixel-0.2.0-preview.1-win-x64.zip`, with a SHA-256 companion. Packaging verifies the pinned model and runs the published EXE self-tests. Source/runtime/model licenses are included. Windows 10 and a clean machine require separate manual verification. The repository URL and internal namespace retain earlier preview identifiers; no public rename is performed by the build.
+Use `scripts/Build.ps1`, `scripts/Test.ps1`, then `scripts/Publish.ps1`. Publishing reads the current version from `src/Compositor.Windows.csproj`; use `-Version` only when intentionally overriding it. The portable output is `release/Morupixel-<version>-win-x64.zip`, with a SHA-256 companion. Packaging verifies the pinned model and runs the published EXE self-tests. Source/runtime/model licenses are included. Windows 10 build 19041 or later is required; Windows 10 and a clean machine require separate manual verification. The repository URL and internal namespace retain earlier preview identifiers; no public rename is performed by the build.

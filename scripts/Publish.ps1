@@ -60,13 +60,23 @@ Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-
 Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-Path $stagingPath 'LICENSE')
 
 $packageDocuments = @(
+    @{ Source = (Join-Path $RepositoryRoot 'assets\samples\README.md'); Destination = (Join-Path $stagingPath 'assets\samples\README.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'assets\fonts\README.md'); Destination = (Join-Path $stagingPath 'assets\fonts\README.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'licenses\Pretendard-LICENSE.txt'); Destination = (Join-Path $stagingPath 'licenses\Pretendard-LICENSE.txt') },
     @{ Source = (Join-Path $RepositoryRoot 'README.md'); Destination = (Join-Path $stagingPath 'README.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\editor.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\editor.png') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\bucket.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\bucket.png') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\new-document.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\new-document.png') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\adjustment.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\adjustment.png') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\colors.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\colors.png') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\brush.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\brush.png') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\compact.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\compact.png') },
     @{ Source = (Join-Path $RepositoryRoot 'CONTRIBUTING.md'); Destination = (Join-Path $stagingPath 'CONTRIBUTING.md') },
     @{ Source = (Join-Path $RepositoryRoot 'NOTICE.md'); Destination = (Join-Path $stagingPath 'NOTICE.md') },
     @{ Source = (Join-Path $RepositoryRoot 'THIRD_PARTY_NOTICES.md'); Destination = (Join-Path $stagingPath 'THIRD_PARTY_NOTICES.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\PORTING.md'); Destination = (Join-Path $stagingPath 'docs\PORTING.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\CMYK.md'); Destination = (Join-Path $stagingPath 'docs\CMYK.md') },
+    @{ Source = (Join-Path $RepositoryRoot 'docs\ARCHITECTURE.md'); Destination = (Join-Path $stagingPath 'docs\ARCHITECTURE.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\VALIDATION.md'); Destination = (Join-Path $stagingPath 'docs\VALIDATION.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\VALIDATION-0.1.md'); Destination = (Join-Path $stagingPath 'docs\VALIDATION-0.1.md') },
     @{ Source = (Join-Path $RepositoryRoot 'docs\UPSTREAM_FEATURES.ko.md'); Destination = (Join-Path $stagingPath 'docs\UPSTREAM_FEATURES.ko.md') },
@@ -78,6 +88,15 @@ $packageDocuments = @(
 )
 
 $modelPath = Join-Path $stagingPath 'models\u2netp.onnx'
+foreach ($documentName in @('GUIDE', 'RELEASE_NOTES_ARCHIVE', 'FILE_COMPATIBILITY', 'MAINTENANCE', 'DESIGN_REFERENCES')) {
+    $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "docs\$documentName.md"); Destination = (Join-Path $stagingPath "docs\$documentName.md") }
+}
+foreach ($licenseName in @('ACadSharp-LICENSE.txt', 'PsdSharp-LICENSE.txt', 'psd-tools-LICENSE.txt', 'CsWinRT-LICENSE.txt', 'WindowsSDK-License.rtf')) {
+    $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "licenses\$licenseName"); Destination = (Join-Path $stagingPath "licenses\$licenseName") }
+}
+foreach ($imageName in @('startup', 'save-changes', 'color-palette', 'text-properties', 'shape-properties', 'image-properties', 'design', 'brush-settings', 'photo-develop', 'quick-exposure', 'quick-levels', 'quick-saturation', 'quick-blur')) {
+    $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "docs\screenshots\$imageName.png"); Destination = (Join-Path $stagingPath "docs\screenshots\$imageName.png") }
+}
 if (-not (Test-Path -LiteralPath $modelPath -PathType Leaf) -or
     (Get-FileHash -LiteralPath $modelPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne '309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8') {
     throw 'The bundled U2NetP model is missing or its pinned checksum differs.'
@@ -106,8 +125,8 @@ foreach ($document in $dotnetDocuments) {
     Copy-Item -LiteralPath $document.Source -Destination $document.Destination
 }
 
-$publishedTestDirectory = Join-Path $ReleaseRoot 'published-self-test'
-$publishedTestDirectory = Reset-GeneratedDirectory -Path $publishedTestDirectory -Parent $ReleaseRoot
+$publishedTestDirectory = Join-Path $ArtifactRoot 'published-self-test'
+$publishedTestDirectory = Reset-GeneratedDirectory -Path $publishedTestDirectory -Parent $ArtifactRoot
 $publishedReportPath = Join-Path $publishedTestDirectory 'self-test.txt'
 $publishedExe = Join-Path $stagingPath 'Morupixel.exe'
 if (-not (Test-Path -LiteralPath $publishedExe -PathType Leaf)) {

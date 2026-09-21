@@ -14,7 +14,7 @@ The [published executable test report](validation/published-self-test.txt) recor
 
 ## Interactive checks
 
-The native WPF window was opened on Windows. Layer creation, brush strokes, Ctrl+Z, the G shortcut, horizontal gradient dragging, and Ctrl+S with a real project save were exercised. The final packaged application then reopened the seven-layer UI-generated project through its native Open dialog, restored the gradient and selection, and closed normally. The [editor screenshot](screenshots/editor.png) was captured from the running Windows application. Detailed steps are recorded in [UI QA](../tests/ui-qa.txt).
+The native WPF window was opened on Windows. Layer creation, brush strokes, Ctrl+Z, the G shortcut, horizontal gradient dragging, and Ctrl+S with a real project save were exercised. The final packaged application then reopened the seven-layer UI-generated project through its native Open dialog, restored the gradient and selection, and closed normally. Detailed steps are recorded in the historical [UI QA report](validation/ui-qa-0.1.txt). The shared `screenshots/editor.png` has since been replaced by a newer preview image and is not a screenshot of this release.
 
 The screenshot and interactive checks are smoke tests. Clean-machine setup, Windows 10, ARM64, pen pressure, large-image stress tests, ICC color management, EXIF orientation, and full Mac feature parity have not been verified or implemented as applicable. See [release limitations](RELEASE_NOTES.md).
 

@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <!-- All editor, QA and benchmark projects target Windows x64. A RID keeps
+         transitive ONNX assets for other platforms out of development output.
+         Publish.ps1 explicitly overrides SelfContained for portable releases. -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained Condition="'$(SelfContained)' == ''">false</SelfContained>
+  </PropertyGroup>
+</Project>
