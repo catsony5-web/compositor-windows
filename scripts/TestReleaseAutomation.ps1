@@ -29,6 +29,9 @@ Assert-Equal '0.2.0-preview.14.build.42' (Get-ReleasePlan @base -ExistingTags @{
 Assert-Throws { Get-ReleasePlan @base -ExistingTags @{ 'v0.2.0-preview.14' = $other; 'v0.2.0-preview.14.build.42' = $other } } 'Never reuse tag belonging to different source'
 $changed = $base.Clone(); $changed.SourceVersion = '1.0.0'
 Assert-Equal '1.0.0-preview.build.42' (Get-ReleasePlan @changed).Version 'Stable source push does not create a stable release'
+Assert-Equal '1.0.1-preview.build.42' (Get-ReleasePlan @changed -ExistingTags @{ 'v1.0.0' = $other }).Version 'Work after a published stable version sorts above it'
+Assert-Equal $true (Get-ReleasePlan @changed -ExistingTags @{ 'v1.0.0' = $other }).Prerelease 'Next patch automatic release is still a preview'
+Assert-Equal '1.0.1-preview.build.42' (Get-ReleasePlan @changed -ExistingTags @{ 'v1.0.0' = $other; 'v1.0.1-preview.build.42' = $sha }).Version 'Stable-source preview retry keeps its unique next patch tag'
 $changed = $base.Clone(); $changed.ChangedPaths = @('docs/RELEASE_NOTES.md')
 Assert-Equal $false (Get-ReleasePlan @changed).Publish 'Docs-only main push does not release'
 $changed = $base.Clone(); $changed.Ref = 'refs/heads/codex/test'
@@ -55,6 +58,25 @@ $assets = @(
 Assert-Equal $hash (Assert-ReleaseAssets $assets $archive) 'Complete uploaded asset pair is accepted'
 Assert-Throws { Assert-ReleaseAssets @($assets[0]) $archive } 'Missing checksum prevents publication'
 Assert-Throws { Assert-ReleaseAssets @($assets[0], $assets[0], $assets[1]) $archive } 'Duplicate ZIP prevents publication'
+$baseline = [pscustomobject]@{ draft = $false; tag_name = 'v0.2.0-preview.14'; assets = $assets }
+Assert-Equal $true (Test-PublishedWindowsRelease $baseline) 'Complete published Windows package can be a baseline'
+$baseline.draft = $true
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'Draft packages cannot suppress unpublished app changes'
+$baseline.draft = $false; $baseline.assets = @()
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'Notes-only release cannot be a baseline'
+$baseline.assets = @($assets[0])
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'ZIP without checksum cannot be a baseline'
+$baseline.assets = @($assets[1])
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'Checksum without ZIP cannot be a baseline'
+$baseline.assets = $assets; $baseline.tag_name = 'v0.2.0-preview.15'
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'Package names must match baseline release version'
+$baseline.tag_name = 'v0.2.0-preview.14'; $assets[0].state = 'starter'
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'Incomplete upload cannot be a baseline'
+$assets[0].state = 'uploaded'; $assets[0].size = 0
+Assert-Equal $false (Test-PublishedWindowsRelease $baseline) 'Empty ZIP cannot be a baseline'
+$assets[0].size = 123
+Assert-Equal 1 (@($baseline, [pscustomobject]@{draft = $false; tag_name = 'v0.2.0-preview.15'; assets = @()} |
+    Where-Object { Test-PublishedWindowsRelease $_ }).Count) 'Newer notes-only release does not displace a complete candidate'
 Assert-Checksum "$hash  $archive`n" $archive $hash; $script:passed++
 Assert-Throws { Assert-Checksum "$hash  other.zip`n" $archive $hash } 'Checksum filename must match'
 Assert-Throws { Assert-Checksum "$hash  $archive`n" $archive ('d' * 64) } 'Hash mismatch prevents publication'

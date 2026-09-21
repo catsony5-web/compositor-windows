@@ -26,7 +26,7 @@ if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -ceq 'refs/heads/main
     $baseline = [string] $event.before
     $nearestDistance = [long]::MaxValue
     # Include unpublished app changes even if this particular push edits only docs.
-    foreach ($release in @($releases | Where-Object { -not $_.draft })) {
+    foreach ($release in @($releases | Where-Object { Test-PublishedWindowsRelease $_ })) {
         $target = [string] $tags[$release.tag_name]
         if ($target -cnotmatch '^[a-f0-9]{40}$') { continue }
         & git merge-base --is-ancestor $target $commit

@@ -2,9 +2,9 @@
 
 Application changes pushed to `main` become a GitHub preview after the build, editor self-tests, and packaged executable self-tests pass. Documentation-only and release-automation-only edits run CI without publishing another app package. Pull requests, other branches, and manual CI runs cannot publish.
 
-Main runs are serialized. Changes are compared with the nearest published source commit, so app changes from a failed or replaced pending run are included in the next run, even if that next push only edits documentation.
+Main runs are serialized. Changes are compared with the nearest published source commit that has a complete matching Windows ZIP and checksum, so notes-only releases cannot hide unpublished app changes. Changes from a failed or replaced pending run are included in the next run, even if that next push only edits documentation. The publish queue retains up to 100 pending jobs so separate tag releases do not replace one another while waiting.
 
-The project version is used when available. If that version already belongs to an earlier commit, the workflow appends `.build.<run_number>`; a stable project version becomes `-preview.build.<run_number>`. Explicit `v<version>` tags still support deliberate stable releases, and must match the project version.
+The project version is used when available. If that version already belongs to an earlier commit, the workflow appends `.build.<run_number>`; a stable project version becomes `-preview.build.<run_number>`. If that stable version was already released from an earlier commit, its patch number advances first (for example, `0.2.0` becomes `0.2.1-preview.build.42`) so the new preview sorts above the previous stable version. Explicit `v<version>` tags still support deliberate stable releases, and must match the project version.
 
 The release job uses write permission only after the read-only build passes. It creates a draft, uploads the ZIP and SHA-256 file, checks GitHub's ZIP digest against the checksum, and then publishes. The source commit is recorded in the release and verified against the tag. Existing files and tags are never replaced. A retry can finish its own draft or verify an already published release; conflicting or incomplete bytes stop publication for review.
 

@@ -87,6 +87,7 @@ jobs:
     timeout-minutes: 10
     concurrency:
       group: morupixel-publish
+      queue: max
       cancel-in-progress: false
     permissions:
       contents: write

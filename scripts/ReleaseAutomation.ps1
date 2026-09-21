@@ -35,6 +35,13 @@ function Get-ReleasePlan {
         $publish = $true
         $automatic = $true
         if (-not $version.Contains('-')) {
+            if ($ExistingTags.ContainsKey("v$version") -and $ExistingTags["v$version"] -cne $Commit) {
+                # A preview of an already released stable version sorts below it.
+                # Advance the patch so the website can discover this newer work.
+                $parts = $version.Split('.')
+                $parts[2] = ([long]::Parse($parts[2]) + 1).ToString([Globalization.CultureInfo]::InvariantCulture)
+                $version = $parts -join '.'
+            }
             $version += "-preview.build.$RunNumber"
         }
         elseif ($ExistingTags.ContainsKey("v$version") -and $ExistingTags["v$version"] -cne $Commit) {
@@ -74,6 +81,22 @@ function Assert-ReleaseAssets {
         throw 'The release must contain a complete ZIP and checksum, including the GitHub ZIP digest.'
     }
     return $zip[0].digest.Substring(7)
+}
+
+function Test-PublishedWindowsRelease {
+    param([object] $Release)
+    try {
+        if ($Release.draft -or $Release.tag_name -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$') {
+            return $false
+        }
+        $archiveName = "Morupixel-$($Release.tag_name.Substring(1))-win-x64.zip"
+        Assert-ReleaseAssets -Assets $Release.assets -ArchiveName $archiveName | Out-Null
+        return $true
+    }
+    catch {
+        # Notes-only, partial, or malformed releases are not a shipped app baseline.
+        return $false
+    }
 }
 
 function Assert-Checksum {
