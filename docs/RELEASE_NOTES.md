@@ -1,4 +1,12 @@
-# Morupixel 0.2.0 Preview 23 — simpler file import
+# Morupixel 0.2.0 Preview 24 — publication privacy
+
+- **Private-file safeguards.** Local environment values, personal agent configuration and credential files are excluded from Git and source archives. CI and portable packaging check tracked files and the final package before release.
+- **Anonymous verification notes.** Public documentation uses anonymous test descriptions, without private input names or personal session details.
+- **Portable builds.** Source paths use a stable virtual root and downloadable packages omit debugging symbols. Editor features and document formats are unchanged.
+
+These controls apply to new source and packages; historical commits and previously downloaded files are not rewritten by this release. [Publication privacy](PUBLICATION_PRIVACY.md).
+
+## Morupixel 0.2.0 Preview 23 — simpler file import
 
 - **Clearer choices.** CAD opens with “편집 방식” and “부분별로 편집 (추천)”. Alternative choices keep source-layer editing or import the whole drawing together.
 - **Less text up front.** Drawing layout, working size, DPI and vector retention are under “세부 설정”. Complete conversion notes and document counts are under “변환 안내”. Vector and saved PDF/AI layer retention remain enabled by default.
