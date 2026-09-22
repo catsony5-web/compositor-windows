@@ -14,9 +14,10 @@ public sealed partial class MainWindow
     AutomationBridge? automationBridge;
     readonly SemaphoreSlim automationGate = new(1, 1);
     MenuItem? automationToggle;
-    sealed class AutomationFault(string code, string message) : Exception(message)
+    sealed class AutomationFault(string code, string message, JsonObject? details = null) : Exception(message)
     {
         public string Code { get; } = code;
+        public JsonObject? Details { get; } = details;
     }
 
     internal string EnableAutomation(bool headless = false)
@@ -115,7 +116,7 @@ public sealed partial class MainWindow
                 NotSupportedException => "unsupported_format",
                 _ => "command_failed"
             };
-            return new JsonObject { ["ok"] = false, ["error"] = new JsonObject { ["code"] = code, ["message"] = error.Message } };
+            return new JsonObject { ["ok"] = false, ["error"] = AutomationErrors.Describe(code, error.Message, (error as AutomationFault)?.Details) };
         }
         finally { if (entered) automationGate.Release(); }
     }
@@ -153,14 +154,16 @@ public sealed partial class MainWindow
         return tab;
     }
 
-    JsonObject AutomationState(Guid? documentId = null)
+    JsonObject AutomationState(Guid? documentId = null, bool includeLayers = true)
     {
         StoreTab();
         var documents = new JsonArray();
         foreach (var tab in tabs.Where(t => !documentId.HasValue || t.Id == documentId.Value))
         {
             var d = tab.Document; var layers = new JsonArray();
-            foreach (var layer in d.Layers)
+            var existingIds = d.Layers.Select(l => l.Id).ToHashSet();
+            var selectedIds = AutomationSelectedIds(tab).Where(existingIds.Contains).OrderBy(id => id).ToArray();
+            foreach (var layer in includeLayers ? d.Layers : Enumerable.Empty<Layer>())
             {
                 var item = new JsonObject
                 {
@@ -176,15 +179,22 @@ public sealed partial class MainWindow
                 if (layer.Adjustment != null) item["adjustment"] = JsonSerializer.SerializeToNode(layer.Adjustment);
                 layers.Add(item);
             }
-            documents.Add(new JsonObject { ["documentId"] = tab.Id.ToString(), ["revision"] = d.Revision.ToString(),
+            var itemDocument = new JsonObject { ["documentId"] = tab.Id.ToString(), ["revision"] = d.Revision.ToString(),
                 ["name"] = d.Name, ["width"] = d.Width, ["height"] = d.Height, ["dpi"] = d.Dpi,
                 ["colorMode"] = "RGB8", ["path"] = tab.Path, ["dirty"] = tab.History.Dirty(d),
                 ["activeLayerId"] = d.ActiveId.ToString(), ["canUndo"] = tab.History.CanUndo,
-                ["canRedo"] = tab.History.CanRedo, ["layers"] = layers });
+                ["canRedo"] = tab.History.CanRedo, ["layerCount"] = d.Layers.Count,
+                ["rootLayerCount"] = d.Layers.Count(l => l.ParentId == null), ["layersIncluded"] = includeLayers,
+                ["selectedLayerIds"] = new JsonArray(selectedIds.Take(200).Select(id => (JsonNode?)JsonValue.Create(id.ToString())).ToArray()),
+                ["selectedLayerCount"] = selectedIds.Length, ["selectionTruncated"] = selectedIds.Length > 200,
+                ["layerKinds"] = new JsonObject(d.Layers.GroupBy(l => l.Kind).Select(g => new KeyValuePair<string, JsonNode?>(g.Key.ToString(), JsonValue.Create(g.Count())))) };
+            if (includeLayers) itemDocument["layers"] = layers;
+            documents.Add(itemDocument);
         }
         return new JsonObject { ["sessionId"] = automationBridge?.SessionId,
             ["activeDocumentId"] = activeTab >= 0 ? tabs[activeTab].Id.ToString() : null,
-            ["busy"] = AutomationBusy, ["documents"] = documents };
+            ["busy"] = AutomationBusy, ["contractVersion"] = AutomationCatalog.ContractVersion,
+            ["coordinates"] = AutomationCatalog.Coordinates(), ["documents"] = documents };
     }
 
     JsonObject AutomationResult(Guid? layerId = null)
@@ -203,9 +213,12 @@ public sealed partial class MainWindow
         var args = request["arguments"] as JsonObject ?? throw new ArgumentException("arguments must be an object.");
         AutomationCatalog.Validate(command, args);
         if (command == "list_sessions") return new JsonObject { ["sessions"] = AutomationBridge.ListSessions() };
+        if (command == "get_capabilities") return AutomationCatalog.Capabilities();
         StoreTab();
-        if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null);
+        if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
         RequireAutomationIdle(token);
+        if (command is "query_layers" or "get_layer") return AutomationInspect(command, args);
+        if (command == "apply_batch") return await AutomationBatchAsync(args, token);
         if (command == "activate_document")
         {
             var tab = AutomationTab(args); SwitchTab(tabs.IndexOf(tab)); return AutomationResult();
@@ -308,6 +321,14 @@ public sealed partial class MainWindow
             finally { if (File.Exists(staging)) File.Delete(staging); }
         }
 
+        var affected = await ApplyAutomationEditAsync(candidate, command, args, token);
+        candidate.Validate(); Recheck();
+        CommitAutomationCandidate("AI · " + command, before, candidate, affected);
+        return AutomationResult(affected);
+    }
+
+    static async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
+    {
         Guid? affected = null;
         Layer Target(bool allowUnlock = false)
         {
@@ -382,16 +403,20 @@ public sealed partial class MainWindow
                 masked.Mask = await Task.Run(() => BackgroundRemoval.CreateMask(masked.Pixels, cancellationToken: token), token); break;
             default: throw new ArgumentException("Unknown command: " + command);
         }
-        candidate.Validate(); Recheck();
+        return affected;
+    }
+
+    void CommitAutomationCandidate(string label, Document before, Document candidate, Guid? affected, Action? committed = null)
+    {
         if (!SameDocument(before, candidate))
         {
-            history.Commit("AI · " + command, before, candidate); doc = candidate;
+            history.Commit(label, before, candidate); doc = candidate;
             selection = null; maskEditing = false; selectedLayers.Clear();
             if (affected.HasValue && doc.Layers.Any(l => l.Id == affected.Value)) doc.ActiveId = affected.Value;
             if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
-            StoreTab(); Refresh();
+            StoreTab(); committed?.Invoke(); Refresh();
         }
-        return AutomationResult(affected);
+        else committed?.Invoke();
     }
 
     static string AString(JsonObject args, string name) => args[name]?.GetValue<string>() ?? throw new ArgumentException($"Required string: {name}");
