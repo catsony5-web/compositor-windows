@@ -94,6 +94,40 @@
         </ControlTemplate></Setter.Value></Setter>
     </Style>
 
+    <Style x:Key="ImportDetailsExpander" TargetType="{x:Type Expander}">
+        <Setter Property="Foreground" Value="{StaticResource UiMuted}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type Expander}">
+            <StackPanel>
+                <ToggleButton x:Name="HeaderSite" Content="{TemplateBinding Header}" Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="Stretch" Cursor="Hand" MinHeight="38"
+                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                              AutomationProperties.Name="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}">
+                    <ToggleButton.Template><ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="HeaderSurface" Background="Transparent" BorderBrush="{StaticResource UiLine}" BorderThickness="0,1,0,0" Padding="3,9">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="20" /></Grid.ColumnDefinitions>
+                                <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                                <Path x:Name="Chevron" Grid.Column="1" Data="M 1 1 L 5 5 L 1 9" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.5"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True"><Setter TargetName="Chevron" Property="RenderTransform"><Setter.Value><RotateTransform Angle="90" /></Setter.Value></Setter></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="HeaderSurface" Property="Background" Value="{StaticResource UiSurface}" /></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="HeaderSurface" Property="BorderBrush" Value="{StaticResource UiAccent}" /><Setter TargetName="HeaderSurface" Property="BorderThickness" Value="1" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate></ToggleButton.Template>
+                </ToggleButton>
+                <ContentPresenter x:Name="Details" ContentSource="Content" Visibility="Collapsed" Margin="0,6,0,8" />
+            </StackPanel>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsExpanded" Value="True"><Setter TargetName="Details" Property="Visibility" Value="Visible" /></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+
     <Style TargetType="{x:Type TextBox}">
         <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
         <Setter Property="FontSize" Value="13" />
