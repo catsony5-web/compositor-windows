@@ -12,7 +12,7 @@ public static class Program
     {
         if (args.Length > 0 && args[0] == "--self-test")
         {
-            System.Windows.Interop.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
             try { return SelfTests.Run(args.Length > 1 ? args[1] : "test-results.txt"); }
             finally
             {
