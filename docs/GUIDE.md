@@ -1,8 +1,8 @@
 # Morupixel 사용·개발 안내
 
-**0.2.0-preview.21 · Windows 10 2004 이상 / Windows 11 x64 · 독립 이미지 편집기**
+**0.2.0-preview.23 · Windows 10 2004 이상 / Windows 11 x64 · 독립 이미지 편집기**
 
-**Preview 21:** DWG/DXF 가져오기의 **객체 구분**에서 **객체별 / 레이어별 / 전체**를 선택합니다. 기본은 객체별입니다. 폴리라인 사각형은 하나로, 독립된 선은 각각 선택하며 원본 레이어는 그룹으로 유지합니다. 기존에 합쳐서 가져온 문서는 원본 도면을 다시 가져오세요. [범위와 한도](FILE_COMPATIBILITY.md#cad-객체-구분--preview-21)
+**Preview 23:** DWG/DXF를 열면 **부분별로 편집 (추천)**이 선택됩니다. 미리보기를 확인하고 **가져오기**를 누르세요. **편집 방식**에서 레이어별 편집이나 한 장으로 가져오기를 선택할 수 있고, 크기·도면 배치는 **세부 설정**에 있습니다. 원본과 달라질 수 있는 부분은 **변환 안내**를 펼쳐 확인하세요. [범위와 한도](FILE_COMPATIBILITY.md#cad-편집-방식)
 
 모루픽셀은 [Robbie Tilton / Wonder Assembly LLC의 Compositor](https://github.com/robbietilton/Compositor) 일부 코드와 알고리즘을 바탕으로 만든 Windows 이미지 편집기입니다. 독자적인 이름과 C#·WPF 구현을 사용하며 원작의 공식 Windows 제품이 아닙니다.
 

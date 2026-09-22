@@ -11,22 +11,28 @@ internal sealed partial class CompatibilityDialog : Window
     readonly string path;
     readonly bool pdf, cad;
     readonly TextBox page = new() { Text = "1" }, dpi = new() { Text = "150" }, edge = new() { Text = "2400" };
-    readonly CheckBox separate = new() { Margin = new Thickness(3, 12, 3, 12) };
-    readonly CheckBox retain = new() { Content = "벡터 원본 보존 · 디자인 확대", IsChecked = true, Margin = new Thickness(3, 4, 3, 12) };
+    readonly CheckBox separate = new() { Margin = new Thickness(3, 8, 3, 12) };
+    readonly CheckBox retain = new() { Content = "확대해도 선명하게 (벡터)", IsChecked = true, Margin = new Thickness(3, 8, 3, 12),
+        ToolTip = "선과 도형은 벡터로, 사진은 원본 해상도로 유지합니다." };
     readonly ComboBox space = new() { DisplayMemberPath = "Name", SelectedValuePath = "Key" };
     sealed record StructureChoice(CadImportStructure Value, string Name)
     {
         public override string ToString() => Name;
     }
     readonly ComboBox structure = new() { DisplayMemberPath = "Name", ItemsSource = new[] {
-        new StructureChoice(CadImportStructure.Objects, "객체별 · 원본 레이어를 그룹으로"),
-        new StructureChoice(CadImportStructure.Layers, "레이어별 · 레이어마다 한 객체"),
-        new StructureChoice(CadImportStructure.Combined, "전체 · 도면을 한 객체로") }, SelectedIndex = 0 };
+        new StructureChoice(CadImportStructure.Objects, "부분별로 편집 (추천)"),
+        new StructureChoice(CadImportStructure.Layers, "레이어별로 편집"),
+        new StructureChoice(CadImportStructure.Combined, "한 장으로 가져오기") }, SelectedIndex = 0 };
     readonly TextBlock structureHint = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 0, 3, 10) };
     readonly StackPanel settings = new();
+    readonly StackPanel advancedSettings = new();
+    readonly Expander advanced = new() { Header = "세부 설정", Margin = new Thickness(0, 8, 0, 0) };
+    readonly Expander information = new() { Header = "변환 안내", Margin = new Thickness(0, 8, 0, 0), Visibility = Visibility.Collapsed };
+    readonly StackPanel notices = new();
+    readonly ScrollViewer contentScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     readonly Image preview = new() { Stretch = Stretch.Uniform, Margin = new Thickness(12) };
     readonly TextBlock details = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 8, 3, 12) };
-    readonly TextBlock messages = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 10, 3, 10) };
+    readonly TextBlock messages = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 8, 3, 10) };
     readonly Button render, accept;
     readonly CancellationTokenSource lifetime = new();
     CompatibilityResult? prepared;
@@ -42,34 +48,48 @@ internal sealed partial class CompatibilityDialog : Window
         root.Children.Add(new Border { Background = Theme.Brush("#11171C"), CornerRadius = new CornerRadius(10), Child = preview, Margin = new Thickness(0, 0, 20, 0) });
         var side = new DockPanel { LastChildFill = true }; Grid.SetColumn(side, 1); root.Children.Add(side);
         var bottom = new StackPanel { Margin = new Thickness(0, 12, 0, 0) }; DockPanel.SetDock(bottom, Dock.Bottom); side.Children.Add(bottom);
-        render = Theme.Button("미리보기 만들기", async () => await RenderAsync());
-        accept = Theme.Button("이 설정으로 가져오기", () => { if (prepared != null && preparedComposite != null) { Result = prepared.Document; DialogResult = true; } }); accept.IsEnabled = false; accept.Background = Theme.Primary;
-        var cancel = Theme.Button("취소", Close); cancel.IsCancel = true; bottom.Children.Add(render); bottom.Children.Add(accept); bottom.Children.Add(cancel);
-        var content = new StackPanel(); side.Children.Add(new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        bottom.Children.Add(new ScrollViewer { Content = messages, MaxHeight = 110, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        render = Theme.Button("미리보기 새로고침", async () => await RenderAsync()); render.IsEnabled = false;
+        accept = Theme.Button("가져오기", () => { if (prepared != null && preparedComposite != null) { Result = prepared.Document; DialogResult = true; } }); accept.IsEnabled = false; accept.Background = Theme.Primary; accept.IsDefault = true;
+        var cancel = Theme.Button("취소", Close); cancel.IsCancel = true; bottom.Children.Add(render);
+        var actions = new Grid(); actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); actions.ColumnDefinitions.Add(new ColumnDefinition());
+        actions.Children.Add(cancel); Grid.SetColumn(accept, 1); actions.Children.Add(accept); bottom.Children.Add(actions);
+        var content = new StackPanel(); contentScroll.Content = content; side.Children.Add(contentScroll);
         content.Children.Add(new TextBlock { Text = Path.GetFileName(path), FontSize = 19, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 0, 3, 10) });
         content.Children.Add(details); content.Children.Add(settings);
-        void Field(string title, Control control) { settings.Children.Add(Theme.Label(title, 12)); control.Margin = new Thickness(3, 4, 3, 10); settings.Children.Add(control); }
+        advanced.SetResourceReference(StyleProperty, "ImportDetailsExpander"); advanced.Content = advancedSettings;
+        information.SetResourceReference(StyleProperty, "ImportDetailsExpander"); information.Content = notices;
+        void Field(StackPanel panel, string title, Control control, string? hint = null)
+        {
+            panel.Children.Add(Theme.Label(title, 12)); control.Margin = new Thickness(3, 4, 3, 10); panel.Children.Add(control);
+            System.Windows.Automation.AutomationProperties.SetName(control, title);
+            if (hint != null) panel.Children.Add(Theme.Label(hint, 12, Theme.Muted));
+        }
         if (pdf)
         {
-            details.Text = "PDF 정보를 읽는 중…"; Field(extension == ".ai" ? "아트보드 / 페이지 번호" : "페이지 번호", page); Field("해상도 · DPI (36~600)", dpi); render.IsEnabled = false;
-            separate.Content = "저장된 PDF / AI 레이어 유지"; separate.IsChecked = true; settings.Children.Add(separate);
+            details.Text = "파일 정보를 확인하고 있어요…"; Field(settings, extension == ".ai" ? "아트보드" : "페이지", page);
+            separate.Content = "원본 레이어 유지"; separate.IsChecked = true; settings.Children.Add(separate);
+            Field(advancedSettings, "이미지 해상도 (DPI)", dpi, "36~600 DPI · 높을수록 작업 이미지가 커져요.");
         }
         else if (cad)
         {
-            details.Text = "도면 배치와 외부참조를 확인하는 중…"; render.IsEnabled = false;
-            Field("가져올 공간 / 배치", space);
-            Field("도면의 긴 변 · px (256~4096)", edge);
-            Field("객체 구분", structure); settings.Children.Add(structureHint); DescribeStructure();
+            details.Text = "도면 정보를 확인하고 있어요…";
+            Field(settings, "편집 방식", structure); settings.Children.Add(structureHint); DescribeStructure();
+            Field(advancedSettings, "가져올 도면", space);
+            space.ToolTip = "자동 선택으로 시작하세요. 다른 도면이 보이면 모델 공간이나 배치를 직접 선택할 수 있어요.";
+            Field(advancedSettings, "작업 크기 (px)", edge, "가로·세로 중 긴 쪽 기준 · 256~4,096 px");
         }
         else
         {
-            details.Text = "저장된 합성 이미지 사용 · 효과 개별 편집 불가";
-            separate.Content = new TextBlock { Text = "개별 픽셀 레이어 가져오기\nRGB / 회색조 · 8비트", TextWrapping = TextWrapping.Wrap }; settings.Children.Add(separate);
-            settings.Children.Add(new TextBlock { Text = "픽셀·마스크·혼합 모드 지원. 그룹·조정 레이어는 합성 이미지 모드 사용.", TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 5, 3, 10) });
+            details.Text = "Photoshop 이미지";
+            separate.Content = "레이어별로 편집";
+            separate.ToolTip = "RGB / 회색조 · 8비트 픽셀 레이어를 가져옵니다. 그룹이나 조정 레이어가 있으면 이 옵션을 꺼 주세요.";
+            settings.Children.Add(separate);
         }
-        if (pdf || cad) settings.Children.Add(retain);
-        content.Children.Add(messages);
-        if (placeAsLayer) content.Children.Add(new TextBlock { Text = "가져온 레이어를 한 그룹으로 추가", TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 10, 3, 10) });
+        if (pdf || cad) { advancedSettings.Children.Add(retain); settings.Children.Add(advanced); }
+        content.Children.Add(information);
+        if (placeAsLayer) content.Children.Add(Theme.Label("현재 문서에 그룹으로 추가해요.", 12, Theme.Muted));
+        messages.Text = "미리보기를 준비하고 있어요…";
         foreach (var box in new[] { page, dpi, edge }) box.TextChanged += (_, _) => InvalidatePrepared();
         separate.Checked += (_, _) => InvalidatePrepared(); separate.Unchecked += (_, _) => InvalidatePrepared();
         retain.Checked += (_, _) => InvalidatePrepared(); retain.Unchecked += (_, _) => InvalidatePrepared();
@@ -77,62 +97,80 @@ internal sealed partial class CompatibilityDialog : Window
         structure.SelectionChanged += (_, _) => { DescribeStructure(); InvalidatePrepared(); };
         Loaded += async (_, _) =>
         {
-            if (!pdf && !cad) return;
             try
             {
                 if (pdf)
                 {
                     var info = await Task.Run(() => PdfCompatibility.InspectAsync(path, lifetime.Token));
-                    if (closed) return; details.Text = $"총 {info.Pages}페이지 · 저장된 레이어 {info.Layers}개\n벡터 원본과 사진 해상도 유지";
+                    if (closed) return; details.Text = extension == ".ai" ? $"아트보드 {info.Pages}개" : $"총 {info.Pages}페이지";
                     separate.IsEnabled = info.Layers > 0;
+                    separate.ToolTip = info.Layers > 0 ? $"저장된 레이어 {info.Layers}개를 유지합니다." : "이 파일에는 따로 저장된 레이어가 없어요.";
                 }
-                else
+                else if (cad)
                 {
                     var spaces = await Task.Run(() => CadCompatibility.Inspect(path), lifetime.Token);
                     if (closed) return; space.ItemsSource = new[] { new CadCompatibility.Space("", "자동 선택") }.Concat(spaces); space.SelectedIndex = 0;
-                    details.Text = "모델 공간·배치·외부참조 · 2D 벡터 유지";
+                    details.Text = "CAD 도면";
                 }
                 render.IsEnabled = true; await RenderAsync();
             }
             catch (OperationCanceledException) { }
-            catch (Exception e) { if (!closed) messages.Text = FriendlyError(e); }
+            catch (Exception e) { if (!closed) { ShowError(e); render.IsEnabled = true; } }
         };
         Closed += (_, _) => { closed = true; lifetime.Cancel(); };
     }
     void DescribeStructure() => structureHint.Text = SelectedStructure switch
     {
-        CadImportStructure.Objects => "폴리라인은 하나로, 독립된 선은 개별 선택",
-        CadImportStructure.Layers => "같은 CAD 레이어의 객체를 함께 선택합니다.",
-        _ => "도면 전체를 함께 선택합니다."
+        CadImportStructure.Objects => "선과 도형을 각각 선택할 수 있어요.",
+        CadImportStructure.Layers => "같은 레이어의 내용을 함께 선택해요.",
+        _ => "도면 전체를 한 번에 이동하고 조절해요."
     };
     CadImportStructure SelectedStructure => structure.SelectedItem is StructureChoice choice ? choice.Value : CadImportStructure.Objects;
     CompatibilityOptions ReadOptions() => new(Page: pdf ? Integer(page.Text, 1, 100000) : 1, Dpi: pdf ? Dialogs.Number(dpi.Text, 36, 600) : 96,
         CadLongEdge: cad ? Integer(edge.Text, 256, 4096) : 2400, SeparateLayers: separate.IsChecked == true,
         CadLayout: cad && space.SelectedItem is CadCompatibility.Space selected && selected.Key.Length > 0 ? selected.Key : null,
         PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null, RetainVectors: retain.IsChecked == true);
-    void InvalidatePrepared() { prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null; messages.Text = "미리보기 필요"; }
+    void ClearPrepared()
+    {
+        prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null;
+        information.Visibility = Visibility.Collapsed; information.IsExpanded = false; notices.Children.Clear();
+    }
+    void InvalidatePrepared() { ClearPrepared(); messages.Foreground = Theme.Muted; messages.Text = "설정을 바꿨어요. 미리보기를 새로고침해 주세요."; }
+    void ShowPrepared(CompatibilityResult result, Raster full, ImageSource bitmap, CompatibilityOptions options)
+    {
+        prepared = result; preparedComposite = full; preview.Source = bitmap; accept.IsEnabled = true;
+        var layers = result.Document.Layers;
+        string count = cad && options.CadStructure == CadImportStructure.Objects
+            ? $"{layers.Count(l => l.Kind == LayerKind.Vector || l.Kind == LayerKind.Raster):N0}개 요소 · {layers.Count(l => l.Kind == LayerKind.Group):N0}개 그룹"
+            : $"레이어 {layers.Count:N0}개";
+        notices.Children.Clear();
+        notices.Children.Add(Theme.Label($"{result.Document.Width:N0} × {result.Document.Height:N0} px · {count}", 12, Theme.Muted));
+        foreach (string warning in result.Warnings)
+        {
+            var note = Theme.Label(warning, 12, Theme.Muted); note.Margin = new Thickness(3, 12, 3, 0); notices.Children.Add(note);
+        }
+        information.Header = result.Warnings.Count > 0 ? $"변환 안내 ({result.Warnings.Count})" : "가져오기 정보";
+        information.Visibility = Visibility.Visible;
+        messages.Foreground = Theme.Muted; messages.Text = "미리보기를 확인하고 가져오세요.";
+    }
+    void ShowError(Exception error) { ClearPrepared(); messages.Foreground = Theme.Brush("#FFB8B8"); messages.Text = FriendlyError(error); }
     async Task RenderAsync()
     {
-        if (busy || closed) return; busy = true; render.IsEnabled = false; accept.IsEnabled = false; settings.IsEnabled = false; prepared = null;
+        if (busy || closed) return; busy = true; render.IsEnabled = false; settings.IsEnabled = false; ClearPrepared();
         try
         {
             var options = ReadOptions();
-            messages.Text = "미리보기 생성 중…";
+            messages.Foreground = Theme.Muted; messages.Text = "미리보기를 만들고 있어요…";
             var result = await CompatibilityImport.ReadAsync(path, options, lifetime.Token);
             var bitmap = await Task.Run(() =>
             {
                 var raster = Imaging.Render(result.Document, lifetime.Token); double scale = Math.Min(1, 1000d / Math.Max(raster.Width, raster.Height));
                 return (Full: raster, Preview: (scale < 1 ? ImportExport.Resize(raster, Math.Max(1, (int)(raster.Width * scale)), Math.Max(1, (int)(raster.Height * scale))) : raster).Bitmap());
             }, lifetime.Token);
-            if (closed) return; prepared = result; preparedComposite = bitmap.Full; preview.Source = bitmap.Preview; accept.IsEnabled = true;
-            var layers = result.Document.Layers;
-            string count = cad && options.CadStructure == CadImportStructure.Objects
-                ? $"{layers.Count(l => l.Kind == LayerKind.Vector || l.Kind == LayerKind.Raster):N0} 객체 · {layers.Count(l => l.Kind == LayerKind.Group):N0} 그룹"
-                : $"{layers.Count:N0} 레이어";
-            messages.Text = $"{result.Document.Width:N0} × {result.Document.Height:N0}px · {count}\n\n" + string.Join("\n\n", result.Warnings);
+            if (closed) return; ShowPrepared(result, bitmap.Full, bitmap.Preview, options);
         }
         catch (OperationCanceledException) { if (!closed) messages.Text = "가져오기를 취소했습니다."; }
-        catch (Exception e) { if (!closed) messages.Text = FriendlyError(e); }
+        catch (Exception e) { if (!closed) ShowError(e); }
         finally { busy = false; if (!closed) { render.IsEnabled = true; settings.IsEnabled = true; } }
     }
     static int Integer(string value, int min, int max) { double n = Dialogs.Number(value, min, max); if (n != Math.Truncate(n)) throw new ArgumentException("정수로 입력하세요."); return (int)n; }
