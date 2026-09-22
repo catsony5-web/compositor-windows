@@ -1,9 +1,11 @@
 # Preview 22 integration validation
 
-- Source self-tests: **455/455 passed** on Windows x64, including all object import, grouped movement, magnetic picking, AI/MCP, vector and precision-wand checks.
+- Source self-tests: **456/456 passed** on Windows x64, including all object import, grouped movement, magnetic picking, AI/MCP, vector and precision-wand checks.
 - Added combined coverage for 200 vector objects in a CAD-style group, native project roundtrip, zoomed wand boundaries, hidden objects and transformed group clipping.
 - Release policy: **42 checks + 9 offline publishing scenarios passed**, including rejection of source not yet merged into main and immutable retry behavior.
 - GitHub Actions repeats source and packaged-executable tests for the public release and retains both reports. Actual published results are available in the release's workflow run.
+- The build image is pinned to Windows Server 2022. On the Server 2025 image, all 456 assertions passed but the operating-system PDF module crashed during process detach: `Windows_Data_Pdf!CPdfStatics` destroyed a WARP device after the native thread pool had shut down (`d3d10warp!Task::ScheduleTask`, `0xC000000D`). Function-only debugger logs in run 35676921988 establish this environment limitation. Nonzero process exits are never accepted as passing tests; no memory dumps are uploaded.
+- Actual-file checks preserved 21,389 CAD vector objects through native save/reopen and rendered all four artboards of the supplied PDF-compatible AI, retaining its layer groups. Zoomed roundtrip pixels matched exactly. A 32x CAD wand check followed the beam boundary and text holes in 1.953 seconds on this PC. Private source drawings and generated evidence remain local.
 - Local NuGet vulnerability metadata could not be fetched in the restricted environment; compilation and cached package restoration succeeded.
 
 ## Previous validation records
