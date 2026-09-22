@@ -20,6 +20,7 @@ public sealed partial class MainWindow
     void StopRenderingForShutdown()
     {
         renderShutdown = true;
+        canvas.CancelDesignPreview();
         pendingFullRender = false; pendingGestureRender = false;
         gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick;
         ++renderGeneration;
@@ -63,6 +64,7 @@ public sealed partial class MainWindow
         rendering = true;
         long generation = renderGeneration;
         var document = doc; int tab = activeTab; bool proof = cmykProof; string? profile = proofProfile;
+        canvas.DesignProof = proof; canvas.DesignProofProfile = profile;
         var cts = renderCts = new CancellationTokenSource();
         try
         {

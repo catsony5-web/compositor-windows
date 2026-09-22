@@ -163,8 +163,12 @@ public static class DocumentFeatures
     }
     public static Raster RenderText(TextSpec spec)
     {
+        var layout = TextDrawing(spec); return Imaging.Draw(layout.Width, layout.Height, dc => dc.DrawDrawing(layout.Drawing));
+    }
+    internal static (DrawingGroup Drawing, int Width, int Height) TextDrawing(TextSpec spec)
+    {
         spec.Validate();
-        if (spec.Tracking != 0) return Typography.RenderTracked(spec);
+        if (spec.Tracking != 0) return Typography.LayoutTracked(spec);
         var face = new Typeface(new FontFamily(spec.FontFamily), spec.Italic ? FontStyles.Italic : FontStyles.Normal, spec.Bold ? FontWeights.Bold : FontWeights.Normal, FontStretches.Normal);
         var text = new FormattedText(string.IsNullOrEmpty(spec.Content) ? " " : spec.Content, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, face, spec.FontSize, new SolidColorBrush(Color(spec.ColorArgb)), 1);
         if (spec.LineHeight > 0) text.LineHeight = spec.LineHeight;
@@ -173,7 +177,8 @@ public static class DocumentFeatures
         var ink = text.BuildGeometry(new Point()).Bounds; if (!ink.IsEmpty) bounds.Union(ink);
         int width = Math.Max(1, (int)Math.Ceiling(bounds.Width + 8)), height = Math.Max(1, (int)Math.Ceiling(bounds.Height + 8));
         Raster.ValidateSize(width, height);
-        return Imaging.Draw(width, height, dc => dc.DrawText(text, new Point(4 - bounds.Left, 4 - bounds.Top)));
+        var drawing = new DrawingGroup(); using (var dc = drawing.Open()) dc.DrawText(text, new Point(4 - bounds.Left, 4 - bounds.Top)); drawing.Freeze();
+        return (drawing, width, height);
     }
     public static void UpdateText(Layer layer, TextSpec spec)
     {

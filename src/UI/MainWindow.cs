@@ -59,6 +59,7 @@ public sealed partial class MainWindow : Window
         optionHost.Children.Add(DocumentControl(new ScrollViewer { Content = options, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled }));
         options.Children.Add(toolCaption);
         BuildBucketOptions(); options.Children.Add(bucketOptions);
+        BuildWandOptions(); options.Children.Add(wandOptions);
         brushOptions.Children.Add(Theme.Label("크기"));
         sizeSlider = Slider(1, MaxBrushSize, brushSize, 115, v => { brushSize = v; UpdateBrushLabel(); }); brushOptions.Children.Add(sizeSlider);
         brushLabel.Width = 50; brushOptions.Children.Add(brushLabel); brushOptions.Children.Add(Theme.Label("경도"));
@@ -226,6 +227,7 @@ public sealed partial class MainWindow : Window
     {
         int existing = FindPathTab(path); if (existing >= 0) { SwitchTab(existing); status.Text = "이미 열려 있는 작업으로 이동했습니다."; return; }
         AddTab(ProjectStore.Load(path), path);
+        if (doc.Layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
     }
     void OpenImage(string path)
     {
@@ -257,6 +259,7 @@ public sealed partial class MainWindow : Window
         }
         var candidate = doc.Snapshot(); foreach (var layer in layers) candidate.Add(layer); candidate.Validate();
         Edit("이미지 가져오기", () => { doc = candidate; maskEditing = false; });
+        if (layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
     }
     bool Save(bool saveAs)
     {
@@ -386,7 +389,7 @@ public sealed partial class MainWindow : Window
     }
     void OnKey(object sender, KeyEventArgs e) => InteractionKey(sender, e);
     void Help() => MessageBox.Show(this,
-        "Morupixel · 모루픽셀 0.2 Preview\n독립적인 Windows 이미지 편집기\n\n" +
+        $"Morupixel · 모루픽셀 {typeof(MainWindow).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).Cast<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion}\n독립적인 Windows 이미지 편집기\n\n" +
         "레이어 그룹·클리핑·14 혼합 모드·마스크·6종 조정 레이어·편집 가능한 텍스트\n올가미·마술봉·페더·복제·복구·스머지·액화·내용 인식 채우기·AI 배경 제거\n\n" +
         "Ctrl+S: .moruproj 저장 / Ctrl+Shift+E: 내보내기 미리보기\nCtrl+T: 변형 값 입력 / 모서리: 크기 / Ctrl+모서리: 원근 / 원형 핸들: 회전\nShift+레이어 클릭: 다중 선택 / Ctrl+G: 그룹\nAlt+클릭: 복제·복구 원본 지정 / Shift·Alt: 선택 추가·빼기\n마스크: 흰색 표시·검정 숨김 / D: 검정·흰색 초기화 / X: 전경·배경 교환\nAlt+좌우 드래그: 브러시 크기 (1~1000px) / Esc: 크기 변경 취소\nAlt+Delete: 전경색 채우기 / Ctrl+Delete: 배경색 채우기 (Backspace도 가능)\nG: 버킷 채우기 / Shift+G: 그라데이션\n텍스트 속성: Enter 줄바꿈 / Ctrl+Enter 적용 / 숫자·글꼴 입력 Enter 적용\n\n" +
         $"8개 문서 탭 · 최대 {Document.MaxNodes:N0}개 객체·그룹 (이미지·조정 {Document.MaxLayers}개) · 한 변 {Raster.MaxDimension:N0}px · {Raster.MaxPixels / 1_000_000.0:N1}MP · 레이어 메모리 {Document.MaxLayerBytes / (1024.0 * 1024 * 1024):0.#}GiB\n실제 작업 가능 크기는 사용 가능한 메모리와 편집 작업에 따라 달라집니다.\nICC 입력은 sRGB로 변환합니다. HEIC는 Windows 코덱이 필요합니다.\nCompositor .comp 파일은 지원하는 속성만 호환됩니다. 자세한 범위는 배포본 docs/PORTING.md를 확인하세요.\n\n" +

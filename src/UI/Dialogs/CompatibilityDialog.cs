@@ -12,6 +12,7 @@ internal sealed partial class CompatibilityDialog : Window
     readonly bool pdf, cad;
     readonly TextBox page = new() { Text = "1" }, dpi = new() { Text = "150" }, edge = new() { Text = "2400" };
     readonly CheckBox separate = new() { Margin = new Thickness(3, 12, 3, 12) };
+    readonly CheckBox retain = new() { Content = "벡터 원본 보존 · 디자인 확대", IsChecked = true, Margin = new Thickness(3, 4, 3, 12) };
     readonly ComboBox space = new() { DisplayMemberPath = "Name", SelectedValuePath = "Key" };
     sealed record StructureChoice(CadImportStructure Value, string Name)
     {
@@ -66,10 +67,12 @@ internal sealed partial class CompatibilityDialog : Window
             separate.Content = new TextBlock { Text = "개별 픽셀 레이어 가져오기\nRGB / 회색조 · 8비트", TextWrapping = TextWrapping.Wrap }; settings.Children.Add(separate);
             settings.Children.Add(new TextBlock { Text = "픽셀·마스크·혼합 모드 지원. 그룹·조정 레이어는 합성 이미지 모드 사용.", TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 5, 3, 10) });
         }
+        if (pdf || cad) settings.Children.Add(retain);
         content.Children.Add(messages);
         if (placeAsLayer) content.Children.Add(new TextBlock { Text = "가져온 레이어를 한 그룹으로 추가", TextWrapping = TextWrapping.Wrap, Foreground = Theme.Muted, Margin = new Thickness(3, 10, 3, 10) });
         foreach (var box in new[] { page, dpi, edge }) box.TextChanged += (_, _) => InvalidatePrepared();
         separate.Checked += (_, _) => InvalidatePrepared(); separate.Unchecked += (_, _) => InvalidatePrepared();
+        retain.Checked += (_, _) => InvalidatePrepared(); retain.Unchecked += (_, _) => InvalidatePrepared();
         space.SelectionChanged += (_, _) => InvalidatePrepared();
         structure.SelectionChanged += (_, _) => { DescribeStructure(); InvalidatePrepared(); };
         Loaded += async (_, _) =>
@@ -80,7 +83,7 @@ internal sealed partial class CompatibilityDialog : Window
                 if (pdf)
                 {
                     var info = await Task.Run(() => PdfCompatibility.InspectAsync(path, lifetime.Token));
-                    if (closed) return; details.Text = $"총 {info.Pages}페이지 · 저장된 레이어 {info.Layers}개\n문자·벡터는 레이어별 픽셀로 변환";
+                    if (closed) return; details.Text = $"총 {info.Pages}페이지 · 저장된 레이어 {info.Layers}개\n벡터 원본과 사진 해상도 유지";
                     separate.IsEnabled = info.Layers > 0;
                 }
                 else
@@ -106,7 +109,7 @@ internal sealed partial class CompatibilityDialog : Window
     CompatibilityOptions ReadOptions() => new(Page: pdf ? Integer(page.Text, 1, 100000) : 1, Dpi: pdf ? Dialogs.Number(dpi.Text, 36, 600) : 96,
         CadLongEdge: cad ? Integer(edge.Text, 256, 4096) : 2400, SeparateLayers: separate.IsChecked == true,
         CadLayout: cad && space.SelectedItem is CadCompatibility.Space selected && selected.Key.Length > 0 ? selected.Key : null,
-        PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null);
+        PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null, RetainVectors: retain.IsChecked == true);
     void InvalidatePrepared() { prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null; messages.Text = "미리보기 필요"; }
     async Task RenderAsync()
     {
@@ -140,7 +143,7 @@ internal sealed partial class CompatibilityDialog : Window
 internal sealed class CompatibilityExportDialog : Window
 {
     readonly Document snapshot;
-    readonly ComboBox format = new() { ItemsSource = new[] { "PDF · 합성 이미지", "PSD · 합성 이미지", "PSD · 픽셀 레이어" }, SelectedIndex = 0, Margin = new Thickness(3, 14, 3, 12) };
+    readonly ComboBox format = new() { ItemsSource = new[] { "PDF · 합성 이미지", "PSD · 합성 이미지", "PSD · 픽셀 레이어", "PDF · 벡터 원본 유지" }, SelectedIndex = 0, Margin = new Thickness(3, 14, 3, 12) };
     readonly TextBlock message = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 8, 3, 16) };
     readonly Button save;
     bool busy;
@@ -151,15 +154,18 @@ internal sealed class CompatibilityExportDialog : Window
         var panel = new StackPanel { Margin = new Thickness(24) }; Content = panel;
         panel.Children.Add(Theme.Label("호환 형식 내보내기", 21)); panel.Children.Add(format); panel.Children.Add(message);
         save = Theme.Button("파일로 저장…", async () => await SaveAsync()); panel.Children.Add(save); var close = Theme.Button("닫기", Close); close.IsCancel = true; panel.Children.Add(close);
-        format.SelectionChanged += (_, _) => Describe(); Describe(); Closing += (_, e) => { if (busy) e.Cancel = true; };
+        format.SelectionChanged += (_, _) => Describe();
+        if (DesignRenderer.HasRetainedContent(snapshot) && VectorPdfExport.Limitation(snapshot) == null) format.SelectedIndex = 3;
+        Describe(); Closing += (_, e) => { if (busy) e.Cancel = true; };
     }
     void Describe()
     {
-        bool valid = format.SelectedIndex != 2 || PhotoshopCompatibility.CanWriteLayers(snapshot); save.IsEnabled = valid;
+        bool valid = (format.SelectedIndex != 2 || PhotoshopCompatibility.CanWriteLayers(snapshot)) && (format.SelectedIndex != 3 || VectorPdfExport.Limitation(snapshot) == null); save.IsEnabled = valid;
         message.Text = format.SelectedIndex switch
         {
             0 => "문서 DPI에 맞춘 한 페이지 RGB PDF입니다. 현재 합성 결과를 이미지로 담습니다. Illustrator에서도 열 수 있지만 문자·벡터·레이어를 개별 편집하는 AI 파일은 아닙니다.",
             1 => "현재 합성 결과를 RGB / 8비트 PSD로 저장합니다. 원본 문서의 레이어·문자·벡터를 개별 편집하려면 .moruproj도 함께 보관하세요.",
+            3 => valid ? "CAD 경로·문자·도형과 원본 PDF/AI의 벡터를 유지합니다. 사진은 원본 픽셀로 포함됩니다. 편집 레이어는 .moruproj에도 저장하세요." : VectorPdfExport.Limitation(snapshot),
             _ => valid ? "레이어 이름·표시·불투명도·혼합 모드를 저장합니다. 문자·도형·변형·마스크는 각 레이어의 픽셀에 적용됩니다. 그룹·조정·클리핑 문서는 합성 PSD로 출력하세요."
                 : snapshot.Layers.Count > Document.MaxLayers
                     ? $"픽셀 레이어 PSD는 최대 {Document.MaxLayers}개 레이어를 지원합니다. ‘PSD · 합성 이미지’를 선택하고 객체 구조는 .moruproj로 보관하세요."
@@ -168,12 +174,12 @@ internal sealed class CompatibilityExportDialog : Window
     }
     async Task SaveAsync()
     {
-        if (busy) return; int selected = format.SelectedIndex; string extension = selected == 0 ? ".pdf" : ".psd";
-        var picker = new SaveFileDialog { Filter = selected == 0 ? "PDF 문서|*.pdf" : "Photoshop PSD|*.psd", DefaultExt = extension, AddExtension = true, FileName = snapshot.Name + extension };
+        if (busy) return; int selected = format.SelectedIndex; bool pdf = selected is 0 or 3; string extension = pdf ? ".pdf" : ".psd";
+        var picker = new SaveFileDialog { Filter = pdf ? "PDF 문서|*.pdf" : "Photoshop PSD|*.psd", DefaultExt = extension, AddExtension = true, FileName = snapshot.Name + extension };
         if (picker.ShowDialog(this) != true) return; busy = true; save.IsEnabled = false; format.IsEnabled = false; message.Text = "파일을 저장하고 있습니다…";
         try
         {
-            await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => { if (selected == 0) PdfCompatibility.Write(snapshot, stream); else PhotoshopCompatibility.Write(snapshot, stream, selected == 2); }));
+            await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => { if (selected == 3) VectorPdfExport.Write(snapshot, stream); else if (selected == 0) PdfCompatibility.Write(snapshot, stream); else PhotoshopCompatibility.Write(snapshot, stream, selected == 2); }));
             busy = false; Close();
         }
         catch (Exception e) { message.Text = "저장 실패: " + e.Message; }

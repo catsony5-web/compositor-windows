@@ -118,7 +118,7 @@ public static class LayeredCompatibilityTests
     }
 
     // Independently assembled PDF objects, avoiding the importer's parser/writer.
-    static void WritePdf(string path, bool form)
+    internal static void WritePdf(string path, bool form)
     {
         string Unicode(string value) => "<FEFF" + Convert.ToHexString(Encoding.BigEndianUnicode.GetBytes(value)) + ">";
         string content = form

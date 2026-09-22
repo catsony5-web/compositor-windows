@@ -43,7 +43,7 @@ public static class CmykExport
 
         // Validate and initialize the requested profile before creating an output file.
         _ = LoadDestination(profilePath, out _);
-        var rendered = Imaging.Render(document);
+        var rendered = DesignRenderer.RenderOutput(document);
         ProjectStore.AtomicWrite(path, stream => Write(rendered, stream, profilePath, dpi));
     }
 

@@ -28,6 +28,7 @@ public sealed partial class MainWindow
         brushOptions.Visibility = BrushTool ? Visibility.Visible : Visibility.Collapsed;
         opacityOptions.Visibility = BrushTool || tool is Tool.Gradient or Tool.Rectangle or Tool.Ellipse or Tool.Bucket ? Visibility.Visible : Visibility.Collapsed;
         bucketOptions.Visibility = tool == Tool.Bucket ? Visibility.Visible : Visibility.Collapsed;
+        wandOptions.Visibility = tool == Tool.MagicWand ? Visibility.Visible : Visibility.Collapsed;
         gradientOptions.Visibility = tool == Tool.Gradient ? Visibility.Visible : Visibility.Collapsed;
         autoSelectToggle.Visibility = tool == Tool.Move ? Visibility.Visible : Visibility.Collapsed;
         toolCaption.ToolTip = BrushTool ? "Alt + 좌우 드래그: 크기" : tool == Tool.Eyedropper ? "클릭: 전경색 · Alt+클릭: 배경색" : null;

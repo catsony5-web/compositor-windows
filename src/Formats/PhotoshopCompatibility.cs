@@ -48,7 +48,7 @@ public static class PhotoshopCompatibility
         void Plane(Raster raster, int ch) { for (int y = 0; y < raster.Height; y++) { token.ThrowIfCancellationRequested(); for (int x = 0; x < raster.Width; x++) writer.Write(raster.Data[(y * raster.Width + x) * 4 + ch]); } }
         Text("8BPS"); U16(1); writer.Write(new byte[6]); U16(4); I32(document.Height); I32(document.Width); U16(8); U16(3); I32(0);
         Section(() => { Text("8BIM"); U16(1005); U16(0); I32(16); I32((int)Math.Round(document.Dpi * 65536)); U16(1); U16(1); I32((int)Math.Round(document.Dpi * 65536)); U16(1); U16(1); });
-        var merged = Imaging.Render(document, token);
+        var merged = DesignRenderer.RenderOutput(document, token);
         Section(() =>
         {
             Section(() =>
@@ -72,7 +72,7 @@ public static class PhotoshopCompatibility
                 foreach (var layer in selected)
                 {
                     var single = new Document { Width = document.Width, Height = document.Height }; var copy = layer.Snapshot(); copy.Visible = true; copy.Opacity = 1; copy.Blend = BlendMode.Normal; single.Add(copy);
-                    var raster = Imaging.Render(single, token);
+                    var raster = DesignRenderer.RenderOutput(single, token);
                     foreach (int channel in new[] { 2, 1, 0, 3 }) { U16(0); Plane(raster, channel); }
                 }
                 if ((output.Position & 1) != 0) writer.Write((byte)0);
