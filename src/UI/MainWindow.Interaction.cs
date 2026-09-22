@@ -17,17 +17,20 @@ public sealed partial class MainWindow
         ResetPointerFeedback();
         polygonInProgress = false; lassoPoints.Clear(); canvas.GesturePoints = null;
         canvas.GestureBounds = null; cloneSnapshot = null; moveStarted = false;
+        objectMarquee = false; canvas.ObjectMarquee = null; artboardStart = null; canvas.ArtboardDraft = null;
     }
 
     void ChangeInteractionTool(Tool next)
     {
-        CancelGesture(); ResetInteractionTransient(); tool = next;
+        jobCts?.Cancel(); CancelGesture(); ResetInteractionTransient(); tool = next;
         foreach (var pair in toolButtons)
         {
             pair.Value.Background = pair.Key == tool ? Theme.Selected : Theme.Panel;
             pair.Value.BorderBrush = pair.Key == tool ? Theme.Accent : Theme.Panel;
         }
         canvas.ShowLayerBounds = tool == Tool.Move;
+        canvas.ArtboardMode = tool == Tool.Artboard;
+        if (tool == Tool.Artboard) { selectedArtboard = CurrentArtboard.Id; ShowStudioPage(1); }
         canvas.Cursor = tool == Tool.Hand ? Cursors.Hand : tool == Tool.Move ? Cursors.Arrow : tool == Tool.Text ? Cursors.IBeam : Cursors.Cross;
         canvas.BrushPoint = null; canvas.BrushRadius = brushSize / 2;
         UpdateBrushTipCursor();
@@ -90,11 +93,12 @@ public sealed partial class MainWindow
             e.Handled = true;
             if (tool == Tool.MagicWand && e.ClickCount > 1) { ConfigureWand(); return; }
             if (jobCts != null) { status.Text = "처리 중입니다. Esc로 취소한 뒤 편집하세요."; return; }
+            if (tool == Tool.Artboard) { BeginArtboard(point, screen, Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)); return; }
             if (tool == Tool.Move && TryBeginTransformHandle(point, screen)) return;
             bool inside = point.X >= 0 && point.Y >= 0 && point.X < doc.Width && point.Y < doc.Height;
             if (!inside)
             {
-                if (tool == Tool.Move && autoSelectToggle.IsChecked == true) SelectLayer(Guid.Empty);
+                if (tool == Tool.Move) BeginObjectMarquee(point, screen);
                 return;
             }
             if (tool == Tool.Eyedropper) { PickForeground(point); return; }
@@ -109,13 +113,14 @@ public sealed partial class MainWindow
             if (tool == Tool.Move && autoSelectToggle.IsChecked == true)
             {
                 var picked = PickMoveTarget(point);
-                if (picked == null) { SelectLayer(Guid.Empty); return; }
+                if (picked == null || IsLockedWithParents(picked)) { BeginObjectMarquee(point, screen); return; }
                 // Preserve a multi-selection when dragging one of its members.
                 if (selectedLayers.Contains(picked.Id) && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
                 { doc.ActiveId = picked.Id; maskEditing = false; Refresh(false); }
                 else SelectLayer(picked.Id);
             }
             bool pixelTool = tool is Tool.Brush or Tool.Eraser || IsRetouch(tool);
+            if (tool == Tool.Move && doc.Active == null) { BeginObjectMarquee(point, screen); return; }
             if ((pixelTool || tool == Tool.Move) && (doc.Active == null || IsLockedWithParents(doc.Active)))
             { status.Text = "편집할 레이어를 선택하거나 레이어·그룹 잠금을 해제하세요."; return; }
             if (pixelTool && !CanPaintActiveLayer()) return;
@@ -165,6 +170,8 @@ public sealed partial class MainWindow
                 if (canvas.BrushPoint != null) canvas.InvalidateVisual();
                 return;
             }
+            if (objectMarquee) { MoveObjectMarquee(point); return; }
+            if (tool == Tool.Artboard) { MoveArtboard(point, screen); return; }
             if (MoveTransformHandle(point)) return;
             if (stroke != null) { stroke.Point(point); RenderGesture(); return; }
             if (IsRetouch(tool)) { ContinueRetouch(point); return; }
@@ -197,6 +204,8 @@ public sealed partial class MainWindow
             if (panning) { panning = false; canvas.ReleaseMouseCapture(); UpdatePointerModifiers(); e.Handled = true; return; }
             if (e.ChangedButton != MouseButton.Left || !dragging) return;
             e.Handled = true;
+            if (objectMarquee) { EndObjectMarquee(canvas.ToDocument(e.GetPosition(canvas))); return; }
+            if (tool == Tool.Artboard) { EndArtboard(canvas.ToDocument(e.GetPosition(canvas)), e.GetPosition(canvas)); return; }
             MoveTransformHandle(canvas.ToDocument(e.GetPosition(canvas)));
             if (EndTransformHandle()) return;
             var point = canvas.ToDocument(e.GetPosition(canvas));
@@ -281,10 +290,11 @@ public sealed partial class MainWindow
         var snap = moveSnapSession.Resolve(delta, canvas.Zoom, snapping && !modifiers.HasFlag(ModifierKeys.Alt), horizontal, vertical);
         delta = snap.Delta; canvas.SnapGuides = snap.Guides; ClearPointerHover();
         if (firstMove) Mouse.UpdateCursor();
+        var originals = beforeGesture.Layers.ToDictionary(l => l.Id);
         foreach (var current in moving)
         {
-            var original = beforeGesture.Layers.Single(l => l.Id == current.Id);
-            var localDelta = ParentPoint(beforeGesture, original, start + delta) - ParentPoint(beforeGesture, original, start);
+            var original = originals[current.Id];
+            var localDelta = ParentPoint(originals, original, start + delta) - ParentPoint(originals, original, start);
             current.X = Math.Clamp(original.X + localDelta.X, -100_000, 100_000); current.Y = Math.Clamp(original.Y + localDelta.Y, -100_000, 100_000);
         }
         RenderGesture();
@@ -293,7 +303,23 @@ public sealed partial class MainWindow
     IEnumerable<Layer> MovableSelectedLayers()
     {
         var ids = selectedLayers.Contains(doc.ActiveId) ? selectedLayers : new HashSet<Guid> { doc.ActiveId };
-        return doc.Layers.Where(l => ids.Contains(l.Id) && !IsLockedWithParents(l) && !Parents(doc, l).Any(parent => ids.Contains(parent.Id))).ToArray();
+        var index = doc.Layers.ToDictionary(l => l.Id);
+        bool Movable(Layer layer)
+        {
+            if (!ids.Contains(layer.Id) || layer.Locked) return false;
+            var parent = layer.ParentId;
+            while (parent is { } id && index.TryGetValue(id, out var group))
+            { if (group.Locked || ids.Contains(id)) return false; parent = group.ParentId; }
+            return true;
+        }
+        return doc.Layers.Where(Movable).ToArray();
+    }
+    static Point ParentPoint(IReadOnlyDictionary<Guid, Layer> index, Layer layer, Point point)
+    {
+        var chain = new List<Layer>();
+        for (var parent = layer.ParentId; parent is { } id; parent = index[id].ParentId) chain.Add(index[id]);
+        for (int i = chain.Count - 1; i >= 0; i--) point = chain[i].Local(point);
+        return point;
     }
     static IEnumerable<Layer> Parents(Document document, Layer layer)
     {
@@ -407,9 +433,10 @@ public sealed partial class MainWindow
         if (doc.Active == null) return;
         Edit("레이어 이동", () =>
         {
+            var index = doc.Layers.ToDictionary(l => l.Id);
             foreach (var layer in MovableSelectedLayers())
             {
-                var local = ParentPoint(doc, layer, new Point(delta.X, delta.Y)) - ParentPoint(doc, layer, new Point(0, 0));
+                var local = ParentPoint(index, layer, new Point(delta.X, delta.Y)) - ParentPoint(index, layer, new Point(0, 0));
                 layer.X = Math.Clamp(layer.X + local.X, -100_000, 100_000); layer.Y = Math.Clamp(layer.Y + local.Y, -100_000, 100_000);
             }
         });

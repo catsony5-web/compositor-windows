@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Compositor.Windows;
@@ -32,9 +33,9 @@ public sealed partial class MainWindow
         }
         Add("파일", ("새 캔버스…", "Ctrl+N", NewDocument), ("열기…", "Ctrl+O", Open), ("레이어로 가져오기…", "Ctrl+Shift+O", Import), ("저장", "Ctrl+S", () => Save(false)), ("다른 이름으로 저장…", "Ctrl+Shift+S", () => Save(true)), ("내보내기 미리보기…", "Ctrl+Shift+E", Export), ("Compositor .comp 가져오기…", "", ImportCompositor), ("Compositor .comp 내보내기…", "", ExportCompositor), ("현재 문서 닫기", "Ctrl+W", CloseTab));
         Add("편집", ("실행 취소", "Ctrl+Z", Undo), ("다시 실행", "Ctrl+Shift+Z", Redo), ("합성 이미지 복사", "Ctrl+C", CopyMerged), ("이미지 붙여넣기", "Ctrl+V", Paste), ("선택 픽셀 지우기", "Delete", ClearPixels), ("전경색으로 채우기", "Alt+Delete", Fill), ("배경색으로 채우기", "Ctrl+Delete", FillBackground), ("버킷 채우기 도구", "G", () => SetTool(Tool.Bucket)));
-        Add("이미지", ("캔버스 크기…", "", CanvasSize), ("이미지 크기…", "", ImageSize), ("선택 영역으로 자르기", "", CropSelection));
+        Add("이미지", ("대지 편집", "Shift+O", () => SetTool(Tool.Artboard)), ("캔버스 크기…", "", CanvasSize), ("이미지 크기…", "", ImageSize), ("선택 영역으로 자르기", "", CropSelection));
         Add("레이어", ("레이어 복제", "Ctrl+J", Duplicate), ("이름 변경…", "", Rename), ("변형 값 입력…", "Ctrl+T", Transform), ("가로 뒤집기", "", () => EditLayer("가로 뒤집기", l => l.FlipX = !l.FlipX)), ("세로 뒤집기", "", () => EditLayer("세로 뒤집기", l => l.FlipY = !l.FlipY)), ("마스크 추가", "", AddMask), ("마스크 반전", "", InvertMask), ("마스크 제거", "", () => EditLayer("마스크 제거", l => { l.Mask = null; maskEditing = false; })), ("모든 레이어 병합", "", Flatten), ("레이어 삭제", "", DeleteLayer));
-        Add("선택", ("전체 선택", "Ctrl+A", () => { selection = new Selection(new Rect(0, 0, doc.Width, doc.Height)); Refresh(false); }), ("선택 해제", "Ctrl+D", () => { selection = null; Refresh(false); }), ("선택 반전", "Ctrl+Shift+I", InvertSelection), ("페더…", "", () => ModifySelection("feather")), ("확장…", "", () => ModifySelection("expand")), ("축소…", "", () => ModifySelection("contract")), ("레이어의 불투명 픽셀 선택", "", SelectAlpha), ("선택 픽셀을 새 레이어로", "", ExtractSelection), ("선택 윤곽 이동…", "", MoveSelectionOutline));
+        Add("선택", ("전체 선택", "Ctrl+A", () => ExecuteEditorShortcut(Key.A, ModifierKeys.Control)), ("선택 해제", "Ctrl+D", () => ExecuteEditorShortcut(Key.D, ModifierKeys.Control)), ("선택 반전", "Ctrl+Shift+I", InvertSelection), ("페더…", "", () => ModifySelection("feather")), ("확장…", "", () => ModifySelection("expand")), ("축소…", "", () => ModifySelection("contract")), ("레이어의 불투명 픽셀 선택", "", SelectAlpha), ("선택 픽셀을 새 레이어로", "", ExtractSelection), ("선택 윤곽 이동…", "", MoveSelectionOutline));
         Add("보정", ("레벨…", "Ctrl+L", Levels), ("노출…", "", Exposure), ("채도…", "", Saturation), ("흑백", "", () => Adjust("grayscale")), ("색상 반전", "Ctrl+I", () => Adjust("invert")), ("가우시안 흐림…", "", Blur));
         Add("합성", ("선택 레이어 그룹화", "Ctrl+G", GroupSelected), ("그룹 해제", "Ctrl+Shift+G", UngroupSelected), ("그룹으로 이동…", "", MoveToGroup), ("클리핑 마스크 전환", "Ctrl+Alt+G", ToggleClipping), ("아래 레이어와 병합", "Ctrl+E", MergeDown), ("텍스트 내용·서식 편집…", "", EditText), ("픽셀 레이어로 변환", "", RasterizeActive), ("다른 문서로 레이어 복사…", "", CopyLayerToTab));
         Add("조정 레이어", ("레벨…", "", () => ShowAdjustment(AdjustmentKind.Levels)), ("곡선…", "", () => ShowAdjustment(AdjustmentKind.Curves)), ("색조 / 채도…", "Ctrl+U", () => ShowAdjustment(AdjustmentKind.HueSaturation)), ("노출…", "", () => ShowAdjustment(AdjustmentKind.Exposure)), ("그라데이션 맵…", "", () => ShowAdjustment(AdjustmentKind.GradientMap)), ("그레인…", "", () => ShowAdjustment(AdjustmentKind.Grain)), ("선택 조정 레이어 편집…", "", EditAdjustment));

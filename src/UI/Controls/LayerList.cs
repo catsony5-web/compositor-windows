@@ -5,7 +5,7 @@ using System.Windows.Threading;
 
 namespace Compositor.Windows;
 
-internal sealed record LayerListEntry(Layer Layer, int Depth, bool Selected, bool Expanded);
+internal sealed record LayerListEntry(Layer Layer, int Depth, bool Selected, bool Expanded, Guid[]? GroupMembers = null, string? Description = null);
 
 // Store small row descriptions, not thousands of WPF controls and thumbnails.
 // The internal ScrollViewer supplies a finite viewport to the virtualizing panel.

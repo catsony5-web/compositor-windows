@@ -74,13 +74,12 @@ public sealed partial class MainWindow
     FrameworkElement BuildLayersPanel()
     {
         var panel = new Grid { Background = Brushes.Transparent };
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(38) });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1) });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(26) });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) });
-
-
+        panel.Children.Add(BuildLayerCategoryTabs());
         var divider = new Border { Background = Theme.Line };
         Grid.SetRow(divider, 1); panel.Children.Add(divider);
 
@@ -116,6 +115,7 @@ public sealed partial class MainWindow
         inspectorVersion++;
         properties.Children.Clear();
         if (!HasDocument) return;
+        if (tool == Tool.Artboard) { BuildArtboardProperties(); return; }
         if (doc.Active is not { } layer)
         {
             var empty = Theme.Label("레이어를 선택하세요", Theme.BodySize, Theme.Muted);
@@ -295,13 +295,16 @@ public sealed partial class MainWindow
         var byId = doc.Layers.ToDictionary(layer => layer.Id);
         if (!byId.TryGetValue(id, out var selected)) return;
         var parent = selected.ParentId;
+        bool keepDrawingCollapsed = DrawingLayers.Categories(doc).GetValueOrDefault(id) == LayerCategory.Drawing;
+        Guid reveal = id;
         for (int depth = 0; parent is { } parentId && depth < 16; depth++)
         {
-            collapsedGroups.Remove(parentId);
+            if (keepDrawingCollapsed) { if (collapsedGroups.Contains(parentId)) reveal = parentId; }
+            else collapsedGroups.Remove(parentId);
             knownLayerGroups.Add(parentId);
             parent = byId.TryGetValue(parentId, out var group) ? group.ParentId : null;
         }
-        pendingLayerReveal = id;
+        pendingLayerReveal = reveal;
     }
 
     void BuildLayers()
@@ -311,22 +314,36 @@ public sealed partial class MainWindow
         // Canvas multiselection can change ActiveId without calling SelectLayer.
         if (ReferenceEquals(layerPanelDocument, doc) && layerPanelActive != doc.ActiveId)
             RevealLayerSelection(doc.ActiveId);
+        var categories = DrawingLayers.Categories(doc);
+        if ((!ReferenceEquals(layerPanelDocument, doc) || layerPanelActive != doc.ActiveId) && categories.TryGetValue(doc.ActiveId, out var activeCategory)) layerCategory = activeCategory;
         layerPanelDocument = doc; layerPanelActive = doc.ActiveId;
-        layerCountLabel.Text = HasDocument ? $"{doc.Layers.Count}개" : "";
-        var entries = HasDocument ? LayerDisplayRows().Select(item => new LayerListEntry(item.Layer, item.Depth,
-            selectedLayers.Contains(item.Layer.Id) || item.Layer.Id == doc.ActiveId,
-            !collapsedGroups.Contains(item.Layer.Id))).ToArray() : [];
+        foreach (var (category, button) in layerCategoryButtons)
+        { button.BorderBrush = category == layerCategory ? Theme.Accent : Theme.Line; button.Background = category == layerCategory ? Theme.Selected : Theme.Panel; }
+        int roots = doc.Layers.Count(l => l.ParentId == null && categories[l.Id] == layerCategory);
+        int objects = doc.Layers.Count(l => l.Kind != LayerKind.Group && categories[l.Id] == layerCategory);
+        layerCountLabel.Text = !HasDocument ? "" : layerCategory == LayerCategory.Drawing ? $"{roots:N0}개 레이어 · {objects:N0}개 객체" : $"{objects:N0}개 레이어";
+        var entries = HasDocument ? DrawingLayerEntries(categories) : [];
+        if (pendingLayerReveal is { } reveal && !entries.Any(e => e.Layer.Id == reveal))
+            pendingLayerReveal = entries.FirstOrDefault(e => e.GroupMembers?.Contains(reveal) == true)?.Layer.Id;
         layerList.SetEntries(entries, pendingLayerReveal); pendingLayerReveal = null;
     }
 
     LayerRow CreateLayerRow(LayerListEntry entry)
     {
         var id = entry.Layer.Id;
+        if (entry.GroupMembers is { } members)
+        {
+            var grouped = new LayerRow(entry.Layer, entry.Selected, () => SelectSourceLayer(members),
+                visible => ToggleSourceLayer(members, visible), () => ToggleSourceLayer(members), entry.Expanded,
+                () => { foreach (var member in members) if (entry.Expanded) collapsedGroups.Add(member); else collapsedGroups.Remove(member); BuildLayers(); }, entry.Description);
+            grouped.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1);
+            return grouped;
+        }
         var row = new LayerRow(entry.Layer, entry.Selected,
             () => SelectLayer(id),
             visible => Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible),
             () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
-            entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); });
+            entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); }, entry.Description);
         row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;
         EnableLayerDrag(row, id);
         return row;

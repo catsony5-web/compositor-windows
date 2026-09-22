@@ -96,7 +96,7 @@ public sealed partial class MainWindow
 
     static string ToolDisplayName(Tool tool) => tool switch
     {
-        Tool.Move => "이동", Tool.Brush => "브러시", Tool.Eraser => "지우개", Tool.Bucket => "버킷 채우기", Tool.Text => "텍스트",
+        Tool.Move => "이동", Tool.Brush => "브러시", Tool.Eraser => "지우개", Tool.Bucket => "버킷 채우기", Tool.Text => "텍스트", Tool.Artboard => "대지 편집",
         Tool.RectangleSelect => "사각 선택", Tool.EllipseSelect => "타원 선택", Tool.Crop => "자르기", Tool.Rectangle => "사각형", Tool.Ellipse => "타원",
         Tool.Gradient => "그라데이션", Tool.Eyedropper => "색상 추출", Tool.Hand => "화면 이동", Tool.Lasso => "올가미", Tool.PolygonLasso => "다각형 선택",
         Tool.MagicWand => "자동 선택", Tool.CloneStamp => "복제 도장", Tool.Heal => "복구 브러시", Tool.Smudge => "스머지", Tool.Liquify => "액화", Tool.BlurBrush => "흐림 브러시", _ => "도구"

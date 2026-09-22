@@ -8,7 +8,7 @@ using Microsoft.Win32;
 
 namespace Compositor.Windows;
 
-public enum Tool { Move, Brush, Eraser, RectangleSelect, EllipseSelect, Crop, Rectangle, Ellipse, Gradient, Text, Eyedropper, Hand, Lasso, PolygonLasso, MagicWand, CloneStamp, Heal, Smudge, Liquify, BlurBrush, Bucket }
+public enum Tool { Move, Brush, Eraser, RectangleSelect, EllipseSelect, Crop, Rectangle, Ellipse, Gradient, Text, Eyedropper, Hand, Lasso, PolygonLasso, MagicWand, CloneStamp, Heal, Smudge, Liquify, BlurBrush, Bucket, Artboard }
 
 public sealed partial class MainWindow : Window
 {
@@ -60,6 +60,7 @@ public sealed partial class MainWindow : Window
         options.Children.Add(toolCaption);
         BuildBucketOptions(); options.Children.Add(bucketOptions);
         BuildWandOptions(); options.Children.Add(wandOptions);
+        BuildArtboardOptions(); options.Children.Add(artboardOptions);
         brushOptions.Children.Add(Theme.Label("크기"));
         sizeSlider = Slider(1, MaxBrushSize, brushSize, 115, v => { brushSize = v; UpdateBrushLabel(); }); brushOptions.Children.Add(sizeSlider);
         brushLabel.Width = 50; brushOptions.Children.Add(brushLabel); brushOptions.Children.Add(Theme.Label("경도"));
@@ -70,6 +71,8 @@ public sealed partial class MainWindow : Window
         autoSelectToggle = new CheckBox { Content = "자동 선택", IsChecked = true, Foreground = Theme.Text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 4, 0), ToolTip = "이동 도구(V): 클릭한 대상의 레이어 선택. 끄면 목록에서 선택한 레이어만 이동합니다." };
         System.Windows.Automation.AutomationProperties.SetName(autoSelectToggle, "캔버스 레이어 자동 선택");
         options.Children.Add(autoSelectToggle);
+        moveSelectionHint = Theme.Label("→ 안에 든 객체  ·  ← 닿는 객체", Theme.CaptionSize, Theme.Muted);
+        moveSelectionHint.Margin = new Thickness(14, 0, 2, 0); options.Children.Add(moveSelectionHint);
         autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
         var body = new Grid { Margin = new Thickness(10, 6, 10, 8) }; Grid.SetRow(body, 3); root.Children.Add(body);
@@ -133,9 +136,18 @@ public sealed partial class MainWindow : Window
     }
     void EditLayer(string label, Action<Layer> action)
     {
+        CancelGesture();
         if (doc.Active == null) return;
-        if (IsLockedWithParents(doc.Active)) { status.Text = "잠긴 레이어입니다. 레이어와 부모 그룹의 잠금을 먼저 해제하세요."; return; }
-        Edit(label, () => action(doc.Active!));
+        var targets = EditingLayerBundle();
+        if (targets.Any(IsLockedWithParents)) { status.Text = "잠긴 레이어입니다. 레이어와 부모 그룹의 잠금을 먼저 해제하세요."; return; }
+        Edit(label, () =>
+        {
+            foreach (var layer in targets)
+            {
+                string oldName = layer.Name; action(layer);
+                if (layer.SourceLayerName != null && oldName != layer.Name) layer.SourceLayerName = layer.Name;
+            }
+        });
     }
     void UpdateColor() { colorSwatches.SetColors(foreground, backgroundColor); UpdateStudioColor(); }
     void UpdateBrushLabel()
@@ -151,11 +163,11 @@ public sealed partial class MainWindow : Window
     // UI-only changes and no-op commands must not discard the redo stack or dirty the file.
     static bool SameDocument(Document a, Document b)
     {
-        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.Layers.Count != b.Layers.Count) return false;
+        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.Layers.Count != b.Layers.Count || !a.Artboards.SequenceEqual(b.Artboards)) return false;
         for (int i = 0; i < a.Layers.Count; i++)
         {
             var x = a.Layers[i]; var y = b.Layers[i];
-            if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend || x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY || x.Kind != y.Kind || x.ParentId != y.ParentId || x.Clipped != y.Clipped || x.Warp != y.Warp || x.Shape != y.Shape || x.Text != y.Text || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) || !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
+            if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend || x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY || x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.Warp != y.Warp || x.Shape != y.Shape || x.Text != y.Text || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) || !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;
     }
@@ -163,8 +175,11 @@ public sealed partial class MainWindow : Window
     void Refresh(bool render = true)
     {
         ClearPointerHover();
-        selectedLayers.RemoveWhere(id => !doc.Layers.Any(l => l.Id == id));
+        var existingIds = doc.Layers.Select(l => l.Id).ToHashSet(); selectedLayers.IntersectWith(existingIds);
         canvas.Document = HasDocument ? doc : null; canvas.Selection = HasDocument ? selection : null;
+        canvas.SelectedObjectIds = selectedLayers.ToHashSet();
+        if (HasDocument) selectedArtboard = CurrentArtboard.Id;
+        canvas.SelectedArtboardId = selectedArtboard;
         UpdateDocumentAvailability();
         if (render && HasDocument) QueueRender();
         else if (!dragging) ClearTextMovePreview();
@@ -183,14 +198,14 @@ public sealed partial class MainWindow : Window
         var hint = tool switch { Tool.Move => "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · Alt+좌우 드래그 / [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기 · Alt+좌우 드래그: 크기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Bucket => "클릭: 전경색으로 영역 채우기 · 허용 오차·연결 영역 조절 · Esc 취소", Tool.Gradient => gradientToBackground ? "전경색 → 배경색 그라데이션 · 드래그" : "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
         status.Text = ToolDisplayName(tool) + (maskEditing ? " · 마스크" : "");
         status.ToolTip = hint + (tool == Tool.Move ? "\n자석 정렬 · Alt: 스냅 잠시 해제 · Shift: 가로/세로 고정" : "") + "\n휠: 확대/축소 · Space+드래그: 화면 이동";
-        zoomLabel.Text = $"{doc.Layers.Count} 레이어    {canvas.Zoom * 100:0.#}%";
+        zoomLabel.Text = $"{(selectedLayers.Count > 1 ? $"{selectedLayers.Count:N0}개 선택" : $"{doc.Layers.Count(l => l.Kind != LayerKind.Group):N0}개 객체")}    {canvas.Zoom * 100:0.#}%";
     }
     void SelectLayer(Guid id)
     {
         // Row buttons are not focusable; commit the current inspector value before
         // changing ActiveId so its blur handler cannot silently discard the edit.
         CommitFocusedInspectorField();
-        CancelGesture(); doc.ActiveId = id; maskEditing = false;
+        CancelGesture(); sourceLayerSelection = null; doc.ActiveId = id; maskEditing = false;
         if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) selectedLayers.Clear();
         if (id != Guid.Empty) selectedLayers.Add(id);
         RevealLayerSelection(id);
@@ -281,21 +296,40 @@ public sealed partial class MainWindow : Window
     void Export()
     {
         if (!HasDocument) return;
-        ExportDialog.Show(this, doc);
+        ExportDialog.Show(this, doc, selectedArtboard);
     }
     void Undo() { CancelGesture(); if (!history.CanUndo) return; doc = history.Undo(doc); maskEditing = false; selection = null; Refresh(); }
     void Redo() { CancelGesture(); if (!history.CanRedo) return; doc = history.Redo(doc); maskEditing = false; selection = null; Refresh(); }
-    void Duplicate() => EditLayer("레이어 복제", l =>
+    void Duplicate()
     {
-        var subtree = new HashSet<Guid> { l.Id };
-        bool changed; do { changed = false; foreach (var child in doc.Layers) if (child.ParentId is { } p && subtree.Contains(p)) changed |= subtree.Add(child.Id); } while (changed);
-        var originals = doc.Layers.Where(x => subtree.Contains(x.Id)).ToArray(); var map = originals.ToDictionary(x => x.Id, _ => Guid.NewGuid());
-        foreach (var original in originals) { var copy = original.Snapshot(); copy.Id = map[original.Id]; if (copy.ParentId is { } parent && map.TryGetValue(parent, out var mapped)) copy.ParentId = mapped; if (original.Id == l.Id) copy.Name += " 복사"; doc.Add(copy); }
-        doc.ActiveId = map[l.Id]; selectedLayers.Clear(); selectedLayers.Add(doc.ActiveId);
-    });
-    void DeleteLayer() => EditLayer("레이어 삭제", l => { DocumentFeatures.Remove(doc, l.Id); maskEditing = false; selectedLayers.Clear(); });
+        CancelGesture(); var roots = MovableSelectedLayers().Select(l => l.Id).ToHashSet(); if (roots.Count == 0) return;
+        Edit("레이어 복제", () =>
+        {
+            var children = doc.Layers.ToLookup(l => l.ParentId); var subtree = new HashSet<Guid>(roots);
+            void Include(Guid id) { foreach (var child in children[id]) { subtree.Add(child.Id); Include(child.Id); } }
+            foreach (var id in roots) Include(id);
+            var originals = doc.Layers.Where(l => subtree.Contains(l.Id)).ToArray(); var map = originals.ToDictionary(l => l.Id, _ => Guid.NewGuid());
+            var copies = originals.Select(original =>
+            {
+                var copy = original.Snapshot(); copy.Id = map[original.Id];
+                if (copy.ParentId is { } parent && map.TryGetValue(parent, out var mapped)) copy.ParentId = mapped;
+                if (roots.Contains(original.Id)) { copy.Name += " 복사"; if (copy.SourceLayerName != null) copy.SourceLayerName += " 복사"; }
+                return copy;
+            }).ToArray();
+            doc.Layers.AddRange(copies); doc.Validate();
+            selectedLayers.Clear(); selectedLayers.UnionWith(roots.Select(id => map[id])); doc.ActiveId = selectedLayers.Last();
+            sourceLayerSelection = sourceLayerSelection?.Where(map.ContainsKey).Select(id => map[id]).ToArray();
+        });
+    }
+    void DeleteLayer()
+    {
+        if (selectedLayers.Count > 1) { DeleteSelectedObjects(); return; }
+        EditLayer("레이어 삭제", l => { DocumentFeatures.Remove(doc, l.Id); maskEditing = false; selectedLayers.Clear(); });
+    }
     void Reorder(int delta)
     {
+        CancelGesture();
+        if (sourceLayerSelection is { Length: > 1 }) { ReorderSourceLayer(delta); return; }
         if (doc.Active is not { } active) return;
         var siblings = doc.Layers.Where(l => l.ParentId == active.ParentId).ToList(); int next = siblings.IndexOf(active) + delta;
         if (next < 0 || next >= siblings.Count) return;
@@ -327,7 +361,7 @@ public sealed partial class MainWindow : Window
     {
         var f = Dialogs.Fields(this, "캔버스 크기 · 좌측 상단 기준", ("너비 (px)", doc.Width.ToString()), ("높이 (px)", doc.Height.ToString())); if (f == null) return;
         int w = (int)Dialogs.Number(f[0], 1, Raster.MaxDimension), h = (int)Dialogs.Number(f[1], 1, Raster.MaxDimension); Raster.ValidateSize(w, h);
-        Edit("캔버스 크기", () => { doc.Width = w; doc.Height = h; selection = null; }); canvas.Fit();
+        Edit("캔버스 크기", () => { ArtboardEditing.Crop(doc, new Rect(0, 0, w, h)); doc.Width = w; doc.Height = h; selection = null; }); canvas.Fit();
     }
     void ImageSize()
     {
@@ -336,14 +370,14 @@ public sealed partial class MainWindow : Window
         // Preserve the validation failure for an oversized proportional height without overflowing int.
         int h = (int)Math.Clamp(Math.Round(doc.Height * factor), 1, (double)Raster.MaxDimension + 1); Raster.ValidateSize(w, h);
         if (doc.Layers.Where(l => l.ParentId == null).Any(l => l.Scale * factor < .01 || l.Scale * factor > 20)) throw new ArgumentException("변경 후 레이어 배율이 지원 범위를 벗어납니다.");
-        Edit("이미지 크기", () => { doc.Width = w; doc.Height = h; foreach (var l in doc.Layers.Where(l => l.ParentId == null)) { l.Scale *= factor; l.X *= factor; l.Y *= factor; } selection = null; }); canvas.Fit();
+        Edit("이미지 크기", () => { doc.Artboards = doc.Artboards.Select(b => b with { X = b.X * factor, Y = b.Y * factor, Width = b.Width * factor, Height = b.Height * factor }).ToList(); ArtboardEditing.Crop(doc, new Rect(0, 0, w, h)); doc.Width = w; doc.Height = h; foreach (var l in doc.Layers.Where(l => l.ParentId == null)) { l.Scale *= factor; l.X *= factor; l.Y *= factor; } selection = null; }); canvas.Fit();
     }
     void CropSelection()
     {
         if (selection == null) { status.Text = "먼저 선택 도구로 자를 영역을 지정하세요."; return; }
         var r = Rect.Intersect(selection.Bounds, new Rect(0, 0, doc.Width, doc.Height)); if (r.IsEmpty || r.Width < 1 || r.Height < 1) return;
         int x = (int)Math.Floor(r.X), y = (int)Math.Floor(r.Y), w = (int)Math.Ceiling(r.Right) - x, h = (int)Math.Ceiling(r.Bottom) - y;
-        Edit("자르기", () => { foreach (var l in doc.Layers.Where(l => l.ParentId == null)) { l.X -= x; l.Y -= y; } doc.Width = w; doc.Height = h; selection = null; }); canvas.Fit();
+        Edit("자르기", () => { ArtboardEditing.Crop(doc, new Rect(x, y, w, h)); foreach (var l in doc.Layers.Where(l => l.ParentId == null)) { l.X -= x; l.Y -= y; } doc.Width = w; doc.Height = h; selection = null; }); canvas.Fit();
     }
     void CopyMerged()
     {

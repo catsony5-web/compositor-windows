@@ -237,7 +237,7 @@ public static class CadCompatibility
                 int occurrence = names.GetValueOrDefault(layer) + 1; names[layer] = occurrence;
                 groups.Add(new(occurrence == 1 ? layer : layer + " · " + occurrence, objects[start..end])); start = end;
             }
-            if (names.Values.Any(n => n > 1)) warnings.Add("겹침 순서를 유지하기 위해 같은 CAD 레이어가 여러 그룹으로 나뉠 수 있습니다.");
+            if (names.Values.Any(n => n > 1) && !options.GroupDrawingObjects) warnings.Add("겹침 순서를 유지하기 위해 같은 CAD 레이어가 여러 그룹으로 나뉠 수 있습니다.");
         }
         else if (structure == CadImportStructure.Layers)
             groups.AddRange(marks.GroupBy(m => m.Layer).Select(g => new PaintGroup(g.Key, [new(g.Key, g.Key, g.ToArray())])));
@@ -319,7 +319,7 @@ public static class CadCompatibility
             {
                 // Full document bounds allow an individual child to move anywhere on
                 // the canvas without being clipped to its original CAD layer bounds.
-                folder = new Layer { Name = plan.Group.Name, Kind = LayerKind.Group, Pixels = groupCanvas! };
+                folder = new Layer { Name = plan.Group.Name, SourceLayerName = plan.Items[0].Object.Layer, Kind = LayerKind.Group, Category = LayerCategory.Drawing, Pixels = groupCanvas! };
                 doc.Layers.Add(folder);
             }
             foreach (var item in plan.Items)

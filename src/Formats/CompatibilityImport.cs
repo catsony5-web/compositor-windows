@@ -5,7 +5,7 @@ namespace Compositor.Windows;
 public enum CadImportStructure { Combined, Layers, Objects }
 
 public sealed record CompatibilityOptions(int Page = 1, double Dpi = 150, int CadLongEdge = 2400, bool SeparateLayers = false,
-    string? CadLayout = null, bool PreservePdfLayers = true, bool RetainVectors = true, CadImportStructure? CadStructure = null);
+    string? CadLayout = null, bool PreservePdfLayers = true, bool RetainVectors = true, CadImportStructure? CadStructure = null, bool GroupDrawingObjects = false);
 public sealed record CompatibilityResult(Document Document, IReadOnlyList<string> Warnings);
 
 public static class CompatibilityImport
@@ -23,13 +23,15 @@ public static class CompatibilityImport
     {
         ValidateFile(path); token.ThrowIfCancellationRequested();
         var extension = Path.GetExtension(path).ToLowerInvariant();
-        if (extension is ".pdf" or ".ai") return await PdfCompatibility.ReadAsync(path, options, token).ConfigureAwait(false);
-        return await OnSta(() => extension switch
+        var result = extension is ".pdf" or ".ai" ? await PdfCompatibility.ReadAsync(path, options, token).ConfigureAwait(false)
+            : await OnSta(() => extension switch
         {
             ".psd" or ".psb" => PhotoshopCompatibility.Read(path, options.SeparateLayers, token),
             ".dwg" or ".dxf" => CadCompatibility.Read(path, options, token),
             _ => throw new NotSupportedException("지원하지 않는 호환 파일 형식입니다.")
         }, token).ConfigureAwait(false);
+        if (options.GroupDrawingObjects && extension is ".dwg" or ".dxf" or ".pdf" or ".ai") DrawingLayers.Wrap(result.Document);
+        return result;
     }
     // WPF drawing and color conversion stay on an isolated STA, never the user's UI thread.
     internal static Task<T> OnSta<T>(Func<T> action, CancellationToken token)
@@ -64,6 +66,18 @@ public static class CompatibilityImport
     {
         imported.Validate();
         double scale = Math.Min(1, Math.Min(width / (double)imported.Width, height / (double)imported.Height));
+        var roots = imported.Layers.Where(l => l.ParentId == null).ToArray();
+        if (roots.Length == 1 && roots[0].Kind == LayerKind.Group && roots[0].Category == LayerCategory.Drawing)
+        {
+            var mapping = imported.Layers.ToDictionary(l => l.Id, _ => Guid.NewGuid());
+            return imported.Layers.Select(original =>
+            {
+                var copy = original.Snapshot(); copy.Id = mapping[original.Id];
+                if (copy.ParentId is { } parent) copy.ParentId = mapping[parent];
+                else { copy.Scale *= scale; copy.X = (width - imported.Width * scale) / 2; copy.Y = (height - imported.Height * scale) / 2; }
+                return copy;
+            }).ToArray();
+        }
         var group = new Layer { Name = imported.Name, Kind = LayerKind.Group, Pixels = new Raster(imported.Width, imported.Height),
             Scale = scale, X = (width - imported.Width * scale) / 2, Y = (height - imported.Height * scale) / 2 };
         var ids = imported.Layers.ToDictionary(l => l.Id, _ => Guid.NewGuid());

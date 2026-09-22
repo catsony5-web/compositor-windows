@@ -1,4 +1,12 @@
-# Preview 24 publication privacy validation
+# Preview 25 drawing workspace validation
+
+- Source self-tests: **472/472 passed**. Added coverage for geometry-based crossing/window selection, masks, transforms, locks, cancellation and stale-result rejection; logical source-layer rows; drawing/photo tab separation; artboard gestures, undo, validation, cropping, export and native roundtrip.
+- Actual DWG import retained **2,725 objects** inside one drawing layer. Source groups remain expandable without reordering objects. Directional queries selected different sets, with the enclosed set contained in the crossing set.
+- Offscreen editor captures cover regular and minimum window sizes and 150% rendering. Actual drawing projects with two artboards were saved and reopened with object counts intact.
+- Drawing container regression covers rendering, picking and marquee selection after an object moves onto another artboard. Native vector payloads remain shared through artboard changes and export.
+- The PR and mainline pipeline repeat source, portable package, privacy and release-policy checks before publication. QA input files and generated project/images stay outside tracked source and packages.
+
+## Preview 24 publication privacy validation
 
 - Source and portable executable self-tests: **459/459 passed** each. Editing and import behavior is unchanged.
 - Privacy guard: **84 regression checks passed**, including Windows PowerShell 5.1, staged content, environment templates, private configuration, credential patterns, UTF-16 paths, package contents, and debug-symbol rejection.
