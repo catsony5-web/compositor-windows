@@ -106,6 +106,7 @@ public static class SelfTests
         LayeredCompatibilityTests.Run(Test, directory);
         CadObjectImportTests.Run(Test, directory);
         CompatibilityDialog.RunStructureTests(Test, directory);
+        NativePdfLifetimeTests.Run(Test, directory);
         results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }

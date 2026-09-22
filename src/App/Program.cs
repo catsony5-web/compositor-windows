@@ -10,13 +10,18 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        try { return Run(args); }
+        finally { NativePdf.Shutdown(); }
+    }
+
+    static int Run(string[] args)
+    {
         if (args.Length > 0 && args[0] == "--self-test")
         {
             System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
             try { return SelfTests.Run(args.Length > 1 ? args[1] : "test-results.txt"); }
             finally
             {
-                GC.Collect(); GC.WaitForPendingFinalizers();
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
         }

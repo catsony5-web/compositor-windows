@@ -22,10 +22,7 @@ concurrency:
 jobs:
   build:
     name: Build, self-test, and package
-    # Server 2025 Windows.Data.Pdf destroys its WARP device after native thread-pool
-    # shutdown (CPdfStatics -> d3d10warp!Task::ScheduleTask, STATUS_INVALID_PARAMETER).
-    # Use the supported stable image; source and portable suites still must exit 0.
-    runs-on: windows-2022
+    runs-on: windows-latest
     timeout-minutes: 20
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -121,7 +118,7 @@ jobs:
     name: Publish verified GitHub release
     if: needs.build.outputs.publish == 'true' && github.event_name == 'push'
     needs: build
-    runs-on: windows-2022
+    runs-on: windows-latest
     timeout-minutes: 10
     concurrency:
       group: morupixel-publish
