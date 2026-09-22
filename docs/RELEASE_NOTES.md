@@ -1,4 +1,14 @@
-# Morupixel 0.2.0 Preview 22 — unified release
+# Morupixel 0.2.0 Preview 23 — simpler file import
+
+- **Clearer choices.** CAD opens with “편집 방식” and “부분별로 편집 (추천)”. Alternative choices keep source-layer editing or import the whole drawing together.
+- **Less text up front.** Drawing layout, working size, DPI and vector retention are under “세부 설정”. Complete conversion notes and document counts are under “변환 안내”. Vector and saved PDF/AI layer retention remain enabled by default.
+- **Preview and import.** Supported compatibility files generate a preview on opening, including Photoshop files. The “가져오기” action stays visible while scrolling details. Changed settings require a refreshed preview; failures stay visible and cannot import stale content.
+
+Source self-tests passed **459/459**. Actual CAD and PDF-compatible AI dialogs were checked offscreen at normal and minimum sizes and 150% rendering scale. This version retains Preview 22's unified features and compatibility limits.
+
+[Downloads](https://github.com/catsony5-web/compositor-windows/releases) · [File compatibility](FILE_COMPATIBILITY.md)
+
+## Morupixel 0.2.0 Preview 22 — unified release
 
 - **One shared version.** CAD object imports, pointer interaction, AI/MCP control, retained vector rendering and precise wand selection are included in one mainline package.
 - **Sharp design zoom.** CAD paths, PDF/PDF-compatible AI sources, text and shapes render from retained content at the viewport resolution, with design zoom up to 6400%. Photos retain native pixels. Compatible CAD path runs share a render surface so object imports do not allocate a full viewport per object.
