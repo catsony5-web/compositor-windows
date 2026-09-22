@@ -52,7 +52,13 @@ Extract the ZIP and run ``Morupixel.exe``. Development preview · Unsigned.
         '--title', "Morupixel $Version", '--notes-file', $notesPath)
     if ($plan.Prerelease) { $arguments += '--prerelease' }
     Invoke-ReleaseGh $arguments | Write-Host
-    $release = @(Get-RepositoryReleases $repository | Where-Object tag_name -CEQ $tag)
+    # GitHub may acknowledge creation before the release list contains the draft.
+    # Retry only discovery; never repeat creation or overwrite existing assets.
+    for ($attempt = 0; $attempt -lt 5; $attempt++) {
+        if ($attempt -gt 0) { Start-Sleep -Seconds 2 }
+        $release = @(Get-RepositoryReleases $repository | Where-Object tag_name -CEQ $tag)
+        if ($release.Count -gt 0) { break }
+    }
 }
 if ($release.Count -ne 1) { throw 'Could not find the draft release.' }
 $release = $release[0]
