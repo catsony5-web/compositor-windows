@@ -97,6 +97,7 @@ public sealed class Raster
 
 public enum BlendMode { Normal, Multiply, Screen, Overlay, SoftLight, Darken, Lighten, Difference, ColorDodge, ColorBurn, Hue, Saturation, Color, Luminosity }
 public enum LayerKind { Raster, Text, Adjustment, Group, Shape, Vector }
+public enum LayerCategory { Automatic, Drawing, Photo }
 
 public sealed class Layer
 {
@@ -116,6 +117,8 @@ public sealed class Layer
     public bool FlipY { get; set; }
     public LayerKind Kind { get; set; }
     public Guid? ParentId { get; set; }
+    public LayerCategory Category { get; set; }
+    public string? SourceLayerName { get; set; }
     public bool Clipped { get; set; }
     public double ScaleX { get; set; } = 1;
     public double ScaleY { get; set; } = 1;
@@ -160,6 +163,7 @@ public sealed class Document
     public string Name { get; set; } = "제목 없음";
     public Guid Revision { get; set; } = Guid.NewGuid();
     public List<Layer> Layers { get; set; } = [];
+    public List<Artboard> Artboards { get; set; } = [];
     public Guid ActiveId { get; set; }
     public Layer? Active => Layers.Find(l => l.Id == ActiveId);
     public Document(long layerByteLimit = MaxLayerBytes)
@@ -167,7 +171,7 @@ public sealed class Document
         if (layerByteLimit < 0) throw new ArgumentOutOfRangeException(nameof(layerByteLimit));
         this.layerByteLimit = layerByteLimit;
     }
-    public Document Snapshot() => new(layerByteLimit) { Width = Width, Height = Height, Dpi = Dpi, Name = Name, Revision = Revision, ActiveId = ActiveId, Layers = Layers.Select(l => l.Snapshot()).ToList() };
+    public Document Snapshot() => new(layerByteLimit) { Width = Width, Height = Height, Dpi = Dpi, Name = Name, Revision = Revision, ActiveId = ActiveId, Layers = Layers.Select(l => l.Snapshot()).ToList(), Artboards = Artboards.ToList() };
     public void Add(Layer layer)
     {
         ArgumentNullException.ThrowIfNull(layer);
@@ -190,6 +194,7 @@ public sealed class Document
     void ValidateCore(bool validateRasterDimensions)
     {
         Raster.ValidateSize(Width, Height);
+        ArtboardEditing.Validate(this);
         if (!double.IsFinite(Dpi) || Dpi < 1 || Dpi > 9600) throw new InvalidDataException("해상도는 1~9600 DPI로 입력하세요.");
         if (string.IsNullOrWhiteSpace(Name)) throw new InvalidDataException("작업 이름이 비어 있습니다.");
         if (Encoding.UTF8.GetByteCount(Name) > 16_384) throw new InvalidDataException("작업 이름이 너무 깁니다.");
@@ -243,6 +248,8 @@ public sealed class Document
             !double.IsFinite(layer.Opacity) || layer.Opacity < 0 || layer.Opacity > 1 || !Enum.IsDefined(layer.Blend))
             throw new InvalidDataException("레이어 속성이 올바르지 않습니다.");
         if (!Enum.IsDefined(layer.Kind)) throw new InvalidDataException("레이어 종류가 올바르지 않습니다.");
+        if (!Enum.IsDefined(layer.Category) || layer.SourceLayerName is { } source && (string.IsNullOrWhiteSpace(source) || Encoding.UTF8.GetByteCount(source) > 16_384))
+            throw new InvalidDataException("도면 레이어 정보가 올바르지 않습니다.");
         if (layer.Kind == LayerKind.Vector)
         {
             if (validateRasterDimensions && (layer.Vector == null || layer.Vector.Width != layer.Pixels.Width || layer.Vector.Height != layer.Pixels.Height))
@@ -313,13 +320,13 @@ public sealed class History
     }
     static bool SameState(Document a, Document b)
     {
-        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.ActiveId != b.ActiveId || a.Layers.Count != b.Layers.Count) return false;
+        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.ActiveId != b.ActiveId || a.Layers.Count != b.Layers.Count || !a.Artboards.SequenceEqual(b.Artboards)) return false;
         for (int i = 0; i < a.Layers.Count; i++)
         {
             var x = a.Layers[i]; var y = b.Layers[i];
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend ||
                 x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY ||
-                x.Kind != y.Kind || x.ParentId != y.ParentId || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
+                x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
                 x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }

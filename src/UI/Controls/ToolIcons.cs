@@ -14,6 +14,7 @@ public static class ToolIcons
             Tool.RectangleSelect => "M3 3H8 M11 3H16 M19 3H21V8 M21 11V16 M21 19V21H16 M13 21H8 M5 21H3V16 M3 13V8",
             Tool.EllipseSelect => "M12 3C24 3 24 21 12 21C0 21 0 3 12 3Z",
             Tool.Crop => "M6 2V18H22 M2 6H18V22 M19 5L5 19",
+            Tool.Artboard => "M6 2V21 M2 6H21 M6 6H19V19H6 M11 12H16 M13.5 9.5V14.5",
             Tool.Brush => "M9 15L18 3Q22 1 21 5L13 17Z M9 15C4 13 7 22 2 21C10 23 13 20 12 17",
             Tool.Eraser => "M3 14L13 3L22 11L12 21H10Z M7 10L16 18 M12 21H23",
             Tool.Rectangle => "M3 4H21V20H3Z", Tool.Ellipse => "M12 3C24 3 24 21 12 21C0 21 0 3 12 3Z",

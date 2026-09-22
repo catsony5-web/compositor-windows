@@ -13,7 +13,7 @@ public static partial class DesignRenderer
     public static Raster Render(Document doc, Rect area, int width, int height, CancellationToken token = default)
         => RenderCore(doc, area, width, height, true, token);
     public static Raster RenderOutput(Document doc, CancellationToken token = default)
-        => HasRetainedContent(doc) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token) : Imaging.Render(doc, token);
+        => HasRetainedContent(doc) || doc.Layers.Any(DrawingLayers.IsContainer) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token) : Imaging.Render(doc, token);
     static Raster RenderCore(Document doc, Rect area, int width, int height, bool screen, CancellationToken token)
     {
         Raster.ValidateSize(width, height);
@@ -28,7 +28,7 @@ public static partial class DesignRenderer
             var world = World(layer, parent);
             if (layer.Kind == LayerKind.Group && layer.Warp == null)
             {
-                var group = Stack(children.GetValueOrDefault(layer.Id) ?? [], world, depth + 1); ApplyMask(group, layer, world, true, token); return group;
+                var group = Stack(children.GetValueOrDefault(layer.Id) ?? [], world, depth + 1); ApplyMask(group, layer, world, !DrawingLayers.IsContainer(layer), token); return group;
             }
             var copy = layer.Snapshot(); copy.Opacity = 1; copy.Blend = BlendMode.Normal;
             if (layer.Kind == LayerKind.Group)

@@ -54,7 +54,7 @@ public sealed partial class MainWindow
     sealed record HandleGesture(int Handle, bool Distort, Layer Original, Point StartParent, Point AnchorParent, Point PivotParent);
     HandleGesture? handleGesture;
 
-    bool CanUseTransformHandles(Layer layer) => tool == Tool.Move && canvas.ShowLayerBounds
+    bool CanUseTransformHandles(Layer layer) => tool == Tool.Move && canvas.ShowLayerBounds && selectedLayers.Count <= 1
         && layer.Kind != LayerKind.Adjustment && !IsLockedWithParents(layer);
 
     Cursor CanvasCursorAt(Point documentPoint, bool panModifier = false)

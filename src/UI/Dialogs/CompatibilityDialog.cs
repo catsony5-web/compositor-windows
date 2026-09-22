@@ -129,7 +129,8 @@ internal sealed partial class CompatibilityDialog : Window
     CompatibilityOptions ReadOptions() => new(Page: pdf ? Integer(page.Text, 1, 100000) : 1, Dpi: pdf ? Dialogs.Number(dpi.Text, 36, 600) : 96,
         CadLongEdge: cad ? Integer(edge.Text, 256, 4096) : 2400, SeparateLayers: separate.IsChecked == true,
         CadLayout: cad && space.SelectedItem is CadCompatibility.Space selected && selected.Key.Length > 0 ? selected.Key : null,
-        PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null, RetainVectors: retain.IsChecked == true);
+        PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null, RetainVectors: retain.IsChecked == true,
+        GroupDrawingObjects: cad || pdf && retain.IsChecked == true);
     void ClearPrepared()
     {
         prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null;

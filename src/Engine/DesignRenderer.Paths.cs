@@ -37,11 +37,12 @@ public static partial class DesignRenderer
             {
                 token.ThrowIfCancellationRequested(); if (!layer.Visible) return;
                 dc.PushTransform(new MatrixTransform(layer.Matrix));
-                dc.PushClip(new RectangleGeometry(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height)));
+                bool clip = !DrawingLayers.IsContainer(layer);
+                if (clip) dc.PushClip(new RectangleGeometry(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height)));
                 if (layer.Kind == LayerKind.Group)
                     foreach (var child in children.GetValueOrDefault(layer.Id) ?? []) Draw(child);
                 else dc.DrawDrawing(layer.Vector!.Drawing);
-                dc.Pop(); dc.Pop();
+                if (clip) dc.Pop(); dc.Pop();
             }
             for (int i = start; i < end; i++) Draw(stack[i]);
             dc.Pop();

@@ -272,21 +272,32 @@ public sealed class CurveEditor : FrameworkElement
 
 public static class ExportDialog
 {
-    public static void Show(Window owner, Document doc)
+    public static void Show(Window owner, Document doc, Guid? selectedArtboard = null)
     {
         var window = new Window { Owner = owner, Title = "Morupixel · 내보내기", Width = 920, Height = 630, MinWidth = 760, MinHeight = 500, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Theme.Panel, Foreground = Theme.Text };
         var grid = new Grid { Margin = new Thickness(20) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(230) }); window.Content = grid;
         var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(8) }; grid.Children.Add(new Border { Background = Theme.Brush("#11171C"), Child = image });
         var side = new StackPanel { Margin = new Thickness(18, 0, 0, 0) }; Grid.SetColumn(side,1); grid.Children.Add(side);
-        side.Children.Add(Theme.Label("내보내기",24)); side.Children.Add(Theme.Label($"{doc.Width} × {doc.Height} px",12,Theme.Muted));
+        side.Children.Add(Theme.Label("내보내기",24));
+        var dimensions = Theme.Label("", 12, Theme.Muted); side.Children.Add(dimensions);
+        ComboBox? boards = null;
+        if (doc.Artboards.Count > 0)
+        {
+            side.Children.Add(Theme.Label("대지", Theme.CaptionSize, Theme.Muted));
+            boards = new ComboBox { ItemsSource = doc.Artboards, DisplayMemberPath = "Name", SelectedItem = doc.Artboards.FirstOrDefault(b => b.Id == selectedArtboard) ?? doc.Artboards[0], MinHeight = 34, Margin = new Thickness(3, 6, 3, 4) };
+            side.Children.Add(boards);
+        }
         var format = new ComboBox { ItemsSource = new[] { ".png", ".jpg", ".tiff" }, SelectedIndex = 0, Padding = new Thickness(8), Margin = new Thickness(3,15,3,8) }; side.Children.Add(format);
         var qualityLabel = Theme.Label("JPEG 품질 95"); side.Children.Add(qualityLabel);
         var quality = new Slider { Minimum = 1, Maximum = 100, Value = 95, TickFrequency = 1, IsSnapToTickEnabled = true, Margin = new Thickness(5) }; side.Children.Add(quality);
         var size = Theme.Label("미리보기 준비…",11,Theme.Muted); side.Children.Add(size);
         int generation = 0; bool closed = false, saving = false;
-        var snapshot = doc.Snapshot();
+        Document Snapshot() => boards?.SelectedItem is Artboard board ? ArtboardEditing.ExportDocument(doc, board.Id) : doc.Snapshot();
+        var snapshot = Snapshot(); dimensions.Text = $"{snapshot.Width} × {snapshot.Height} px";
         var lifetime = new CancellationTokenSource();
-        var render = Task.Run(() => Imaging.Render(snapshot, lifetime.Token), lifetime.Token);
+        var renderCts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+        var firstSnapshot = snapshot; var firstToken = renderCts.Token;
+        var render = CompatibilityImport.OnSta(() => DesignRenderer.RenderOutput(firstSnapshot, firstToken), firstToken);
         var encodeGate = new SemaphoreSlim(1, 1);
         CancellationTokenSource? pending = null;
         async void Update()
@@ -321,11 +332,19 @@ public static class ExportDialog
             finally { if (ReferenceEquals(pending, cts)) pending = null; cts.Dispose(); }
         }
         quality.ValueChanged += (_,_) => Update(); format.SelectionChanged += (_,_) => Update();
+        if (boards != null) boards.SelectionChanged += (_, _) =>
+        {
+            if (closed || saving) return;
+            renderCts.Cancel(); renderCts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+            snapshot = Snapshot(); var selected = snapshot; var token = renderCts.Token;
+            dimensions.Text = $"{selected.Width} × {selected.Height} px";
+            render = CompatibilityImport.OnSta(() => DesignRenderer.RenderOutput(selected, token), token); Update();
+        };
         async void Save()
         {
             if (saving || closed) return;
             string ext = format.SelectedItem?.ToString() ?? ".png";
-            var picker = new SaveFileDialog { FileName = doc.Name + ext, DefaultExt = ext, Filter = ext.TrimStart('.').ToUpperInvariant() + " 이미지|*" + ext };
+            var picker = new SaveFileDialog { FileName = snapshot.Name + ext, DefaultExt = ext, Filter = ext.TrimStart('.').ToUpperInvariant() + " 이미지|*" + ext };
             if (picker.ShowDialog(window) != true) return;
             int q = (int)quality.Value; saving = true; pending?.Cancel(); generation++; window.IsEnabled = false;
             try

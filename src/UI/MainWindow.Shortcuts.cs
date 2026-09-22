@@ -45,14 +45,26 @@ public sealed partial class MainWindow
             return ctrl ? key is Key.S or Key.W or Key.E or Key.Z or Key.Y or Key.J or Key.T or Key.L or Key.U or Key.G or Key.I or Key.D or Key.A or Key.C or Key.Back or Key.Delete or Key.D0 or Key.NumPad0 or Key.D1 or Key.NumPad1 or Key.Tab
                 : (alt && (key is Key.Back or Key.Delete)) || key is Key.Delete or Key.Escape or Key.Left or Key.Right or Key.Up or Key.Down || (shift && key == Key.F5);
         }
+        if (!ctrl && !alt && tool == Tool.Artboard)
+        {
+            action = key switch
+            {
+                Key.Delete => RemoveArtboard,
+                Key.Enter or Key.Escape => () => SetTool(Tool.Move),
+                Key.Left => () => NudgeArtboard(new Vector(shift ? -10 : -1, 0)), Key.Right => () => NudgeArtboard(new Vector(shift ? 10 : 1, 0)),
+                Key.Up => () => NudgeArtboard(new Vector(0, shift ? -10 : -1)), Key.Down => () => NudgeArtboard(new Vector(0, shift ? 10 : 1)), _ => null
+            };
+            if (action != null) { Guard(action); return true; }
+        }
         if (ctrl) action = key switch
         {
             Key.N => NewDocument, Key.O => shift ? Import : Open, Key.S => () => Save(shift), Key.W => CloseTab,
             Key.E => shift ? Export : MergeDown, Key.Z => shift ? Redo : Undo, Key.Y => shift ? () => SetProof(!cmykProof) : Redo, Key.J => Duplicate,
             Key.T => Transform, Key.L => Levels, Key.U => () => ShowAdjustment(AdjustmentKind.HueSaturation),
             Key.G => alt ? ToggleClipping : shift ? UngroupSelected : GroupSelected,
-            Key.I => shift ? InvertSelection : () => Adjust("invert"), Key.D => () => { selection = null; Refresh(false); },
+            Key.I => shift ? InvertSelection : () => Adjust("invert"), Key.D => () => { selection = null; if (tool == Tool.Move) ApplyObjectSelection([], SelectionCombine.Replace); else Refresh(false); },
             Key.A when shift => () => ShowAdjustment(AdjustmentKind.PhotoDevelop),
+            Key.A when designWorkspace && tool == Tool.Move => SelectAllObjects,
             Key.A => () => { selection = new Selection(new Rect(0, 0, doc.Width, doc.Height)); Refresh(false); },
             Key.C => CopyMerged, Key.V => Paste, Key.Back or Key.Delete when !alt => FillBackground,
             Key.D0 or Key.NumPad0 => () => { canvas.Fit(); UpdateStatus(); },
@@ -62,13 +74,14 @@ public sealed partial class MainWindow
         else if (alt && key is Key.Back or Key.Delete) action = Fill;
         else action = key switch
         {
+            Key.O when shift && !alt => () => SetTool(Tool.Artboard),
             Key.V => () => SetTool(Tool.Move), Key.B => () => SetTool(Tool.Brush), Key.E => () => SetTool(Tool.Eraser),
             Key.M => () => SetTool(shift ? Tool.EllipseSelect : Tool.RectangleSelect), Key.C => () => SetTool(Tool.Crop),
             Key.U => () => SetTool(shift ? Tool.Ellipse : Tool.Rectangle), Key.G => () => SetTool(shift ? Tool.Gradient : Tool.Bucket),
             Key.T => () => SetTool(Tool.Text), Key.I => () => SetTool(Tool.Eyedropper), Key.H => () => SetTool(Tool.Hand),
             Key.L => () => SetTool(shift ? Tool.PolygonLasso : Tool.Lasso), Key.W => () => SetTool(Tool.MagicWand),
             Key.S => () => SetTool(Tool.CloneStamp), Key.J => () => SetTool(Tool.Heal), Key.R => () => SetTool(shift ? Tool.Liquify : Tool.Smudge), Key.K => () => SetTool(Tool.BlurBrush),
-            Key.F5 when shift => ContentFill, Key.Delete => ClearPixels,
+            Key.F5 when shift => ContentFill, Key.Delete when designWorkspace && tool == Tool.Move => DeleteSelectedObjects, Key.Delete => ClearPixels,
             Key.Escape => () => { CancelGesture(); ResetInteractionTransient(); selection = null; Refresh(false); },
             Key.OemOpenBrackets => () => { brushSize = Math.Max(1, brushSize - 5); UpdateBrushLabel(); },
             Key.OemCloseBrackets => () => { brushSize = Math.Min(MaxBrushSize, brushSize + 5); UpdateBrushLabel(); },

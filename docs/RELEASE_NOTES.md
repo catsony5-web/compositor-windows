@@ -1,4 +1,11 @@
-# Morupixel 0.2.0 Preview 24 — publication privacy
+# Morupixel 0.2.0 Preview 25 — drawing layers and artboards
+
+- **Drawing and photo layers.** CAD and retained PDF/AI imports appear inside a collapsed drawing layer. Repeated CAD source layers share one expandable row while their objects remain separately editable and their paint order is preserved. Drawing and Photoshop layer tabs separate the lists.
+- **Directional object selection.** With the Move tool, drag from empty space: left to right selects fully enclosed objects; right to left selects touched objects. Retained CAD paths and shape edges are tested against their actual geometry. Shift adds, Alt subtracts, and Shift+Alt intersects. Large selections run in a cancellable worker and cannot overwrite a changed document or selection.
+- **Artboards.** Shift+O opens artboard editing. Drag empty space to create, drag a board to move it, or use its handles and properties to resize it. Alt+drag creates inside an existing board. Board edits preserve object positions, support undo/redo, and persist in native projects. Export can choose a board. Imported drawing folders do not crop objects moved to another board.
+- **Compatibility.** Native projects with drawing metadata or artboards use format version 5. Older projects still open; use Preview 25 or later for newly saved version 5 projects. Existing vector, photo, PDF/AI and privacy safeguards remain available.
+
+## Morupixel 0.2.0 Preview 24 — publication privacy
 
 - **Private-file safeguards.** Local environment values, personal agent configuration and credential files are excluded from Git and source archives. CI and portable packaging check tracked files and the final package before release.
 - **Anonymous verification notes.** Public documentation uses anonymous test descriptions, without private input names or personal session details.

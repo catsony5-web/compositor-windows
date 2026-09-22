@@ -234,7 +234,7 @@ public sealed partial class MainWindow
                 }
                 else if (CompatibilityImport.Supports(source))
                 {
-                    var imported = await CompatibilityImport.ReadAsync(source, new CompatibilityOptions(), token);
+                    var imported = await CompatibilityImport.ReadAsync(source, new CompatibilityOptions(CadStructure: CadImportStructure.Objects, GroupDrawingObjects: true), token);
                     opened = imported.Document; warnings = imported.Warnings;
                 }
                 else opened = await CompatibilityImport.OnSta(() => CompatibilityImport.Single(source, ImportExport.LoadImage(source), 96, Path.GetFileName(source)), token);

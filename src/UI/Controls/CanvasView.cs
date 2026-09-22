@@ -55,7 +55,9 @@ public sealed partial class CanvasView : FrameworkElement
     public void Fit()
     {
         if (Document == null) return;
-        Zoom = Math.Clamp(Math.Min((ActualWidth - 96) / Document.Width, (ActualHeight - 96) / Document.Height), .001, 8); Pan = new Vector(); InvalidateVisual();
+        var bounds = ArtboardEditing.Bounds(Document);
+        Zoom = Math.Clamp(Math.Min((ActualWidth - 96) / bounds.Width, (ActualHeight - 96) / bounds.Height), .001, 8);
+        Pan = new Vector(Document.Width / 2.0 - bounds.X - bounds.Width / 2, Document.Height / 2.0 - bounds.Y - bounds.Height / 2) * Zoom; InvalidateVisual();
     }
     public void ZoomAt(double factor, Point screenPoint)
     {
@@ -68,10 +70,13 @@ public sealed partial class CanvasView : FrameworkElement
         dc.DrawRectangle(Theme.Brush("#14171D"), null, new Rect(RenderSize));
         if (Document == null) return;
         var origin = Origin; var rect = new Rect(origin.X, origin.Y, Document.Width * Zoom, Document.Height * Zoom);
-        dc.DrawRectangle(Theme.Brush("#080A0D"), null, new Rect(rect.X + 6, rect.Y + 8, rect.Width, rect.Height));
+        foreach (var board in ArtboardEditing.Visible(Document))
+            dc.DrawRectangle(Theme.Brush("#080A0D"), null, new Rect(origin.X + board.X * Zoom + 6, origin.Y + board.Y * Zoom + 8, board.Width * Zoom, board.Height * Zoom));
+        dc.PushClip(ArtboardClip(true));
         dc.DrawRectangle(checker, null, rect);
+        dc.Pop();
         if (!TryDrawDesign(dc) && (MovePreviewBackground ?? Composite) is { } image) dc.DrawImage(image, rect);
-        dc.DrawRectangle(null, new Pen(Theme.Brush("#464E5B"), 1), rect);
+        if (Document.Artboards.Count == 0) dc.DrawRectangle(null, new Pen(Theme.Brush("#464E5B"), 1), rect);
         dc.PushTransform(new TranslateTransform(origin.X, origin.Y)); dc.PushTransform(new ScaleTransform(Zoom, Zoom));
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, Document.Width, Document.Height)));
         if (MovePreviewLayer is { } moving)
@@ -150,7 +155,7 @@ public sealed partial class CanvasView : FrameworkElement
             for (int i = 0; i < 4; i++)
             { dc.DrawLine(shadow, points[i], points[(i + 1) % 4]); dc.DrawLine(accent, points[i], points[(i + 1) % 4]); }
         }
-        if (ShowLayerBounds && Document.Active is { } layer)
+        if (ShowLayerBounds && SelectedObjectIds.Count <= 1 && Document.Active is { } layer)
         {
             var points = TransformHandles.Points(Document, layer, Zoom);
             var pen = new Pen(Theme.Accent, 1 / Zoom);
@@ -161,6 +166,7 @@ public sealed partial class CanvasView : FrameworkElement
                 dc.DrawLine(pen, points[4], points[8]); dc.DrawEllipse(Theme.Panel, pen, points[8], 4 / Zoom, 4 / Zoom);
             }
         }
+        DrawArtboards(dc); DrawObjectSelection(dc);
         dc.Pop(); dc.Pop();
         if (BrushHud != null && BrushPoint is { } anchor)
         {

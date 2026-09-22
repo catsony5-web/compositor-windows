@@ -80,6 +80,7 @@ public static class SelfTests
         MainWindow.RunInspectorTests(Test);
         MainWindow.RunPanelNavigationTests(Test);
         MainWindow.RunObjectLayerPanelTests(Test);
+        MainWindow.RunDrawingWorkspaceTests(Test, directory);
         MainWindow.RunTransformCursorTests(Test);
         ThemeFontTests.Run(Test);
         MainWindow.RunStudioTests(Test);

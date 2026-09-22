@@ -99,7 +99,7 @@ public static class LayerPicking
                             if (!footprints.TryGetValue(child, out var childBounds)) { occupied = local; break; }
                             occupied.Union(childBounds);
                         }
-                        local.Intersect(occupied);
+                        if (DrawingLayers.IsContainer(layer)) local = occupied; else local.Intersect(occupied);
                     }
                     footprints[layer] = local.IsEmpty ? Rect.Empty : new System.Windows.Media.MatrixTransform(layer.Matrix).TransformBounds(local);
                 }
@@ -174,6 +174,7 @@ public static class LayerPicking
     }
     static double Sample(Layer layer, Point local, bool maskOnly)
     {
+        if (maskOnly && DrawingLayers.IsContainer(layer)) return 1;
         var raster = layer.Pixels;
         double sx = local.X - .5, sy = local.Y - .5;
         if (sx < -1 || sy < -1 || sx > raster.Width || sy > raster.Height) return 0;

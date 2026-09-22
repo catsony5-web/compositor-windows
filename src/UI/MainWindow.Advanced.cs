@@ -21,6 +21,7 @@ public sealed partial class MainWindow
         public string? Path;
         public double Zoom;
         public Vector Pan;
+        public Guid ArtboardId;
         public List<(bool Vertical, double Position)> Guides = [];
     }
     readonly List<WorkspaceTab> tabs = [];
@@ -42,7 +43,7 @@ public sealed partial class MainWindow
     static (Tool Tool, string Icon, string Name, string Key)[] AdvancedToolDefinitions() =>
     [ (Tool.Lasso,"L","올가미","L"), (Tool.PolygonLasso,"⌁","다각형 올가미","Shift+L"), (Tool.MagicWand,"✧","마술봉","W"),
       (Tool.CloneStamp,"S","복제 도장 / Alt+클릭으로 원본 지정","S"), (Tool.Heal,"J","복구 브러시","J"),
-      (Tool.Smudge,"≈","스머지","R"), (Tool.Liquify,"~","액화","Shift+R"), (Tool.BlurBrush,"◉","흐림 브러시","K") ];
+      (Tool.Smudge,"≈","스머지","R"), (Tool.Liquify,"~","액화","Shift+R"), (Tool.BlurBrush,"◉","흐림 브러시","K"), (Tool.Artboard,"▧","대지 편집","Shift+O") ];
 
     void InitializeWorkspace()
     {
@@ -57,6 +58,7 @@ public sealed partial class MainWindow
         var tab = tabs[activeTab]; tab.Document = doc; tab.History = history; tab.Path = projectPath;
         tab.Selection = selection; tab.Zoom = canvas.Zoom; tab.Pan = canvas.Pan;
         tab.Guides = canvas.Guides.ToList();
+        tab.ArtboardId = selectedArtboard;
     }
     void AddTab(Document document, string? path)
     {
@@ -71,6 +73,7 @@ public sealed partial class MainWindow
     {
         jobCts?.Cancel(); renderCts?.Cancel(); activeTab = index;
         var tab = tabs[index]; doc = tab.Document; history = tab.History; projectPath = tab.Path; selection = tab.Selection;
+        selectedArtboard = tab.ArtboardId; sourceLayerSelection = null;
         selectedLayers.Clear(); if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
         maskEditing = false; canvas.Document = doc; canvas.Composite = null; composite = null;
         canvas.Guides.Clear(); canvas.Guides.AddRange(tab.Guides);
