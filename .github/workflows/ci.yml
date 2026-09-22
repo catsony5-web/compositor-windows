@@ -90,6 +90,14 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
+      - name: Record Windows crash details
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-WinEvent -FilterHashtable @{ LogName='Application'; StartTime=(Get-Date).AddMinutes(-15) } -ErrorAction SilentlyContinue |
+            Where-Object { $_.ProviderName -in @('Application Error', '.NET Runtime', 'Windows Error Reporting') } |
+            Select-Object -First 8 TimeCreated, ProviderName, Message | Format-List
+
   release:
     name: Publish verified GitHub release
     if: needs.build.outputs.publish == 'true' && github.event_name == 'push'
