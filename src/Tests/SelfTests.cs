@@ -11,9 +11,14 @@ public static class SelfTests
     {
         var results = new List<string>(); int failed = 0;
         string directory = Path.GetDirectoryName(Path.GetFullPath(output))!; Directory.CreateDirectory(directory);
+        File.WriteAllText(output, "");
         void Test(string name, Action test)
         {
+            // Retain the last test even if a native renderer aborts the process.
+            File.AppendAllText(output, "RUN " + name + Environment.NewLine);
+            Console.WriteLine("RUN " + name);
             try { test(); results.Add("PASS " + name); } catch (Exception e) { failed++; results.Add("FAIL " + name + ": " + e); }
+            File.AppendAllText(output, results[^1] + Environment.NewLine);
         }
         void Assert(bool truth, string detail = "Assertion failed") { if (!truth) throw new Exception(detail); }
         void Near(double a, double b, double tolerance = .01) => Assert(Math.Abs(a - b) < tolerance, $"Expected {b}, got {a}");
