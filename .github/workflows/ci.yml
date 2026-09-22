@@ -38,6 +38,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Test privacy guard
+        shell: pwsh
+        run: .\scripts\TestPrivacyGuard.ps1
+
+      - name: Check tracked source for private files and credentials
+        shell: pwsh
+        run: .\scripts\TestPrivacy.ps1
+
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v4
         with:

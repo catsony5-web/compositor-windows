@@ -5,9 +5,9 @@
 ## 다른 작업에서 기능을 추가할 때
 
 1. `scripts/StartFeature.ps1 -Name 기능이름`으로 최신 `origin/main`에서 `codex/기능이름` 브랜치와 별도 worktree를 만듭니다. 같은 폴더를 여러 작업에서 동시에 편집하지 않습니다.
-2. 변경을 커밋하고 기능 브랜치를 push한 뒤 `main` 대상 PR을 만듭니다. 설명에는 사용자 동작의 변화와 검증 결과를 적습니다.
+2. `scripts/TestPrivacy.ps1 -Staged`로 커밋 예정 내용을 확인하고 GitHub noreply 이메일로 커밋합니다. 기능 브랜치를 push한 뒤 `main` 대상 PR을 만듭니다. 설명에는 사용자 동작의 변화와 검증 결과를 적되 개인 파일명·경로·계정정보는 포함하지 않습니다.
 3. 다른 PR이 먼저 합쳐졌다면 최신 `origin/main`을 기능 브랜치에 merge하고 충돌을 해결한 뒤 다시 검사합니다. 기존 기능을 삭제해서 충돌을 해결하지 않습니다.
-4. **Build, self-test, and package**가 최신 코드에서 통과해야 병합합니다. 기능 브랜치의 로컬 ZIP을 공식 최신 버전으로 안내하지 않습니다.
+4. **Build, self-test, and package**가 최신 코드에서 통과해야 병합합니다. GitHub CLI 병합에도 `--author-email`로 GitHub noreply 주소를 명시합니다. 기능 브랜치의 로컬 ZIP을 공식 최신 버전으로 안내하지 않습니다.
 5. `main`의 앱 변경은 GitHub Actions가 다시 빌드하고 소스·포터블 실행 파일을 모두 검사한 뒤 ZIP과 SHA-256을 공개합니다. 태그로 실행해도 `main`에 포함된 커밋만 배포할 수 있습니다.
 6. 홈페이지는 완성된 GitHub 릴리스 중 가장 높은 버전의 ZIP·체크섬·표시 버전을 함께 반영합니다. 정적 페이지의 오프라인 대체 링크도 공개 릴리스에서 스냅샷을 갱신해 배포합니다.
 

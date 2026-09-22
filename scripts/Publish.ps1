@@ -11,6 +11,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Common.ps1')
+& (Join-Path $PSScriptRoot 'TestPrivacy.ps1') -RepositoryPath $RepositoryRoot
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     [xml] $project = Get-Content -LiteralPath $ProjectPath -Raw
@@ -48,6 +49,8 @@ try {
         '--nologo',
         '-p:PublishSingleFile=false',
         '-p:PublishReadyToRun=false',
+        '-p:DebugType=None',
+        '-p:DebugSymbols=false',
         "-p:Version=$Version",
         '-p:ContinuousIntegrationBuild=true'
     )
@@ -60,6 +63,7 @@ Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-
 Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-Path $stagingPath 'LICENSE')
 
 $packageDocuments = @(
+    @{ Source = (Join-Path $RepositoryRoot 'docs\PUBLICATION_PRIVACY.md'); Destination = (Join-Path $stagingPath 'docs\PUBLICATION_PRIVACY.md') },
     @{ Source = (Join-Path $RepositoryRoot 'assets\samples\README.md'); Destination = (Join-Path $stagingPath 'assets\samples\README.md') },
     @{ Source = (Join-Path $RepositoryRoot 'assets\fonts\README.md'); Destination = (Join-Path $stagingPath 'assets\fonts\README.md') },
     @{ Source = (Join-Path $RepositoryRoot 'licenses\Pretendard-LICENSE.txt'); Destination = (Join-Path $stagingPath 'licenses\Pretendard-LICENSE.txt') },
@@ -142,6 +146,7 @@ if (-not (Test-Path -LiteralPath $publishedReportPath -PathType Leaf) -or
     throw "Published self-test did not create a non-empty report: $publishedReportPath"
 }
 
+& (Join-Path $PSScriptRoot 'TestPrivacy.ps1') -RepositoryPath $RepositoryRoot -PackagePath $stagingPath
 Compress-Archive -Path (Join-Path $stagingPath '*') -DestinationPath $archivePath -CompressionLevel Optimal
 $hash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 $checksumLine = "$hash  $([System.IO.Path]::GetFileName($archivePath))$([Environment]::NewLine)"
