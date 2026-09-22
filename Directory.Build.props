@@ -5,6 +5,9 @@
          Publish.ps1 explicitly overrides SelfContained for portable releases. -->
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
     <SelfContained Condition="'$(SelfContained)' == ''">false</SelfContained>
+    <!-- Stable virtual source paths prevent local account and checkout names
+         from being embedded in application symbols and stack traces. -->
+    <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
   </PropertyGroup>
   <ItemGroup>
     <!-- CAD/text bitmap imports must finish even if an RDP session disconnects. -->

@@ -1,4 +1,13 @@
-# Preview 23 import dialog validation
+# Preview 24 publication privacy validation
+
+- Source and portable executable self-tests: **459/459 passed** each. Editing and import behavior is unchanged.
+- Privacy guard: **84 regression checks passed**, including Windows PowerShell 5.1, staged content, environment templates, private configuration, credential patterns, UTF-16 paths, package contents, and debug-symbol rejection.
+- Tracked source/index validation passed for 287 files. The portable distribution passed privacy validation for 544 files before ZIP creation; app debug symbols are excluded and build paths use `/_/`.
+- Release policy: **42 checks and 11 offline publication scenarios passed**. GitHub Actions repeats privacy, source, package, and release checks before publication.
+- Private input identifiers in verification notes were anonymized. Updating current source and packaging does not remove earlier Git objects or old release assets; historical cleanup is a separate operation.
+- Local packaging used cached dependencies; NuGet vulnerability metadata could not be fetched in the restricted environment (NU1900).
+
+## Preview 23 import dialog validation
 
 - Source self-tests: **459/459 passed** on Windows x64. New checks cover collapsed controls and complete conversion notes, minimum-size layout, accessible expand/collapse, invalidation after size/vector changes, and errors outside scrolled details.
 - Actual DWG and PDF-compatible AI imports completed through the dialog's load/preview handlers without showing desktop windows. Fourteen captures cover default, minimum size, 150% rendering scale, expanded settings/notes, scrolled notes, and failure states.
@@ -23,9 +32,9 @@
 
 Release source build: zero warnings/errors; **433/433** automated checks pass. Added cases cover DWG/DXF source topology, independent LINEs versus connected polylines, repeated block/viewport instances, viewport clips, paint-order group runs, individual-object movement, grouping on placement, project roundtrips, capacity/memory limits and invalid native group references. Two thousand virtualized layer entries realize fewer than 40 controls in the test viewport, including after scrolling to the last object. Source report: `artifacts/object-import-final/self-tests.txt`.
 
-A read-only check of the user's anonymous CAD sample drawing at the default 2,400px long edge imported **21,389 objects in 1,484 paint-order groups (22,874 total nodes)**. On this PC import took 6.96s, composite rendering 0.53s, native saving 3.23s and reloading 2.37s. Independent object previews plus one shared group surface used about 83.87MB; retained paths used 25.55MB. The original DWG and external references were not modified. The resulting page render was visually inspected with both sections, key plans and title block present. No user's files are added to the source repository.
+A read-only large-CAD check at the default 2,400px long edge imported **21,389 objects in 1,484 paint-order groups (22,874 total nodes)**. Import took 6.96s, composite rendering 0.53s, native saving 3.23s and reloading 2.37s on the test machine. Independent object previews plus one shared group surface used about 83.87MB; retained paths used 25.55MB. The original file was unchanged and the full page was visually inspected. Private input files and captures are not distributed.
 
-An additional native roundtrip matched all parent IDs and the complete composite pixels exactly. Conservative picker bounds retained the same targets on seven visible points while reducing the measured worst case from 231ms to 40.84ms (20.30–40.84ms, mean 30.69ms in this small sample). Snapping resolution was 0.15–0.21ms after building its drag session. These are bounded component checks, not whole-editor FPS guarantees. Actual-file evidence stays local in `artifacts/object-source-probe/cad-sample.json` and `cad-sample-optimized.json`.
+An additional native roundtrip matched all parent IDs and the complete composite pixels exactly. Conservative picker bounds retained the same targets on seven visible points while reducing the measured worst case from 231ms to 40.84ms (20.30–40.84ms, mean 30.69ms in this small sample). Snapping resolution was 0.15–0.21ms after building its drag session. These are bounded component checks, not whole-editor FPS guarantees. Private evidence remains local in ignored artifact storage.
 
 The document limit is 32,768 nodes, not unlimited CAD entities; this drawing's larger model space exceeds it and requires selecting its paper layout or splitting the source. Native v4 group-payload references require Preview 21 or later to reopen; older project versions remain readable. Existing image/adjustment and external layered-format caps remain 128. This candidate adds no dependency and has not been published to the website or GitHub.
 
@@ -177,7 +186,7 @@ CMYK remains ICC proof/output over RGB8 editing. Photo/design switches change to
 
 The final reports are `release/test-results/self-test.txt` and `release/published-self-test/self-test.txt`, both 236/236 (18:00 KST). Desktop testing launched the packaged executable and verified dark native chrome, the photo/design switch, drawing a retained rectangle, creating a text layer without a modal, Korean text including ㅡ, Ctrl+Enter applying the text, and three undo operations restoring the clean sample.
 
-Desktop testing found that exporting immediately after adding a shape could use the old selection set. Export now follows the active layer unless it belongs to an explicit multiple selection; a regression verifies new-shape output dimensions, multiple selection and undo. The final package was rebuilt and all 236 checks passed. The final package launched and a test rectangle was created. The user stopped Computer Use with physical Escape during the last export-dialog recheck; no further app input was sent. That final dialog interaction and a desktop Save-file roundtrip were not completed. Export pixels/encoders and selection routing are covered by the automated suite. The original Preview 7 window remains untouched; the new Preview 8 window contains one unsaved verification rectangle that can be undone with Ctrl+Z.
+Desktop testing found that exporting immediately after adding a shape could use the old selection set. Export now follows the active layer unless it belongs to an explicit multiple selection; a regression verifies new-shape output dimensions, multiple selection and undo. The final package was rebuilt and all 236 checks passed. A launch-and-create smoke check completed. The final export-dialog interaction and desktop Save-file roundtrip were not completed; export pixels, encoders and selection routing are covered by the automated suite.
 
 ---
 
