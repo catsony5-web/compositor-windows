@@ -1,4 +1,13 @@
-# AI command foundation validation
+# Preview 26 material mapping validation
+
+- Source self-tests: **495/495 passed** on Windows x64. Thirteen added checks cover polygon holes, pattern rotation and retained original rendering, parent transforms and masks, native embedded-source roundtrip, cross-document copying, rasterize/undo, closed CAD boundaries, selection contours, artboard origin changes, malformed projects, library preservation of user selection, strict schemas, batch rollback and replay.
+- Real executable, named-pipe, CLI and stdio MCP smoke test: **10 integration scenarios passed**, exercising all **29 tools**. Synthetic texture registration, polygon holes, closed-object boundaries, paged material/region queries, batch mapping, pattern update, preview, save/reopen and undo succeeded. `tools/qa/automation-smoke.cjs` reproduces this flow with its own hidden processes.
+- The synthetic plan preview was visually inspected: the original linework and column remained visible, the left and right regions used different pattern directions, and material stopped at the retained boundaries. Evidence remains in ignored `artifacts/qa/materials/mcp-smoke-01`.
+- The pre-existing asynchronous selection test now injects a held worker result; selection, tool and tab changes are deterministically made before completion. Production callers retain the same STA selection worker.
+- No image-generation service, provider account, existing editor session or private drawing was used. Codex and Claude Code setup commands follow their official stdio MCP documentation; protocol checks used the bundled MCP executable rather than either user's logged-in client.
+- Compilation used cached dependencies. Restricted NuGet vulnerability metadata refresh produced NU1900; package dependencies did not change. Mainline CI repeats source, portable package, privacy and release checks before publication, and now runs the real MCP workflow against the packaged executable.
+
+## AI command foundation validation
 
 - Source self-tests: **482/482 passed** on Windows x64 after integrating the drawing workspace. Ten added checks cover live capabilities, bounded observation of 2,000 objects, transformed parent coordinates, drawing/photo categories, artboard preservation, strict nested schemas, dry runs, atomic rollback, one-step undo/redo, stale documents, no-op edits, cancellation, and repeated delivery after undo.
 - Real executable, named-pipe and stdio MCP smoke test: **8 integration scenarios passed**. All 23 tools were exercised, including compact state, drawing queries, object detail, dry run, commit, retry and single undo/redo. The helper created only its own hidden editor and MCP processes. Evidence stays in ignored `artifacts/qa/ai-foundation-smoke-verified`.

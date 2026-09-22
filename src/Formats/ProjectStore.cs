@@ -6,7 +6,7 @@ using System.Windows.Media.Imaging;
 
 namespace Compositor.Windows;
 
-public static class ProjectStore
+public static partial class ProjectStore
 {
     const long MaxManifestBytes = 32L * 1024 * 1024;
     sealed class ManifestBuffer : MemoryStream
@@ -28,6 +28,8 @@ public static class ProjectStore
         public Guid ActiveId { get; set; }
         public List<LayerInfo?>? Layers { get; set; } = [];
         public List<Artboard>? Artboards { get; set; } = [];
+        public List<MaterialInfo>? Materials { get; set; } = [];
+        public List<MaterialRegion>? MaterialRegions { get; set; } = [];
     }
     public sealed class LayerInfo
     {
@@ -55,9 +57,10 @@ public static class ProjectStore
         public TextSpec? Text { get; set; }
         public ShapeSpec? Shape { get; set; }
         public VectorInfo? Vector { get; set; }
+        public MaterialFillInfo? Material { get; set; }
         public AdjustmentSpec? Adjustment { get; set; }
         public WarpQuad? Warp { get; set; }
-        public Layer ToLayer(Raster pixels, byte[]? mask = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp };
+        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()) };
     }
     public sealed record VectorInfo(VectorFormat Format, int Width, int Height, int Page);
     public static void AtomicWrite(string path, Action<Stream> write)
@@ -75,6 +78,9 @@ public static class ProjectStore
         ArgumentNullException.ThrowIfNull(doc);
         doc.Validate();
         var manifest = new Manifest { Version = doc.Layers.Any(l => l.Vector != null) ? 3 : 2, Width = doc.Width, Height = doc.Height, Dpi = doc.Dpi, Name = doc.Name, ActiveId = doc.ActiveId, Artboards = doc.Artboards.ToList() };
+        var materials = MaterialEditing.Assets(doc);
+        manifest.Materials = materials.Select(a => new MaterialInfo(a.Id, a.Name, a.Source, a.Tileable, a.Pixels.Width, a.Pixels.Height)).ToList();
+        manifest.MaterialRegions = doc.MaterialRegions.ToList();
         var groupSources = new Dictionary<(byte[] Data, int Width, int Height), int>();
         foreach (var l in doc.Layers)
         {
@@ -86,10 +92,11 @@ public static class ProjectStore
                 else groupSources.Add(key, manifest.Layers!.Count);
             }
             manifest.Layers!.Add(new LayerInfo { Id = l.Id, Name = l.Name, Visible = l.Visible, Locked = l.Locked, Opacity = l.Opacity, Blend = l.Blend, X = l.X, Y = l.Y, Scale = l.Scale, Rotation = l.Rotation, FlipX = l.FlipX, FlipY = l.FlipY, HasMask = l.Mask != null, Kind = l.Kind, ParentId = l.ParentId, Clipped = l.Clipped, ScaleX = l.ScaleX, ScaleY = l.ScaleY, Shape = l.Shape, Text = l.Text, Adjustment = l.Adjustment, Warp = l.Warp,
-                Category = l.Category, SourceLayerName = l.SourceLayerName,
+                Category = l.Category, SourceLayerName = l.SourceLayerName, Material = MaterialFillInfo.From(l.Material),
                 Vector = l.Vector is { } vector ? new(vector.Format, vector.Width, vector.Height, vector.Page) : null, SharedGroupPixelsIndex = sharedGroupIndex });
         }
         if (doc.Artboards.Count > 0 || doc.Layers.Any(l => l.Category != LayerCategory.Automatic || l.SourceLayerName != null)) manifest.Version = 5;
+        if (materials.Count > 0 || doc.MaterialRegions.Count > 0) manifest.Version = 6;
         // Reject oversized metadata before encoding any payload or touching an
         // existing project. Serialization itself is bounded as node counts grow.
         using var metadata = new ManifestBuffer();
@@ -98,6 +105,8 @@ public static class ProjectStore
         AtomicWrite(path, stream =>
         {
             using var zip = new ZipArchive(stream, ZipArchiveMode.Create, true);
+            for (int i = 0; i < materials.Count; i++)
+                using (var image = zip.CreateEntry($"materials/{i}.png", CompressionLevel.NoCompression).Open()) materials[i].Pixels.WritePng(image);
             for (int index = 0; index < doc.Layers.Count; index++)
             {
                 var l = doc.Layers[index];
@@ -121,11 +130,12 @@ public static class ProjectStore
         using var meta = entry.Open();
         var manifest = JsonSerializer.Deserialize<Manifest>(meta) ?? throw new InvalidDataException("작업 정보를 읽을 수 없습니다.");
         ValidateManifest(manifest);
+        var materials = ReadMaterials(zip, manifest);
         var layers = manifest.Layers!;
-        var doc = new Document { Width = manifest.Width, Height = manifest.Height, Dpi = manifest.Dpi, Name = manifest.Name!, Artboards = manifest.Artboards! };
+        var doc = new Document { Width = manifest.Width, Height = manifest.Height, Dpi = manifest.Dpi, Name = manifest.Name!, Artboards = manifest.Artboards!, Materials = materials.Values.ToList(), MaterialRegions = manifest.MaterialRegions! };
         var emptyGroups = new Dictionary<(int Width, int Height), Raster>();
         var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
-        long vectorBytes = 0, pixelBytes = 0;
+        long vectorBytes = 0, pixelBytes = MaterialEditing.ValidateLibrary(doc);
         for (int index = 0; index < layers.Count; index++)
         {
             var l = layers[index]!;
@@ -166,7 +176,7 @@ public static class ProjectStore
                 if (pixelBytes + maskEntry.Length > Document.MaxLayerBytes) throw new InvalidDataException("레이어 메모리 한도를 초과합니다.");
                 mask = new byte[maskEntry.Length]; using var s = maskEntry.Open(); s.ReadExactly(mask);
             }
-            var layer = l.ToLayer(pixels, mask);
+            var layer = l.ToLayer(pixels, mask, materials);
             pixelBytes += Document.StorageBytes(layer, groupPixels);
             if (pixelBytes > Document.MaxLayerBytes) throw new InvalidDataException("레이어 메모리 한도를 초과합니다.");
             if (l.Vector is { } info)
@@ -183,6 +193,7 @@ public static class ProjectStore
             Document.ValidateLayer(layer);
             doc.Layers.Add(layer);
             if (layer.Kind == LayerKind.Shape) layer.Pixels = VectorShapes.Render(layer.Shape!);
+            if (layer.Kind == LayerKind.Material) layer.Pixels = MaterialRenderer.Render(layer.Material!);
         }
         doc.ActiveId = manifest.ActiveId;
         doc.Validate();
@@ -190,7 +201,8 @@ public static class ProjectStore
     }
     static void ValidateManifest(Manifest manifest)
     {
-        if (manifest.Version is not (1 or 2 or 3 or 4 or 5)) throw new InvalidDataException("지원하지 않는 작업 파일 버전입니다.");
+        if (manifest.Version is not (1 or 2 or 3 or 4 or 5 or 6)) throw new InvalidDataException("지원하지 않는 작업 파일 버전입니다.");
+        var materials = ValidateMaterials(manifest);
         if (manifest.Artboards == null || manifest.Version < 5 && (manifest.Artboards.Count != 0 || manifest.Layers?.Any(l => l?.Category != LayerCategory.Automatic || l.SourceLayerName != null) == true))
             throw new InvalidDataException("대지와 도면 레이어 정보가 작업 파일 버전과 맞지 않습니다.");
         Raster.ValidateSize(manifest.Width, manifest.Height);
@@ -218,9 +230,9 @@ public static class ProjectStore
         if (manifest.ActiveId != Guid.Empty && !ids.Contains(manifest.ActiveId))
             throw new InvalidDataException("활성 레이어가 존재하지 않습니다.");
         // Validate all structural metadata before decoding image payloads, including cycles.
-        var header = new Document { Width = manifest.Width, Height = manifest.Height, Dpi = manifest.Dpi, Name = manifest.Name!, ActiveId = manifest.ActiveId, Artboards = manifest.Artboards };
+        var header = new Document { Width = manifest.Width, Height = manifest.Height, Dpi = manifest.Dpi, Name = manifest.Name!, ActiveId = manifest.ActiveId, Artboards = manifest.Artboards, Materials = materials.Values.ToList(), MaterialRegions = manifest.MaterialRegions! };
         var placeholder = new Raster(1, 1);
-        foreach (var l in manifest.Layers) header.Layers.Add(l!.ToLayer(placeholder));
+        foreach (var l in manifest.Layers) header.Layers.Add(l!.ToLayer(placeholder, assets: materials));
         header.ValidateMetadata();
     }
     public static void Export(Document doc, string path)

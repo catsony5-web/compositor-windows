@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
+using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -293,10 +294,10 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 2 && capabilities["commands"]!.AsArray().Count == 23,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 3 && capabilities["commands"]!.AsArray().Count == 29,
                 "Running editor did not advertise its command contract");
-            Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "material_mapping"),
-                "Unsupported material operations must not be advertised as available");
+            Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
+                "Supported 2D mapping must remain distinct from unsupported 3D operations");
             Check(!window.HasDocument && window.tabs.Count == 0 && !window.IsVisible, "Discovery changed the workspace");
         });
 
@@ -465,6 +466,58 @@ public sealed partial class MainWindow
             using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
             Failure(Call(window, "apply_batch", Batch(window, Step("set_layer", ("layerId", id), ("x", 20))), cancellation.Token), "cancelled");
             Unchanged(window, before, false, true);
+        });
+
+        Case("material registration preserves user selection and maps an editable embedded texture", window =>
+        {
+            New(window, "Material workflow");
+            string path = Path.Combine(files, "synthetic-material.png");
+            using (var output = File.Create(path)) Raster.Solid(4, 4, Colors.Orange).WritePng(output);
+            window.selection = new Selection(new Rect(4, 4, 20, 20), true); var selected = window.selection;
+            var registered = Success(Call(window, "register_material", Write(window, ("name", "Synthetic stone"), ("path", path), ("source", "Synthetic fixture"))));
+            Check(ReferenceEquals(selected, window.selection) && window.doc.Materials.Count == 1, "Registration cleared the user's target selection");
+            var region = Success(Call(window, "define_region", Write(window, ("name", "Entry floor"), ("source", "selection"))));
+            Check(ReferenceEquals(selected, window.selection), "Capturing a region changed the selection");
+            var query = new JsonObject { ["documentId"] = Text(region, "documentId") };
+            Check(Success(Call(window, "query_materials", query))["materials"]!.AsArray().Count == 1 &&
+                Success(Call(window, "query_regions", query))["regions"]!.AsArray().Count == 1, "Registered IDs were not discoverable");
+            var args = Write(window, ("materialId", Text(registered, "materialId")), ("regionId", Text(region, "regionId")), ("tileWidth", 8), ("tileHeight", 8));
+            var result = Success(Call(window, "apply_material", args)); var layer = window.doc.Layers.Single(l => l.Id == LayerId(result));
+            Check(layer.Material != null && layer.Category == LayerCategory.Drawing && layer.Blend == BlendMode.Multiply &&
+                layer.Material.Boundary.Geometry.FillContains(new Point(10, 10)) && !layer.Material.Boundary.Geometry.FillContains(new Point(1, 1)), "Material ignored the selected ellipse or default blend");
+            var revision = window.doc.Revision; var pixels = layer.Pixels;
+            Success(Call(window, "update_material", Write(window, ("layerId", layer.Id.ToString()), ("tileWidth", 8))));
+            Check(window.doc.Revision == revision && ReferenceEquals(window.doc.Active!.Pixels, pixels), "No-op material update added an edit");
+            Success(Call(window, "update_material", Write(window, ("layerId", layer.Id.ToString()), ("tileWidth", 12), ("angle", 25))));
+            Check(window.doc.Active!.Material!.TileWidth == 12 && window.doc.Active.Material.Angle == 25, "Pattern update did not persist");
+            Success(Call(window, "undo", Write(window))); Check(window.doc.Active!.Material!.TileWidth == 8, "Pattern undo failed");
+            string project = Path.Combine(files, "mapped-material.moruproj");
+            Success(Call(window, "save_project", Write(window, ("path", project))));
+            Check(ProjectStore.Load(project).Active!.Material != null, "MCP save lost material editability");
+        });
+
+        Case("material polygons validate before mutation and batch dry run rollback replay and locks remain effective", window =>
+        {
+            New(window, "Material plan");
+            window.doc.Materials.Add(new MaterialAsset(Guid.NewGuid(), "Brick", Raster.Solid(2, 2, Colors.Red)));
+            JsonArray Points() => new(new JsonObject { ["x"] = 3, ["y"] = 4 }, new JsonObject { ["x"] = 24, ["y"] = 4 }, new JsonObject { ["x"] = 24, ["y"] = 20 });
+            var before = window.doc.Snapshot();
+            Failure(Call(window, "define_region", Write(window, ("source", "selection"), ("name", "Invalid"), ("points", Points()))), "invalid_arguments");
+            Failure(Call(window, "define_region", Write(window, ("source", "polygon"), ("name", "Invalid"), ("points", new JsonArray()))), "invalid_arguments");
+            Check(SameDocument(window.doc, before), "Invalid region modified the document");
+            var region = Success(Call(window, "define_region", Write(window, ("source", "polygon"), ("name", "Triangle"), ("points", Points()))));
+            string materialId = window.doc.Materials[0].Id.ToString();
+            var batch = Batch(window, Step("apply_material", ("materialId", materialId), ("regionId", Text(region, "regionId")), ("tileWidth", 4), ("tileHeight", 4)));
+            before = window.doc.Snapshot(); batch["dryRun"] = true;
+            Success(Call(window, "apply_batch", batch)); Check(SameDocument(window.doc, before), "Material dry run changed the document");
+            batch["dryRun"] = false; var applied = Success(Call(window, "apply_batch", batch));
+            Check(Success(Call(window, "apply_batch", batch))["replayed"]!.GetValue<bool>() && window.doc.Layers.Count == before.Layers.Count + 1, "Material batch retry duplicated a mapping");
+            string id = applied["steps"]![0]!["layerId"]!.GetValue<string>();
+            before = window.doc.Snapshot();
+            Failure(Call(window, "apply_batch", Batch(window, Step("update_material", ("layerId", id), ("tileWidth", 7)), Step("delete_layer", ("layerId", Guid.NewGuid().ToString())))), "layer_not_found");
+            Check(SameDocument(window.doc, before), "Failed plan left a partial pattern change");
+            Success(Call(window, "set_layer", Write(window, ("layerId", id), ("locked", true))));
+            Failure(Call(window, "update_material", Write(window, ("layerId", id), ("tileWidth", 7))), "layer_locked");
         });
 
         Case("cancelled requests cannot create documents edit history or write output files", window =>

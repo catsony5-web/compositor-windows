@@ -100,6 +100,7 @@ public static class SelfTests
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
         VectorContentTests.Run(Test, directory);
+        MaterialMappingTests.Run(Test, directory);
         PrecisionWandTests.Run(Test);
         MainWindow.RunWandCommandTests(Test);
         UnifiedWorkspaceTests.Run(Test, directory);

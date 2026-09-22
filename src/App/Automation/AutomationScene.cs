@@ -93,6 +93,7 @@ public sealed class AutomationScene
         result["frameBoundsMeaning"] = "Transformed surface corners before ancestor clipping; not ink bounds or a semantic room boundary.";
         if (finite) result["documentCorners"] = new JsonArray(corners.Select(p => (JsonNode?)new JsonObject { ["x"] = p.X, ["y"] = p.Y }).ToArray());
         if (layer.Text != null) result["text"] = JsonSerializer.SerializeToNode(layer.Text);
+        if (layer.Material != null) result["material"] = AutomationMaterials.Fill(layer.Material);
         if (layer.Shape != null) result["shape"] = JsonSerializer.SerializeToNode(layer.Shape);
         if (layer.Adjustment != null) result["adjustment"] = JsonSerializer.SerializeToNode(layer.Adjustment);
         if (layer.Vector != null) result["vector"] = new JsonObject
@@ -105,6 +106,7 @@ public sealed class AutomationScene
             ["properties"] = !layer.Locked && !ancestorLocked,
             ["unlockOnly"] = layer.Locked && !ancestorLocked,
             ["text"] = layer.Kind == LayerKind.Text && !layer.Locked && !ancestorLocked,
+            ["material"] = layer.Kind == LayerKind.Material && !layer.Locked && !ancestorLocked,
             ["vectorGeometryViaMcp"] = false,
             ["shapeDefinitionViaMcp"] = false,
             ["positionNote"] = "Set x/y in parent coordinates. Use the parent chain and documentCorners to reason about placement."

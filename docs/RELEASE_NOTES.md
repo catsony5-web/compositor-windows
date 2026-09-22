@@ -1,4 +1,11 @@
-# AI command foundation — source changes
+# Morupixel 0.2.0 Preview 26 — editable material mapping
+
+- **Materials through MCP.** Register an existing image, capture a polygon, current selection or closed drawing object, and apply it as an editable 2D pattern. Inner holes remain empty. Change the source, repeat size, rotation and offset without flattening the boundary or original texture. Mapping and updates share the atomic batch and undo path.
+- **Embedded originals.** Material sources, region templates and mapping settings persist in native project format 6. These projects require Preview 26 or later; ordinary projects retain their earlier format. Pixel coordinates do not infer physical CAD units, rooms or 3D UVs. Image generation remains the connected AI provider's responsibility.
+- **Connect your AI program.** Connection settings offer copyable Codex and Claude Code commands, alongside common MCP JSON. The live contract is version 3 with 29 tools. [Connection setup](AI_CONNECTION.md) and [material workflow](MATERIAL_MAPPING.md) describe supported behavior.
+- **Validation.** 495 source checks and 10 real executable/MCP scenarios passed using synthetic documents, including retained rendering, masks and holes, copying, save/reopen, malformed projects, atomic rollback and undo. The asynchronous selection test now holds worker completion explicitly so stale-state assertions are independent of machine speed.
+
+## AI command foundation — earlier source changes
 
 - **Inspectable editing tools.** The MCP catalog now has 23 tools. The running editor reports supported commands, coordinate conventions and limits. Compact state and paged object searches expose drawing/photo categories, source layer names, parent transforms, inherited locks and artboards without expanding every object.
 - **Atomic edit plans.** Up to 64 document edits can be validated on a snapshot, then committed as one undo step. Failed, cancelled or stale plans leave no partial edits. Recent successful operation IDs prevent duplicate batch execution after an uncertain response, including after undo.

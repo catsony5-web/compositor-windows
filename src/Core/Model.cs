@@ -96,7 +96,7 @@ public sealed class Raster
 }
 
 public enum BlendMode { Normal, Multiply, Screen, Overlay, SoftLight, Darken, Lighten, Difference, ColorDodge, ColorBurn, Hue, Saturation, Color, Luminosity }
-public enum LayerKind { Raster, Text, Adjustment, Group, Shape, Vector }
+public enum LayerKind { Raster, Text, Adjustment, Group, Shape, Vector, Material }
 public enum LayerCategory { Automatic, Drawing, Photo }
 
 public sealed class Layer
@@ -125,6 +125,7 @@ public sealed class Layer
     public TextSpec? Text { get; set; }
     public ShapeSpec? Shape { get; set; }
     public VectorContent? Vector { get; set; }
+    public MaterialFill? Material { get; set; }
     public AdjustmentSpec? Adjustment { get; set; }
     public WarpQuad? Warp { get; set; }
     public Layer Snapshot()
@@ -164,6 +165,8 @@ public sealed class Document
     public Guid Revision { get; set; } = Guid.NewGuid();
     public List<Layer> Layers { get; set; } = [];
     public List<Artboard> Artboards { get; set; } = [];
+    public List<MaterialAsset> Materials { get; set; } = [];
+    public List<MaterialRegion> MaterialRegions { get; set; } = [];
     public Guid ActiveId { get; set; }
     public Layer? Active => Layers.Find(l => l.Id == ActiveId);
     public Document(long layerByteLimit = MaxLayerBytes)
@@ -171,7 +174,7 @@ public sealed class Document
         if (layerByteLimit < 0) throw new ArgumentOutOfRangeException(nameof(layerByteLimit));
         this.layerByteLimit = layerByteLimit;
     }
-    public Document Snapshot() => new(layerByteLimit) { Width = Width, Height = Height, Dpi = Dpi, Name = Name, Revision = Revision, ActiveId = ActiveId, Layers = Layers.Select(l => l.Snapshot()).ToList(), Artboards = Artboards.ToList() };
+    public Document Snapshot() => new(layerByteLimit) { Width = Width, Height = Height, Dpi = Dpi, Name = Name, Revision = Revision, ActiveId = ActiveId, Layers = Layers.Select(l => l.Snapshot()).ToList(), Artboards = Artboards.ToList(), Materials = Materials.ToList(), MaterialRegions = MaterialRegions.ToList() };
     public void Add(Layer layer)
     {
         ArgumentNullException.ThrowIfNull(layer);
@@ -181,7 +184,7 @@ public sealed class Document
             throw new InvalidOperationException($"이미지와 조정 레이어는 최대 {MaxLayers}개를 지원합니다.");
         if (Layers.Any(l => l.Id == layer.Id)) throw new InvalidOperationException("레이어 ID가 중복되었습니다.");
         var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
-        var bytes = Layers.Sum(l => StorageBytes(l, groupPixels)) + StorageBytes(layer, groupPixels);
+        var bytes = Layers.Sum(l => StorageBytes(l, groupPixels)) + StorageBytes(layer, groupPixels) + MaterialEditing.ValidateLibrary(this, layer);
         if (bytes > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         if (Layers.Sum(l => l.Vector?.ByteLength ?? 0) + (layer.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes)
             throw new InvalidOperationException("문서의 벡터 원본이 512MiB를 초과합니다.");
@@ -203,7 +206,8 @@ public sealed class Document
             throw new InvalidDataException($"이미지와 조정 레이어는 최대 {MaxLayers}개를 지원합니다.");
         var ids = new HashSet<Guid>();
         if (Layers.Sum(l => l?.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes) throw new InvalidDataException("문서의 벡터 원본이 512MiB를 초과합니다.");
-        long bytes = 0;
+        long bytes = MaterialEditing.ValidateLibrary(this);
+        if (bytes > layerByteLimit) throw new InvalidDataException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
         foreach (var layer in Layers)
         {
@@ -231,7 +235,7 @@ public sealed class Document
     // buffer once while retaining the conservative per-layer bitmap/mask budget.
     internal static long StorageBytes(Layer layer, HashSet<byte[]> groupPixels) =>
         (layer.Kind != LayerKind.Group || groupPixels.Add(layer.Pixels.Data) ? layer.Pixels.Data.LongLength : 0) + (layer.Mask?.LongLength ?? 0);
-    static bool UsesBitmapSlot(Layer layer) => layer.Kind is LayerKind.Raster or LayerKind.Adjustment;
+    static bool UsesBitmapSlot(Layer layer) => layer.Kind is LayerKind.Raster or LayerKind.Adjustment or LayerKind.Material;
     internal static void ValidateLayer(Layer layer, bool validateRasterDimensions = true)
     {
         if (layer.Id == Guid.Empty) throw new InvalidDataException("레이어 ID가 비어 있습니다.");
@@ -248,6 +252,8 @@ public sealed class Document
             !double.IsFinite(layer.Opacity) || layer.Opacity < 0 || layer.Opacity > 1 || !Enum.IsDefined(layer.Blend))
             throw new InvalidDataException("레이어 속성이 올바르지 않습니다.");
         if (!Enum.IsDefined(layer.Kind)) throw new InvalidDataException("레이어 종류가 올바르지 않습니다.");
+        if (layer.Kind == LayerKind.Material) MaterialEditing.ValidateFill(layer.Material!, layer.Pixels, validateRasterDimensions);
+        else if (layer.Material != null) throw new InvalidDataException("재료 레이어 종류가 일치하지 않습니다.");
         if (!Enum.IsDefined(layer.Category) || layer.SourceLayerName is { } source && (string.IsNullOrWhiteSpace(source) || Encoding.UTF8.GetByteCount(source) > 16_384))
             throw new InvalidDataException("도면 레이어 정보가 올바르지 않습니다.");
         if (layer.Kind == LayerKind.Vector)
@@ -309,7 +315,10 @@ public sealed class History
     {
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
         foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); if (l.Vector != null) seen.Add(l.Vector); }
+        foreach (var a in MaterialEditing.Assets(current)) seen.Add(a.Pixels.Data);
         long bytes = 0;
+        foreach (var entry in past.Concat(future)) foreach (var a in MaterialEditing.Assets(entry.State))
+            if (seen.Add(a.Pixels.Data)) bytes += a.Pixels.Data.LongLength;
         foreach (var entry in past.Concat(future)) foreach (var l in entry.State.Layers)
         {
             if (seen.Add(l.Pixels.Data)) bytes += l.Pixels.Data.Length;
@@ -320,14 +329,14 @@ public sealed class History
     }
     static bool SameState(Document a, Document b)
     {
-        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.ActiveId != b.ActiveId || a.Layers.Count != b.Layers.Count || !a.Artboards.SequenceEqual(b.Artboards)) return false;
+        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.ActiveId != b.ActiveId || a.Layers.Count != b.Layers.Count || !a.Artboards.SequenceEqual(b.Artboards) || !a.Materials.SequenceEqual(b.Materials) || !a.MaterialRegions.SequenceEqual(b.MaterialRegions)) return false;
         for (int i = 0; i < a.Layers.Count; i++)
         {
             var x = a.Layers[i]; var y = b.Layers[i];
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend ||
                 x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY ||
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
-                x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
+                x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Material != y.Material || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;

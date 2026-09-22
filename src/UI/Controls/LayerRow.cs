@@ -43,7 +43,7 @@ public sealed class LayerRow : Grid
 
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(7, 8, 4, 8) };
         labels.Children.Add(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextWrapping = TextWrapping.Wrap, ToolTip = layer.Name });
-        var kind = layer.Kind switch { LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group => "그룹", _ => "이미지" };
+        var kind = layer.Kind switch { LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group => "그룹", _ => "이미지" };
         var detail = description ?? $"{kind} · {layer.Opacity * 100:0}%";
         if (layer.Clipped) detail += " · 클리핑";
         if (layer.Mask != null) detail += " · 마스크";

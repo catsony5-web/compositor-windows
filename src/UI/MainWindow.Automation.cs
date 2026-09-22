@@ -79,8 +79,17 @@ public sealed partial class MainWindow
         var config = new TextBox { Text = configuration, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
             MinHeight = 160, MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 8, 0, 12) };
         root.Children.Add(config);
+        var client = new ComboBox { ItemsSource = new[] { "공통 MCP 설정", "Codex · PowerShell 명령", "Claude Code · PowerShell 명령" }, SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 12) };
+        System.Windows.Automation.AutomationProperties.SetName(client, "연결할 AI 프로그램");
+        client.SelectionChanged += (_, _) => config.Text = client.SelectedIndex switch
+        {
+            1 => "codex mcp add morupixel -- " + "'" + executable.Replace("'", "''") + "' --mcp",
+            2 => "claude mcp add --transport stdio --scope user morupixel -- " + "'" + executable.Replace("'", "''") + "' --mcp",
+            _ => configuration
+        };
+        root.Children.Add(client);
         var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right };
-        actions.Children.Add(Theme.Button("설정 복사", () => { Clipboard.SetText(configuration); state.Text = "MCP 설정을 복사했습니다."; }));
+        actions.Children.Add(Theme.Button("설정 복사", () => { Clipboard.SetText(config.Text); state.Text = "선택한 AI 연결 설정을 복사했습니다."; }));
         var toggle = Theme.Button(automationBridge?.IsRunning == true ? "연결 끄기" : "연결 켜기", () => { });
         toggle.Click += (_, _) => Guard(() =>
         {
@@ -191,6 +200,7 @@ public sealed partial class MainWindow
                 ["layerKinds"] = new JsonObject(d.Layers.GroupBy(l => l.Kind).Select(g => new KeyValuePair<string, JsonNode?>(g.Key.ToString(), JsonValue.Create(g.Count())))),
                 ["layerCategories"] = new JsonObject(categories.Values.GroupBy(c => c).Select(g => new KeyValuePair<string, JsonNode?>(g.Key.ToString(), JsonValue.Create(g.Count())))),
                 ["artboardCount"] = ArtboardEditing.Visible(d).Count,
+                ["materialCount"] = MaterialEditing.Assets(d).Count, ["regionCount"] = d.MaterialRegions.Count,
                 ["artboards"] = new JsonArray(ArtboardEditing.Visible(d).Select(b => (JsonNode?)new JsonObject
                 {
                     ["artboardId"] = b.Id == Guid.Empty ? null : b.Id.ToString(), ["name"] = b.Name,
@@ -226,6 +236,8 @@ public sealed partial class MainWindow
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
         RequireAutomationIdle(token);
+        if (command is "query_materials" or "query_regions") return AutomationMaterialQuery(command, args);
+        if (command is "register_material" or "define_region") return await AutomationRegisterMaterialAsync(command, args, token);
         if (command is "query_layers" or "get_layer") return AutomationInspect(command, args);
         if (command == "apply_batch") return await AutomationBatchAsync(args, token);
         if (command == "activate_document")
@@ -354,6 +366,25 @@ public sealed partial class MainWindow
         }
         switch (command)
         {
+            case "apply_material":
+                var mapped = await CompatibilityImport.OnSta(() => MaterialEditing.Apply(candidate, Guid.Parse(AString(args, "materialId")), Guid.Parse(AString(args, "regionId")),
+                    ANumber(args, "tileWidth"), ANumber(args, "tileHeight"), ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY")), token);
+                mapped.Opacity = ANumber(args, "opacity", 1);
+                if (args.ContainsKey("blend")) mapped.Blend = Enum.Parse<BlendMode>(AString(args, "blend"));
+                Add(mapped); break;
+            case "update_material":
+                var materialLayer = Target();
+                if (materialLayer.Material is not { } original) throw new AutomationFault("wrong_layer_kind", "재료 맵핑 레이어를 선택하세요.");
+                var material = args.ContainsKey("materialId") ? MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == Guid.Parse(AString(args, "materialId")))
+                    ?? throw new AutomationFault("material_not_found", "등록된 재료가 없습니다.") : original.Asset;
+                var replacement = original with { Asset = material, TileWidth = ANumber(args, "tileWidth", original.TileWidth), TileHeight = ANumber(args, "tileHeight", original.TileHeight),
+                    Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY) };
+                if (replacement != original)
+                {
+                    MaterialEditing.ValidateFill(replacement, materialLayer.Pixels);
+                    materialLayer.Pixels = await CompatibilityImport.OnSta(() => MaterialRenderer.Render(replacement), token); materialLayer.Material = replacement;
+                }
+                if (args.ContainsKey("name")) materialLayer.Name = AString(args, "name"); break;
             case "add_image":
                 string source = AutomationPath(args);
                 var pixels = await CompatibilityImport.OnSta(() => ImportExport.LoadImage(source), token);
@@ -415,12 +446,12 @@ public sealed partial class MainWindow
         return affected;
     }
 
-    void CommitAutomationCandidate(string label, Document before, Document candidate, Guid? affected, Action? committed = null)
+    void CommitAutomationCandidate(string label, Document before, Document candidate, Guid? affected, Action? committed = null, bool preserveSelection = false)
     {
         if (!SameDocument(before, candidate))
         {
             history.Commit(label, before, candidate); doc = candidate;
-            selection = null; maskEditing = false; selectedLayers.Clear();
+            if (!preserveSelection) { selection = null; maskEditing = false; selectedLayers.Clear(); }
             if (affected.HasValue && doc.Layers.Any(l => l.Id == affected.Value)) doc.ActiveId = affected.Value;
             if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
             StoreTab(); committed?.Invoke(); Refresh();

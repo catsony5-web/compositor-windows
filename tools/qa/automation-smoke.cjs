@@ -39,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 23); checks.push('MCP initialization and 23 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 29); checks.push('MCP initialization and 29 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -50,11 +50,12 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 2); assert.equal(capabilities.commands.length, 23);
-  assert(capabilities.unsupportedViaMcp.includes('material_mapping')); checks.push('Live capabilities identify supported and future operations');
+  assert.equal(capabilities.contractVersion, 3); assert.equal(capabilities.commands.length, 29);
+  assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
+  checks.push('Live capabilities identify supported and future operations');
   let state = data(await call('get_state')); assert.equal(state.documents.length, 0);
   state = data(await call('new_document', { name: 'AI 연결 데모', width: 960, height: 600, background: '#141B29' }));
-  const documentId = state.documentId;
+  let documentId = state.documentId;
   async function edit(command, args = {}) { state = data(await call(command, { documentId, expectedRevision: state.revision, ...args })); return state; }
   await edit('add_shape', { shape: 'rectangle', width: 860, height: 4, x: 50, y: 52, fill: '#FA9261', name: 'Accent' });
   await edit('add_text', { text: 'MORUPIXEL', fontFamily: 'Segoe UI', fontSize: 24, tracking: 150, x: 50, y: 78, color: '#FA9261' });
@@ -113,6 +114,54 @@ async function main() {
   assert(state.documents.find(d => d.documentId === documentId).layers.find(l => l.layerId === imageId).hasMask);
   await edit('undo');
   checks.push('Image open, inactive-document rejection, activation and local AI background-removal mask');
+  // Synthetic parquet tile: no customer drawing or generated-image service required.
+  state = data(await call('new_document', { name: 'Synthetic parquet', width: 64, height: 64, background: '#C8AF87' })); documentId = state.documentId;
+  for (const [y, color] of [[0, '#AE9069'], [16, '#D8C29D'], [32, '#A98B63'], [48, '#CFB894']])
+    await edit('add_shape', { shape: 'rectangle', x: 0, y, width: 64, height: 2, fill: color });
+  const texture = path.join(output, 'parquet.png'); await edit('export_image', { path: texture });
+  state = data(await call('new_document', { name: 'Material mapping study', width: 960, height: 640, background: '#F5F3EE' })); documentId = state.documentId;
+  await edit('add_text', { text: 'MATERIAL STUDY / 01', x: 70, y: 40, fontSize: 28, color: '#29352F', name: 'Sheet title' });
+  await edit('add_text', { text: 'EDITABLE BOUNDARIES + ORIGINAL TEXTURES', x: 70, y: 88, fontSize: 14, color: '#647069' });
+  await edit('add_shape', { shape: 'rectangle', x: 80, y: 150, width: 600, height: 400, fill: '#FFFFFF', stroke: '#29352F', strokeWidth: 8, name: 'Outer wall' });
+  await edit('add_shape', { shape: 'rectangle', x: 380, y: 150, width: 8, height: 400, fill: '#29352F', name: 'Partition' });
+  await edit('add_shape', { shape: 'rectangle', x: 180, y: 250, width: 40, height: 40, fill: '#29352F', name: 'Column' });
+  await edit('add_shape', { shape: 'rectangle', x: 388, y: 158, width: 284, height: 384, fill: 'transparent', name: 'Closed floor boundary' });
+  const boundaryId = state.layerId;
+  await edit('add_text', { text: '01 / PARQUET\n64 px repeat\nColumn excluded\n\n02 / ROTATED\n80 px repeat\n90 degrees', x: 722, y: 164, fontSize: 18, lineHeight: 32, color: '#29352F' });
+  await edit('register_material', { name: 'Parquet fixture', path: texture, source: 'Synthetic QA fixture', tileable: true });
+  const materialId = state.materialId;
+  const materials = data(await call('query_materials', { documentId, expectedRevision: state.revision, limit: 1 }));
+  assert.equal(materials.materials[0].materialId, materialId);
+  const points = [[88,158],[372,158],[372,542],[88,542]].map(([x,y]) => ({ x,y }));
+  const holes = [[[180,250],[220,250],[220,290],[180,290]].map(([x,y]) => ({ x,y }))];
+  await edit('define_region', { name: 'Left floor', source: 'polygon', points, holes }); const leftRegion = state.regionId;
+  await edit('define_region', { name: 'Right floor', source: 'closed_layer', layerId: boundaryId }); const rightRegion = state.regionId;
+  const regions = data(await call('query_regions', { documentId, expectedRevision: state.revision, limit: 1 }));
+  assert.equal(regions.totalMatches, 2); assert.equal(regions.nextOffset, 1);
+  const secondPage = data(await call('query_regions', { documentId, expectedRevision: regions.revision, offset: 1, limit: 1 }));
+  assert.equal(secondPage.regions[0].regionId, rightRegion);
+  const mapping = { documentId, expectedRevision: state.revision, operationId: randomUUID(), steps: [
+    { command: 'apply_material', arguments: { materialId, regionId: leftRegion, tileWidth: 64, tileHeight: 64, name: 'Floor 01' } },
+    { command: 'apply_material', arguments: { materialId, regionId: rightRegion, tileWidth: 80, tileHeight: 80, angle: 90, name: 'Floor 02' } }
+  ] };
+  assert.equal(data(await call('apply_batch', { ...mapping, dryRun: true })).committed, false);
+  state = data(await call('apply_batch', mapping)); const fillId = state.steps[1].layerId;
+  await edit('update_material', { layerId: fillId, offsetX: 4 });
+  const materialDetail = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: fillId }));
+  assert.equal(materialDetail.layer.material.originalTextureRetained, true);
+  assert.equal(materialDetail.layer.material.offsetX, 4);
+  const materialPreview = await call('preview', { documentId, maxSide: 960 });
+  fs.writeFileSync(path.join(output, 'material-preview.png'), Buffer.from(materialPreview.content.find(c => c.type === 'image').data, 'base64'));
+  const project = path.join(output, 'material-study.moruproj'); await edit('save_project', { path: project });
+  await edit('export_image', { path: path.join(output, 'material-study.png') });
+  checks.push('Material register/query, polygon holes, closed-object region, paged regions, batch mapping, pattern update and preview');
+  state = data(await call('open_document', { path: project })); documentId = state.documentId;
+  const persisted = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: fillId }));
+  assert.equal(persisted.layer.material.angle, 90);
+  await edit('update_material', { layerId: fillId, angle: 45 }); await edit('undo');
+  const restored = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: fillId }));
+  assert.equal(restored.layer.material.angle, 90);
+  checks.push('Native material project reopens with embedded original, editable pattern and undo');
   fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ ok: true, checks, preview: path.join(output, 'ai-edit-preview.png') }, null, 2));
   console.log(JSON.stringify({ ok: true, checks: checks.length, output }));
 }
