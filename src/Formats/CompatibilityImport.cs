@@ -37,7 +37,19 @@ public static class CompatibilityImport
         var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
         var thread = new Thread(() =>
         {
-            try { token.ThrowIfCancellationRequested(); var result = action(); token.ThrowIfCancellationRequested(); completion.SetResult(result); }
+            try
+            {
+                T result;
+                try { token.ThrowIfCancellationRequested(); result = action(); token.ThrowIfCancellationRequested(); }
+                finally
+                {
+                    // WPF owns native render channels on each importing STA.
+                    // Tear them down on that thread before publishing completion.
+                    var dispatcher = System.Windows.Threading.Dispatcher.FromThread(Thread.CurrentThread);
+                    if (dispatcher != null && !dispatcher.HasShutdownStarted) dispatcher.InvokeShutdown();
+                }
+                completion.SetResult(result);
+            }
             catch (OperationCanceledException) { completion.SetCanceled(token); }
             catch (Exception e) { completion.SetException(e); }
         }) { IsBackground = true, Name = "Morupixel file import" };

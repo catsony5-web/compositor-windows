@@ -8,6 +8,16 @@ internal static class UnifiedWorkspaceTests
     internal static void Run(Action<string, Action> test, string directory)
     {
         static void Assert(bool value, string message) { if (!value) throw new Exception(message); }
+        test("Import STA releases its WPF dispatcher before task completion", () =>
+        {
+            System.Windows.Threading.Dispatcher? owner = null;
+            var pixels = CompatibilityImport.OnSta(() =>
+            {
+                owner = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                return Imaging.Draw(8, 8, dc => dc.DrawRectangle(Brushes.Red, null, new Rect(0, 0, 8, 8)));
+            }, default).GetAwaiter().GetResult();
+            Assert(owner?.HasShutdownFinished == true && pixels.Data[2] == 255, "Import task outlived its native rendering owner");
+        });
         Document Scene()
         {
             var doc = new Document { Width = 160, Height = 120 };
