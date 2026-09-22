@@ -6,7 +6,7 @@
 
 레이어, 색상, 합성을 위한 Windows 이미지 편집기입니다.
 
-**Preview 22 통합판 · Windows 10 2004 이상 / Windows 11 x64**
+**Preview 23 통합판 · Windows 10 2004 이상 / Windows 11 x64**
 
 [Windows 다운로드](https://github.com/catsony5-web/compositor-windows/releases) · [홈페이지](https://morupixel.arch-t.chatgpt.site/) · [릴리스](https://github.com/catsony5-web/compositor-windows/releases)
 
@@ -18,7 +18,7 @@
 - **배경 지우기** — 기기에서 처리하는 AI, 다시 수정할 수 있는 마스크.
 - **파일 주고받기** — PDF·PDF 호환 AI·PSD/PSB·DWG/DXF 가져오기, PNG·JPEG·TIFF·PDF·PSD와 ICC 기반 CMYK TIFF 출력. [보존 범위와 제한](docs/FILE_COMPATIBILITY.md)
 
-빈 작업 화면에서 **새 문서 / 열기 / 배우기**로 시작하세요. Preview 22는 CAD 객체·PDF/AI 벡터·정밀 마술봉·AI 연결을 한 배포본으로 통합합니다. 디자인 모드에서는 확대 배율에 맞춰 벡터를 다시 그립니다. 사진 편집은 원본 픽셀을 유지합니다. 이미지 한도를 한 변 **65,535px**, 전체 **약 5.37억 픽셀**, 레이어·마스크 합계 **8GiB**로 높였습니다. 가로·세로와 전체 픽셀 제한이 함께 적용되며 실제 처리 가능한 크기는 사용 가능한 메모리에 따라 달라집니다. [이번 버전의 변경 사항](docs/RELEASE_NOTES.md)
+빈 작업 화면에서 **새 문서 / 열기 / 배우기**로 시작하세요. Preview 23은 가져오기 창을 간소화했습니다. CAD는 **부분별로 편집 (추천)**으로 시작하고 크기·배치는 **세부 설정**에서 바꿀 수 있습니다. CAD 객체·PDF/AI 벡터·정밀 마술봉·AI 연결은 같은 배포본에 포함됩니다. 디자인 모드에서는 확대 배율에 맞춰 벡터를 다시 그립니다. 사진 편집은 원본 픽셀을 유지합니다. 이미지 한도를 한 변 **65,535px**, 전체 **약 5.37억 픽셀**, 레이어·마스크 합계 **8GiB**로 높였습니다. 가로·세로와 전체 픽셀 제한이 함께 적용되며 실제 처리 가능한 크기는 사용 가능한 메모리에 따라 달라집니다. [이번 버전의 변경 사항](docs/RELEASE_NOTES.md)
 
 <details>
 <summary>시작하기</summary>

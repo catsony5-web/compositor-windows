@@ -1,4 +1,13 @@
-# Preview 22 integration validation
+# Preview 23 import dialog validation
+
+- Source self-tests: **459/459 passed** on Windows x64. New checks cover collapsed controls and complete conversion notes, minimum-size layout, accessible expand/collapse, invalidation after size/vector changes, and errors outside scrolled details.
+- Actual DWG and PDF-compatible AI imports completed through the dialog's load/preview handlers without showing desktop windows. Fourteen captures cover default, minimum size, 150% rendering scale, expanded settings/notes, scrolled notes, and failure states.
+- Layered PDF and Photoshop fixtures also completed the same automatic preview flow; the PDF kept its layer option and Photoshop opened with its combined-image default.
+- Default views have no vertical scrolling at 900 × 640 or 760 × 530 content sizes. Actions remain visible while long conversion notes scroll. All six CAD notices remain accessible; the drawing imports 2,724 elements and 244 groups plus its background. The AI exposes four artboards and preserves the first artboard's 16 layers.
+- Private input files and generated captures remain local in `artifacts/qa/import-dialog`. No importer, vector renderer or selection algorithm changed. GitHub Actions repeats the source and packaged-executable checks before publication.
+- The local build used cached packages; the restricted network could not fetch NuGet vulnerability metadata (NU1900).
+
+## Preview 22 integration validation
 
 - Source self-tests: **457/457 passed** on Windows x64, including all object import, grouped movement, magnetic picking, AI/MCP, vector and precision-wand checks.
 - Added combined coverage for 200 vector objects in a CAD-style group, native project roundtrip, zoomed wand boundaries, hidden objects and transformed group clipping.
