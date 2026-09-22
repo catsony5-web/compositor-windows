@@ -63,7 +63,7 @@ public static class SelectedLayerExport
         snapshot.Layers.RemoveAll(layer => !keep.Contains(layer.Id));
         snapshot.ActiveId = selected.First();
         snapshot.Validate();
-        var rendered = Imaging.Render(snapshot, token);
+        var rendered = DesignRenderer.RenderOutput(snapshot, token);
         return trimTransparent ? Trim(rendered, detached, token)
             : new SelectedLayerImage(rendered, new Int32Rect(0, 0, rendered.Width, rendered.Height), detached);
     }

@@ -11,6 +11,8 @@ if ($repository -cnotmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') { throw 'Invalid
 $plan = Get-ReleasePlan -SourceVersion $Version -EventName push -Ref "refs/tags/v$Version" -Commit $Commit
 if ($Automatic -and -not $plan.Prerelease) { throw 'Automatic releases must remain previews.' }
 if ((& git rev-parse HEAD).Trim() -cne $Commit) { throw 'Release checkout does not match the tested source commit.' }
+$mainlineStatus = (Invoke-ReleaseGh @('api', "repos/$repository/compare/main...$Commit", '--jq', '.status')).Trim()
+if ($mainlineStatus -cnotin @('identical', 'behind')) { throw 'Release source has not been integrated into main.' }
 $tag = $plan.Tag
 $archiveName = "Morupixel-$Version-win-x64.zip"
 $zipPath = Join-Path $PackageDirectory $archiveName
@@ -39,7 +41,7 @@ Windows image editing, in one workspace.
 
 Extract the ZIP and run ``Morupixel.exe``. Development preview · Unsigned.
 
-[Changes](https://github.com/$repository/commit/$Commit) · [Project notes](https://github.com/$repository/blob/$Commit/docs/PORTING.md) · [Attribution](https://github.com/$repository/blob/$Commit/NOTICE.md)
+[Release notes](https://github.com/$repository/blob/$Commit/docs/RELEASE_NOTES.md) · [Changes](https://github.com/$repository/commit/$Commit) · [Attribution](https://github.com/$repository/blob/$Commit/NOTICE.md)
 
 <!-- morupixel-source:$Commit -->
 "@

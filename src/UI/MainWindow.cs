@@ -17,7 +17,8 @@ public sealed partial class MainWindow : Window
     Document doc = new() { Width = 1, Height = 1 };
     History history = new();
     readonly CanvasView canvas = new();
-    readonly StackPanel properties = new(), layerList = new();
+    readonly StackPanel properties = new();
+    readonly LayerList layerList = new();
     readonly TextBlock status = Theme.Label("준비", 11), documentTitle = Theme.Label("", 12), zoomLabel = Theme.Label("", 11);
     readonly Dictionary<Tool, Button> toolButtons = [];
     readonly ColorSwatches colorSwatches;
@@ -58,6 +59,7 @@ public sealed partial class MainWindow : Window
         optionHost.Children.Add(DocumentControl(new ScrollViewer { Content = options, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled }));
         options.Children.Add(toolCaption);
         BuildBucketOptions(); options.Children.Add(bucketOptions);
+        BuildWandOptions(); options.Children.Add(wandOptions);
         brushOptions.Children.Add(Theme.Label("크기"));
         sizeSlider = Slider(1, MaxBrushSize, brushSize, 115, v => { brushSize = v; UpdateBrushLabel(); }); brushOptions.Children.Add(sizeSlider);
         brushLabel.Width = 50; brushOptions.Children.Add(brushLabel); brushOptions.Children.Add(Theme.Label("경도"));
@@ -68,6 +70,7 @@ public sealed partial class MainWindow : Window
         autoSelectToggle = new CheckBox { Content = "자동 선택", IsChecked = true, Foreground = Theme.Text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 4, 0), ToolTip = "이동 도구(V): 클릭한 대상의 레이어 선택. 끄면 목록에서 선택한 레이어만 이동합니다." };
         System.Windows.Automation.AutomationProperties.SetName(autoSelectToggle, "캔버스 레이어 자동 선택");
         options.Children.Add(autoSelectToggle);
+        autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
         var body = new Grid { Margin = new Thickness(10, 6, 10, 8) }; Grid.SetRow(body, 3); root.Children.Add(body);
         body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
@@ -102,15 +105,15 @@ public sealed partial class MainWindow : Window
             e.Handled = true;
         }), handledEventsToo: true);
         canvas.LostMouseCapture += (_, _) => { if (dragging || resizingBrush) CancelGesture(); };
-        canvas.MouseWheel += (_, e) => { canvas.ZoomAt(e.Delta > 0 ? 1.15 : 1 / 1.15, e.GetPosition(canvas)); UpdateStatus(); e.Handled = true; };
+        canvas.MouseWheel += (_, e) => { ClearPointerHover(); canvas.ZoomAt(e.Delta > 0 ? 1.15 : 1 / 1.15, e.GetPosition(canvas)); UpdateStatus(); e.Handled = true; };
         PreviewKeyDown += OnKey; AllowDrop = true;
-        PreviewKeyUp += (_, e) => { var key = e.Key == Key.System ? e.SystemKey : e.Key; if (suppressAltMenu && key is Key.LeftAlt or Key.RightAlt) { suppressAltMenu = false; e.Handled = true; } };
-        Deactivated += (_, _) => { if (resizingBrush) EndBrushResize(true); suppressAltMenu = false; };
+        PreviewKeyUp += (_, e) => { var key = e.Key == Key.System ? e.SystemKey : e.Key; if (suppressAltMenu && key is Key.LeftAlt or Key.RightAlt) { suppressAltMenu = false; e.Handled = true; } if (key is Key.Space or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift) UpdatePointerModifiers(); };
+        Deactivated += (_, _) => { if (resizingBrush) EndBrushResize(true); suppressAltMenu = false; ClearPointerHover(); };
         DragOver += (_, e) => { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
         Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Guard(() => { foreach (var file in files) { var ext = Path.GetExtension(file).ToLowerInvariant(); if (ext is ".moruproj" or ".cwproj" or ".comp" || CompatibilityImport.Supports(file)) OpenPath(file); else ImportFiles([file]); } }); };
         Closing += (_, e) => { CancelGesture(); if (!ConfirmAllTabs()) e.Cancel = true; else { CloseFloatingPanels(); StopRenderingForShutdown(); } };
         Loaded += (_, _) => InitializeStartup();
-        canvas.MouseLeave += (_, _) => { if (!resizingBrush) canvas.BrushPoint = null; canvas.InvalidateVisual(); };
+        canvas.MouseLeave += (_, _) => { if (!resizingBrush) canvas.BrushPoint = null; ClearPointerHover(); if (!dragging && !panning) lastPointerScreen = null; canvas.InvalidateVisual(); };
         history.Reset(doc); UpdateColor(); UpdateBrushLabel(); UpdateToolOptions(); UpdateDocumentAvailability(); UpdateStatus();
         SizeChanged += (_, _) => studioScroll.Height = PreferredStudioHeight(ActualHeight);
     }
@@ -159,6 +162,7 @@ public sealed partial class MainWindow : Window
     void SetTool(Tool next) => ChangeInteractionTool(next);
     void Refresh(bool render = true)
     {
+        ClearPointerHover();
         selectedLayers.RemoveWhere(id => !doc.Layers.Any(l => l.Id == id));
         canvas.Document = HasDocument ? doc : null; canvas.Selection = HasDocument ? selection : null;
         UpdateDocumentAvailability();
@@ -178,7 +182,7 @@ public sealed partial class MainWindow : Window
         if (!HasDocument) { status.Text = ""; status.ToolTip = null; zoomLabel.Text = ""; return; }
         var hint = tool switch { Tool.Move => "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · Alt+좌우 드래그 / [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기 · Alt+좌우 드래그: 크기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Bucket => "클릭: 전경색으로 영역 채우기 · 허용 오차·연결 영역 조절 · Esc 취소", Tool.Gradient => gradientToBackground ? "전경색 → 배경색 그라데이션 · 드래그" : "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
         status.Text = ToolDisplayName(tool) + (maskEditing ? " · 마스크" : "");
-        status.ToolTip = hint + "\n휠: 확대/축소 · Space+드래그: 화면 이동";
+        status.ToolTip = hint + (tool == Tool.Move ? "\n자석 정렬 · Alt: 스냅 잠시 해제 · Shift: 가로/세로 고정" : "") + "\n휠: 확대/축소 · Space+드래그: 화면 이동";
         zoomLabel.Text = $"{doc.Layers.Count} 레이어    {canvas.Zoom * 100:0.#}%";
     }
     void SelectLayer(Guid id)
@@ -189,6 +193,7 @@ public sealed partial class MainWindow : Window
         CancelGesture(); doc.ActiveId = id; maskEditing = false;
         if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) selectedLayers.Clear();
         if (id != Guid.Empty) selectedLayers.Add(id);
+        RevealLayerSelection(id);
         Refresh(false); canvas.Focus();
     }
 
@@ -222,6 +227,7 @@ public sealed partial class MainWindow : Window
     {
         int existing = FindPathTab(path); if (existing >= 0) { SwitchTab(existing); status.Text = "이미 열려 있는 작업으로 이동했습니다."; return; }
         AddTab(ProjectStore.Load(path), path);
+        if (doc.Layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
     }
     void OpenImage(string path)
     {
@@ -242,12 +248,18 @@ public sealed partial class MainWindow : Window
             if (CompatibilityImport.Supports(path))
             {
                 var imported = ReadCompatibilityDocument(path, placeAsLayer: true); if (imported == null) return;
-                // Placement as a single composite avoids changing clipping/group semantics in the destination.
-                layers.Add(new Layer { Name = imported.Name, Pixels = imported.Active!.Pixels });
+                layers.AddRange(CompatibilityImport.PlacementLayers(imported, doc.Width, doc.Height));
             }
-            else layers.Add(new Layer { Name = Path.GetFileNameWithoutExtension(path), Pixels = ImportExport.LoadImage(path) });
+            else
+            {
+                var layer = new Layer { Name = Path.GetFileNameWithoutExtension(path), Pixels = ImportExport.LoadImage(path) };
+                layer.Scale = Math.Min(1, Math.Min(doc.Width / (double)layer.Pixels.Width, doc.Height / (double)layer.Pixels.Height));
+                layer.X = (doc.Width - layer.Pixels.Width * layer.Scale) / 2; layer.Y = (doc.Height - layer.Pixels.Height * layer.Scale) / 2; layers.Add(layer);
+            }
         }
-        Edit("이미지 가져오기", () => { foreach (var l in layers) { l.Scale = Math.Min(1, Math.Min(doc.Width / (double)l.Pixels.Width, doc.Height / (double)l.Pixels.Height)); l.X = (doc.Width - l.Pixels.Width * l.Scale) / 2; l.Y = (doc.Height - l.Pixels.Height * l.Scale) / 2; doc.Add(l); } maskEditing = false; });
+        var candidate = doc.Snapshot(); foreach (var layer in layers) candidate.Add(layer); candidate.Validate();
+        Edit("이미지 가져오기", () => { doc = candidate; maskEditing = false; });
+        if (layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
     }
     bool Save(bool saveAs)
     {
@@ -377,9 +389,9 @@ public sealed partial class MainWindow : Window
     }
     void OnKey(object sender, KeyEventArgs e) => InteractionKey(sender, e);
     void Help() => MessageBox.Show(this,
-        "Morupixel · 모루픽셀 0.2 Preview\n독립적인 Windows 이미지 편집기\n\n" +
+        $"Morupixel · 모루픽셀 {typeof(MainWindow).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).Cast<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion}\n독립적인 Windows 이미지 편집기\n\n" +
         "레이어 그룹·클리핑·14 혼합 모드·마스크·6종 조정 레이어·편집 가능한 텍스트\n올가미·마술봉·페더·복제·복구·스머지·액화·내용 인식 채우기·AI 배경 제거\n\n" +
         "Ctrl+S: .moruproj 저장 / Ctrl+Shift+E: 내보내기 미리보기\nCtrl+T: 변형 값 입력 / 모서리: 크기 / Ctrl+모서리: 원근 / 원형 핸들: 회전\nShift+레이어 클릭: 다중 선택 / Ctrl+G: 그룹\nAlt+클릭: 복제·복구 원본 지정 / Shift·Alt: 선택 추가·빼기\n마스크: 흰색 표시·검정 숨김 / D: 검정·흰색 초기화 / X: 전경·배경 교환\nAlt+좌우 드래그: 브러시 크기 (1~1000px) / Esc: 크기 변경 취소\nAlt+Delete: 전경색 채우기 / Ctrl+Delete: 배경색 채우기 (Backspace도 가능)\nG: 버킷 채우기 / Shift+G: 그라데이션\n텍스트 속성: Enter 줄바꿈 / Ctrl+Enter 적용 / 숫자·글꼴 입력 Enter 적용\n\n" +
-        $"8개 문서 탭 · 최대 {Document.MaxLayers} 레이어 · 한 변 {Raster.MaxDimension:N0}px · {Raster.MaxPixels / 1_000_000.0:N1}MP · 레이어 메모리 {Document.MaxLayerBytes / (1024.0 * 1024 * 1024):0.#}GiB\n실제 작업 가능 크기는 사용 가능한 메모리와 편집 작업에 따라 달라집니다.\nICC 입력은 sRGB로 변환합니다. HEIC는 Windows 코덱이 필요합니다.\nCompositor .comp 파일은 지원하는 속성만 호환됩니다. 자세한 범위는 배포본 docs/PORTING.md를 확인하세요.\n\n" +
+        $"8개 문서 탭 · 최대 {Document.MaxNodes:N0}개 객체·그룹 (이미지·조정 {Document.MaxLayers}개) · 한 변 {Raster.MaxDimension:N0}px · {Raster.MaxPixels / 1_000_000.0:N1}MP · 레이어 메모리 {Document.MaxLayerBytes / (1024.0 * 1024 * 1024):0.#}GiB\n실제 작업 가능 크기는 사용 가능한 메모리와 편집 작업에 따라 달라집니다.\nICC 입력은 sRGB로 변환합니다. HEIC는 Windows 코덱이 필요합니다.\nCompositor .comp 파일은 지원하는 속성만 호환됩니다. 자세한 범위는 배포본 docs/PORTING.md를 확인하세요.\n\n" +
         "Compositor 참고: github.com/robbietilton/Compositor\nCopyright © 2026 Wonder Assembly LLC · MIT License\nAI 모델: U²-NetP · Apache-2.0 · 모든 편집은 로컬에서 처리됩니다.", "Morupixel 도움말", MessageBoxButton.OK, MessageBoxImage.Information);
 }

@@ -1,3 +1,49 @@
+# Preview 22 integration validation
+
+- Source self-tests: **457/457 passed** on Windows x64, including all object import, grouped movement, magnetic picking, AI/MCP, vector and precision-wand checks.
+- Added combined coverage for 200 vector objects in a CAD-style group, native project roundtrip, zoomed wand boundaries, hidden objects and transformed group clipping.
+- Release policy: **42 checks + 9 offline publishing scenarios passed**, including rejection of source not yet merged into main and immutable retry behavior.
+- GitHub Actions repeats source and packaged-executable tests for the public release and retains both reports. Actual published results are available in the release's workflow run.
+- Native PDF factories are owned per call, async operations are closed after completion, and COM resources are released in both MTA and STA before process teardown. The regression renders, unloads the actual native PDF module, and renders again for three cycles. This addresses a WARP exit crash traced to `Windows_Data_Pdf!CPdfStatics` destroying its device after native thread-pool shutdown (`d3d10warp!Task::ScheduleTask`, `0xC000000D`; function-only log in run 35676921988). CI remains on `windows-latest` and still requires normal source and portable process exit; no memory dumps are uploaded.
+- Actual-file checks preserved 21,389 CAD vector objects through native save/reopen and rendered all four artboards of the supplied PDF-compatible AI, retaining its layer groups. Zoomed roundtrip pixels matched exactly. A 32x CAD wand check followed the beam boundary and text holes in 1.953 seconds on this PC. Private source drawings and generated evidence remain local.
+- Local NuGet vulnerability metadata could not be fetched in the restricted environment; compilation and cached package restoration succeeded.
+
+## Previous validation records
+
+# Morupixel 0.2.0-preview.21 local candidate — 2026-09-22
+
+Release source build: zero warnings/errors; **433/433** automated checks pass. Added cases cover DWG/DXF source topology, independent LINEs versus connected polylines, repeated block/viewport instances, viewport clips, paint-order group runs, individual-object movement, grouping on placement, project roundtrips, capacity/memory limits and invalid native group references. Two thousand virtualized layer entries realize fewer than 40 controls in the test viewport, including after scrolling to the last object. Source report: `artifacts/object-import-final/self-tests.txt`.
+
+A read-only check of the user's anonymous CAD sample drawing at the default 2,400px long edge imported **21,389 objects in 1,484 paint-order groups (22,874 total nodes)**. On this PC import took 6.96s, composite rendering 0.53s, native saving 3.23s and reloading 2.37s. Independent object previews plus one shared group surface used about 83.87MB; retained paths used 25.55MB. The original DWG and external references were not modified. The resulting page render was visually inspected with both sections, key plans and title block present. No user's files are added to the source repository.
+
+An additional native roundtrip matched all parent IDs and the complete composite pixels exactly. Conservative picker bounds retained the same targets on seven visible points while reducing the measured worst case from 231ms to 40.84ms (20.30–40.84ms, mean 30.69ms in this small sample). Snapping resolution was 0.15–0.21ms after building its drag session. These are bounded component checks, not whole-editor FPS guarantees. Actual-file evidence stays local in `artifacts/object-source-probe/cad-sample.json` and `cad-sample-optimized.json`.
+
+The document limit is 32,768 nodes, not unlimited CAD entities; this drawing's larger model space exceeds it and requires selecting its paper layout or splitting the source. Native v4 group-payload references require Preview 21 or later to reopen; older project versions remain readable. Existing image/adjustment and external layered-format caps remain 128. This candidate adds no dependency and has not been published to the website or GitHub.
+
+---
+
+# Morupixel 0.2.0-preview.20 local candidate — 2026-09-22
+
+The Release source build has zero warnings/errors and **400/400** checks pass. The source combines the existing CAD/PDF/vector/interface work with the AI connection before adding pointer interaction. New tests cover four-DIP thin-line picking above a locked background, occlusion and hierarchy, zoom-independent snapping, six-DIP capture/ten-DIP release hysteresis, multi-selection, transformed parents, Shift/Alt behavior, cursor priorities, hover/history isolation, cache compositing order and cancellation. Source evidence: `artifacts/pointer/self-tests-final.txt`.
+
+Actual CanvasView renders of hover and magnetic movement were reviewed: `artifacts/pointer/pointer-feedback/hover.png` and `magnetic-move.png`. Offscreen move-preview pixel checks verify the original position is cleared, the moving layer follows its transform, and the fixed foreground still occludes it. Rendering tests use interior pixel samples so normal interpolation at enlarged boundaries is not mistaken for incorrect stacking.
+
+A separate benchmark used 93 sparse line layers plus a locked white background, 200 warmups and 1,000 queries per case at 0.5×, 1× and 4× zoom. Mixed-case picking averaged **0.323 / 0.202 / 0.187 ms**, with **0.676 / 0.279 / 0.233 ms p95** on this PC. Empty-area full-probe cases averaged about 0.2 ms. This measures target acquisition, not a whole-frame FPS guarantee. Evidence: `artifacts/pointer-pick-benchmark/results.json`.
+
+The fast move display is limited to one unmasked, unwarped root layer in a simple normal-blend stack with a bounded cache allocation; interdependent groups, adjustments, clipping, CMYK preview and larger cache requirements use the existing accurate compositor. No operating-system pointer warping or simulated desktop input is used. All verification was offscreen/background, preserving the user's running editors.
+
+---
+
+# Morupixel 0.2.0-preview.19 local candidate — 2026-09-22
+
+The Release source build has zero warnings and errors; **357/357** self-tests pass. Added coverage exercises real current-user named pipes, bounded UTF-8 messages, session lifecycle, disconnect/stop cancellation, CLI JSON output, both supported MCP protocol versions, typed command schemas, and actual offscreen editor transactions. Document revisions, inactive tabs, locked parents, native modal-window disabling, no-op text/history preservation, file overwrite protection, and cancelled requests are covered. Source report: `artifacts/automation/self-tests-final.txt`.
+
+`tools/qa/automation-smoke.cjs` starts only its own hidden editor host and stdio MCP process. The executable integration run exercised all 19 tools and the non-MCP CLI: created an editable Korean composition, placed a photo, transformed/reordered layers, added an adjustment, checked undo/redo and stale revisions, returned an MCP PNG image block, saved a native project, exported the composition and a text layer, rejected an existing output, switched documents, and generated a background-removal mask with the bundled local model. Evidence: `artifacts/automation/smoke-04/result.json` and `ai-edit-preview.png`. The resulting preview was visually reviewed.
+
+The portable packaging script also runs the self-test suite on its output before making the ZIP. This candidate adds no dependency and has not been published remotely. Existing applications, open documents, and portable releases were left intact. The MCP adapter is a local stdio server, not a built-in chatbot or an Adobe application bridge. [Connection scope and setup](AI_CONNECTION.md).
+
+---
+
 # Morupixel 0.2.0-preview.18 validation — 2026-09-21
 
 The Release source build has zero warnings and errors, and **329/329** self-tests pass. New coverage includes a WIC-authored 10,000 x 2,000 PNG import/export/native-project round trip with exact pixel samples, a 480 MB logical layer budget, integer-overflow rejection before allocation, 65,535 x 2 and 2 x 65,535 PNG decode and offscreen WPF rendering, bounded thumbnails, small fit/zoom, and PSD format-specific export preflight. Existing A2/300 DPI and 9,000px assumptions were updated to the expanded limits. Source report: `artifacts/test-results/preview18-source-self-test.txt`. The publish script independently runs the suite against the portable executable before creating its ZIP.

@@ -23,6 +23,7 @@ function gh {
     $global:MorupixelReleaseTestMock.Calls.Add(($a -join ' '))
     if ($a[0] -eq 'api') {
         $endpoint = @($a | Where-Object { $_ -like 'repos/*' })[0]
+        if ($endpoint -like '*/compare/main...*') { return $global:MorupixelReleaseTestMock.MainlineStatus }
         if ($endpoint -like '*/releases?per_page=*') {
             $items = @(); if ($null -ne $global:MorupixelReleaseTestMock.Release) { $items += $global:MorupixelReleaseTestMock.Release }
             return ConvertTo-Json -InputObject @($items) -Depth 10 -Compress
@@ -79,7 +80,7 @@ function gh {
 
 function New-Mock {
     return [pscustomobject]@{
-        Release = $null; TagCommit = ''; Checksum = $checksumText; VerifiedDownload = $false
+        Release = $null; TagCommit = ''; Checksum = $checksumText; VerifiedDownload = $false; MainlineStatus = 'identical'
         Calls = [Collections.Generic.List[string]]::new()
     }
 }
@@ -94,6 +95,12 @@ function Expect-Failure([scriptblock] $Action) {
     $script:flowPassed++
 }
 try {
+    foreach ($status in @('ahead', 'diverged')) {
+        $global:MorupixelReleaseTestMock = New-Mock
+        $global:MorupixelReleaseTestMock.MainlineStatus = $status
+        Expect-Failure { Invoke-PublishFixture }
+        if (@($global:MorupixelReleaseTestMock.Calls | Where-Object { $_ -like 'release *' }).Count -ne 0) { throw 'Unintegrated source reached a release mutation.' }
+    }
     $global:MorupixelReleaseTestMock = New-Mock
     Invoke-PublishFixture
     if ($global:MorupixelReleaseTestMock.Release.draft -or $global:MorupixelReleaseTestMock.Release.assets.Count -ne 2) { throw 'New release was not completed.' }

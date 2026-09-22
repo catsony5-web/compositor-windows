@@ -96,7 +96,7 @@ public sealed class Raster
 }
 
 public enum BlendMode { Normal, Multiply, Screen, Overlay, SoftLight, Darken, Lighten, Difference, ColorDodge, ColorBurn, Hue, Saturation, Color, Luminosity }
-public enum LayerKind { Raster, Text, Adjustment, Group, Shape }
+public enum LayerKind { Raster, Text, Adjustment, Group, Shape, Vector }
 
 public sealed class Layer
 {
@@ -121,6 +121,7 @@ public sealed class Layer
     public double ScaleY { get; set; } = 1;
     public TextSpec? Text { get; set; }
     public ShapeSpec? Shape { get; set; }
+    public VectorContent? Vector { get; set; }
     public AdjustmentSpec? Adjustment { get; set; }
     public WarpQuad? Warp { get; set; }
     public Layer Snapshot()
@@ -147,7 +148,10 @@ public sealed class Layer
 
 public sealed class Document
 {
+    // Keep the bitmap/adjustment ceiling used by legacy image importers. CAD
+    // entities and their groups have a separate, bounded scene-node allowance.
     public const int MaxLayers = 128;
+    public const int MaxNodes = 32768;
     public const long MaxLayerBytes = 8L * 1024 * 1024 * 1024;
     readonly long layerByteLimit;
     public int Width { get; set; } = 1280;
@@ -168,11 +172,15 @@ public sealed class Document
     {
         ArgumentNullException.ThrowIfNull(layer);
         ValidateLayer(layer);
-        if (Layers.Count >= MaxLayers) throw new InvalidOperationException($"최대 {MaxLayers}개 레이어를 지원합니다.");
+        if (Layers.Count >= MaxNodes) throw new InvalidOperationException($"최대 {MaxNodes:N0}개 객체와 그룹을 지원합니다.");
+        if (UsesBitmapSlot(layer) && Layers.Count(UsesBitmapSlot) >= MaxLayers)
+            throw new InvalidOperationException($"이미지와 조정 레이어는 최대 {MaxLayers}개를 지원합니다.");
         if (Layers.Any(l => l.Id == layer.Id)) throw new InvalidOperationException("레이어 ID가 중복되었습니다.");
-        var bytes = Layers.Sum(l => (long)l.Pixels.Data.Length + (l.Mask?.Length ?? 0));
-        var incoming = (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
-        if (bytes + incoming > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
+        var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
+        var bytes = Layers.Sum(l => StorageBytes(l, groupPixels)) + StorageBytes(layer, groupPixels);
+        if (bytes > layerByteLimit) throw new InvalidOperationException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
+        if (Layers.Sum(l => l.Vector?.ByteLength ?? 0) + (layer.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes)
+            throw new InvalidOperationException("문서의 벡터 원본이 512MiB를 초과합니다.");
         Layers.Add(layer); ActiveId = layer.Id;
     }
     public void Validate() => ValidateCore(true);
@@ -185,15 +193,19 @@ public sealed class Document
         if (!double.IsFinite(Dpi) || Dpi < 1 || Dpi > 9600) throw new InvalidDataException("해상도는 1~9600 DPI로 입력하세요.");
         if (string.IsNullOrWhiteSpace(Name)) throw new InvalidDataException("작업 이름이 비어 있습니다.");
         if (Encoding.UTF8.GetByteCount(Name) > 16_384) throw new InvalidDataException("작업 이름이 너무 깁니다.");
-        if (Layers == null || Layers.Count > MaxLayers) throw new InvalidDataException("레이어 수가 올바르지 않습니다.");
+        if (Layers == null || Layers.Count > MaxNodes) throw new InvalidDataException("객체와 그룹 수가 지원 한도를 초과합니다.");
+        if (Layers.Count(l => l != null && UsesBitmapSlot(l)) > MaxLayers)
+            throw new InvalidDataException($"이미지와 조정 레이어는 최대 {MaxLayers}개를 지원합니다.");
         var ids = new HashSet<Guid>();
+        if (Layers.Sum(l => l?.Vector?.ByteLength ?? 0) > VectorContent.MaxDocumentBytes) throw new InvalidDataException("문서의 벡터 원본이 512MiB를 초과합니다.");
         long bytes = 0;
+        var groupPixels = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
         foreach (var layer in Layers)
         {
             if (layer == null) throw new InvalidDataException("레이어 정보가 없습니다.");
             ValidateLayer(layer, validateRasterDimensions);
             if (!ids.Add(layer.Id)) throw new InvalidDataException("레이어 ID가 중복되었습니다.");
-            bytes += (long)layer.Pixels.Data.Length + (layer.Mask?.Length ?? 0);
+            bytes += StorageBytes(layer, groupPixels);
             if (bytes > layerByteLimit) throw new InvalidDataException($"레이어 메모리 한도({layerByteLimit / (1024.0 * 1024):N0} MiB)를 초과합니다.");
         }
         if (ActiveId != Guid.Empty && !ids.Contains(ActiveId)) throw new InvalidDataException("활성 레이어가 존재하지 않습니다.");
@@ -210,7 +222,12 @@ public sealed class Document
             }
         }
     }
-    static void ValidateLayer(Layer layer, bool validateRasterDimensions = true)
+    // Empty CAD folders share a coordinate-space surface. Count that immutable
+    // buffer once while retaining the conservative per-layer bitmap/mask budget.
+    internal static long StorageBytes(Layer layer, HashSet<byte[]> groupPixels) =>
+        (layer.Kind != LayerKind.Group || groupPixels.Add(layer.Pixels.Data) ? layer.Pixels.Data.LongLength : 0) + (layer.Mask?.LongLength ?? 0);
+    static bool UsesBitmapSlot(Layer layer) => layer.Kind is LayerKind.Raster or LayerKind.Adjustment;
+    internal static void ValidateLayer(Layer layer, bool validateRasterDimensions = true)
     {
         if (layer.Id == Guid.Empty) throw new InvalidDataException("레이어 ID가 비어 있습니다.");
         if (string.IsNullOrWhiteSpace(layer.Name)) throw new InvalidDataException("레이어 이름이 비어 있습니다.");
@@ -226,6 +243,12 @@ public sealed class Document
             !double.IsFinite(layer.Opacity) || layer.Opacity < 0 || layer.Opacity > 1 || !Enum.IsDefined(layer.Blend))
             throw new InvalidDataException("레이어 속성이 올바르지 않습니다.");
         if (!Enum.IsDefined(layer.Kind)) throw new InvalidDataException("레이어 종류가 올바르지 않습니다.");
+        if (layer.Kind == LayerKind.Vector)
+        {
+            if (validateRasterDimensions && (layer.Vector == null || layer.Vector.Width != layer.Pixels.Width || layer.Vector.Height != layer.Pixels.Height))
+                throw new InvalidDataException("벡터 원본과 미리보기의 크기가 다릅니다.");
+        }
+        else if (layer.Vector != null) throw new InvalidDataException("벡터 레이어 종류가 일치하지 않습니다.");
         if (layer.Kind == LayerKind.Shape)
         {
             var shape = layer.Shape ?? throw new InvalidDataException("도형 정보가 없습니다.");
@@ -277,13 +300,14 @@ public sealed class History
     }
     public long RetainedBytes(Document current)
     {
-        var seen = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
-        foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); }
+        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); if (l.Vector != null) seen.Add(l.Vector); }
         long bytes = 0;
         foreach (var entry in past.Concat(future)) foreach (var l in entry.State.Layers)
         {
             if (seen.Add(l.Pixels.Data)) bytes += l.Pixels.Data.Length;
             if (l.Mask != null && seen.Add(l.Mask)) bytes += l.Mask.Length;
+            if (l.Vector != null && seen.Add(l.Vector)) bytes += l.Vector.ByteLength;
         }
         return bytes;
     }
@@ -296,7 +320,7 @@ public sealed class History
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend ||
                 x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY ||
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
-                x.Shape != y.Shape || x.Text != y.Text || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
+                x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;
@@ -320,12 +344,17 @@ public sealed record Selection(Rect Bounds, bool Ellipse = false)
     public byte[]? Coverage { get; init; }
     public int CanvasWidth { get; init; }
     public int CanvasHeight { get; init; }
+    // A precision selection can store a cropped, denser mask in document space.
+    // Ordinary masks keep the original one-sample-per-document-pixel mapping.
+    public Rect? CoverageBounds { get; init; }
+    public Geometry? Contour { get; init; }
     public double Weight(double x, double y)
     {
         if (!Bounds.Contains(x, y)) return 0;
         if (Coverage != null)
         {
-            int ix = (int)Math.Floor(x), iy = (int)Math.Floor(y);
+            var area = CoverageBounds ?? new Rect(0, 0, CanvasWidth, CanvasHeight);
+            int ix = (int)Math.Floor((x - area.X) * CanvasWidth / area.Width), iy = (int)Math.Floor((y - area.Y) * CanvasHeight / area.Height);
             if (ix < 0 || iy < 0 || ix >= CanvasWidth || iy >= CanvasHeight) return 0;
             return Coverage[iy * CanvasWidth + ix] / 255.0;
         }

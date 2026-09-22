@@ -11,9 +11,14 @@ public static class SelfTests
     {
         var results = new List<string>(); int failed = 0;
         string directory = Path.GetDirectoryName(Path.GetFullPath(output))!; Directory.CreateDirectory(directory);
+        File.WriteAllText(output, "");
         void Test(string name, Action test)
         {
+            // Retain the last test even if a native renderer aborts the process.
+            File.AppendAllText(output, "RUN " + name + Environment.NewLine);
+            Console.WriteLine("RUN " + name);
             try { test(); results.Add("PASS " + name); } catch (Exception e) { failed++; results.Add("FAIL " + name + ": " + e); }
+            File.AppendAllText(output, results[^1] + Environment.NewLine);
         }
         void Assert(bool truth, string detail = "Assertion failed") { if (!truth) throw new Exception(detail); }
         void Near(double a, double b, double tolerance = .01) => Assert(Math.Abs(a - b) < tolerance, $"Expected {b}, got {a}");
@@ -50,13 +55,23 @@ public static class SelfTests
         Test("demo render and project export", () => { var d = Demo.Create(); ProjectStore.Save(d, Path.Combine(directory, "sample.moruproj")); ProjectStore.Export(d, Path.Combine(directory, "sample.png")); var read = ProjectStore.Load(Path.Combine(directory, "sample.moruproj")); Assert(read.Layers.Count == d.Layers.Count && read.Layers.Any(l => l.Kind == LayerKind.Text) && Imaging.Render(read).Data.SequenceEqual(Imaging.Render(d).Data)); });
         PersistenceTests.Run(Test);
         LayerPickingTests.Run(Test);
+        MagneticPickingTests.Run(Test);
+        MagneticSnapTests.Run(Test);
+        MainWindow.RunMovePreviewTests(Test);
+        MainWindow.RunGroupedMovePreviewTests(Test);
+        MainWindow.RunPointerFeedbackTests(Test, directory);
         EngineFeatureTests.Run(Test);
         AdvancedToolTests.Run(Test);
         FillToolsTests.Run(Test);
         RenderingTests.Run(Test);
+        GroupedRenderingTests.Run(Test);
         ImportExportTests.Run(Test);
         LargeImageTests.Run(Test, directory);
         CapacityFormatTests.Run(Test);
+        ObjectCapacityTests.Run(Test, directory);
+        AutomationTransportTests.Run(Test, directory);
+        AutomationProtocolTests.Run(Test);
+        MainWindow.RunAutomationCommandTests(Test, directory);
         MainWindow.RunCommandTests(Test, directory);
         MainWindow.RunBucketCommandTests(Test);
         MainWindow.RunRenderingLifecycleTests(Test);
@@ -64,6 +79,7 @@ public static class SelfTests
         MainWindow.RunCloseConfirmationTests(Test, directory);
         MainWindow.RunInspectorTests(Test);
         MainWindow.RunPanelNavigationTests(Test);
+        MainWindow.RunObjectLayerPanelTests(Test);
         MainWindow.RunTransformCursorTests(Test);
         ThemeFontTests.Run(Test);
         MainWindow.RunStudioTests(Test);
@@ -82,7 +98,15 @@ public static class SelfTests
         SelectedLayerExportTests.Run(Test, directory);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
+        VectorContentTests.Run(Test, directory);
+        PrecisionWandTests.Run(Test);
+        MainWindow.RunWandCommandTests(Test);
+        UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
+        LayeredCompatibilityTests.Run(Test, directory);
+        CadObjectImportTests.Run(Test, directory);
+        CompatibilityDialog.RunStructureTests(Test, directory);
+        NativePdfLifetimeTests.Run(Test, directory);
         results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }

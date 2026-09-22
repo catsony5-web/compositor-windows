@@ -55,8 +55,34 @@ public static class Imaging
     }
     public static Raster Render(Document doc, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var root = doc.Layers.Where(l => l.ParentId == null).ToArray();
         var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
+        var directGroups = new Dictionary<(Guid Id, int Width, int Height), bool>();
+        bool CanCompositeGroupDirectly(Layer group, int width, int height, int depth)
+        {
+            if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
+            cancellationToken.ThrowIfCancellationRequested();
+            var key = (group.Id, width, height);
+            if (directGroups.TryGetValue(key, out var cached)) return cached;
+            bool direct = group.Opacity == 1 && group.Blend == BlendMode.Normal && !group.Clipped &&
+                group.Mask == null && group.Warp == null && group.Matrix.IsIdentity &&
+                group.Pixels.Width == width && group.Pixels.Height == height;
+            if (direct)
+            {
+                foreach (var child in children.GetValueOrDefault(group.Id) ?? [])
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    // Normal source-over is associative. Any operation that
+                    // reads the group's isolated backdrop must keep that surface.
+                    if (child.Clipped || child.Blend != BlendMode.Normal || child.Kind == LayerKind.Adjustment ||
+                        child.Kind == LayerKind.Group && !CanCompositeGroupDirectly(child, width, height, depth + 1))
+                    { direct = false; break; }
+                }
+            }
+            directGroups[key] = direct;
+            return direct;
+        }
         Raster LayerImage(Layer layer, int width, int height, int depth)
         {
             if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
@@ -67,6 +93,12 @@ public static class Imaging
         Raster Stack(Layer[] stack, int width, int height, int depth)
         {
             var output = new Raster(width, height);
+            CompositeStack(stack, output, depth);
+            return output;
+        }
+        void CompositeStack(Layer[] stack, Raster output, int depth)
+        {
+            int width = output.Width, height = output.Height;
             for (int index = 0; index < stack.Length; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested(); var layer = stack[index];
@@ -75,6 +107,13 @@ public static class Imaging
                 if (!layer.Visible || layer.Opacity <= 0) { index = end - 1; continue; }
                 if (layer.Kind == LayerKind.Adjustment) ApplyAdjustment(output, layer, cancellationToken);
                 else if (end == index + 1 && layer.Kind != LayerKind.Group) Composite(output, layer, cancellationToken);
+                else if (end == index + 1 && CanCompositeGroupDirectly(layer, width, height, depth))
+                {
+                    // Imported CAD groups are identity containers for tight
+                    // object rasters. Reuse the destination rather than create
+                    // two full-canvas intermediates for every source-layer run.
+                    CompositeStack(children.GetValueOrDefault(layer.Id) ?? [], output, depth + 1);
+                }
                 else
                 {
                     // An un-clipped layer and its following clipped layers form an alpha-preserving stack.
@@ -89,11 +128,10 @@ public static class Imaging
                 }
                 index = end - 1;
             }
-            return output;
         }
         return Stack(root, doc.Width, doc.Height, 0);
     }
-    static void Merge(Raster target, Raster source, double opacity, BlendMode blend, bool clipped, CancellationToken token)
+    internal static void Merge(Raster target, Raster source, double opacity, BlendMode blend, bool clipped, CancellationToken token)
     {
         Parallel.For(0, target.Height, new ParallelOptions { CancellationToken = token }, y =>
         {
@@ -109,11 +147,11 @@ public static class Imaging
             }
         });
     }
-    static void ApplyAdjustment(Raster target, Layer layer, CancellationToken token)
+    internal static void ApplyAdjustment(Raster target, Layer layer, CancellationToken token, Matrix? transform = null)
     {
         var adjusted = DocumentFeatures.ApplyAdjustment(target, layer.Adjustment!, token);
         var coverageLayer = layer.Snapshot(); coverageLayer.Pixels = Raster.Solid(layer.Pixels.Width, layer.Pixels.Height, Colors.White); coverageLayer.Blend = BlendMode.Normal; coverageLayer.Opacity = 1;
-        var coverage = new Raster(target.Width, target.Height); Composite(coverage, coverageLayer, token);
+        var coverage = new Raster(target.Width, target.Height); Composite(coverage, coverageLayer, token, transform);
         Parallel.For(0, target.Height, new ParallelOptions { CancellationToken = token }, y =>
         {
             for (int x = 0; x < target.Width; x++)
@@ -124,7 +162,7 @@ public static class Imaging
             }
         });
     }
-    public static void Composite(Raster output, Layer layer, CancellationToken cancellationToken = default)
+    public static void Composite(Raster output, Layer layer, CancellationToken cancellationToken = default, Matrix? transform = null)
     {
         if (layer.Kind == LayerKind.Shape)
         {
@@ -132,16 +170,18 @@ public static class Imaging
             shape.Validate();
             if (shape.Width != layer.Pixels.Width || shape.Height != layer.Pixels.Height)
                 throw new System.IO.InvalidDataException("도형의 크기와 레이어 이미지 크기가 다릅니다.");
-            VectorShapes.Composite(output, layer, cancellationToken); return;
+            VectorShapes.Composite(output, layer, cancellationToken, transform); return;
         }
-        var src = layer.Pixels; var mask = layer.Mask; var map = layer.Matrix;
-        var corners = new[] { new Point(0, 0), new Point(src.Width, 0), new Point(src.Width, src.Height), new Point(0, src.Height) }.Select(layer.Document).ToArray();
+        var src = layer.Pixels; var mask = layer.Mask; var map = transform ?? layer.Matrix;
+        var forward = map;
+        var corners = new[] { new Point(0, 0), new Point(src.Width, 0), new Point(src.Width, src.Height), new Point(0, src.Height) }.Select(p => forward.Transform(layer.Warp?.Forward(p, src.Width, src.Height) ?? p)).ToArray();
         int sampleFactorX = 1, sampleFactorY = 1;
         // Pre-filter minification in premultiplied space. Bilinear alone aliases fine details.
         if (layer.Warp == null)
         {
-            while (sampleFactorX < 64 && sampleFactorX * 2 * layer.Scale * layer.ScaleX <= 1) sampleFactorX *= 2;
-            while (sampleFactorY < 64 && sampleFactorY * 2 * layer.Scale * layer.ScaleY <= 1) sampleFactorY *= 2;
+            double scaleX = Math.Sqrt(map.M11 * map.M11 + map.M12 * map.M12), scaleY = Math.Sqrt(map.M21 * map.M21 + map.M22 * map.M22);
+            while (sampleFactorX < 64 && sampleFactorX * 2 * scaleX <= 1) sampleFactorX *= 2;
+            while (sampleFactorY < 64 && sampleFactorY * 2 * scaleY <= 1) sampleFactorY *= 2;
             if (sampleFactorX > 1 || sampleFactorY > 1) { src = DownsampleForRender(src, mask, sampleFactorX, sampleFactorY, cancellationToken); mask = null; }
         }
         int left = (int)Math.Clamp(Math.Floor(corners.Min(p => p.X)) - 1, 0, output.Width), top = (int)Math.Clamp(Math.Floor(corners.Min(p => p.Y)) - 1, 0, output.Height);
