@@ -15,6 +15,7 @@ Preview 25에서는 CAD와 벡터를 유지한 PDF/AI를 **도면 레이어** �
 
 | 형식 | 읽기 | 쓰기와 주요 제한 |
 | --- | --- | --- |
+| `.moruproj` 재료 맵핑 | Preview 26부터 포맷 6의 내장 원본 재료·영역·패턴 설정 읽기 | 재료 또는 영역이 있는 문서는 포맷 6으로 저장. 다시 열 때 Preview 26 이상 필요. [재료 맵핑](MATERIAL_MAPPING.md) |
 | PDF | 선택한 페이지를 36~600 DPI로 변환. 저장된 OCG 레이어의 이름·표시·잠금 상태를 유지해 투명 픽셀 레이어로 분리 | PDF 출력은 한 페이지 RGB 합성 이미지. 원본 벡터·문자는 픽셀로 편집 |
 | Illustrator `.ai` | Illustrator에서 **Create PDF Compatible File / PDF 호환 파일 만들기**를 켜서 저장한 AI의 PDF 부분 | PDF로 출력 가능. AI 전용 저장과 원본 패스·앵커 편집은 미지원. 구형 PostScript AI는 PDF로 변환 후 가져오기 |
 | Photoshop `.psd`, `.psb` | RGB 또는 회색조 **8비트**. 기본은 저장된 합성 이미지. 선택적으로 기본 픽셀 레이어·위치·표시·불투명도·래스터 마스크·지원 혼합 모드 | RGB8 PSD로 합성 이미지 또는 기본 픽셀 레이어 출력. PSB 출력, CMYK/Lab/16·32비트 입력은 미지원 |

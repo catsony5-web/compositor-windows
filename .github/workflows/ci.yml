@@ -77,6 +77,16 @@ jobs:
           PACKAGE_VERSION: ${{ steps.version.outputs.version }}
         run: .\scripts\Publish.ps1 -Configuration Release -Version $env:PACKAGE_VERSION -SkipTests
 
+      # Exercise the public MCP transport against the exact portable executable.
+      # The helper starts and closes only its own hidden editor session.
+      - name: Verify portable MCP workflow
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node tools/qa/automation-smoke.cjs "release/staging/Morupixel-$env:PACKAGE_VERSION-win-x64/Morupixel.exe" artifacts/qa/portable-mcp
+          if ($LASTEXITCODE -ne 0) { throw 'Portable MCP workflow failed.' }
+
       - name: Upload tested package artifact
         uses: actions/upload-artifact@v4
         with:

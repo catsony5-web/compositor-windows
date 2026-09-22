@@ -8,11 +8,11 @@ namespace Compositor.Windows;
 public static partial class AutomationCatalog
 {
     sealed record Field(string Type, string Description, double? Minimum = null, double? Maximum = null,
-        int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false)
+        int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null)
     {
         public JsonObject Schema()
         {
-            if (Type == "array") { var items = BatchStepsSchema(); items["description"] = Description; return items; }
+            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
             var schema = new JsonObject { ["type"] = Type, ["description"] = Description };
             if (Minimum is { } min) schema["minimum"] = min;
             if (Maximum is { } max) schema["maximum"] = max;
@@ -117,6 +117,23 @@ public static partial class AutomationCatalog
                 ("label", new("string", "Short undo history label describing the user's intent.", MaxLength: 120)),
                 ("dryRun", Bool("Validate every step and document limit without committing; defaults to false.")),
                 ("steps", new("array", "Ordered atomic edits; each command has its own strict argument schema."))), WriteRequired("operationId", "steps"));
+        Add("register_material", "Register an existing local texture image in the document's embedded material library. Does not generate images or use an AI provider account. Returns materialId; use query_materials after uncertain delivery instead of blindly retrying.", false,
+            Mutation(("name", Name), ("path", Path), ("source", new("string", "Optional provenance label supplied by the caller, not a verified credential.", MaxLength: 4096)), ("tileable", Bool("Caller-declared seamless texture; no seam correction is performed."))), WriteRequired("name", "path"));
+        foreach (string query in new[] { "query_materials", "query_regions" })
+            Add(query, "List document material assets or captured region templates in bounded pages. Pass expectedRevision for further pages. Region templates are snapshots, not semantic room detection.", true,
+                Fields(("documentId", Id), ("expectedRevision", Id), ("nameContains", new("string", "Case-insensitive literal name substring.", MaxLength: 256)),
+                    ("offset", Integer(0, MaterialEditing.MaxRegions)), ("limit", Integer(1, 50, "Defaults to 20."))), "documentId");
+        Add("define_region", "Capture a closed 2D boundary in document pixels. source=polygon needs points and optional inner contours (even-odd fill); closed_layer needs layerId; selection uses the user's current 50% selection contour. Captures a reusable template, not a live link or inferred room.", false,
+            Mutation(("name", Name), ("source", Choice("polygon", "closed_layer", "selection")), ("layerId", Id),
+                ("points", new("array", "Closed outer contour, at least 3 points. Closure is automatic.", ArrayShape: "points")),
+                ("holes", new("array", "Optional inner contours; at most 2048 points across all contours.", ArrayShape: "holes"))), WriteRequired("name", "source"));
+        var pattern = Fields(("materialId", Id), ("tileWidth", Number(1, 100000, "One texture repeat width in layer-local pixels, not millimeters.")),
+            ("tileHeight", Number(1, 100000, "One texture repeat height in layer-local pixels.")), ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
+            ("offsetX", Coordinate), ("offsetY", Coordinate), ("name", Name));
+        Add("apply_material", "Create an editable material layer from a registered image and region. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId; can be included in apply_batch.", false,
+            Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id), ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())) }).ToArray()), WriteRequired("materialId", "regionId", "tileWidth", "tileHeight"));
+        Add("update_material", "Change the source material or repeat size, direction and offset of an existing material layer, preserving its boundary and layer transform. Can be included in apply_batch.", false,
+            Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         return commands;
     }
 
@@ -145,7 +162,11 @@ public static partial class AutomationCatalog
             };
             if (!validType)
                 throw new ArgumentException($"Invalid type for {key}: expected {field.Type}.");
-            if (field.Type == "array") ValidateBatchSteps(value!.AsArray(), arguments);
+            if (field.Type == "array")
+            {
+                if (field.ArrayShape == null) ValidateBatchSteps(value!.AsArray(), arguments);
+                else ValidateMaterialArray(value!.AsArray(), field.ArrayShape);
+            }
             else if (field.Type == "boolean")
             {
                 // Type validation above already guarantees a JSON boolean.
@@ -172,12 +193,21 @@ public static partial class AutomationCatalog
         }
         if (command is "new_document" or "add_shape" && (double)NumberValue(arguments, "width") * NumberValue(arguments, "height") > 16_777_216)
             throw new ArgumentException("Automation images must not exceed 16,777,216 pixels.");
-        if (command == "query_layers")
+        if (command is "query_layers" or "query_materials" or "query_regions")
         {
             if (arguments.ContainsKey("parentId") && arguments["rootsOnly"]?.GetValue<bool>() == true)
                 throw new ArgumentException("Use parentId or rootsOnly, not both.");
             if (NumberValue(arguments, "offset") > 0 && !arguments.ContainsKey("expectedRevision"))
                 throw new ArgumentException("Paged queries require the previous page's revision as expectedRevision.");
+        }
+        if (command == "define_region")
+        {
+            string source = arguments["source"]!.GetValue<string>();
+            if ((source == "polygon") != arguments.ContainsKey("points") || (source == "closed_layer") != arguments.ContainsKey("layerId") || source != "polygon" && arguments.ContainsKey("holes"))
+                throw new ArgumentException("polygon requires points; closed_layer requires layerId; selection accepts neither. holes belong to polygon only.");
+            int count = (arguments["points"] as JsonArray)?.Count ?? 0;
+            count += (arguments["holes"] as JsonArray)?.Sum(h => h!.AsArray().Count) ?? 0;
+            if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
         }
         if (command == "add_adjustment")
         {

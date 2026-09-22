@@ -56,7 +56,7 @@ public static class Imaging
     public static Raster Render(Document doc, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (doc.Layers.Any(DrawingLayers.IsContainer)) return DesignRenderer.RenderOutput(doc, cancellationToken);
+        if (doc.Layers.Any(l => DrawingLayers.IsContainer(l) || l.Kind == LayerKind.Material)) return DesignRenderer.RenderOutput(doc, cancellationToken);
         var root = doc.Layers.Where(l => l.ParentId == null).ToArray();
         var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
         var directGroups = new Dictionary<(Guid Id, int Width, int Height), bool>();

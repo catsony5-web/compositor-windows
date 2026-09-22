@@ -29,14 +29,16 @@ public sealed partial class MainWindow
         }
         await SelectObjectsAsync(bounds, crossing, selectionMode);
     }
-    internal async Task<bool> SelectObjectsAsync(Rect bounds, bool crossing, SelectionCombine mode)
+    internal async Task<bool> SelectObjectsAsync(Rect bounds, bool crossing, SelectionCombine mode,
+        Func<Document, CancellationToken, Task<Guid[]>>? find = null)
     {
         var document = doc; var revision = doc.Revision; int tab = activeTab; var previous = selectedLayers.ToHashSet(); var active = doc.ActiveId;
         jobCts?.Cancel(); var cts = jobCts = new CancellationTokenSource(); var snapshot = doc.Snapshot();
         status.Text = "객체 선택 중… Esc: 취소";
         try
         {
-            var result = await CompatibilityImport.OnSta(() => ObjectSelection.Find(snapshot, bounds, crossing, cts.Token), cts.Token);
+            var result = await (find?.Invoke(snapshot, cts.Token)
+                ?? CompatibilityImport.OnSta(() => ObjectSelection.Find(snapshot, bounds, crossing, cts.Token), cts.Token));
             if (cts.IsCancellationRequested || !ReferenceEquals(document, doc) || doc.Revision != revision || activeTab != tab || doc.ActiveId != active || !previous.SetEquals(selectedLayers)) return false;
             ApplyObjectSelection(result, mode); return true;
         }

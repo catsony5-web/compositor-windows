@@ -1,8 +1,8 @@
 # AI 연결
 
-현재 소스의 **AI 명령 규약 2**에 대한 안내입니다. 공개 ZIP과 같은 버전의 실행 파일을 사용하고, 연결 후 `get_capabilities`로 실행 중인 편집기가 실제로 지원하는 기능을 확인하세요.
+현재 소스의 **AI 명령 규약 3**에 대한 안내입니다. 공개 ZIP과 같은 버전의 실행 파일을 사용하고, 연결 후 `get_capabilities`로 실행 중인 편집기가 실제로 지원하는 기능을 확인하세요.
 
-Morupixel을 Codex 같은 외부 AI 도구에 연결하면 문서를 만들고, 이미지·텍스트·도형을 배치하고, 보정한 결과를 저장할 수 있습니다. Morupixel 안에 채팅창이나 언어 모델을 추가하는 기능은 아닙니다. 연결한 AI가 사용자의 요청을 해석하고 Morupixel의 편집 도구를 호출합니다. **Morupixel에는 API 키를 입력하지 않습니다.** AI 서비스의 로그인·모델 설정은 연결하는 프로그램에서 관리합니다.
+Morupixel을 Codex나 Claude Code 같은 외부 AI 도구에 연결하면 문서를 만들고, 이미지·텍스트·도형을 배치하고, 재료를 영역에 적용하고, 결과를 저장할 수 있습니다. 연결한 AI가 사용자의 요청을 해석하고 Morupixel의 편집 도구를 호출합니다. **Morupixel에는 API 키를 입력하지 않습니다.** AI 서비스의 로그인·모델 설정은 연결하는 프로그램에서 관리합니다.
 
 ## 연결해서 사용하기
 
@@ -29,7 +29,14 @@ MCP 클라이언트의 일반적인 JSON 설정입니다. `command`를 실제 `M
 
 ### Codex 설정
 
-Codex의 사용자 `~/.codex/config.toml` 또는 신뢰한 프로젝트의 `.codex/config.toml`에 다음 항목을 등록할 수 있습니다. 기존 설정에 병합하고, 이미 같은 서버 이름이 있으면 그 항목을 수정하세요. Windows 경로의 역슬래시는 큰따옴표 TOML 문자열 안에서 `\\`로 적습니다. [OpenAI 공식 MCP 안내](https://developers.openai.com/codex/mcp)
+같은 Windows PC의 PowerShell에서 실행 파일 경로를 바꿔 등록합니다. **AI 연결 → 연결 설정… → Codex**에서도 실제 경로를 포함한 명령을 복사할 수 있습니다. [OpenAI 공식 MCP 안내](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)
+
+```powershell
+codex mcp add morupixel -- 'C:\Apps\Morupixel\Morupixel.exe' --mcp
+codex mcp list
+```
+
+Codex의 사용자 `~/.codex/config.toml` 또는 신뢰한 프로젝트의 `.codex/config.toml`에 다음 항목을 등록할 수도 있습니다. 기존 설정에 병합하고, 이미 같은 서버 이름이 있으면 그 항목을 수정하세요. Windows 경로의 역슬래시는 큰따옴표 TOML 문자열 안에서 `\\`로 적습니다.
 
 ```toml
 [mcp_servers.morupixel]
@@ -39,9 +46,22 @@ args = ["--mcp"]
 
 등록 후 사용하는 Codex 클라이언트에서 서버 연결을 새로고침하거나 재시작하세요. 이 설정은 Morupixel이 실행되는 Windows 호스트에 적용합니다. 웹이나 다른 PC의 AI가 이 로컬 실행 파일에 직접 접근하는 설정은 아닙니다.
 
+### Claude Code 설정
+
+같은 Windows PC의 PowerShell에서 다음처럼 사용자 범위로 등록합니다. **AI 연결 → 연결 설정… → Claude Code**에서도 복사할 수 있습니다. [Anthropic 공식 MCP 안내](https://code.claude.com/docs/en/mcp)
+
+```powershell
+claude mcp add --transport stdio --scope user morupixel -- 'C:\Apps\Morupixel\Morupixel.exe' --mcp
+claude mcp get morupixel
+```
+
+Claude Code에서 `/mcp`로 연결 상태를 확인합니다. 기존에 같은 이름의 서버가 있다면 그 설정을 갱신하세요. 각 사용자는 자기 PC에 공개 Morupixel을 설치하고 자기 AI 프로그램에 연결합니다. WSL·원격 호스트는 이 Windows 로컬 연결 안내의 검증 범위에 포함하지 않습니다.
+
+MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권한을 전달하지 않습니다. 재료 이미지는 연결한 AI가 지원하는 이미지 생성 도구로 준비하거나 기존 파일을 사용합니다. 생성 모델·로그인·과금은 해당 제공자의 지원 범위를 따릅니다.
+
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **23개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **29개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -54,6 +74,11 @@ args = ["--mcp"]
 | 프로젝트 저장·이미지 출력·미리보기 | `morupixel_save_project`, `morupixel_export_image`, `morupixel_preview` |
 | 실행 취소·다시 실행 | `morupixel_undo`, `morupixel_redo` |
 | 묶음 편집·사전 검증 | `morupixel_apply_batch` |
+| 재료 등록·조회 | `morupixel_register_material`, `morupixel_query_materials` |
+| 적용 영역 등록·조회 | `morupixel_define_region`, `morupixel_query_regions` |
+| 재료 적용·패턴 변경 | `morupixel_apply_material`, `morupixel_update_material` |
+
+재료 작업은 **이미지 준비 → 원본 등록 → 영역 지정 → 적용 → 미리보기** 순서입니다. 닫힌 도형·CAD 경로, 현재 선택 영역, 직접 지정한 다각형을 사용할 수 있습니다. 재료와 경계를 저장하고 반복 크기·회전·위치·원본 교체를 지원합니다. [재료 맵핑 안내와 요청 예시](MATERIAL_MAPPING.md)
 
 문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형과 타원을 지원합니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상을 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
 
@@ -79,9 +104,9 @@ args = ["--mcp"]
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`를 사용할 수 있습니다. 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 새 객체를 별칭으로 참조하는 기능은 아직 없습니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`을 사용할 수 있습니다. 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 새 객체를 별칭으로 참조하는 기능은 아직 없습니다.
 
-파일 가져오기·저장·출력, 배경 제거, AI 이미지 생성은 묶음에 포함하지 않습니다. 현재 MCP에는 이미지 생성, 재료 맵핑, 대지 편집, 벡터 경로 수정, 그룹 생성 명령이 없습니다. 앞으로 같은 규약에 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
+파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거는 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 대지 편집, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 
 ## MCP 없이 PowerShell에서 사용하기
 

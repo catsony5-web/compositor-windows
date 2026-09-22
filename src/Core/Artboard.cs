@@ -61,8 +61,9 @@ public static class ArtboardEditing
         var candidate = doc.Snapshot(); candidate.Width = width; candidate.Height = height;
         candidate.Artboards = boards.Select(b => b with { X = b.X + offset.X, Y = b.Y + offset.Y }).ToList();
         foreach (var layer in candidate.Layers.Where(l => l.ParentId == null)) { layer.X += offset.X; layer.Y += offset.Y; }
+        MaterialEditing.TranslateRegions(candidate, offset.X, offset.Y);
         candidate.Validate();
-        doc.Width = width; doc.Height = height; doc.Artboards = candidate.Artboards; doc.Layers = candidate.Layers;
+        doc.Width = width; doc.Height = height; doc.Artboards = candidate.Artboards; doc.Layers = candidate.Layers; doc.MaterialRegions = candidate.MaterialRegions;
         return (id, offset);
     }
     public static void Remove(Document doc, Guid id)
@@ -72,6 +73,9 @@ public static class ArtboardEditing
     }
     public static void Crop(Document doc, Rect bounds)
     {
+        // Captured regions are reusable document-space templates. Keep their geometry
+        // aligned with the roots; application rejects any template outside the new canvas.
+        MaterialEditing.TranslateRegions(doc, -bounds.X, -bounds.Y);
         doc.Artboards = doc.Artboards.Select(board => (Board: board, Rect: Rect.Intersect(board.Bounds, bounds)))
             .Where(item => !item.Rect.IsEmpty && item.Rect.Width >= 1 && item.Rect.Height >= 1)
             .Select(item => item.Board with { X = item.Rect.X - bounds.X, Y = item.Rect.Y - bounds.Y, Width = item.Rect.Width, Height = item.Rect.Height }).ToList();

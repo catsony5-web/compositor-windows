@@ -163,10 +163,11 @@ public sealed partial class MainWindow : Window
     // UI-only changes and no-op commands must not discard the redo stack or dirty the file.
     static bool SameDocument(Document a, Document b)
     {
-        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.Layers.Count != b.Layers.Count || !a.Artboards.SequenceEqual(b.Artboards)) return false;
+        if (a.Width != b.Width || a.Height != b.Height || a.Dpi != b.Dpi || a.Name != b.Name || a.Layers.Count != b.Layers.Count || !a.Artboards.SequenceEqual(b.Artboards) || !a.Materials.SequenceEqual(b.Materials) || !a.MaterialRegions.SequenceEqual(b.MaterialRegions)) return false;
         for (int i = 0; i < a.Layers.Count; i++)
         {
             var x = a.Layers[i]; var y = b.Layers[i];
+            if (x.Material != y.Material) return false;
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend || x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY || x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.Warp != y.Warp || x.Shape != y.Shape || x.Text != y.Text || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) || !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;

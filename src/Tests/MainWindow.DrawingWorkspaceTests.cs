@@ -81,11 +81,18 @@ public sealed partial class MainWindow
             {
                 var doc = new Document(); doc.Add(Line()); window.AddTab(doc, null);
                 Check(Complete(window.SelectObjectsAsync(new Rect(0, 0, 100, 100), true, SelectionCombine.Replace)), "Async selection failed");
-                var pending = window.SelectObjectsAsync(new Rect(0, 0, 100, 100), true, SelectionCombine.Replace); window.ApplyObjectSelection([], SelectionCombine.Replace);
+                Task<bool> BeginPending(out TaskCompletionSource<Guid[]> completion)
+                {
+                    var source = new TaskCompletionSource<Guid[]>(TaskCreationOptions.RunContinuationsAsynchronously); completion = source;
+                    return window.SelectObjectsAsync(new Rect(0, 0, 100, 100), true, SelectionCombine.Replace, (_, _) => source.Task);
+                }
+                // Hold the worker result so each state change happens before completion,
+                // independently of how quickly this machine can scan a single line.
+                var pending = BeginPending(out var completion); window.ApplyObjectSelection([], SelectionCombine.Replace); completion.SetResult([doc.Layers[0].Id]);
                 Check(!Complete(pending) && window.selectedLayers.Count == 0, "Stale selection overwrote user change");
-                pending = window.SelectObjectsAsync(new Rect(0, 0, 100, 100), true, SelectionCombine.Replace); window.SetTool(Tool.Artboard);
+                pending = BeginPending(out completion); window.SetTool(Tool.Artboard); completion.SetResult([doc.Layers[0].Id]);
                 Check(!Complete(pending) && !window.history.Dirty(doc), "Cancelled selection modified artboard session");
-                pending = window.SelectObjectsAsync(new Rect(0, 0, 100, 100), true, SelectionCombine.Replace); window.AddTab(new Document(), null);
+                pending = BeginPending(out completion); window.AddTab(new Document(), null); completion.SetResult([doc.Layers[0].Id]);
                 Check(!Complete(pending), "Selection entered another tab");
             }
             finally { window.StopRenderingForShutdown(); SynchronizationContext.SetSynchronizationContext(context); }

@@ -9,7 +9,7 @@ namespace Compositor.Windows;
 public static partial class DesignRenderer
 {
     static readonly ConditionalWeakTable<TextSpec, DrawingGroup> textDrawings = new();
-    public static bool HasRetainedContent(Document doc) => doc.Layers.Any(l => l.Kind is LayerKind.Vector or LayerKind.Text or LayerKind.Shape);
+    public static bool HasRetainedContent(Document doc) => doc.Layers.Any(l => l.Kind is LayerKind.Vector or LayerKind.Text or LayerKind.Shape or LayerKind.Material);
     public static Raster Render(Document doc, Rect area, int width, int height, CancellationToken token = default)
         => RenderCore(doc, area, width, height, true, token);
     public static Raster RenderOutput(Document doc, CancellationToken token = default)
@@ -40,7 +40,7 @@ public static partial class DesignRenderer
                 subtree.Layers = doc.Layers.Where(l => l.Id != layer.Id && ids.Contains(l.Id)).Select(l => { var c = l.Snapshot(); if (c.ParentId == layer.Id) c.ParentId = null; return c; }).ToList();
                 copy.Pixels = Imaging.Render(subtree, token); copy.Kind = LayerKind.Raster;
             }
-            if (layer.Warp == null && layer.Kind is LayerKind.Vector or LayerKind.Text)
+            if (layer.Warp == null && layer.Kind is LayerKind.Vector or LayerKind.Text or LayerKind.Material)
             {
                 var rendered = RenderRetained(copy, world, width, height, token); ApplyMask(rendered, layer, world, false, token); return rendered;
             }
@@ -114,6 +114,7 @@ public static partial class DesignRenderer
         {
             dc.PushTransform(new MatrixTransform(map)); dc.PushClip(new RectangleGeometry(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height)));
             if (pdf != null) dc.DrawImage(pdf.Bitmap(), visible);
+            else if (layer.Material != null) dc.DrawDrawing(MaterialRenderer.Drawing(layer.Material));
             else if (layer.Vector != null) dc.DrawDrawing(layer.Vector.Drawing);
             else dc.DrawDrawing(TextDrawing(layer.Text!));
             dc.Pop(); dc.Pop();

@@ -28,7 +28,7 @@ public static class DrawingLayers
             var category = layer.Category;
             if (category == LayerCategory.Automatic) category = layer.Kind == LayerKind.Group
                 ? (children[layer.Id].Any(l => Kind(l) == LayerCategory.Drawing) ? LayerCategory.Drawing : LayerCategory.Photo)
-                : layer.Kind is LayerKind.Vector or LayerKind.Shape or LayerKind.Text ? LayerCategory.Drawing : LayerCategory.Photo;
+                : layer.Kind is LayerKind.Vector or LayerKind.Shape or LayerKind.Text or LayerKind.Material ? LayerCategory.Drawing : LayerCategory.Photo;
             result[layer.Id] = category; return category;
         }
         void Assign(Layer layer, LayerCategory category)
