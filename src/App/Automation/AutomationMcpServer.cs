@@ -161,7 +161,7 @@ public static class AutomationMcpServer
                         "server/discover" when modern => new JsonObject
                         {
                             ["supportedVersions"] = new JsonArray(ModernVersion), ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
-                            ["instructions"] = "Control only user-enabled Morupixel sessions. Discover sessionId, then inspect documentId and revision before edits. Legacy clients may initialize with 2025-11-25.",
+                            ["instructions"] = AutomationCatalog.Instructions,
                             ["ttlMs"] = 0, ["cacheScope"] = "public"
                         },
                         "ping" => new JsonObject(),
@@ -207,7 +207,7 @@ public static class AutomationMcpServer
             {
                 ["protocolVersion"] = LegacyVersion,
                 ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() }, ["serverInfo"] = Identity(),
-                ["instructions"] = "Use morupixel_list_sessions first. Editing requires an enabled session and the active document's latest revision."
+                ["instructions"] = AutomationCatalog.Instructions
             };
         }
 
@@ -289,7 +289,7 @@ public static class AutomationMcpServer
             catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception e) when (e is ArgumentException or InvalidDataException or IOException or InvalidOperationException or FormatException or UnauthorizedAccessException or TimeoutException)
             {
-                return ToolResult(new JsonObject { ["error"] = new JsonObject { ["code"] = "operation_failed", ["message"] = e.Message } }, true);
+                return ToolResult(new JsonObject { ["error"] = AutomationErrors.Describe(e is ArgumentException ? "invalid_arguments" : "operation_failed", e.Message) }, true);
             }
         }
 

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
 const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
 const exe = path.resolve(process.argv[2]);
 const output = path.resolve(process.argv[3]);
 fs.mkdirSync(output, { recursive: true });
@@ -38,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 19); checks.push('MCP initialization and 19 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 23); checks.push('MCP initialization and 23 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -48,6 +49,9 @@ async function main() {
   }
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
+  const capabilities = data(await call('get_capabilities'));
+  assert.equal(capabilities.contractVersion, 2); assert.equal(capabilities.commands.length, 23);
+  assert(capabilities.unsupportedViaMcp.includes('material_mapping')); checks.push('Live capabilities identify supported and future operations');
   let state = data(await call('get_state')); assert.equal(state.documents.length, 0);
   state = data(await call('new_document', { name: 'AI 연결 데모', width: 960, height: 600, background: '#141B29' }));
   const documentId = state.documentId;
@@ -70,6 +74,25 @@ async function main() {
   await edit('undo'); await edit('redo');
   await call('set_layer', { documentId, expectedRevision: revision, layerId: imageId, x: 20 }, false);
   checks.push('Text, shape, image, layer transform/order, adjustment, delete, undo/redo and stale revision');
+  const compact = data(await call('get_state', { documentId, includeLayers: false })).documents[0];
+  assert.equal(compact.layersIncluded, false); assert(!Object.hasOwn(compact, 'layers')); assert.equal(compact.artboardCount, 1);
+  const query = data(await call('query_layers', { documentId, expectedRevision: compact.revision, category: 'Drawing', nameContains: '제목', limit: 1 }));
+  assert.equal(query.totalMatches, 1); assert.equal(query.layers[0].layerId, titleId);
+  const detail = data(await call('get_layer', { documentId, expectedRevision: compact.revision, layerId: titleId }));
+  assert.equal(detail.layer.category, 'Drawing'); assert.equal(detail.layer.positionSpace, 'parent');
+  const batch = { documentId, expectedRevision: compact.revision, operationId: randomUUID(), label: 'Layout refinement', steps: [
+    { command: 'set_layer', arguments: { layerId: titleId, x: 48 } },
+    { command: 'set_layer', arguments: { layerId: imageId, opacity: .95 } }
+  ] };
+  const validation = data(await call('apply_batch', { ...batch, dryRun: true }));
+  assert.equal(validation.committed, false); assert.equal(validation.wouldChange, true);
+  assert.equal(data(await call('get_state', { documentId, includeLayers: false })).documents[0].revision, compact.revision);
+  state = data(await call('apply_batch', batch)); assert.equal(state.undoSteps, 1);
+  const committedRevision = state.revision;
+  const replay = data(await call('apply_batch', batch)); assert.equal(replay.replayed, true); assert.equal(replay.revision, committedRevision);
+  await edit('undo'); assert.equal(state.revision, compact.revision);
+  await edit('redo'); assert.equal(state.revision, committedRevision);
+  checks.push('Compact scene, paged drawing query, object detail, batch validation, commit, retry and single undo/redo');
   const preview = await call('preview', { documentId, maxSide: 960 });
   const image = preview.content.find(c => c.type === 'image'); assert(image && image.mimeType === 'image/png');
   fs.writeFileSync(path.join(output, 'ai-edit-preview.png'), Buffer.from(image.data, 'base64'));

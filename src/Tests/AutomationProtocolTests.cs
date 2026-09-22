@@ -18,7 +18,7 @@ public static class AutomationProtocolTests
         test("automation catalog advertises session revision and bounded typed arguments without sharing mutable schemas", () =>
         {
             var tools = AutomationCatalog.Tools();
-            Check(tools.Count == 19 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
+            Check(tools.Count == 23 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
             foreach (var tool in tools)
             {
                 var schema = tool!["inputSchema"]!.AsObject();
@@ -26,7 +26,7 @@ public static class AutomationProtocolTests
                 string name = tool["name"]!.GetValue<string>();
                 var required = schema["required"]!.AsArray().Select(n => n!.GetValue<string>()).ToArray();
                 Check(required.Contains("sessionId") == (name != "morupixel_list_sessions"), "Session targeting missing.");
-                if (name is not ("morupixel_list_sessions" or "morupixel_get_state" or "morupixel_preview" or "morupixel_new_document" or "morupixel_open_document" or "morupixel_activate_document"))
+                if (name is not ("morupixel_list_sessions" or "morupixel_get_state" or "morupixel_get_capabilities" or "morupixel_query_layers" or "morupixel_get_layer" or "morupixel_preview" or "morupixel_new_document" or "morupixel_open_document" or "morupixel_activate_document"))
                     Check(required.Contains("documentId") && required.Contains("expectedRevision"), "Mutation must require an explicit document and revision.");
             }
             tools[0]!["name"] = "changed";
@@ -75,7 +75,7 @@ public static class AutomationProtocolTests
                 "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"]);
             Check(replies.Count == 3 && replies[0]["id"]!.GetValue<string>() == "initialize-id", "Notification reply or changed request ID.");
             Check(replies[0]["result"]!["protocolVersion"]!.GetValue<string>() == AutomationMcpServer.LegacyVersion, "Unsupported legacy version must negotiate the supported one.");
-            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 19 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
+            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 23 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
         });
 
         test("MCP modern discovery requires request metadata reports versions and includes complete cache metadata", () =>
@@ -109,6 +109,32 @@ public static class AutomationProtocolTests
             Check(calls == 1 && args.ContainsKey("sessionId"), "Validation forwarded invalid arguments or altered caller input.");
             Check(replies.All(r => r["result"]!["isError"]!.GetValue<bool>()), "Tool failures must be actionable tool results.");
             Check(replies[0]["result"]!["structuredContent"]!["error"]!["code"]!.GetValue<string>() == "stale_revision", "Bridge error code lost.");
+        });
+
+        test("MCP atomic batch advertises strict nested schemas and forwards one validated plan", () =>
+        {
+            var schema = AutomationCatalog.Tools().Single(t => t!["name"]!.GetValue<string>() == "morupixel_apply_batch")!["inputSchema"]!;
+            var stepsSchema = schema["properties"]!["steps"]!;
+            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 7,
+                "Atomic edits must advertise their supported typed steps");
+            var args = Mutation(); args["sessionId"] = Session; args["operationId"] = "55555555-5555-4555-8555-555555555555";
+            args["dryRun"] = true;
+            args["steps"] = new JsonArray(new JsonObject { ["command"] = "set_layer", ["arguments"] = new JsonObject { ["layerId"] = Layer, ["x"] = 20 } });
+            int calls = 0;
+            var replies = Exchange([Tool(1, "apply_batch", args).ToJsonString()], (session, command, _) =>
+            {
+                calls++;
+                Check(session == Session && command["command"]!.GetValue<string>() == "apply_batch" &&
+                    command["arguments"]!["steps"]![0]!["arguments"]!["x"]!.GetValue<int>() == 20,
+                    "MCP expanded, dropped or rerouted the atomic request");
+                return Task.FromResult(Ok(new JsonObject { ["validated"] = true, ["committed"] = false }));
+            });
+            Check(calls == 1 && !replies[0]["result"]!["isError"]!.GetValue<bool>() &&
+                replies[0]["result"]!["structuredContent"]!["validated"]!.GetValue<bool>(), "Batch result was not structured");
+            var invalid = (JsonObject)args.DeepClone(); invalid["steps"]![0]!["arguments"]!["sessionId"] = Session;
+            replies = Exchange([Tool(2, "apply_batch", invalid).ToJsonString()]);
+            Check(replies[0]["result"]!["structuredContent"]!["error"]!["code"]!.GetValue<string>() == "invalid_arguments" &&
+                replies[0]["result"]!["structuredContent"]!["error"]!["suggestedAction"] != null, "Invalid nested arguments lacked schema recovery guidance");
         });
 
         test("MCP preview returns an image block without duplicating base64 in text or structured output", () =>

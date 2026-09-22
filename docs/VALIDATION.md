@@ -1,4 +1,12 @@
-# Preview 25 drawing workspace validation
+# AI command foundation validation
+
+- Source self-tests: **482/482 passed** on Windows x64 after integrating the drawing workspace. Ten added checks cover live capabilities, bounded observation of 2,000 objects, transformed parent coordinates, drawing/photo categories, artboard preservation, strict nested schemas, dry runs, atomic rollback, one-step undo/redo, stale documents, no-op edits, cancellation, and repeated delivery after undo.
+- Real executable, named-pipe and stdio MCP smoke test: **8 integration scenarios passed**. All 23 tools were exercised, including compact state, drawing queries, object detail, dry run, commit, retry and single undo/redo. The helper created only its own hidden editor and MCP processes. Evidence stays in ignored `artifacts/qa/ai-foundation-smoke-verified`.
+- The shared catalog exposes 23 tools. Batch edits accept seven document-only commands, at most 64 steps, and keep the last 128 successful receipts in memory. Image generation and material mapping remain unsupported and are advertised as such.
+- Tests use synthetic documents and run without displaying or controlling an editor window. No provider login or running user session is changed.
+- Compilation succeeded with cached dependencies. Restricted network access prevented NuGet vulnerability metadata refresh (NU1900); no package dependency changed.
+
+## Preview 25 drawing workspace validation
 
 - Source self-tests: **472/472 passed**. Added coverage for geometry-based crossing/window selection, masks, transforms, locks, cancellation and stale-result rejection; logical source-layer rows; drawing/photo tab separation; artboard gestures, undo, validation, cropping, export and native roundtrip.
 - Actual DWG import retained **2,725 objects** inside one drawing layer. Source groups remain expandable without reordering objects. Directional queries selected different sets, with the enclosed set contained in the crossing set.

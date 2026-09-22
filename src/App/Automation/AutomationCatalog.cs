@@ -5,13 +5,14 @@ using System.Text.RegularExpressions;
 namespace Compositor.Windows;
 
 /// <summary>One command/schema catalog shared by the local bridge, CLI and MCP transport.</summary>
-public static class AutomationCatalog
+public static partial class AutomationCatalog
 {
     sealed record Field(string Type, string Description, double? Minimum = null, double? Maximum = null,
         int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false)
     {
         public JsonObject Schema()
         {
+            if (Type == "array") { var items = BatchStepsSchema(); items["description"] = Description; return items; }
             var schema = new JsonObject { ["type"] = Type, ["description"] = Description };
             if (Minimum is { } min) schema["minimum"] = min;
             if (Maximum is { } max) schema["maximum"] = max;
@@ -27,7 +28,7 @@ public static class AutomationCatalog
     static readonly Field Name = new("string", "Display name.", MaxLength: 4096);
     static readonly Field Path = new("string", "Absolute Windows file path on the computer running Morupixel.", MaxLength: 32767);
     static readonly Field Color = new("string", "#RRGGBB, #AARRGGBB, or transparent.", MaxLength: 11, Color: true);
-    static readonly Field Coordinate = Number(-100_000, 100_000, "Position in document pixels.");
+    static readonly Field Coordinate = Number(-100_000, 100_000, "Position in parent-layer pixels; document pixels for root layers. See get_capabilities for coordinate conventions.");
     static readonly Dictionary<string, Command> Commands = CreateCommands();
 
     static Field Number(double min, double max, string description = "Numeric value.") => new("number", description, min, max);
@@ -55,8 +56,19 @@ public static class AutomationCatalog
             ("lineHeight", Number(0, 8192, "Line height in pixels; zero uses natural spacing.")),
             ("tracking", Number(-200, 2000, "Tracking in 1/1000 em.")));
         Add("list_sessions", "List Morupixel windows where the user enabled AI control. Does not open or focus a window.", true, Fields());
-        Add("get_state", "Inspect the session and its document/layer identifiers and revisions. Supply documentId to inspect a document.", true,
-            Fields(("documentId", Id)));
+        Add("get_state", "Inspect document identifiers, revisions and counts. Use includeLayers=false for a compact overview, then query_layers/get_layer for objects. The legacy default includes all layers.", true,
+            Fields(("documentId", Id), ("includeLayers", Bool("Defaults to true for existing clients. Set false to omit the potentially large layer inventory."))));
+        Add("get_capabilities", "Read the running editor's command contract, limits, coordinate conventions and unsupported operations before planning edits.", true, Fields());
+        Add("query_layers", "Find layers by name, kind or parent without loading the whole drawing. Results use back-to-front storage order. For subsequent pages pass the returned revision as expectedRevision and nextOffset as offset.", true,
+            Fields(("documentId", Id), ("expectedRevision", Id), ("parentId", Id), ("rootsOnly", Bool("Only root layers; cannot be combined with parentId.")),
+                ("nameContains", new("string", "Case-insensitive literal substring of layer names, not a regular expression.", MaxLength: 256)),
+                ("kind", Choice(Enum.GetNames<LayerKind>())), ("visible", Bool("Filter the layer's own visibility flag.")),
+                ("category", new("string", "Effective workspace category, including inheritance from the root drawing/photo folder.", Choices: ["Drawing", "Photo"])),
+                ("selectedOnly", Bool("Only selected layers; an inactive document reports its active layer as selected.")),
+                ("locked", Bool("Filter the layer's own lock flag; inherited locks are reported separately.")),
+                ("offset", Integer(0, Document.MaxNodes)), ("limit", Integer(1, 200, "Page size; defaults to 50."))), "documentId");
+        Add("get_layer", "Inspect one exact layer, its parent chain, transforms, retained content and supported edits. Frame bounds describe the transformed surface, not ink or a fillable room boundary.", true,
+            Fields(("documentId", Id), ("expectedRevision", Id), ("layerId", Id)), "documentId", "layerId");
         Add("new_document", "Create and activate a document (maximum 16,777,216 pixels). Returns its identifiers and revision.", false,
             Fields(("name", Name), ("width", Integer(1, 8192)), ("height", Integer(1, 8192)), ("background", Color), ("dpi", Number(1, 9600))),
             "name", "width", "height");
@@ -100,6 +112,11 @@ public static class AutomationCatalog
             Fields(("documentId", Id), ("maxSide", Integer(1, 1024))), "documentId");
         Add("undo", "Undo one document edit, rejecting a stale expectedRevision.", false, Mutation(), WriteRequired());
         Add("redo", "Redo one document edit, rejecting a stale expectedRevision.", false, Mutation(), WriteRequired());
+        Add("apply_batch", "Validate and apply up to 64 ordered document edits atomically as one undo step. dryRun=true validates on a snapshot without editing. Reuse operationId only to retry the identical request; successful receipts are retained for the last 128 batches in this editor session. Does not write files or generate AI images.", false,
+            Mutation(("operationId", new("string", "Caller-generated nonempty UUID for this logical batch. Use a new UUID for a new operation.", MaxLength: 36, GuidValue: true)),
+                ("label", new("string", "Short undo history label describing the user's intent.", MaxLength: 120)),
+                ("dryRun", Bool("Validate every step and document limit without committing; defaults to false.")),
+                ("steps", new("array", "Ordered atomic edits; each command has its own strict argument schema."))), WriteRequired("operationId", "steps"));
         return commands;
     }
 
@@ -123,11 +140,13 @@ public static class AutomationCatalog
             {
                 "string" => kind == JsonValueKind.String,
                 "boolean" => kind is JsonValueKind.True or JsonValueKind.False,
+                "array" => kind == JsonValueKind.Array,
                 _ => kind == JsonValueKind.Number
             };
             if (!validType)
                 throw new ArgumentException($"Invalid type for {key}: expected {field.Type}.");
-            if (field.Type == "boolean")
+            if (field.Type == "array") ValidateBatchSteps(value!.AsArray(), arguments);
+            else if (field.Type == "boolean")
             {
                 // Type validation above already guarantees a JSON boolean.
             }
@@ -153,6 +172,13 @@ public static class AutomationCatalog
         }
         if (command is "new_document" or "add_shape" && (double)NumberValue(arguments, "width") * NumberValue(arguments, "height") > 16_777_216)
             throw new ArgumentException("Automation images must not exceed 16,777,216 pixels.");
+        if (command == "query_layers")
+        {
+            if (arguments.ContainsKey("parentId") && arguments["rootsOnly"]?.GetValue<bool>() == true)
+                throw new ArgumentException("Use parentId or rootsOnly, not both.");
+            if (NumberValue(arguments, "offset") > 0 && !arguments.ContainsKey("expectedRevision"))
+                throw new ArgumentException("Paged queries require the previous page's revision as expectedRevision.");
+        }
         if (command == "add_adjustment")
         {
             string kind = arguments["kind"]!.GetValue<string>();

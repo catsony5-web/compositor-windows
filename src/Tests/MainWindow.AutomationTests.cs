@@ -61,7 +61,7 @@ public sealed partial class MainWindow
             return task.GetAwaiter().GetResult();
         }
         static JsonObject Call(MainWindow window, string command, JsonObject? arguments = null, CancellationToken token = default)
-            => Await(window.ExecuteAutomationAsync(new JsonObject { ["command"] = command, ["arguments"] = arguments ?? new JsonObject() }, token));
+            => Await(window.ExecuteAutomationAsync(new JsonObject { ["command"] = command, ["arguments"] = arguments?.DeepClone() ?? new JsonObject() }, token));
         static JsonObject State(MainWindow window) => Success(Call(window, "get_state"));
         static JsonObject Write(MainWindow window, params (string Key, JsonNode? Value)[] values)
         {
@@ -288,6 +288,183 @@ public sealed partial class MainWindow
             int tabs = window.tabs.Count;
             Failure(Call(window, "new_document", new JsonObject { ["name"] = "생성 금지", ["width"] = 8, ["height"] = 8, ["dpi"] = 96, ["background"] = "invalid" }));
             Check(window.tabs.Count == tabs, "Invalid new-document input created a partial tab");
+        });
+
+        Case("foundation capabilities describe the running editor without creating a document", window =>
+        {
+            var capabilities = Success(Call(window, "get_capabilities"));
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 2 && capabilities["commands"]!.AsArray().Count == 23,
+                "Running editor did not advertise its command contract");
+            Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "material_mapping"),
+                "Unsupported material operations must not be advertised as available");
+            Check(!window.HasDocument && window.tabs.Count == 0 && !window.IsVisible, "Discovery changed the workspace");
+        });
+
+        Case("compact state and paged queries stay bounded on a large drawing and reject stale pages", window =>
+        {
+            New(window, "Synthetic drawing");
+            var pixels = Raster.Solid(1, 1, Colors.Black);
+            for (int i = 0; i < 2000; i++) window.doc.Add(new Layer { Kind = LayerKind.Shape,
+                Name = (i % 2 == 0 ? "벽체 " : "가구 ") + i, Pixels = pixels,
+                Shape = new ShapeSpec { Width = 1, Height = 1 }, X = i % 64, Y = i % 48 });
+            window.doc.Validate(); window.history.Reset(window.doc);
+            window.selectedLayers.UnionWith(window.doc.Layers.Select(l => l.Id));
+            var compact = Success(Call(window, "get_state", new JsonObject { ["includeLayers"] = false }));
+            var document = DocumentState(compact);
+            Check(document["layers"] == null && document["layerCount"]!.GetValue<int>() == 2001 && compact.ToJsonString().Length < 20000,
+                "Compact state expanded the drawing graph");
+            Check(document["selectedLayerCount"]!.GetValue<int>() == 2001 && document["selectedLayerIds"]!.AsArray().Count == 200 &&
+                document["selectionTruncated"]!.GetValue<bool>(), "Large selections must be bounded and explicitly marked");
+            var query = new JsonObject { ["documentId"] = Text(document, "documentId"), ["nameContains"] = "벽체", ["limit"] = 50 };
+            var page = Success(Call(window, "query_layers", query));
+            Check(page["totalMatches"]!.GetValue<int>() == 1000 && page["layers"]!.AsArray().Count == 50 && page["nextOffset"]!.GetValue<int>() == 50,
+                "Query omitted or expanded matching CAD objects");
+            query["offset"] = 50; Failure(Call(window, "query_layers", query), "invalid_arguments");
+            query["expectedRevision"] = Text(page, "revision");
+            var next = Success(Call(window, "query_layers", query));
+            Check(!page["layers"]!.AsArray().Select(l => l!["layerId"]!.GetValue<string>()).Intersect(
+                next["layers"]!.AsArray().Select(l => l!["layerId"]!.GetValue<string>())).Any(), "Pagination duplicated objects");
+            Success(Call(window, "set_layer", Write(window, ("layerId", window.doc.Layers[1].Id.ToString()), ("x", 12))));
+            Failure(Call(window, "query_layers", query), "stale_revision");
+        });
+
+        Case("layer inspection reports parent coordinates inherited locks and transformed surface bounds", window =>
+        {
+            New(window, "Synthetic hierarchy");
+            var group = DocumentFeatures.CreateGroup(window.doc, "Parent"); group.X = 10; group.Y = 20; group.Scale = 2;
+            group.Locked = true; group.Visible = false; window.doc.Add(group);
+            var child = VectorShapes.Create(new ShapeSpec { Width = 4, Height = 5 }, 2, 3);
+            child.ParentId = group.Id; child.Name = "Child"; window.doc.Add(child); window.doc.Validate();
+            var before = window.doc.Revision;
+            var state = DocumentState(State(window));
+            var result = Success(Call(window, "get_layer", new JsonObject { ["documentId"] = Text(state, "documentId"), ["layerId"] = child.Id.ToString() }));
+            var layer = result["layer"]!;
+            Check(layer["frameBounds"]!["x"]!.GetValue<double>() == 14 && layer["frameBounds"]!["y"]!.GetValue<double>() == 26 &&
+                layer["frameBounds"]!["width"]!.GetValue<double>() == 8 && layer["frameBounds"]!["height"]!.GetValue<double>() == 10,
+                "Parent transform was omitted from document-space bounds");
+            Check(layer["x"]!.GetValue<double>() == 2 && layer["positionSpace"]!.GetValue<string>() == "parent" &&
+                layer["lockedInHierarchy"]!.GetValue<bool>() && !layer["visibleInHierarchy"]!.GetValue<bool>() &&
+                !layer["editing"]!["properties"]!.GetValue<bool>(), "Inherited constraints were lost");
+            var query = new JsonObject { ["documentId"] = Text(state, "documentId"), ["parentId"] = group.Id.ToString() };
+            Check(Success(Call(window, "query_layers", query))["totalMatches"]!.GetValue<int>() == 1, "Parent query did not find the child");
+            Check(window.doc.Revision == before && !window.history.CanUndo, "Inspection changed document history");
+        });
+
+        static JsonObject Step(string command, params (string Key, JsonNode? Value)[] values)
+            => new() { ["command"] = command, ["arguments"] = new JsonObject(values.Select(p => new KeyValuePair<string, JsonNode?>(p.Key, p.Value))) };
+        static JsonObject Batch(MainWindow window, params JsonObject[] steps) => Write(window,
+            ("operationId", Guid.NewGuid().ToString()), ("label", "Synthetic atomic edit"), ("steps", new JsonArray(steps.Cast<JsonNode?>().ToArray())));
+
+        Case("AI inspection follows drawing categories and artboards while batches preserve their structure", window =>
+        {
+            New(window, "Drawing workspace");
+            var initial = DocumentState(Success(Call(window, "get_state", new JsonObject { ["includeLayers"] = false })));
+            Check(initial["artboards"]![0]!["implicit"]!.GetValue<bool>() && initial["artboards"]![0]!["artboardId"] == null,
+                "The default canvas must not invent a persisted artboard ID");
+            DrawingLayers.Wrap(window.doc);
+            var drawing = window.doc.Layers.Single(l => l.Kind == LayerKind.Group);
+            var child = window.doc.Layers.Single(l => l.ParentId == drawing.Id);
+            child.SourceLayerName = "Synthetic walls";
+            var photo = new Layer { Name = "Photo", Pixels = Raster.Solid(2, 2, Colors.Gray) }; window.doc.Add(photo);
+            _ = ArtboardEditing.Set(window.doc, new Artboard(Guid.Empty, "Second sheet", 64, 0, 32, 24), true);
+            window.doc.Validate(); window.history.Reset(window.doc);
+            var before = window.doc.Snapshot();
+            var state = DocumentState(Success(Call(window, "get_state", new JsonObject { ["includeLayers"] = false })));
+            Check(state["artboardCount"]!.GetValue<int>() == 2 && state["artboards"]![1]!["x"]!.GetValue<double>() == 64 &&
+                state["layerCategories"]!["Drawing"]!.GetValue<int>() == 2 && state["layerCategories"]!["Photo"]!.GetValue<int>() == 1,
+                "State omitted the drawing/photo workspace or artboards");
+            var query = new JsonObject { ["documentId"] = Text(state, "documentId"), ["category"] = "Drawing" };
+            var objects = Success(Call(window, "query_layers", query))["layers"]!.AsArray();
+            Check(objects.Count == 2 && objects.All(l => l!["layerId"]!.GetValue<string>() != photo.Id.ToString()) &&
+                objects.Any(l => l!["sourceLayerName"]?.GetValue<string>() == "Synthetic walls"), "Drawing query lost inherited categories or source identity");
+            Success(Call(window, "apply_batch", Batch(window, Step("set_layer", ("layerId", child.Id.ToString()), ("x", 3)))));
+            Check(window.doc.Artboards.SequenceEqual(before.Artboards) && window.doc.Layers.Single(l => l.Id == child.Id).ParentId == drawing.Id,
+                "An ordinary AI edit changed artboards or drawing hierarchy");
+            Success(Call(window, "undo", Write(window))); Unchanged(window, before, false, true);
+        });
+
+        Case("batch dry run preserves state and commit adds exactly one undoable edit", window =>
+        {
+            New(window, "Atomic plan"); var before = window.doc.Snapshot();
+            var batch = Batch(window, Step("set_layer", ("layerId", window.doc.ActiveId.ToString()), ("name", "Base")),
+                Step("add_shape", ("shape", "rectangle"), ("width", 8), ("height", 5), ("x", 3), ("fill", "#339966")),
+                Step("add_text", ("text", "Plan A"), ("fontSize", 12)));
+            batch["dryRun"] = true;
+            var dry = Success(Call(window, "apply_batch", batch));
+            Check(dry["wouldChange"]!.GetValue<bool>() && !dry["committed"]!.GetValue<bool>() && dry["undoSteps"]!.GetValue<int>() == 0,
+                "Dry run did not explain whether a commit would change anything");
+            Check(dry["steps"]!.AsArray().All(s => s!["layerId"] == null), "Dry run leaked non-live generated IDs");
+            Unchanged(window, before, false, false);
+            batch["dryRun"] = false;
+            var applied = Success(Call(window, "apply_batch", batch));
+            Check(applied["undoSteps"]!.GetValue<int>() == 1 && window.doc.Layers.Count == 3 && window.doc.Layers[0].Name == "Base",
+                "Batch did not apply every step");
+            Check(applied["steps"]!.AsArray().All(s => window.doc.Layers.Any(l => l.Id.ToString() == s!["layerId"]!.GetValue<string>())),
+                "Committed steps did not return live identifiers");
+            Success(Call(window, "undo", Write(window))); Unchanged(window, before, false, true);
+            Success(Call(window, "redo", Write(window)));
+            Check(window.doc.Layers.Count == 3 && window.doc.Revision.ToString() == Text(applied, "revision"), "One redo did not restore the entire batch");
+        });
+
+        Case("a failed batch rolls back earlier steps and provides the failing index", window =>
+        {
+            New(window, "Atomic rollback"); var before = window.doc.Snapshot();
+            var batch = Batch(window, Step("set_layer", ("layerId", window.doc.ActiveId.ToString()), ("x", 20)),
+                Step("delete_layer", ("layerId", Guid.NewGuid().ToString())));
+            var failed = Call(window, "apply_batch", batch); Failure(failed, "layer_not_found");
+            Check(failed["error"]!["details"]!["stepIndex"]!.GetValue<int>() == 1 &&
+                !failed["error"]!["details"]!["committed"]!.GetValue<bool>() && failed["error"]!["suggestedAction"] != null,
+                "Batch failure omitted recovery information");
+            Unchanged(window, before, false, false);
+            batch = Batch(window, Step("add_shape", ("shape", "ellipse"), ("width", 8), ("height", 8)),
+                Step("update_text", ("layerId", window.doc.ActiveId.ToString()), ("text", "Wrong kind")));
+            Failure(Call(window, "apply_batch", batch), "wrong_layer_kind"); Unchanged(window, before, false, false);
+        });
+
+        Case("batch replay survives lost responses and undo without applying a second edit", window =>
+        {
+            New(window, "Replay"); var before = window.doc.Snapshot();
+            var batch = Batch(window, Step("add_shape", ("shape", "rectangle"), ("width", 5), ("height", 6)));
+            var first = Success(Call(window, "apply_batch", batch));
+            var reordered = new JsonObject(batch.Reverse().Select(p => new KeyValuePair<string, JsonNode?>(p.Key, p.Value?.DeepClone())));
+            var replay = Success(Call(window, "apply_batch", reordered));
+            Check(replay["replayed"]!.GetValue<bool>() && Text(replay, "revision") == Text(first, "revision") && window.doc.Layers.Count == 2,
+                "An identical retry duplicated the edit or depended on JSON key order");
+            var conflict = (JsonObject)batch.DeepClone(); conflict["steps"]![0]!["arguments"]!["width"] = 7;
+            Failure(Call(window, "apply_batch", conflict), "operation_id_conflict");
+            Success(Call(window, "undo", Write(window)));
+            replay = Success(Call(window, "apply_batch", batch));
+            Check(Text(replay, "currentRevision") == before.Revision.ToString() && Text(replay, "revision") == Text(first, "revision"),
+                "Receipt confused the original commit with the current revision");
+            Unchanged(window, before, false, true);
+            var nextPlan = Batch(window, Step("set_layer", ("layerId", window.doc.ActiveId.ToString()), ("x", 7)));
+            nextPlan["expectedRevision"] = Text(first, "revision");
+            Failure(Call(window, "apply_batch", nextPlan), "stale_revision"); Unchanged(window, before, false, true);
+        });
+
+        Case("batch schema rejects external actions overrides nesting and oversized plans before editing", window =>
+        {
+            New(window, "Strict plan"); var before = window.doc.Snapshot();
+            foreach (var step in new[] { Step("save_project", ("path", "C:\\Work\\not-written.moruproj")),
+                Step("apply_batch"), Step("set_layer", ("layerId", window.doc.ActiveId.ToString()), ("documentId", Guid.NewGuid().ToString())),
+                Step("set_layer", ("layerId", window.doc.ActiveId.ToString()), ("opacity", 2)), Step("delete_layer", ("layerId", "not-an-id")) })
+                Failure(Call(window, "apply_batch", Batch(window, step)), "invalid_arguments");
+            Failure(Call(window, "apply_batch", Batch(window)), "invalid_arguments");
+            Failure(Call(window, "apply_batch", Batch(window, Enumerable.Range(0, 65).Select(_ => Step("set_layer", ("layerId", window.doc.ActiveId.ToString()))).ToArray())), "invalid_arguments");
+            Unchanged(window, before, false, false);
+        });
+
+        Case("batch no-ops and pre-cancelled plans preserve redo", window =>
+        {
+            New(window, "No-op plan"); string id = window.doc.ActiveId.ToString();
+            Success(Call(window, "set_layer", Write(window, ("layerId", id), ("x", 4))));
+            Success(Call(window, "undo", Write(window))); var before = window.doc.Snapshot();
+            var batch = Batch(window, Step("set_layer", ("layerId", id), ("x", 0)));
+            var noOp = Success(Call(window, "apply_batch", batch));
+            Check(!noOp["changed"]!.GetValue<bool>() && noOp["undoSteps"]!.GetValue<int>() == 0, "No-op added history");
+            using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+            Failure(Call(window, "apply_batch", Batch(window, Step("set_layer", ("layerId", id), ("x", 20))), cancellation.Token), "cancelled");
+            Unchanged(window, before, false, true);
         });
 
         Case("cancelled requests cannot create documents edit history or write output files", window =>

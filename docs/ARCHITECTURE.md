@@ -23,6 +23,8 @@ Repository-wide `Directory.Build.props` defaults development and QA projects to 
 
 ## Editing and rendering rules
 
+The local AI interface uses one strict catalog for MCP and CLI, bounded scene queries, and snapshot-based batches with revision checks and one history commit. [AI tool architecture](AI_TOOL_ARCHITECTURE.md) defines discovery, observation, execution, replay limits and the extension contract. Single and batch automation edits share the existing document operations; provider accounts and image generation are outside this command layer.
+
 - Document and layer snapshots share immutable raster data. Pixel edits replace backing buffers; an in-progress brush owns a mutable buffer that must be detached before a background render reads it.
 - One gesture creates one history entry. UI state changes such as brush diameter, zoom and tool selection do not create edits or remove redo history.
 - Long operations work from a snapshot and check document identity, revision, selection and cancellation before committing. Switching documents must not publish a result into another tab.
