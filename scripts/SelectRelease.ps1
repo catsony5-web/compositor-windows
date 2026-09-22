@@ -50,6 +50,10 @@ if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -ceq 'refs/heads/main
 }
 $plan = Get-ReleasePlan -SourceVersion $version -EventName $env:GITHUB_EVENT_NAME -Ref $env:GITHUB_REF `
     -Commit $commit -RunNumber $env:GITHUB_RUN_NUMBER -ChangedPaths $paths -ExistingTags $tags
+if ($plan.Publish) {
+    & git merge-base --is-ancestor $commit origin/main
+    if ($LASTEXITCODE -ne 0) { throw 'Only commits integrated into origin/main may be published.' }
+}
 foreach ($property in @('Version', 'Tag', 'Publish', 'Automatic', 'Prerelease', 'Commit')) {
     $value = $plan.$property
     if ($value -is [bool]) { $value = $value.ToString().ToLowerInvariant() }

@@ -75,7 +75,7 @@ public static class ImportExport
     public static void Export(Document document, string path, int quality = 95)
     {
         document.Validate();
-        var raster = Imaging.Render(document);
+        var raster = DesignRenderer.RenderOutput(document);
         ProjectStore.AtomicWrite(path, stream => Write(raster, stream, Path.GetExtension(path), quality, document.Dpi));
     }
 
@@ -84,7 +84,7 @@ public static class ImportExport
         if (maxSide < 1 || maxSide > 8192) throw new ArgumentOutOfRangeException(nameof(maxSide));
         document.Validate();
         using Stream encoded = (long)document.Width * document.Height * 4 <= ImageStaging.MemoryThresholdBytes ? new MemoryStream() : ImageStaging.CreateTemporaryStream();
-        Write(Imaging.Render(document), encoded, format, quality, document.Dpi);
+        Write(DesignRenderer.RenderOutput(document), encoded, format, quality, document.Dpi);
         long bytes = encoded.Length; encoded.Position = 0;
         var decoded = Raster.Load(encoded);
         double scale = Math.Min(1, maxSide / (double)Math.Max(decoded.Width, decoded.Height));

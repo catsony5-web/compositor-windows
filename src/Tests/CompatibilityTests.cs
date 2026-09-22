@@ -110,9 +110,10 @@ public static class CompatibilityTests
             string path = PathFor("simple.dxf"); File.WriteAllText(path, DxfFixture()); var result = Read(path, new(CadLongEdge: 600, SeparateLayers: true));
             Assert(result.Document.Width == 600); Assert(result.Document.Layers.Count == 3); Assert(result.Document.Layers.Any(l => l.Name == "RED") && result.Document.Layers.Any(l => l.Name == "BLUE"));
             var raster = Imaging.Render(result.Document); Assert(raster.Data.Where((b, i) => i % 4 == 0).Any(b => b < 240));
-            var blue = result.Document.Layers.Single(l => l.Name == "BLUE").Pixels; var red = result.Document.Layers.Single(l => l.Name == "RED").Pixels;
+            var blueLayer = result.Document.Layers.Single(l => l.Name == "BLUE"); var redLayer = result.Document.Layers.Single(l => l.Name == "RED");
+            var blue = blueLayer.Pixels; var red = redLayer.Pixels;
             double CenterY(Raster r) { long sum = 0, count = 0; for (int y = 0; y < r.Height; y++) for (int x = 0; x < r.Width; x++) if (r.Data[(y * r.Width + x) * 4 + 3] > 10) { sum += y; count++; } return sum / (double)Math.Max(1, count); }
-            Assert(CenterY(blue) < CenterY(red), "CAD positive Y should be above lower Y");
+            Assert(CenterY(blue) + blueLayer.Y < CenterY(red) + redLayer.Y, "CAD positive Y should be above lower Y");
         });
         test("CAD unsupported entities are reported rather than silently disappearing", () =>
         {

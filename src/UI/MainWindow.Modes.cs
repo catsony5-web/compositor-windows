@@ -57,11 +57,12 @@ public sealed partial class MainWindow
     {
         if (designWorkspace == design) return;
         CommitFocusedInspectorField(); CancelGesture(); designWorkspace = design;
+        canvas.DesignMode = design; canvas.CancelDesignPreview(); canvas.InvalidateVisual();
         if (workspaceSwitch != null) workspaceSwitch.IsChecked = design;
         BuildWorkspaceTools(); ApplyWorkspaceStudio();
         // Use the docked shortcut panel without moving or activating any user-positioned pane.
         ShowStudioPage(0, false);
         studioScroll.Height = PreferredStudioHeight(ActualHeight);
-        status.Text = design ? "디자인 · 도형·문자·색상·배치 · 이미지와 함께 편집할 수 있습니다" : "사진 편집 · 선택·리터치·조정 레이어 · 도형과 문자도 함께 편집할 수 있습니다";
+        status.Text = design ? "디자인 · 벡터 원본을 확대 배율에 맞춰 표시합니다" : "사진 편집 · 원본 해상도의 픽셀을 편집합니다";
     }
 }

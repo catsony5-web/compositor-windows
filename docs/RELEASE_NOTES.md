@@ -1,4 +1,48 @@
-# Morupixel 0.2.0 Preview 18
+# Morupixel 0.2.0 Preview 22 — unified release
+
+- **One shared version.** CAD object imports, pointer interaction, AI/MCP control, retained vector rendering and precise wand selection are included in one mainline package.
+- **Sharp design zoom.** CAD paths, PDF/PDF-compatible AI sources, text and shapes render from retained content at the viewport resolution, with design zoom up to 6400%. Photos retain native pixels. Compatible CAD path runs share a render surface so object imports do not allocate a full viewport per object.
+- **Precise magic wand.** Zoom-aware vector boundary sampling, connected/global selection, antialiased edges and a tolerance control. Selection masks and contours retain subpixel coordinates; calculations can be canceled and stale results cannot replace selection in another document.
+- **CAD structure.** Choose individual objects in source-layer groups, one object per source layer, or a combined drawing. Includes model/paper space and supported external references, group-aware movement, magnetic alignment, virtualized layer rows and the 32,768-node budget.
+- **Preserved sources.** Saved PDF optional-content layers and PDF-compatible AI artboards retain their source content. Native projects preserve vector data and object groups. Compatible documents can export a vector PDF; unsupported effects report limitations.
+- **AI connection.** The 19 MCP/local-command tools, document revision checks and explicit per-session connection control are included.
+- **Shared release workflow.** Feature branches merge through checked PRs. Mainline source and the portable package must pass tests before the immutable ZIP and SHA-256 are published. The website follows complete GitHub releases.
+
+Existing bitmap imports need reimporting from the original drawing to regain vector/object structure. Non-PDF-compatible legacy AI, unsupported CAD entities, font substitution, and perspective/raster effects retain the documented compatibility limits. Existing open app windows keep their original build until reopened.
+
+[Downloads](https://github.com/catsony5-web/compositor-windows/releases) · [Integration policy](INTEGRATION.md) · [File compatibility](FILE_COMPATIBILITY.md)
+
+## Earlier development history
+
+The separate local candidates below are historical; their supported features are included in Preview 22.
+
+## Morupixel 0.2.0 Preview 21 — local candidate
+
+- **CAD object import.** DWG/DXF import offers individual source objects, one object per CAD layer, or one combined drawing. Individual objects are the default in the import dialog. Closed polylines stay whole; independent LINE entities remain separate, even when endpoints touch.
+- **Source layer groups.** Objects retain their source layer names as folders. Repeated blocks remain separate instances, and paper-space viewport clips are preserved. Interleaved layers use separate group runs to preserve drawing order. Save to `.moruproj` to keep this structure.
+- **Working with many objects.** Up to 32,768 document nodes, within existing pixel/vector memory limits and the 128 raster/adjustment-layer cap. The layer panel creates visible rows on demand, reveals selected children, and initially collapses imported groups. Simple full-canvas CAD groups support cached individual-object movement.
+
+Reimport an existing flattened drawing from its original DWG/DXF to use the new object mode. This does not reconstruct native objects from ordinary bitmap images, change PDF/PSD import granularity, or add DWG/DXF output. This local candidate has not been published to GitHub or the website.
+
+## Morupixel 0.2.0 Preview 20 — local candidate
+
+- **Selection cursor and preselection.** Move-tool idle/hover uses the selection arrow. A four-way cursor appears only after a drag starts; resize, rotation and pan retain their directional cursors. Hover outlines identify the prospective target without changing selection or undo history.
+- **Thin-line acquisition.** Objects within four screen pixels are easier to select at any zoom. Nearby selection preserves masks, clipping, hierarchy and the center hit's occlusion boundary; a locked page background no longer prevents acquiring nearby CAD lines.
+- **Magnetic alignment.** Drag a selection by its edges or center to other objects, the canvas or guides. Snap capture and release have separate thresholds to resist jitter. Temporary alignment guides show the attachment. Hold Alt to bypass snapping and Shift to constrain an axis.
+- **Responsive movement.** Simple normal-blend single-layer moves cache the fixed layers below and above the moving object and update its display transform per pointer event. Complex compositing and large cache allocations retain the full compositor.
+
+Includes the local CAD/PDF layer, vector-content and interface improvements, alongside Preview 19's MCP/local-command connection. Existing open application folders remain unchanged. This candidate has not been uploaded to the public website or GitHub release.
+
+## Morupixel 0.2.0 Preview 19 — local AI candidate
+
+- **AI editing connection.** Enable **AI 연결 → 로컬 연결 켜기** to control the running editor through MCP stdio or local JSON commands. No additional runtime or SDK is bundled.
+- **19 tools.** Inspect documents, create/open work, add images/editable text/shapes, transform/reorder/delete layers, add adjustments, remove a background with the local model, preview, save/export, and undo/redo.
+- **Concurrent work protection.** Commands check document identity and revision, respect locks and active dialogs, commit through undo history, and require explicit file overwrite. Connections are restricted to the current Windows account and can be turned off in the editor.
+- **Background use.** An explicit headless host is available for command-line jobs. Normal startup remains empty with AI control off.
+
+This candidate has not been uploaded to GitHub or the website. [Connection guide](AI_CONNECTION.md). The public download below is the earlier release.
+
+## Morupixel 0.2.0 Preview 18
 
 Larger images and projects in the same Windows workspace.
 

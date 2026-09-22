@@ -5,17 +5,22 @@ namespace Compositor.Windows;
 public enum SelectionCombine { Replace, Add, Subtract, Intersect }
 
 /// <summary>Canvas-space, immutable eight-bit selection coverage operations.</summary>
-public static class SelectionTools
+public static partial class SelectionTools
 {
     public static Selection FromMask(byte[] mask, int width, int height)
+        => FromMask(mask, width, height, new Rect(0, 0, width, height));
+
+    public static Selection FromMask(byte[] mask, int width, int height, Rect area)
     {
         Raster.ValidateSize(width, height);
+        if (area.IsEmpty || area.Width <= 0 || area.Height <= 0 || !double.IsFinite(area.X + area.Y + area.Width + area.Height)) throw new ArgumentException("선택 영역 좌표가 올바르지 않습니다.", nameof(area));
         if (mask.Length != width * height) throw new ArgumentException("선택 마스크 크기가 다릅니다.", nameof(mask));
         int left = width, top = height, right = -1, bottom = -1;
         for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) if (mask[y * width + x] != 0)
         { left = Math.Min(left, x); top = Math.Min(top, y); right = Math.Max(right, x); bottom = Math.Max(bottom, y); }
-        var bounds = right < left ? new Rect(0, 0, 0, 0) : new Rect(left, top, right - left + 1, bottom - top + 1);
-        return new Selection(bounds) { Coverage = (byte[])mask.Clone(), CanvasWidth = width, CanvasHeight = height };
+        var bounds = right < left ? new Rect(0, 0, 0, 0) : new Rect(area.X + left * area.Width / width, area.Y + top * area.Height / height, (right - left + 1) * area.Width / width, (bottom - top + 1) * area.Height / height);
+        return new Selection(bounds) { Coverage = (byte[])mask.Clone(), CanvasWidth = width, CanvasHeight = height,
+            CoverageBounds = area == new Rect(0, 0, width, height) ? null : area };
     }
 
     public static byte[] Mask(Selection? selection, int width, int height)
@@ -68,7 +73,7 @@ public static class SelectionTools
         return FromMask(data, width, height);
     }
 
-    public static Selection MagicWand(Raster composite, Point seed, double tolerance = 32, bool contiguous = true, CancellationToken token = default)
+    public static Selection MagicWand(Raster composite, Point seed, double tolerance = 32, bool contiguous = true, CancellationToken token = default, bool antialias = false)
     {
         token.ThrowIfCancellationRequested();
         int w = composite.Width, h = composite.Height;
@@ -77,23 +82,42 @@ public static class SelectionTools
         if (!double.IsFinite(tolerance)) throw new ArgumentOutOfRangeException(nameof(tolerance));
         tolerance = Math.Clamp(tolerance, 0, 255);
         int start = (int)seed.Y * w + (int)seed.X;
-        bool Match(int index) => ColorDistance(composite.Data, start * 4, index * 4) <= tolerance;
+        bool Match(int index) => ColorDistanceSquared(composite.Data, start * 4, index * 4) <= tolerance * tolerance;
         if (!contiguous)
         {
             for (int i = 0; i < data.Length; i++) { if ((i & 16383) == 0) token.ThrowIfCancellationRequested(); if (Match(i)) data[i] = 255; }
         }
         else
         {
-            var visited = new byte[data.Length]; var queue = new Queue<int>(); queue.Enqueue(start); visited[start] = 1;
+            // Scanline spans avoid a full-size visited array and per-pixel queue.
+            // Rejected samples use 1 temporarily; they never propagate a region.
+            var queue = new Queue<int>(); queue.Enqueue(start); int checkedCount = 0;
+            bool Eligible(int index)
+            {
+                if (data[index] != 0) return false;
+                if (Match(index)) return true;
+                data[index] = 1; return false;
+            }
             while (queue.TryDequeue(out int index))
             {
-                if ((index & 4095) == 0) token.ThrowIfCancellationRequested();
-                if (!Match(index)) continue;
-                data[index] = 255; int x = index % w, y = index / w;
-                void Add(int p) { if (visited[p] == 0) { visited[p] = 1; queue.Enqueue(p); } }
-                if (x > 0) Add(index - 1); if (x + 1 < w) Add(index + 1); if (y > 0) Add(index - w); if (y + 1 < h) Add(index + w);
+                token.ThrowIfCancellationRequested();
+                if (!Eligible(index)) continue;
+                int x = index % w, y = index / w, left = x;
+                while (left > 0 && Eligible(y * w + left - 1)) left--;
+                bool above = false, below = false;
+                for (x = left; x < w && Eligible(y * w + x); x++)
+                {
+                    if ((++checkedCount & 8191) == 0) token.ThrowIfCancellationRequested();
+                    int p = y * w + x; data[p] = 255;
+                    bool nextAbove = y > 0 && Eligible(p - w), nextBelow = y + 1 < h && Eligible(p + w);
+                    if (nextAbove && !above) queue.Enqueue(p - w);
+                    if (nextBelow && !below) queue.Enqueue(p + w);
+                    above = nextAbove; below = nextBelow;
+                }
             }
+            for (int i = 0; i < data.Length; i++) if (data[i] == 1) data[i] = 0;
         }
+        if (antialias) RefineWandEdges(composite, data, start, tolerance, token);
         token.ThrowIfCancellationRequested();
         return FromMask(data, w, h);
     }
@@ -101,14 +125,19 @@ public static class SelectionTools
     // Compare premultiplied color plus alpha: hidden RGB in transparent pixels
     // cannot split what is visually one transparent area.
     internal static double ColorDistance(byte[] pixels, int a, int b)
+        => Math.Sqrt(ColorDistanceSquared(pixels, a, b));
+    internal static double ColorDistanceSquared(byte[] pixels, int a, int b)
     {
         double aa = pixels[a + 3] / 255.0, ba = pixels[b + 3] / 255.0, sum = 0;
         for (int c = 0; c < 3; c++) { double d = pixels[a + c] * aa - pixels[b + c] * ba; sum += d * d; }
-        double da = pixels[a + 3] - pixels[b + 3]; return Math.Sqrt(sum / 3 + da * da);
+        double da = pixels[a + 3] - pixels[b + 3]; return sum / 3 + da * da;
     }
 
-    public static Selection Combine(Selection? current, Selection incoming, int width, int height, SelectionCombine mode)
+    public static Selection Combine(Selection? current, Selection incoming, int width, int height, SelectionCombine mode, CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
+        if (mode == SelectionCombine.Replace) return incoming;
+        if (current?.CoverageBounds != null || incoming.CoverageBounds != null) return CombinePrecise(current, incoming, width, height, mode, token);
         var a = Mask(current, width, height); var b = Mask(incoming, width, height);
         for (int i = 0; i < a.Length; i++) a[i] = mode switch
         {
@@ -121,6 +150,7 @@ public static class SelectionTools
 
     public static Selection Invert(Selection? selection, int width, int height)
     {
+        if (selection?.CoverageBounds != null) return CombinePrecise(new Selection(new Rect(0, 0, width, height)), selection, width, height, SelectionCombine.Subtract, default);
         var data = Mask(selection, width, height); for (int i = 0; i < data.Length; i++) data[i] = (byte)(255 - data[i]); return FromMask(data, width, height);
     }
 

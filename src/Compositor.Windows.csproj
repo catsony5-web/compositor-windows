@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Morupixel</AssemblyName>
-    <Version>0.2.0-preview.18</Version>
+    <Version>0.2.0-preview.22</Version>
     <Product>Morupixel</Product>
     <Description>Independent Windows image editor derived in part from Compositor</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -19,6 +19,7 @@
     <EmbeddedResource Include="..\assets\samples\sea-window.png" LogicalName="Morupixel.Sample.SeaWindow" />
     <EmbeddedResource Include="..\tools\qa\compatibility\fixtures\*.psd" LogicalName="Morupixel.Compatibility.%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\tools\qa\compatibility\fixtures\*.dwg" LogicalName="Morupixel.Compatibility.%(Filename)%(Extension)" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
     <Resource Include="..\assets\fonts\Pretendard-Regular.otf" Link="assets\fonts\Pretendard-Regular.otf" />
     <Resource Include="..\assets\fonts\Pretendard-Medium.otf" Link="assets\fonts\Pretendard-Medium.otf" />
     <Resource Include="..\assets\fonts\Pretendard-SemiBold.otf" Link="assets\fonts\Pretendard-SemiBold.otf" />

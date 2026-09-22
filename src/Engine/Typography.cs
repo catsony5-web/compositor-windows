@@ -10,6 +10,10 @@ internal static class Typography
     // fallback, ligatures, combining marks, emoji sequences, and bidi ordering.
     public static Raster RenderTracked(TextSpec spec)
     {
+        var layout = LayoutTracked(spec); return Imaging.Draw(layout.Width, layout.Height, dc => dc.DrawDrawing(layout.Drawing));
+    }
+    internal static (DrawingGroup Drawing, int Width, int Height) LayoutTracked(TextSpec spec)
+    {
         var face = new Typeface(new FontFamily(spec.FontFamily), spec.Italic ? FontStyles.Italic : FontStyles.Normal,
             spec.Bold ? FontWeights.Bold : FontWeights.Normal, FontStretches.Normal);
         var brush = new SolidColorBrush(DocumentFeatures.Color(spec.ColorArgb));
@@ -60,7 +64,8 @@ internal static class Typography
         var bounds = new Rect(0, 0, maxWidth, bottom); if (!result.Bounds.IsEmpty) bounds.Union(result.Bounds);
         int widthPixels = Math.Max(1, (int)Math.Ceiling(bounds.Width + 8)), heightPixels = Math.Max(1, (int)Math.Ceiling(bounds.Height + 8));
         Raster.ValidateSize(widthPixels, heightPixels);
-        return Imaging.Draw(widthPixels, heightPixels, dc => { dc.PushTransform(new TranslateTransform(4 - bounds.Left, 4 - bounds.Top)); dc.DrawDrawing(result); dc.Pop(); });
+        var placed = new DrawingGroup { Transform = new TranslateTransform(4 - bounds.Left, 4 - bounds.Top) }; placed.Children.Add(result); placed.Freeze();
+        return (placed, widthPixels, heightPixels);
     }
 
     static double Left(GlyphRun run) => run.BaselineOrigin.X - ((run.BidiLevel & 1) != 0 ? run.AdvanceWidths.Sum() : 0);

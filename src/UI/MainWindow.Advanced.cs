@@ -14,6 +14,7 @@ public sealed partial class MainWindow
 {
     sealed class WorkspaceTab
     {
+        public readonly Guid Id = Guid.NewGuid();
         public Document Document = null!;
         public History History = null!;
         public Selection? Selection;
@@ -26,6 +27,7 @@ public sealed partial class MainWindow
     readonly StackPanel tabsBar = new() { Orientation = Orientation.Horizontal };
     readonly HashSet<Guid> selectedLayers = [];
     readonly HashSet<Guid> collapsedGroups = [];
+    readonly HashSet<Guid> knownLayerGroups = [];
     int activeTab = -1;
     CancellationTokenSource? jobCts;
     readonly List<Point> lassoPoints = [];
@@ -34,7 +36,8 @@ public sealed partial class MainWindow
     Point lastRetouch;
     Raster? cloneSnapshot;
     bool snapping = true, polygonInProgress;
-    double wandTolerance = 32;
+    double wandTolerance = 16;
+    bool wandContiguous = true, wandAntialias = true;
 
     static (Tool Tool, string Icon, string Name, string Key)[] AdvancedToolDefinitions() =>
     [ (Tool.Lasso,"L","올가미","L"), (Tool.PolygonLasso,"⌁","다각형 올가미","Shift+L"), (Tool.MagicWand,"✧","마술봉","W"),
@@ -145,16 +148,22 @@ public sealed partial class MainWindow
         catch (Exception e) { if (ReferenceEquals(document, doc)) MessageBox.Show(this, e.Message, name, MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally { if (ReferenceEquals(jobCts, cts)) jobCts = null; cts.Dispose(); }
     }
-    IEnumerable<Layer> LayerDisplayOrder(Guid? parent)
+    IEnumerable<(Layer Layer, int Depth)> LayerDisplayRows()
     {
-        foreach (var layer in doc.Layers.Where(l => l.ParentId == parent).Reverse())
-        { yield return layer; if (layer.Kind == LayerKind.Group && !collapsedGroups.Contains(layer.Id)) foreach (var child in LayerDisplayOrder(layer.Id)) yield return child; }
-    }
-    int LayerDepth(Layer layer)
-    {
-        int depth = 0; Guid? p = layer.ParentId;
-        while (p != null && depth < 16) { depth++; p = doc.Layers.Find(l => l.Id == p)?.ParentId; }
-        return depth;
+        // Build the hierarchy once. Large CAD groups must not scan the entire
+        // document again for every visible row or ancestor.
+        var children = doc.Layers.ToLookup(layer => layer.ParentId);
+        return Walk(null, 0);
+        IEnumerable<(Layer Layer, int Depth)> Walk(Guid? parent, int depth)
+        {
+            if (depth > 16) yield break;
+            foreach (var layer in children[parent].Reverse())
+            {
+                yield return (layer, depth);
+                if (layer.Kind == LayerKind.Group && !collapsedGroups.Contains(layer.Id))
+                    foreach (var child in Walk(layer.Id, depth + 1)) yield return child;
+            }
+        }
     }
     void AddAdvancedProperties(Layer layer)
     {
@@ -361,16 +370,6 @@ public sealed partial class MainWindow
     {
         var f = Dialogs.Fields(this, "가이드 추가", ("방향 (가로 / 세로)", "세로"), ("위치 (px)", (doc.Width / 2).ToString())); if (f == null) return;
         canvas.Guides.Add((f[0] == "세로", Dialogs.Number(f[1], 0, Math.Max(doc.Width, doc.Height)))); canvas.InvalidateVisual();
-    }
-    double Snap(double value, bool horizontal)
-    {
-        if (!snapping || Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) return value;
-        double length = horizontal ? doc.Width : doc.Height;
-        var positions = new List<double> { 0, length / 2, length };
-        positions.AddRange(canvas.Guides.Where(g => g.Vertical == horizontal).Select(g => g.Position));
-        foreach (var layer in doc.Layers.Where(l => !selectedLayers.Contains(l.Id) && l.Id != doc.ActiveId && l.Visible))
-        { double start = horizontal ? layer.X : layer.Y, size = horizontal ? layer.Pixels.Width * layer.Scale * layer.ScaleX : layer.Pixels.Height * layer.Scale * layer.ScaleY; positions.Add(start); positions.Add(start + size); positions.Add(start + size / 2); }
-        double closest = positions.MinBy(x => Math.Abs(x - value)); return Math.Abs(closest - value) * canvas.Zoom <= 6 ? closest : value;
     }
     static bool IsRetouch(Tool t) => t is Tool.CloneStamp or Tool.Heal or Tool.Smudge or Tool.Liquify or Tool.BlurBrush;
     void RetouchAt(Point point)

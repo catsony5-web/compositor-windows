@@ -79,6 +79,41 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Keep source and packaged test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: morupixel-test-reports
+          path: |
+            artifacts/test-results/self-test.txt
+            artifacts/published-self-test/self-test.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Record Windows crash details
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-WinEvent -FilterHashtable @{ LogName='Application'; StartTime=(Get-Date).AddMinutes(-15) } -ErrorAction SilentlyContinue |
+            Where-Object { $_.ProviderName -in @('Application Error', '.NET Runtime', 'Windows Error Reporting') } |
+            Select-Object -First 8 TimeCreated, ProviderName, Message | Format-List
+
+      - name: Capture native failure for diagnosis
+        if: failure()
+        timeout-minutes: 3
+        shell: pwsh
+        run: |
+          $diagnostics = Join-Path $PWD 'artifacts/native-diagnostics'
+          New-Item -ItemType Directory -Path $diagnostics -Force | Out-Null
+          $executable = Get-ChildItem 'src/bin/Release' -Filter Morupixel.exe -Recurse | Select-Object -First 1
+          $debugger = Get-ChildItem 'C:/Program Files (x86)/Windows Kits' -Filter cdb.exe -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
+          if ($executable -and $debugger) {
+            # Only function names and addresses are logged. Never create or upload memory dumps.
+            & $debugger.FullName -G -y 'srv*https://msdl.microsoft.com/download/symbols' -c 'sxe -c "k; q" 0xc000000d; g' $executable.FullName --self-test (Join-Path $diagnostics 'reproduction.txt')
+          }
+          # This is diagnostic only; the original failed test step still fails the job.
+          exit 0
+
   release:
     name: Publish verified GitHub release
     if: needs.build.outputs.publish == 'true' && github.event_name == 'push'
