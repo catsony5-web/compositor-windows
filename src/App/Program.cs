@@ -10,7 +10,11 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        if (args.Length > 0 && args[0] == "--self-test") return SelfTests.Run(args.Length > 1 ? args[1] : "test-results.txt");
+        if (args.Length > 0 && args[0] == "--self-test")
+        {
+            try { return SelfTests.Run(args.Length > 1 ? args[1] : "test-results.txt"); }
+            finally { System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown(); }
+        }
         if (args.Length > 0 && args[0] is "--mcp" or "--automation-list" or "--automation-command")
         {
             // A Windows GUI executable may have redirected handles without a console.
