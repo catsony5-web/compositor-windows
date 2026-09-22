@@ -1,3 +1,13 @@
+# Preview 22 integration validation
+
+- Source self-tests: **455/455 passed** on Windows x64, including all object import, grouped movement, magnetic picking, AI/MCP, vector and precision-wand checks.
+- Added combined coverage for 200 vector objects in a CAD-style group, native project roundtrip, zoomed wand boundaries, hidden objects and transformed group clipping.
+- Release policy: **42 checks + 9 offline publishing scenarios passed**, including rejection of source not yet merged into main and immutable retry behavior.
+- GitHub Actions repeats source and packaged-executable tests for the public release and retains both reports. Actual published results are available in the release's workflow run.
+- Local NuGet vulnerability metadata could not be fetched in the restricted environment; compilation and cached package restoration succeeded.
+
+## Previous validation records
+
 # Morupixel 0.2.0-preview.21 local candidate — 2026-09-22
 
 Release source build: zero warnings/errors; **433/433** automated checks pass. Added cases cover DWG/DXF source topology, independent LINEs versus connected polylines, repeated block/viewport instances, viewport clips, paint-order group runs, individual-object movement, grouping on placement, project roundtrips, capacity/memory limits and invalid native group references. Two thousand virtualized layer entries realize fewer than 40 controls in the test viewport, including after scrolling to the last object. Source report: `artifacts/object-import-final/self-tests.txt`.

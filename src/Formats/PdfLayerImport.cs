@@ -9,8 +9,8 @@ using PdfSharp.Pdf.IO;
 
 namespace Compositor.Windows;
 
-// PDF optional-content groups are rasterized separately, with their original paint
-// order and default visibility. The native renderer still owns fonts, clipping,
+// PDF optional-content groups retain separate source streams and preview pixels,
+// with original paint order and visibility. The native renderer owns fonts, clipping,
 // images and colour conversion; no Illustrator installation or Python is required.
 internal static class PdfLayerImport
 {

@@ -5,7 +5,7 @@ using System.Windows.Media.Imaging;
 
 namespace Compositor.Windows;
 
-public sealed class CanvasView : FrameworkElement
+public sealed partial class CanvasView : FrameworkElement
 {
     public Document? Document { get; set; }
     public Selection? Selection { get; set; }
@@ -44,6 +44,7 @@ public sealed class CanvasView : FrameworkElement
     public CanvasView()
     {
         Focusable = true; ClipToBounds = true; Cursor = Cursors.Cross;
+        Unloaded += (_, _) => CancelDesignPreview();
         var group = new DrawingGroup();
         group.Children.Add(new GeometryDrawing(Theme.Brush("#FFFFFF"), null, new RectangleGeometry(new Rect(0, 0, 20, 20))));
         group.Children.Add(new GeometryDrawing(Theme.Brush("#E2E4E8"), null, new RectangleGeometry(new Rect(0, 0, 10, 10))));
@@ -59,7 +60,7 @@ public sealed class CanvasView : FrameworkElement
     public void ZoomAt(double factor, Point screenPoint)
     {
         if (Document == null) return;
-        var before = ToDocument(screenPoint); Zoom = Math.Clamp(Zoom * factor, .001, 16);
+        var before = ToDocument(screenPoint); Zoom = Math.Clamp(Zoom * factor, .001, DesignMode ? 64 : 16);
         var after = new Point(Origin.X + before.X * Zoom, Origin.Y + before.Y * Zoom); Pan += screenPoint - after; InvalidateVisual();
     }
     protected override void OnRender(DrawingContext dc)
@@ -69,7 +70,7 @@ public sealed class CanvasView : FrameworkElement
         var origin = Origin; var rect = new Rect(origin.X, origin.Y, Document.Width * Zoom, Document.Height * Zoom);
         dc.DrawRectangle(Theme.Brush("#080A0D"), null, new Rect(rect.X + 6, rect.Y + 8, rect.Width, rect.Height));
         dc.DrawRectangle(checker, null, rect);
-        if ((MovePreviewBackground ?? Composite) is { } image) dc.DrawImage(image, rect);
+        if (!TryDrawDesign(dc) && (MovePreviewBackground ?? Composite) is { } image) dc.DrawImage(image, rect);
         dc.DrawRectangle(null, new Pen(Theme.Brush("#464E5B"), 1), rect);
         dc.PushTransform(new TranslateTransform(origin.X, origin.Y)); dc.PushTransform(new ScaleTransform(Zoom, Zoom));
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, Document.Width, Document.Height)));
@@ -95,7 +96,7 @@ public sealed class CanvasView : FrameworkElement
             if (Selection.Coverage == null) DrawSelection(dc, Selection.Bounds, Selection.Ellipse);
             else
             {
-                if (!ReferenceEquals(contourSelection, Selection)) { contourSelection = Selection; contour = SelectionContour(Selection); }
+                if (!ReferenceEquals(contourSelection, Selection)) { contourSelection = Selection; contour = SelectionContours.Create(Selection); }
                 if (contour != null) DrawSelectionGeometry(dc, contour);
             }
         }
@@ -199,27 +200,5 @@ public sealed class CanvasView : FrameworkElement
     {
         var white = new Pen(Brushes.White, 1.5 / Zoom); var black = new Pen(Brushes.Black, 1 / Zoom) { DashStyle = new DashStyle([4, 4], 0) };
         dc.DrawGeometry(null, white, shape); dc.DrawGeometry(null, black, shape);
-    }
-    static Geometry SelectionContour(Selection selection)
-    {
-        var geometry = new StreamGeometry(); var mask = selection.Coverage!;
-        int w = selection.CanvasWidth, h = selection.CanvasHeight;
-        // Bound the preview path complexity; pixel operations still use the full-resolution mask.
-        int step = Math.Max(1, (int)Math.Ceiling(Math.Sqrt((double)w * h / 2_000_000)));
-        bool Inside(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && mask[y * w + x] >= 128;
-        using (var c = geometry.Open())
-        {
-            void Edge(int x1, int y1, int x2, int y2) { c.BeginFigure(new Point(x1, y1), false, false); c.LineTo(new Point(x2, y2), true, false); }
-            for (int y = 0; y < h; y += step) for (int x = 0; x < w; x += step)
-            {
-                if (!Inside(x, y)) continue;
-                int r = Math.Min(w, x + step), b = Math.Min(h, y + step);
-                if (!Inside(x - step, y)) Edge(x, y, x, b);
-                if (!Inside(x, y - step)) Edge(x, y, r, y);
-                if (!Inside(x + step, y)) Edge(r, y, r, b);
-                if (!Inside(x, y + step)) Edge(x, b, r, b);
-            }
-        }
-        geometry.Freeze(); return geometry;
     }
 }

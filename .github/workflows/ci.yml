@@ -79,6 +79,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Keep source and packaged test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: morupixel-test-reports
+          path: |
+            artifacts/test-results/self-test.txt
+            artifacts/published-self-test/self-test.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
   release:
     name: Publish verified GitHub release
     if: needs.build.outputs.publish == 'true' && github.event_name == 'push'

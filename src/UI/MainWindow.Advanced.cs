@@ -36,7 +36,8 @@ public sealed partial class MainWindow
     Point lastRetouch;
     Raster? cloneSnapshot;
     bool snapping = true, polygonInProgress;
-    double wandTolerance = 32;
+    double wandTolerance = 16;
+    bool wandContiguous = true, wandAntialias = true;
 
     static (Tool Tool, string Icon, string Name, string Key)[] AdvancedToolDefinitions() =>
     [ (Tool.Lasso,"L","올가미","L"), (Tool.PolygonLasso,"⌁","다각형 올가미","Shift+L"), (Tool.MagicWand,"✧","마술봉","W"),

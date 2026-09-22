@@ -300,13 +300,14 @@ public sealed class History
     }
     public long RetainedBytes(Document current)
     {
-        var seen = new HashSet<byte[]>(ReferenceEqualityComparer.Instance);
-        foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); }
+        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); if (l.Vector != null) seen.Add(l.Vector); }
         long bytes = 0;
         foreach (var entry in past.Concat(future)) foreach (var l in entry.State.Layers)
         {
             if (seen.Add(l.Pixels.Data)) bytes += l.Pixels.Data.Length;
             if (l.Mask != null && seen.Add(l.Mask)) bytes += l.Mask.Length;
+            if (l.Vector != null && seen.Add(l.Vector)) bytes += l.Vector.ByteLength;
         }
         return bytes;
     }
@@ -343,12 +344,17 @@ public sealed record Selection(Rect Bounds, bool Ellipse = false)
     public byte[]? Coverage { get; init; }
     public int CanvasWidth { get; init; }
     public int CanvasHeight { get; init; }
+    // A precision selection can store a cropped, denser mask in document space.
+    // Ordinary masks keep the original one-sample-per-document-pixel mapping.
+    public Rect? CoverageBounds { get; init; }
+    public Geometry? Contour { get; init; }
     public double Weight(double x, double y)
     {
         if (!Bounds.Contains(x, y)) return 0;
         if (Coverage != null)
         {
-            int ix = (int)Math.Floor(x), iy = (int)Math.Floor(y);
+            var area = CoverageBounds ?? new Rect(0, 0, CanvasWidth, CanvasHeight);
+            int ix = (int)Math.Floor((x - area.X) * CanvasWidth / area.Width), iy = (int)Math.Floor((y - area.Y) * CanvasHeight / area.Height);
             if (ix < 0 || iy < 0 || ix >= CanvasWidth || iy >= CanvasHeight) return 0;
             return Coverage[iy * CanvasWidth + ix] / 255.0;
         }

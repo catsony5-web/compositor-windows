@@ -70,12 +70,13 @@ public static class VectorShapes
     }
     // Sample the retained geometry directly at the destination scale. The pixel cache is
     // only for thumbnails, raster tools and backward-compatible image payloads.
-    public static void Composite(Raster output, Layer layer, CancellationToken token)
+    public static void Composite(Raster output, Layer layer, CancellationToken token, Matrix? transform = null)
     {
-        var shape = layer.Shape!; var corners = new[] { new Point(0, 0), new Point(shape.Width, 0), new Point(shape.Width, shape.Height), new Point(0, shape.Height) }.Select(layer.Document).ToArray();
+        var shape = layer.Shape!; var forward = transform ?? layer.Matrix;
+        var corners = new[] { new Point(0, 0), new Point(shape.Width, 0), new Point(shape.Width, shape.Height), new Point(0, shape.Height) }.Select(p => forward.Transform(layer.Warp?.Forward(p, shape.Width, shape.Height) ?? p)).ToArray();
         int left = (int)Math.Clamp(Math.Floor(corners.Min(p => p.X)) - 1, 0, output.Width), right = (int)Math.Clamp(Math.Ceiling(corners.Max(p => p.X)) + 1, 0, output.Width);
         int top = (int)Math.Clamp(Math.Floor(corners.Min(p => p.Y)) - 1, 0, output.Height), bottom = (int)Math.Clamp(Math.Ceiling(corners.Max(p => p.Y)) + 1, 0, output.Height);
-        var inverse = layer.Matrix; inverse.Invert(); var warp = layer.Warp?.Map().Inverse();
+        var inverse = forward; inverse.Invert(); var warp = layer.Warp?.Map().Inverse();
         var fill = Color(shape.FillArgb); var stroke = Color(shape.StrokeArgb);
         Parallel.For(top, bottom, new ParallelOptions { CancellationToken = token }, y =>
         {

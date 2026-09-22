@@ -80,7 +80,7 @@ public static class PdfCompatibility
     // Physical page dimensions follow document DPI; no native engine is bundled for writing.
     public static void Write(Document document, Stream destination, CancellationToken token = default)
     {
-        document.Validate(); var raster = Imaging.Render(document, token);
+        document.Validate(); var raster = DesignRenderer.RenderOutput(document, token);
         using var writer = new BinaryWriter(destination, Encoding.ASCII, true);
         var offsets = new List<long> { 0 }; int pixels = checked(raster.Width * raster.Height);
         void Ascii(string value) => writer.Write(Encoding.ASCII.GetBytes(value));

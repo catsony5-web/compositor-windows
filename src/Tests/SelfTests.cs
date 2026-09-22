@@ -93,6 +93,10 @@ public static class SelfTests
         SelectedLayerExportTests.Run(Test, directory);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
+        VectorContentTests.Run(Test, directory);
+        PrecisionWandTests.Run(Test);
+        MainWindow.RunWandCommandTests(Test);
+        UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);
         CadObjectImportTests.Run(Test, directory);

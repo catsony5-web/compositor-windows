@@ -40,7 +40,7 @@ public sealed partial class MainWindow
         {
             Tool.Lasso => "드래그: 올가미 · Shift: 선택 추가 · Alt: 빼기 · Shift+Alt: 교차",
             Tool.PolygonLasso => "클릭: 꼭짓점 · 더블클릭 / Enter: 완성 · Backspace: 마지막 점 삭제 · Esc: 취소",
-            Tool.MagicWand => $"마술봉 오차 {wandTolerance:0} · 클릭: 연결된 색 · Ctrl+클릭: 전체 같은 색 · Shift/Alt: 추가/빼기 · 더블클릭: 오차 설정",
+            Tool.MagicWand => $"마술봉 오차 {wandTolerance:0} · 표시된 레이어의 색 참조 · Ctrl+클릭: 전체 같은 색 · Shift/Alt: 추가/빼기 · 디자인: 벡터 경계 정밀 선택",
             Tool.CloneStamp => "Alt+클릭: 복제할 원본 위치 · 드래그: 복제 도장 · Alt+좌우 드래그 / [ ]: 크기",
             Tool.Heal => "Alt+클릭: 참조 위치 · 드래그: 주변 색에 맞춰 질감 복구 · Alt+좌우 드래그 / [ ]: 크기",
             Tool.Smudge => "드래그: 픽셀을 문질러 이동 · 농도: 강도 · Alt+좌우 드래그 / [ ]: 크기",
@@ -103,7 +103,7 @@ public sealed partial class MainWindow
             if (tool == Tool.PolygonLasso) { AddPolygonVertex(point, e.ClickCount > 1); return; }
             if (tool == Tool.MagicWand)
             {
-                BeginWandSelection(point, !Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
+                BeginWandSelection(point, wandContiguous && !Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
                 return;
             }
             if (tool == Tool.Move && autoSelectToggle.IsChecked == true)
@@ -330,21 +330,32 @@ public sealed partial class MainWindow
     void ConfigureWand()
     {
         jobCts?.Cancel(); var fields = Dialogs.Fields(this, "마술봉 허용 오차", ("색상 차이 (0~255)", wandTolerance.ToString("0")));
-        if (fields != null) wandTolerance = Dialogs.Number(fields[0], 0, 255); ShowInteractionHint();
+        if (fields != null) { wandTolerance = Dialogs.Number(fields[0], 0, 255); if (wandToleranceSlider != null) wandToleranceSlider.Value = wandTolerance; } ShowInteractionHint();
     }
-    async void BeginWandSelection(Point point, bool contiguous)
+    async void BeginWandSelection(Point point, bool contiguous) => await SelectWandAsync(point, contiguous, CurrentSelectionMode());
+
+    internal async Task<bool> SelectWandAsync(Point point, bool contiguous, SelectionCombine mode)
     {
-        var document = doc; var revision = doc.Revision; var previous = selection; var mode = CurrentSelectionMode();
+        if (!HasDocument) return false;
+        var document = doc; var revision = doc.Revision; var previous = selection; var historyAtStart = history; int tabAtStart = activeTab;
         jobCts?.Cancel(); var cts = jobCts = new CancellationTokenSource(); var snapshot = doc.Snapshot(); double tolerance = wandTolerance;
-        status.Text = "마술봉 계산 중… Esc: 취소";
+        bool design = canvas.DesignMode, antialias = wandAntialias;
+        var dpi = VisualTreeHelper.GetDpi(canvas); double scale = canvas.Zoom * Math.Max(dpi.DpiScaleX, dpi.DpiScaleY);
+        status.Text = design ? "벡터 경계 선택 중… Esc: 취소" : "마술봉 계산 중… Esc: 취소";
         try
         {
-            var result = await Task.Run(() => SelectionTools.MagicWand(Imaging.Render(snapshot), point, tolerance, contiguous, cts.Token), cts.Token);
-            if (cts.IsCancellationRequested || !ReferenceEquals(document, doc) || revision != doc.Revision || !ReferenceEquals(selection, previous)) return;
-            selection = SelectionTools.Combine(previous, result, doc.Width, doc.Height, mode); Refresh(false); ShowInteractionHint();
+            var result = await CompatibilityImport.OnSta(() =>
+            {
+                var incoming = PrecisionWand.Select(snapshot, point, tolerance, contiguous, antialias, design, scale, cts.Token);
+                var combined = SelectionTools.Combine(previous, incoming, snapshot.Width, snapshot.Height, mode, cts.Token);
+                return combined with { Contour = SelectionContours.Create(combined, cts.Token) };
+            }, cts.Token);
+            if (cts.IsCancellationRequested || !ReferenceEquals(document, doc) || revision != doc.Revision || !ReferenceEquals(selection, previous) ||
+                !ReferenceEquals(historyAtStart, history) || tabAtStart != activeTab) return false;
+            selection = result; Refresh(false); ShowInteractionHint(); return true;
         }
-        catch (OperationCanceledException) { if (ReferenceEquals(document, doc)) status.Text = "선택 계산을 취소했습니다."; }
-        catch (Exception error) { if (ReferenceEquals(document, doc)) status.Text = "마술봉 선택 실패: " + error.Message; }
+        catch (OperationCanceledException) { if (ReferenceEquals(document, doc) && ReferenceEquals(jobCts, cts)) status.Text = "선택 계산을 취소했습니다."; return false; }
+        catch (Exception error) { if (headlessTesting) throw; if (ReferenceEquals(document, doc)) status.Text = "마술봉 선택 실패: " + error.Message; return false; }
         finally { if (ReferenceEquals(jobCts, cts)) jobCts = null; cts.Dispose(); }
     }
     Point ClampToCanvas(Point point) => new(Math.Clamp(point.X, 0, doc.Width), Math.Clamp(point.Y, 0, doc.Height));

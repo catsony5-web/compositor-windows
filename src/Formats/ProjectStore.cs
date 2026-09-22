@@ -218,7 +218,7 @@ public static class ProjectStore
     }
     public static void Export(Document doc, string path)
     {
-        var rendered = Imaging.Render(doc);
+        var rendered = DesignRenderer.RenderOutput(doc);
         bool jpeg = Path.GetExtension(path).Equals(".jpg", StringComparison.OrdinalIgnoreCase) || Path.GetExtension(path).Equals(".jpeg", StringComparison.OrdinalIgnoreCase);
         if (jpeg)
         {
