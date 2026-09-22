@@ -28,6 +28,7 @@ public static partial class AutomationCatalog
         {
             ["queryPageSize"] = 200, ["batchSteps"] = MaximumBatchSteps, ["batchReceipts"] = MaximumBatchReceipts,
             ["documentNodes"] = Document.MaxNodes, ["rasterAndAdjustmentLayers"] = Document.MaxLayers,
+            ["artboards"] = ArtboardEditing.MaxArtboards,
             ["createdImageMaxSide"] = 8192, ["createdImageMaxPixels"] = 16_777_216, ["previewMaxSide"] = 1024
         },
         ["batch"] = new JsonObject
@@ -38,6 +39,11 @@ public static partial class AutomationCatalog
             ["replay"] = "A receipt's revision is the original result. currentRevision may differ after later edits or undo. Read fresh state before further editing."
         },
         ["formats"] = new JsonObject { ["save"] = Strings([".moruproj", ".cwproj"]), ["export"] = Strings([".png", ".jpg", ".jpeg", ".tif", ".tiff"]) },
+        ["scene"] = new JsonObject
+        {
+            ["categories"] = Strings(["Drawing", "Photo"]), ["sourceLayerNames"] = true, ["artboardInspection"] = true,
+            ["artboardNote"] = "get_state reports artboards in document pixels. An implicit full-canvas artboard has a null ID; artboard editing/export selection are not exposed by MCP."
+        },
         ["unsupportedViaMcp"] = Strings(["image_generation", "material_mapping", "artboard_editing", "vector_path_editing", "group_creation", "pdf_psd_cmyk_export"]),
         ["workflow"] = Strings(["discover", "inspect", "query", "validate", "commit", "preview"])
     };

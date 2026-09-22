@@ -1,4 +1,10 @@
-# Morupixel 0.2.0 Preview 25 — drawing layers and artboards
+# AI command foundation — source changes
+
+- **Inspectable editing tools.** The MCP catalog now has 23 tools. The running editor reports supported commands, coordinate conventions and limits. Compact state and paged object searches expose drawing/photo categories, source layer names, parent transforms, inherited locks and artboards without expanding every object.
+- **Atomic edit plans.** Up to 64 document edits can be validated on a snapshot, then committed as one undo step. Failed, cancelled or stale plans leave no partial edits. Recent successful operation IDs prevent duplicate batch execution after an uncertain response, including after undo.
+- **Provider-independent extension.** MCP and local CLI share the command contract and edit handlers. Image generation, material mapping and artboard editing via MCP remain future capabilities. [AI tool architecture](AI_TOOL_ARCHITECTURE.md) documents extension rules and replay limits.
+
+## Morupixel 0.2.0 Preview 25 — drawing layers and artboards
 
 - **Drawing and photo layers.** CAD and retained PDF/AI imports appear inside a collapsed drawing layer. Repeated CAD source layers share one expandable row while their objects remain separately editable and their paint order is preserved. Drawing and Photoshop layer tabs separate the lists.
 - **Directional object selection.** With the Move tool, drag from empty space: left to right selects fully enclosed objects; right to left selects touched objects. Retained CAD paths and shape edges are tested against their actual geometry. Shift adds, Alt subtracts, and Shift+Alt intersects. Large selections run in a cancellable worker and cannot overwrite a changed document or selection.

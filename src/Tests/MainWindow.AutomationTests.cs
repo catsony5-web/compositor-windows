@@ -355,6 +355,34 @@ public sealed partial class MainWindow
         static JsonObject Batch(MainWindow window, params JsonObject[] steps) => Write(window,
             ("operationId", Guid.NewGuid().ToString()), ("label", "Synthetic atomic edit"), ("steps", new JsonArray(steps.Cast<JsonNode?>().ToArray())));
 
+        Case("AI inspection follows drawing categories and artboards while batches preserve their structure", window =>
+        {
+            New(window, "Drawing workspace");
+            var initial = DocumentState(Success(Call(window, "get_state", new JsonObject { ["includeLayers"] = false })));
+            Check(initial["artboards"]![0]!["implicit"]!.GetValue<bool>() && initial["artboards"]![0]!["artboardId"] == null,
+                "The default canvas must not invent a persisted artboard ID");
+            DrawingLayers.Wrap(window.doc);
+            var drawing = window.doc.Layers.Single(l => l.Kind == LayerKind.Group);
+            var child = window.doc.Layers.Single(l => l.ParentId == drawing.Id);
+            child.SourceLayerName = "Synthetic walls";
+            var photo = new Layer { Name = "Photo", Pixels = Raster.Solid(2, 2, Colors.Gray) }; window.doc.Add(photo);
+            _ = ArtboardEditing.Set(window.doc, new Artboard(Guid.Empty, "Second sheet", 64, 0, 32, 24), true);
+            window.doc.Validate(); window.history.Reset(window.doc);
+            var before = window.doc.Snapshot();
+            var state = DocumentState(Success(Call(window, "get_state", new JsonObject { ["includeLayers"] = false })));
+            Check(state["artboardCount"]!.GetValue<int>() == 2 && state["artboards"]![1]!["x"]!.GetValue<double>() == 64 &&
+                state["layerCategories"]!["Drawing"]!.GetValue<int>() == 2 && state["layerCategories"]!["Photo"]!.GetValue<int>() == 1,
+                "State omitted the drawing/photo workspace or artboards");
+            var query = new JsonObject { ["documentId"] = Text(state, "documentId"), ["category"] = "Drawing" };
+            var objects = Success(Call(window, "query_layers", query))["layers"]!.AsArray();
+            Check(objects.Count == 2 && objects.All(l => l!["layerId"]!.GetValue<string>() != photo.Id.ToString()) &&
+                objects.Any(l => l!["sourceLayerName"]?.GetValue<string>() == "Synthetic walls"), "Drawing query lost inherited categories or source identity");
+            Success(Call(window, "apply_batch", Batch(window, Step("set_layer", ("layerId", child.Id.ToString()), ("x", 3)))));
+            Check(window.doc.Artboards.SequenceEqual(before.Artboards) && window.doc.Layers.Single(l => l.Id == child.Id).ParentId == drawing.Id,
+                "An ordinary AI edit changed artboards or drawing hierarchy");
+            Success(Call(window, "undo", Write(window))); Unchanged(window, before, false, true);
+        });
+
         Case("batch dry run preserves state and commit adds exactly one undoable edit", window =>
         {
             New(window, "Atomic plan"); var before = window.doc.Snapshot();

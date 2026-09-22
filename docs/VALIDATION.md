@@ -1,6 +1,7 @@
 # AI command foundation validation
 
-- Initial source self-tests before the drawing workspace integration: **468/468 passed** on Windows x64. Nine added checks cover live capabilities, bounded observation of 2,000 objects, transformed parent coordinates, strict nested schemas, dry runs, atomic rollback, one-step undo/redo, stale documents, no-op edits, cancellation, and repeated delivery after undo.
+- Source self-tests: **482/482 passed** on Windows x64 after integrating the drawing workspace. Ten added checks cover live capabilities, bounded observation of 2,000 objects, transformed parent coordinates, drawing/photo categories, artboard preservation, strict nested schemas, dry runs, atomic rollback, one-step undo/redo, stale documents, no-op edits, cancellation, and repeated delivery after undo.
+- Real executable, named-pipe and stdio MCP smoke test: **8 integration scenarios passed**. All 23 tools were exercised, including compact state, drawing queries, object detail, dry run, commit, retry and single undo/redo. The helper created only its own hidden editor and MCP processes. Evidence stays in ignored `artifacts/qa/ai-foundation-smoke-verified`.
 - The shared catalog exposes 23 tools. Batch edits accept seven document-only commands, at most 64 steps, and keep the last 128 successful receipts in memory. Image generation and material mapping remain unsupported and are advertised as such.
 - Tests use synthetic documents and run without displaying or controlling an editor window. No provider login or running user session is changed.
 - Compilation succeeded with cached dependencies. Restricted network access prevented NuGet vulnerability metadata refresh (NU1900); no package dependency changed.

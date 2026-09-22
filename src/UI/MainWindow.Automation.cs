@@ -161,6 +161,7 @@ public sealed partial class MainWindow
         foreach (var tab in tabs.Where(t => !documentId.HasValue || t.Id == documentId.Value))
         {
             var d = tab.Document; var layers = new JsonArray();
+            var categories = DrawingLayers.Categories(d);
             var existingIds = d.Layers.Select(l => l.Id).ToHashSet();
             var selectedIds = AutomationSelectedIds(tab).Where(existingIds.Contains).OrderBy(id => id).ToArray();
             foreach (var layer in includeLayers ? d.Layers : Enumerable.Empty<Layer>())
@@ -187,7 +188,15 @@ public sealed partial class MainWindow
                 ["rootLayerCount"] = d.Layers.Count(l => l.ParentId == null), ["layersIncluded"] = includeLayers,
                 ["selectedLayerIds"] = new JsonArray(selectedIds.Take(200).Select(id => (JsonNode?)JsonValue.Create(id.ToString())).ToArray()),
                 ["selectedLayerCount"] = selectedIds.Length, ["selectionTruncated"] = selectedIds.Length > 200,
-                ["layerKinds"] = new JsonObject(d.Layers.GroupBy(l => l.Kind).Select(g => new KeyValuePair<string, JsonNode?>(g.Key.ToString(), JsonValue.Create(g.Count())))) };
+                ["layerKinds"] = new JsonObject(d.Layers.GroupBy(l => l.Kind).Select(g => new KeyValuePair<string, JsonNode?>(g.Key.ToString(), JsonValue.Create(g.Count())))),
+                ["layerCategories"] = new JsonObject(categories.Values.GroupBy(c => c).Select(g => new KeyValuePair<string, JsonNode?>(g.Key.ToString(), JsonValue.Create(g.Count())))),
+                ["artboardCount"] = ArtboardEditing.Visible(d).Count,
+                ["artboards"] = new JsonArray(ArtboardEditing.Visible(d).Select(b => (JsonNode?)new JsonObject
+                {
+                    ["artboardId"] = b.Id == Guid.Empty ? null : b.Id.ToString(), ["name"] = b.Name,
+                    ["x"] = b.X, ["y"] = b.Y, ["width"] = b.Width, ["height"] = b.Height,
+                    ["implicit"] = b.Id == Guid.Empty, ["positionSpace"] = "document"
+                }).ToArray()) };
             if (includeLayers) itemDocument["layers"] = layers;
             documents.Add(itemDocument);
         }
