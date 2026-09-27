@@ -53,7 +53,8 @@ public sealed partial class MainWindow
             RightPanelWidth = rightPanelColumn.ActualWidth > 0 ? rightPanelColumn.ActualWidth : rightPanelColumn.Width.Value,
             DesignWorkspace = designWorkspace,
             StudioPage = studioPage,
-            Panes = panes
+            Panes = panes,
+            CollapsedSections = SectionHeader.CollapsedKeys
         };
     }
 
@@ -74,6 +75,7 @@ public sealed partial class MainWindow
             if (saved.Pinned) pane.SetPinned(true);
         }
         ShowStudioPage(Math.Clamp(layout.StudioPage, 0, 3), false);
+        SectionHeader.SetCollapsedKeys(layout.CollapsedSections);
     }
 
     void SaveWorkspace()

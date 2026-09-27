@@ -35,20 +35,17 @@ public sealed class TextPropertiesPanel : StackPanel
         AutomationProperties.SetName(editor, "텍스트 내용"); Children.Add(editor);
         AddLabel("글꼴");
         family = new ComboBox { IsEditable = true, ItemsSource = Fonts.SystemFontFamilies.Select(f => f.Source).Order().ToArray(), Text = spec.FontFamily,
-            MinHeight = 38, Margin = new Thickness(0, 3, 0, 5), Padding = new Thickness(7, 4, 7, 4) };
+            MinHeight = Theme.ControlHeight, Margin = new Thickness(0, 0, 0, 6), Padding = new Thickness(8, 4, 8, 4) };
         AutomationProperties.SetName(family, "텍스트 글꼴"); Children.Add(family);
         style = new ComboBox { ItemsSource = new[] { "보통", "굵게", "기울임", "굵게 기울임" }, SelectedIndex = (spec.Bold ? 1 : 0) + (spec.Italic ? 2 : 0),
-            MinHeight = 38, Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(7, 4, 7, 4) };
+            MinHeight = Theme.ControlHeight, Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(8, 4, 8, 4) };
         AutomationProperties.SetName(style, "글꼴 스타일"); Children.Add(style);
         size = Number(spec.FontSize, "글자 크기 px"); leading = Number(spec.LineHeight, "줄 간격 px · 0은 자동"); tracking = Number(spec.Tracking, "자간 · 1/1000 em");
         leading.ToolTip = "줄 간격 px · 0 = 자동 · Enter 적용";
         tracking.ToolTip = "자간 · 1/1000 em · 0 = 기본 · Enter 적용";
-        Children.Add(Pair("크기 · px", size, "줄 간격 · px", leading));
-        var lower = new UniformGrid { Columns = 2, Margin = new Thickness(0, 5, 0, 8) };
-        lower.Children.Add(Field("자간 · 1/1000 em", tracking));
-        colorButton = Theme.Button("글자 색상", () => { if (pickColor(color) is { } selected) { color = selected; UpdateColor(); ClearError(); } });
-        colorButton.MinHeight = 34; colorButton.Margin = new Thickness(4, 3, 0, 0); colorButton.Padding = new Thickness(7, 4, 7, 4);
-        lower.Children.Add(Field("색상", colorButton)); Children.Add(lower); UpdateColor();
+        Children.Add(PropertyRows.Pair("크기 · px", size, "줄 간격 · px", leading, new Thickness(0, 2, 0, 8)));
+        colorButton = PropertyRows.ColorChip(color, "글자 색상", () => { if (pickColor(color) is { } selected) { color = selected; UpdateColor(); ClearError(); } }, "글자 색상");
+        Children.Add(PropertyRows.Pair("자간 · 1/1000 em", tracking, "색상", colorButton, new Thickness(0, 0, 0, 4)));
         AddLabel("단락 정렬");
         var alignments = new UniformGrid { Columns = 3, Margin = new Thickness(0, 3, 0, 9) };
         foreach (var (label, value) in new[] { ("왼쪽", TextAlignment.Left), ("가운데", TextAlignment.Center), ("오른쪽", TextAlignment.Right) })
@@ -117,21 +114,13 @@ public sealed class TextPropertiesPanel : StackPanel
     }
     void SetError(string error) { message.Text = error; message.Foreground = Theme.Danger; message.Visibility = Visibility.Visible; }
     void ClearError() { if (message == null) return; message.Text = ""; message.Visibility = Visibility.Collapsed; }
-    void UpdateColor()
-    {
-        var contents = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
-        contents.Children.Add(new Border { Width = 14, Height = 14, Background = new SolidColorBrush(color), BorderBrush = Theme.Muted, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 6, 0) });
-        contents.Children.Add(Theme.Label("글자 색상", Theme.CaptionSize)); colorButton.Content = contents;
-    }
+    void UpdateColor() => PropertyRows.SetChipColor(colorButton, color, "글자 색상");
     void UpdateAlignment() { foreach (var button in alignmentButtons) { button.Background = Equals(button.Tag, alignment) ? Theme.Selected : Theme.Surface; button.BorderBrush = Equals(button.Tag, alignment) ? Theme.Accent : Theme.Line; } }
-    void AddLabel(string label) { var text = Theme.Label(label, Theme.CaptionSize, Theme.Muted); text.Margin = new Thickness(0, 10, 0, 3); Children.Add(text); }
+    void AddLabel(string label) { var text = PropertyRows.Caption(label); text.Margin = new Thickness(0, 10, 0, 3); Children.Add(text); }
     static TextBox Number(double value, string name)
     {
-        var box = new TextBox { Text = value.ToString("0.##", CultureInfo.InvariantCulture), MinHeight = 30, Padding = new Thickness(7, 4, 7, 4), Margin = new Thickness(0, 3, 4, 0), HorizontalContentAlignment = HorizontalAlignment.Right };
-        AutomationProperties.SetName(box, name); box.ToolTip = name + " · Enter 적용"; return box;
+        var box = PropertyRows.NumberBox(value, name); box.ToolTip = name + " · Enter 적용"; return box;
     }
-    static StackPanel Field(string label, UIElement element) { var stack = new StackPanel(); var caption = Theme.Label(label, Theme.CaptionSize, Theme.Muted); caption.TextWrapping = TextWrapping.Wrap; stack.Children.Add(caption); stack.Children.Add(element); return stack; }
-    static UniformGrid Pair(string a, UIElement left, string b, UIElement right) { var grid = new UniformGrid { Columns = 2 }; grid.Children.Add(Field(a, left)); grid.Children.Add(Field(b, right)); return grid; }
 
     internal TextBox EditorForTesting => editor;
     internal TextBox SizeForTesting => size;

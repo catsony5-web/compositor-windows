@@ -111,6 +111,8 @@ public sealed partial class MainWindow
             finally { host.Child = null; ShowStudioPage(studioPage, false); }
         }
         ShowStudioPage(1); CapturePane(studioPanes[1], "image-properties", 360, 840);
+        // A folded section keeps its title; its rows return when it is opened again.
+        SectionHeader.SetCollapsedKeys(["위치와 변형"]); CapturePane(studioPanes[1], "image-properties-folded", 360, 640); SectionHeader.SetCollapsedKeys([]);
         ShowStudioPage(2); CapturePane(studioPanes[2], "color-palette", 360, 1180);
         ShowStudioPage(3); SelectBrushTip(BrushTip.Star); CapturePane(studioPanes[3], "brush-settings", 360, 1120);
         SelectBrushTip(BrushTip.Round);

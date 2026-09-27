@@ -69,7 +69,8 @@
 | 슬라이더 | `Slider`, `"SpectrumSlider"` | 4px 트랙, Accent 채움, 14px 밝은 손잡이와 호버 후광 |
 | 매개변수 슬라이더 | `ParameterSlider` | 한 줄에 라벨 · 초기화 · 이동 간격 · 값, 아래 슬라이더 |
 | 인스펙터 동작 행 | `Theme.ActionRow` | 전체 너비, 줄 바꿈, 오른쪽 셰브론, 호버 시 표면 |
-| 섹션 | `Theme.Section` | 가는 선 + 13 SemiBold 제목 |
+| 섹션 | `Theme.Section` → `SectionHeader` | 가는 선 + 13 SemiBold 제목 + 오른쪽 셰브론. 누르면 다음 섹션 전까지 접힌다. 접은 제목은 작업 공간 배치와 함께 저장된다 |
+| 속성 행 | `PropertyRows.Field`, `.Pair`, `.Inline` | 12 Muted 캡션 위 30px 입력칸, 두 열 사이 8px. 숫자 칸(`NumberBox`)은 오른쪽 정렬, 색 칩(`ColorChip`)은 16px 견본 + 값 |
 | 카드 | `GlassPanel`, `ClipBorder` | Panel 바탕, Line 테두리, 모서리 10. `ClipBorder`는 내용을 둥근 모서리로 자른다 |
 | 레이어 행 | `LayerRow` | 40px, 28px 썸네일, 이름 + 캡션 두 줄, 선택 시 Selected + 왼쪽 2px Accent 막대 |
 | 명령 팔레트 | `CommandPalette`, 항목 `"PaletteItem"` | 600px, 모서리 12. 검색칸 · 결과(제목 + 분류 두 줄, 오른쪽 단축키 칩) · 조작 안내. 선택 행은 Selected, 쓸 수 없는 명령은 45% 불투명도 |
@@ -100,6 +101,12 @@
 - 검색은 공백·말줄임표를 무시하고 제목 시작 > 제목 포함 > 한글 초성 > 분류+제목 > 단축키 순으로 순위를 매긴다. 빈 검색에서는 최근 실행한 명령(최대 8개, 현재 실행 세션)을 먼저 보여 준다.
 - **Ctrl+K**는 문서가 없을 때와 숫자 입력칸에 초점이 있을 때도 팔레트를 연다. **K** 단독은 흐림 브러시 그대로다.
 
+## 속성 패널
+
+- 속성·문자·도형·대지 패널의 입력은 `PropertyRows`로 만든다. 행은 입력칸을 바로 자식으로 가진 `Grid`라서 패널 코드와 자체 검사가 추가 래퍼 없이 입력칸을 찾는다.
+- 섹션을 접으면 제목 다음부터 다음 섹션 제목 전까지의 형제 요소를 숨긴다. 패널의 자식 구조는 그대로 두고, 펼 때 원래 표시 상태로 되돌린다. 패널을 다시 만들어도 접은 상태를 유지한다.
+- 접은 섹션 제목은 `WorkspaceLayout.CollapsedSections`로 저장되어 다음 실행에서 복원된다. 같은 제목의 섹션은 모든 패널과 다이얼로그에서 같이 접힌다.
+
 ## UI 파일 지도
 
 | 위치 | 담당 |
@@ -113,6 +120,7 @@
 | `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면과 최근 문서 목록 |
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
 | `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
+| `UI/Controls/PropertyRows.cs`, `SectionHeader.cs` | 속성 패널 공통 행(캡션 · 입력 · 두 열 · 색 칩)과 접이식 섹션 제목 |
 | `UI/Dialogs/` | 공통 틀(`DialogShell`), 알림(`MessageDialog`), 범용 입력(`Dialogs.Fields`), 각 다이얼로그 |
 | `UI/MainWindow.Layout.cs`, `Formats/WorkspaceLayout.cs` | 작업 공간 배치 저장·복원(`%LOCALAPPDATA%\Morupixel\workspace.json`). 앱 진입점에서만 불러오므로 자체 검사와 오프스크린 렌더는 사용자 배치를 읽거나 쓰지 않는다 |
 | `Formats/RecentDocuments.cs` | 최근 문서 목록 저장(`%LOCALAPPDATA%\Morupixel\recent.json`, 저장소·배포본에 포함되지 않음) |

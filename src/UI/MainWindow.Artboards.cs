@@ -87,23 +87,13 @@ public sealed partial class MainWindow
     {
         var board = CurrentArtboard; var document = doc; long version = inspectorVersion;
         properties.Children.Add(Theme.Section("대지 편집"));
-        var picker = new ComboBox { MinHeight = 34, Margin = new Thickness(2, 4, 2, 8), DisplayMemberPath = "Name", ItemsSource = ArtboardEditing.Visible(doc), SelectedItem = board };
+        var picker = PropertyRows.Choice("편집할 대지"); picker.DisplayMemberPath = "Name"; picker.ItemsSource = ArtboardEditing.Visible(doc); picker.SelectedItem = board;
         picker.SelectionChanged += (_, _) => { if (picker.SelectedItem is Artboard chosen) { selectedArtboard = chosen.Id; Refresh(false); } };
-        properties.Children.Add(picker);
-        TextBox Field(string label, string value, Panel parent)
-        {
-            var column = new StackPanel { Margin = new Thickness(2, 3, 2, 3) };
-            column.Children.Add(Theme.Label(label, Theme.CaptionSize, Theme.Muted));
-            var box = new TextBox { Text = value, MinHeight = 34, Padding = new Thickness(8, 5, 8, 5) };
-            System.Windows.Automation.AutomationProperties.SetName(box, "대지 " + label);
-            column.Children.Add(box); parent.Children.Add(column); return box;
-        }
-        string Number(double n) => n.ToString("0.##", CultureInfo.InvariantCulture);
-        var name = Field("이름", board.Name, properties);
-        var coordinates = new UniformGrid { Columns = 2 }; properties.Children.Add(coordinates);
-        var x = Field("X", Number(board.X), coordinates); var y = Field("Y", Number(board.Y), coordinates);
-        var dimensions = new UniformGrid { Columns = 2 }; properties.Children.Add(dimensions);
-        var width = Field("너비 (px)", Number(board.Width), dimensions); var height = Field("높이 (px)", Number(board.Height), dimensions);
+        properties.Children.Add(PropertyRows.Field("편집할 대지", picker, new Thickness(2, 2, 2, 8)));
+        TextBox Number(string label, double n) => PropertyRows.NumberBox(n, "대지 " + label);
+        var name = PropertyRows.Input(board.Name, "대지 이름"); properties.Children.Add(PropertyRows.Field("이름", name));
+        var x = Number("X", board.X); var y = Number("Y", board.Y); properties.Children.Add(PropertyRows.Pair("X", x, "Y", y));
+        var width = Number("너비 (px)", board.Width); var height = Number("높이 (px)", board.Height); properties.Children.Add(PropertyRows.Pair("너비 (px)", width, "높이 (px)", height));
         void Apply()
         {
             if (!ReferenceEquals(document, doc) || version != inspectorVersion) return;

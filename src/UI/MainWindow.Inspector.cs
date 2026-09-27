@@ -142,9 +142,7 @@ public sealed partial class MainWindow
 
         properties.Children.Add(Theme.Section("외형"));
 
-        var blendLabel = Theme.Label("혼합 모드", Theme.CaptionSize, Theme.Muted); blendLabel.Margin = new Thickness(2, 0, 2, 3);
-        properties.Children.Add(blendLabel);
-        var blend = new ComboBox { MinHeight = 34, Margin = new Thickness(2, 0, 2, 8), Padding = new Thickness(8, 5, 8, 5) };
+        var blend = PropertyRows.Choice("혼합 모드");
         foreach (var mode in Enum.GetValues<BlendMode>())
         {
             var item = new ComboBoxItem { Content = BlendLabel(mode), Tag = mode };
@@ -158,25 +156,19 @@ public sealed partial class MainWindow
             if (doc.ActiveId != layerId || blend.SelectedItem is not ComboBoxItem { Tag: BlendMode mode } || doc.Active?.Blend == mode) return;
             EditLayer("혼합 모드", active => active.Blend = mode);
         };
-        properties.Children.Add(blend);
+        properties.Children.Add(PropertyRows.Field("혼합 모드", blend));
 
-        var opacity = new Grid { Margin = new Thickness(2, 0, 2, 4) };
-        opacity.ColumnDefinitions.Add(new ColumnDefinition());
-        opacity.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(78) });
-        var opacityLabel = Theme.Label("불투명도 · %", Theme.BodySize); opacity.Children.Add(opacityLabel);
         var opacityBox = InspectorNumberBox(layer, layer.Opacity * 100, 0, 100, "불투명도", (l, v) => l.Opacity = v / 100);
         opacityBox.ToolTip = "0~100% · Enter 또는 포커스를 벗어나면 적용";
-        Grid.SetColumn(opacityBox, 1); opacity.Children.Add(opacityBox);
-        properties.Children.Add(opacity);
+        properties.Children.Add(PropertyRows.Inline("불투명도 · %", opacityBox, margin: new Thickness(2, 0, 2, 4)));
         if (layer.Kind == LayerKind.Raster)
             properties.Children.Add(InspectorAction("레벨 보정", Levels, "선택한 이미지 레이어의 검정·흰색·감마 값을 보정합니다.", layer));
 
         properties.Children.Add(Theme.Section("위치와 변형"));
         properties.Children.Add(TransformRow(layer, ("X", layer.X, -100000, 100000, "X 위치", (l, v) => l.X = v),
             ("Y", layer.Y, -100000, 100000, "Y 위치", (l, v) => l.Y = v)));
-        var scaleRow = TransformRow(layer, ("크기 %", layer.Scale * 100, 1, 2000, "크기", (l, v) => l.Scale = v / 100),
-            ("회전 °", layer.Rotation, -36000, 36000, "회전", (l, v) => l.Rotation = v));
-        scaleRow.Margin = new Thickness(2, 2, 2, 5); properties.Children.Add(scaleRow);
+        properties.Children.Add(TransformRow(layer, ("크기 %", layer.Scale * 100, 1, 2000, "크기", (l, v) => l.Scale = v / 100),
+            ("회전 °", layer.Rotation, -36000, 36000, "회전", (l, v) => l.Rotation = v)));
         properties.Children.Add(InspectorAction("상세 변형 설정", Transform, "위치·회전과 가로·세로 배율을 조절합니다.", layer));
 
         properties.Children.Add(Theme.Section("레이어 작업"));
@@ -223,15 +215,9 @@ public sealed partial class MainWindow
         (string Label, double Value, double Min, double Max, string History, Action<Layer, double> Apply) left,
         (string Label, double Value, double Min, double Max, string History, Action<Layer, double> Apply) right)
     {
-        var row = new Grid { Margin = new Thickness(2, 0, 2, 0) };
-        row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition());
-        row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var leftLabel = Theme.Label(left.Label, Theme.CaptionSize, Theme.Muted); var rightLabel = Theme.Label(right.Label, Theme.CaptionSize, Theme.Muted);
         var leftBox = InspectorNumberBox(layer, left.Value, left.Min, left.Max, left.History, left.Apply);
         var rightBox = InspectorNumberBox(layer, right.Value, right.Min, right.Max, right.History, right.Apply);
-        Grid.SetColumn(rightLabel, 1); Grid.SetColumn(rightBox, 1); Grid.SetRow(leftBox, 1); Grid.SetRow(rightBox, 1);
-        row.Children.Add(leftLabel); row.Children.Add(leftBox); row.Children.Add(rightLabel); row.Children.Add(rightBox);
-        return row;
+        return PropertyRows.Pair(left.Label, leftBox, right.Label, rightBox);
     }
 
     TextBox InspectorNumberBox(Layer layer, double initial, double min, double max, string label, Action<Layer, double> apply)
@@ -240,15 +226,8 @@ public sealed partial class MainWindow
         string normalTip = $"{min:0}~{max:0} · Enter 또는 포커스를 벗어나면 적용";
         var boundDocument = doc;
         long boundVersion = inspectorVersion;
-        var box = new TextBox
-        {
-            Text = originalText,
-            MinHeight = 34, VerticalContentAlignment = VerticalAlignment.Center,
-            HorizontalContentAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(2, 2, 2, 4), Padding = new Thickness(8, 5, 8, 5),
-            ToolTip = normalTip,
-            IsEnabled = !IsLockedWithParents(layer)
-        };
+        var box = PropertyRows.NumberBox(originalText, label);
+        box.ToolTip = normalTip; box.IsEnabled = !IsLockedWithParents(layer);
         string? lastAttempt = null;
         void ClearInvalid()
         {
