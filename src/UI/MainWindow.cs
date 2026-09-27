@@ -48,12 +48,13 @@ public sealed partial class MainWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Theme.Panel; Foreground = Theme.Text;
         FontFamily = Theme.UiFont; FontSize = Theme.BodySize; UseLayoutRounding = true;
         var root = new Grid { Background = Theme.Header }; Content = root;
-        foreach (double h in new[] { 48.0, 30, 46, -1, 28 }) root.RowDefinitions.Add(new RowDefinition { Height = h < 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(h) });
+        // Title bar with inline menu · contextual tool options · floating workspace cards · status.
+        foreach (double h in new[] { 44.0, 44, -1, 26 }) root.RowDefinitions.Add(new RowDefinition { Height = h < 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(h) });
         root.Children.Add(BuildHeader());
 
-        var menu = BuildMenu(); Grid.SetRow(menu, 1); root.Children.Add(menu);
-        var optionHost = new DockPanel { Background = Theme.Panel, Margin = new Thickness(12, 4, 12, 4), LastChildFill = true };
-        Grid.SetRow(optionHost, 2); root.Children.Add(optionHost);
+        var optionHost = new DockPanel { LastChildFill = true, Margin = new Thickness(12, 0, 6, 0) };
+        var optionCard = new Border { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Margin = new Thickness(8, 0, 8, 4), Child = optionHost };
+        Grid.SetRow(optionCard, 1); root.Children.Add(optionCard);
         var viewport = BuildViewportActions(); DockPanel.SetDock(viewport, Dock.Right); optionHost.Children.Add(viewport);
         var options = new StackPanel { Orientation = Orientation.Horizontal };
         optionHost.Children.Add(DocumentControl(new ScrollViewer { Content = options, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled }));
@@ -75,30 +76,34 @@ public sealed partial class MainWindow : Window
         moveSelectionHint.Margin = new Thickness(14, 0, 2, 0); options.Children.Add(moveSelectionHint);
         autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
-        var body = new Grid { Margin = new Thickness(10, 6, 10, 8) }; Grid.SetRow(body, 3); root.Children.Add(body);
-        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
+        var body = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 2); root.Children.Add(body);
+        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(84) }); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
         var tools = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(4, 8, 4, 8) };
         var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
         foreach (var def in toolDefs)
         {
-            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); b.Height = 38; b.FontSize = 19; b.Padding = new Thickness(2); b.Margin = new Thickness(2); toolButtons[def.Tool] = b; tools.Children.Add(b);
+            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; tools.Children.Add(b);
         }
         foreach (var def in AdvancedToolDefinitions())
         {
-            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); b.Height = 40; b.FontSize = 15; b.Padding = new Thickness(1); b.Margin = new Thickness(2); toolButtons[def.Tool] = b; tools.Children.Add(b);
+            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; tools.Children.Add(b);
         }
         var toolColumn = new StackPanel(); toolColumn.Children.Add(tools);
         workspaceTools = tools; photoToolOrder = toolButtons.Keys.ToArray();
-        toolColumn.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(14, 0, 14, 0) });
+        toolColumn.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(10, 4, 10, 0) });
         colorSwatches = new ColorSwatches(() => ChooseColor(false), () => ChooseColor(true), SwapColors, ResetColors); toolColumn.Children.Add(colorSwatches);
-        body.Children.Add(new GlassPanel { Margin = new Thickness(0, 0, 7, 0), Child = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
-        var workspace = new Grid(); workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(38) }); workspace.RowDefinitions.Add(new RowDefinition()); Grid.SetColumn(workspace, 2); body.Children.Add(workspace);
+        body.Children.Add(new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
+        // The document stage: tabs merge into the canvas, clipped to the card's rounded corners.
+        var workspace = new Grid { Background = Theme.Panel }; workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) }); workspace.RowDefinitions.Add(new RowDefinition());
+        var stage = new ClipBorder { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Margin = new Thickness(0, 0, 0, 8), Child = workspace };
+        Grid.SetColumn(stage, 2); body.Children.Add(stage);
         workspace.Children.Add(BuildDocumentStrip());
         Grid.SetRow(canvas, 1); workspace.Children.Add(canvas);
         emptyWorkspace = BuildEmptyWorkspace(); Grid.SetRow(emptyWorkspace, 1); workspace.Children.Add(emptyWorkspace);
         var left = new ScrollViewer { Content = leftPanels, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; Grid.SetColumn(left, 1); body.Children.Add(left);
         var right = BuildInspectorPanel(); Grid.SetColumn(right, 3); body.Children.Add(right);
-        var bottom = new DockPanel { Background = Theme.Header }; status.Margin = new Thickness(12, 0, 8, 0); DockPanel.SetDock(zoomLabel, Dock.Right); zoomLabel.Margin = new Thickness(8, 0, 16, 0); bottom.Children.Add(zoomLabel); bottom.Children.Add(status); Grid.SetRow(bottom, 4); root.Children.Add(bottom);
+        var bottom = new DockPanel { Background = Theme.Header }; status.Margin = new Thickness(18, 0, 8, 0); status.Foreground = Theme.Muted; zoomLabel.Foreground = Theme.Muted;
+        DockPanel.SetDock(zoomLabel, Dock.Right); zoomLabel.Margin = new Thickness(8, 0, 18, 0); bottom.Children.Add(zoomLabel); bottom.Children.Add(status); Grid.SetRow(bottom, 3); root.Children.Add(bottom);
 
         canvas.MouseDown += OnDown; canvas.MouseMove += OnMove; canvas.MouseUp += OnUp;
         Loaded += (_, _) => LoadCustomBrushTips();
@@ -121,6 +126,11 @@ public sealed partial class MainWindow : Window
         SizeChanged += (_, _) => studioScroll.Height = PreferredStudioHeight(ActualHeight);
     }
 
+    static void StyleToolButton(Button button)
+    {
+        Theme.Styled(button, "IconButton");
+        button.Height = 34; button.Margin = new Thickness(1.5); button.Padding = new Thickness(0);
+    }
     static Slider Slider(double min, double max, double value, double width, Action<double> changed)
     {
         var slider = new Slider { Minimum = min, Maximum = max, Value = value, Width = width, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(5), ToolTip = "드래그하여 조절" };

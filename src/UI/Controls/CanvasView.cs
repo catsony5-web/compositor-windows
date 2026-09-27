@@ -67,7 +67,7 @@ public sealed partial class CanvasView : FrameworkElement
     }
     protected override void OnRender(DrawingContext dc)
     {
-        dc.DrawRectangle(Theme.Brush("#14171D"), null, new Rect(RenderSize));
+        dc.DrawRectangle(Theme.Stage, null, new Rect(RenderSize));
         if (Document == null) return;
         var origin = Origin; var rect = new Rect(origin.X, origin.Y, Document.Width * Zoom, Document.Height * Zoom);
         foreach (var board in ArtboardEditing.Visible(Document))

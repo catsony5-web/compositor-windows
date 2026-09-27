@@ -34,12 +34,13 @@ public sealed class AdjustmentDialog : Window
         selectionMask = editingId == null && selection != null ? SelectionTools.Mask(selection, document.Width, document.Height) : null;
         Owner = owner; Title = "Morupixel · " + (photoDevelop ? "사진 현상" : initial.Kind.ToString()); Width = photoDevelop ? 1040 : 1000; Height = photoDevelop ? 760 : 660; MinWidth = 860; MinHeight = 580;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Header; Foreground = Theme.Text;
-        var grid = new Grid { Margin = new Thickness(18) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 340 : 292) });
+        var grid = new Grid { Margin = new Thickness(12) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 360 : 320) });
         grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) }); Content = grid;
-        grid.Children.Add(new Border { Background = Theme.Brush("#11171C"), Child = preview });
+        grid.Children.Add(new Border { Background = Theme.Stage, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = preview });
         var controls = new StackPanel { Margin = new Thickness(15) };
         var controlScroll = new ScrollViewer { Content = controls, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; var glass = new GlassPanel { Child = controlScroll, Margin = new Thickness(12, 0, 0, 0) }; Grid.SetColumn(glass, 1); grid.Children.Add(glass);
         var heading = Theme.Label(initial.Kind switch { AdjustmentKind.Exposure => "노출", AdjustmentKind.Curves => "곡선", AdjustmentKind.Levels => "레벨", AdjustmentKind.HueSaturation => "색조 / 채도", AdjustmentKind.Grain => "그레인", AdjustmentKind.PhotoDevelop => "사진 현상", _ => "그라데이션 맵" }, 23);
+        heading.FontSize = Theme.TitleSize; heading.FontWeight = FontWeights.SemiBold; heading.Margin = new Thickness(2, 0, 2, 8);
         heading.ToolTip = "원본 픽셀을 보존하는 조정 레이어"; controls.Children.Add(heading);
         if (photoDevelop)
             controls.Children.Add(Theme.Button("현상 설정 모두 초기화", () => { Spec = Spec with { PhotoDevelop = new() }; SyncControls(); Schedule(); }));
@@ -113,8 +114,9 @@ public sealed class AdjustmentDialog : Window
             enabled.Content = "보정 결과 보기"; enabled.VerticalAlignment = VerticalAlignment.Center;
             enabled.ToolTip = "해제하면 현재 사진 현상을 끈 보정 전 모습을 표시합니다."; footerRow.Children.Add(enabled);
         }
-        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; footer.Children.Add(cancel);
-        footer.Children.Add(Theme.Button("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageBox.Show(this, e.Message); } }));
+        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; cancel.MinWidth = 80; footer.Children.Add(cancel);
+        var apply = Theme.Styled(Theme.Button("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageBox.Show(this, e.Message); } }), "PrimaryButton");
+        apply.MinWidth = 96; footer.Children.Add(apply);
         Closed += (_, _) => { closed = true; version++; previewCts?.Cancel(); }; Loaded += (_, _) => Schedule();
     }
     internal bool TryCommitParameters()

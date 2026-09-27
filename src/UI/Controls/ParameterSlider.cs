@@ -26,18 +26,30 @@ public sealed class ParameterSlider : StackPanel
         if (!double.IsFinite(min) || !double.IsFinite(max) || min >= max) throw new ArgumentOutOfRangeException(nameof(max));
         if (!double.IsFinite(minimumStep) || minimumStep < 0) throw new ArgumentOutOfRangeException(nameof(minimumStep));
         this.minimumStep = minimumStep;
-        Margin = new Thickness(0, 6, 0, 12);
+        Margin = new Thickness(0, 4, 0, 8);
         var row = new DockPanel();
-        number = new TextBox { Width = 78, Padding = new Thickness(8, 5, 8, 5), MinHeight = 32, VerticalContentAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right, Margin = new Thickness(0) };
+        number = new TextBox { Width = 64, Padding = new Thickness(6, 3, 6, 3), MinHeight = 26, VerticalContentAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right, Margin = new Thickness(0) };
         AutomationProperties.SetName(number, label);
         DockPanel.SetDock(number, Dock.Right); row.Children.Add(number);
-        var restore = Theme.Button("↺", () => SetValue(Math.Clamp(reset, min, max), true), label + " 초기화");
-        restore.Width = 24; restore.MinHeight = 22; restore.Padding = new Thickness(0); restore.Margin = new Thickness(0);
-        restore.Background = Brushes.Transparent; restore.BorderBrush = Brushes.Transparent;
-        DockPanel.SetDock(restore, Dock.Right); row.Children.Add(restore); row.Children.Add(Theme.Label(label, 12)); Children.Add(row);
+        ComboBox? steps = null;
+        if (showStepControls)
+        {
+            // The movement unit sits beside the value; its purpose is carried by the tooltip and accessible name.
+            steps = new ComboBox { MinHeight = 26, Width = 68, Padding = new Thickness(7, 2, 4, 2), FontSize = Theme.CaptionSize, Margin = new Thickness(4, 0, 4, 0), ToolTip = "이동 간격 · 슬라이더와 방향키가 움직이는 단위" };
+            AutomationProperties.SetName(steps, label + " 이동 간격");
+            steps.Items.Add(new ComboBoxItem { Content = minimumStep > 0 ? "기본" : "연속", Tag = 0d });
+            foreach (double step in new[] { .01, .1, 1d, 5d }.Where(step => step <= max - min && step >= minimumStep))
+                steps.Items.Add(new ComboBoxItem { Content = step.ToString("0.##", CultureInfo.InvariantCulture), Tag = step });
+            steps.SelectedIndex = 0;
+            DockPanel.SetDock(steps, Dock.Right); row.Children.Add(steps);
+        }
+        var restore = Theme.IconButton("M5 12A7 7 0 1 0 8 6.5 M4 3V8H9", () => SetValue(Math.Clamp(reset, min, max), true), label + " 초기화", 22, 13);
+        restore.Margin = new Thickness(0);
+        DockPanel.SetDock(restore, Dock.Right); row.Children.Add(restore);
+        var caption = Theme.Label(label, Theme.BodySize, Theme.Muted); caption.Margin = new Thickness(1, 2, 2, 2); row.Children.Add(caption); Children.Add(row);
         bool precisionControls = showStepControls || minimumStep > 0;
         slider = precisionControls ? new PrecisionSlider(this) : new Slider();
-        slider.Minimum = min; slider.Maximum = max; slider.Margin = new Thickness(4, 8, 4, 0);
+        slider.Minimum = min; slider.Maximum = max; slider.Margin = new Thickness(2, 4, 2, 0);
         slider.SmallChange = precisionControls ? max - min <= 40 ? .01 : .1 : (max - min) / 200;
         slider.LargeChange = (max - min) / 20; slider.IsMoveToPointEnabled = true;
         if (TryFindResource("SpectrumSlider") is Style style) slider.Style = style;
@@ -57,14 +69,8 @@ public sealed class ParameterSlider : StackPanel
             if (e.Key == Key.Enter) { TryCommit(); e.Handled = true; }
             else if (e.Key == Key.Escape) { SetValue(Value); e.Handled = true; }
         };
-        if (showStepControls)
+        if (steps != null)
         {
-            var steps = new ComboBox { MinHeight = 28, Width = 94, Margin = new Thickness(6, 0, 0, 0) };
-            AutomationProperties.SetName(steps, label + " 이동 간격");
-            steps.Items.Add(new ComboBoxItem { Content = minimumStep > 0 ? "기본" : "연속", Tag = 0d });
-            foreach (double step in new[] { .01, .1, 1d, 5d }.Where(step => step <= max - min && step >= minimumStep))
-                steps.Items.Add(new ComboBoxItem { Content = step.ToString("0.##", CultureInfo.InvariantCulture), Tag = step });
-            steps.SelectedIndex = 0;
             steps.SelectionChanged += (_, _) =>
             {
                 if (steps.SelectedItem is ComboBoxItem { Tag: double step })
@@ -73,9 +79,6 @@ public sealed class ParameterSlider : StackPanel
                     slider.SmallChange = Math.Max(minimumStep, step > 0 ? step : max - min <= 40 ? .01 : .1);
                 }
             };
-            var stepRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 5, 2, 0) };
-            var caption = Theme.Label("이동 간격", Theme.CaptionSize, Theme.Muted); caption.VerticalAlignment = VerticalAlignment.Center;
-            stepRow.Children.Add(caption); stepRow.Children.Add(steps); Children.Add(stepRow);
         }
     }
 

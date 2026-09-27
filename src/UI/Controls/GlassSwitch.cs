@@ -14,7 +14,7 @@ public sealed class GlassSwitch : ToggleButton
     bool? requestedSelection;
     public GlassSwitch(string left, string right, double width)
     {
-        LeftLabel = left; RightLabel = right; Width = width; Height = 34;
+        LeftLabel = left; RightLabel = right; Width = width; Height = 30;
         Cursor = Cursors.Hand; VerticalAlignment = VerticalAlignment.Center;
         Template = new System.Windows.Controls.ControlTemplate(typeof(GlassSwitch));
         Checked += (_, _) => InvalidateVisual(); Unchecked += (_, _) => InvalidateVisual();
@@ -49,11 +49,11 @@ public sealed class GlassSwitch : ToggleButton
     {
         base.OnRender(dc); double w = ActualWidth, h = ActualHeight;
         if (w < 4 || h < 4) return;
-        dc.DrawRoundedRectangle(Theme.Header, new Pen(Theme.Line, 1), new Rect(.5, .5, w - 1, h - 1), 6, 6);
+        dc.DrawRoundedRectangle(Theme.Input, new Pen(Theme.Line, 1), new Rect(.5, .5, w - 1, h - 1), 7, 7);
         double thumbWidth = (w - 6) / 2, x = IsChecked == true ? w / 2 : 3;
-        dc.DrawRoundedRectangle(Theme.Selected, null, new Rect(x, 3, thumbWidth, h - 6), 4, 4);
+        dc.DrawRoundedRectangle(Theme.Surface, new Pen(Theme.Stroke, 1), new Rect(x + .5, 3.5, thumbWidth - 1, h - 7), 5, 5);
         DrawLabel(LeftLabel, w / 4, IsChecked != true); DrawLabel(RightLabel, w * .75, IsChecked == true);
-        if (IsKeyboardFocusWithin) dc.DrawRoundedRectangle(null, new Pen(Theme.Accent, 1.5), new Rect(1, 1, w - 2, h - 2), 6, 6);
+        if (IsKeyboardFocusWithin) dc.DrawRoundedRectangle(null, new Pen(Theme.Accent, 1.5), new Rect(1, 1, w - 2, h - 2), 7, 7);
         void DrawLabel(string text, double center, bool selected)
         {
             var label = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,

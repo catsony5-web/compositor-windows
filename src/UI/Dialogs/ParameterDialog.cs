@@ -34,9 +34,9 @@ public sealed class ParameterDialog : Window
         }
         acceptedValues = this.fields.Select(field => field.Value).ToArray();
         Owner = owner; Title = "Morupixel · " + title;
-        Width = 480; MinWidth = 400; Height = Math.Clamp(200 + this.fields.Length * 128, 300, 760); MinHeight = 300;
+        Width = 440; MinWidth = 400; Height = Math.Clamp(170 + this.fields.Length * 92, 260, 760); MinHeight = 260;
         WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner;
-        Background = Theme.Header; Foreground = Theme.Text; FontFamily = Theme.UiFont;
+        Background = Theme.Panel; Foreground = Theme.Text; FontFamily = Theme.UiFont;
 
         var root = new Grid { Margin = new Thickness(20) }; Content = root;
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -44,7 +44,7 @@ public sealed class ParameterDialog : Window
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
-        var label = Theme.Label(title, 20); label.FontWeight = FontWeights.SemiBold;
+        var label = Theme.Label(title, Theme.TitleSize); label.FontWeight = FontWeights.SemiBold;
         label.ToolTip = "슬라이더를 움직이거나 숫자를 직접 입력하세요.\n방향키: 한 단계 · 연속 이동에서 Shift: 미세 조절";
         heading.Children.Add(label);
         root.Children.Add(heading);
@@ -59,7 +59,7 @@ public sealed class ParameterDialog : Window
             parameter.Changed += _ => SetError("");
             controls.Add(parameter); body.Children.Add(parameter);
             string range = field.Minimum.ToString("0.####", CultureInfo.InvariantCulture) + " ~ " + field.Maximum.ToString("0.####", CultureInfo.InvariantCulture);
-            var bounds = Theme.Label("범위 " + range, Theme.CaptionSize, Theme.Muted); bounds.Margin = new Thickness(2, 0, 2, 14);
+            var bounds = Theme.Label("범위 " + range, Theme.CaptionSize, Theme.Subtle); bounds.Margin = new Thickness(2, -2, 2, 10);
             System.Windows.Automation.AutomationProperties.SetName(bounds, field.Label + " 범위"); body.Children.Add(bounds);
         }
 
@@ -69,8 +69,8 @@ public sealed class ParameterDialog : Window
         System.Windows.Automation.AutomationProperties.SetName(error, "입력 확인"); footer.Children.Add(error);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         // Close yields false for a modal dialog and also works in offscreen cancellation tests.
-        var cancel = Theme.Button("취소", Close); cancel.IsCancel = true; cancel.MinWidth = 76;
-        var apply = Theme.Button("적용", () => { if (TryCommitFields()) DialogResult = true; }); apply.IsDefault = true; apply.MinWidth = 76; apply.Background = Theme.Primary;
+        var cancel = Theme.Button("취소", Close); cancel.IsCancel = true; cancel.MinWidth = 80;
+        var apply = Theme.Styled(Theme.Button("적용", () => { if (TryCommitFields()) DialogResult = true; }), "PrimaryButton"); apply.IsDefault = true; apply.MinWidth = 80;
         buttons.Children.Add(cancel); buttons.Children.Add(apply); footer.Children.Add(buttons);
     }
 

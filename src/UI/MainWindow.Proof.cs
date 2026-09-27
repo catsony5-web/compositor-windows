@@ -12,7 +12,7 @@ public sealed partial class MainWindow
     GlassSwitch? proofSwitch;
     FrameworkElement BuildProofSwitch()
     {
-        proofSwitch = new GlassSwitch("RGB", "CMYK 보기", 164) { Margin = new Thickness(4, 0, 8, 0) };
+        proofSwitch = new GlassSwitch("RGB", "CMYK 보기", 148) { Margin = new Thickness(2, 0, 2, 0) };
         proofSwitch.Click += (_, _) => Guard(() => { try { SetProof(proofSwitch.IsChecked == true); } finally { UpdateProofButtons(); } });
         UpdateProofButtons(); return proofSwitch;
     }

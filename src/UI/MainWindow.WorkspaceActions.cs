@@ -8,8 +8,8 @@ public sealed partial class MainWindow
 {
     static void WorkspaceSection(StackPanel panel, string title, string? detail = null)
     {
-        var heading = Theme.Label(title, 14); heading.FontWeight = FontWeights.SemiBold;
-        heading.Margin = new Thickness(2, panel.Children.Count == 0 ? 0 : 15, 2, 7);
+        var heading = Theme.Label(title, Theme.BodySize, Theme.Muted); heading.FontWeight = FontWeights.SemiBold;
+        heading.Margin = new Thickness(2, panel.Children.Count == 0 ? 2 : 14, 2, 6);
         heading.ToolTip = detail;
         panel.Children.Add(heading);
     }
@@ -20,8 +20,8 @@ public sealed partial class MainWindow
         foreach (var action in actions)
         {
             var button = Theme.Button(action.Name, () => Guard(() => { CommitFocusedInspectorField(); action.Run(); }), action.Tip);
-            button.Content = new TextBlock { Text = action.Name, FontSize = 13, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
-            button.MinHeight = 34; button.Padding = new Thickness(7, 6, 7, 6); button.Margin = new Thickness(2);
+            button.Content = new TextBlock { Text = action.Name, FontSize = Theme.BodySize, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
+            button.MinHeight = 32; button.Padding = new Thickness(7, 5, 7, 5); button.Margin = new Thickness(2);
             System.Windows.Automation.AutomationProperties.SetName(button, action.Name); grid.Children.Add(button);
         }
         panel.Children.Add(grid);

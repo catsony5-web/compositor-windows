@@ -57,6 +57,8 @@ public sealed partial class MainWindow
         ShowStudioPage(2); Capture(this, "colors", 1480, 920);
         ShowStudioPage(3); Capture(this, "brush", 1480, 920);
         ShowStudioPage(0); Capture(this, "compact", 1200, 750);
+        // Small laptop and large desktop client areas for responsive layout review.
+        foreach (var (width, height) in new[] { (1280, 720), (1366, 768), (1920, 1080) }) Capture(this, $"window-{width}x{height}", width, height);
         void CapturePane(FrameworkElement pane, string name, int width, int height)
         {
             if (pane is StudioPane movable) RemovePane(movable);
@@ -82,7 +84,7 @@ public sealed partial class MainWindow
         CapturePane(studioPanes[1], "text-properties", 360, 1160);
         var shape = VectorShapes.Create(new ShapeSpec { Width = 360, Height = 150, CornerRadius = 28, FillArgb = 0xD92E4862, StrokeEnabled = true, StrokeArgb = 0xFFC0D9F2, StrokeWidth = 2 }, 100, 100);
         doc.Add(shape); SetWorkspaceMode(true); Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
-        Capture(this, "design", 1480, 920); CapturePane(studioPanes[1], "shape-properties", 360, 880);
+        Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)

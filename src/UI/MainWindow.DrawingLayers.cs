@@ -13,15 +13,15 @@ public sealed partial class MainWindow
 
     FrameworkElement BuildLayerCategoryTabs()
     {
-        var tabs = new UniformGrid { Columns = 2, Margin = new Thickness(7, 2, 7, 0) };
+        var tabs = new UniformGrid { Columns = 2 };
         foreach (var (category, caption) in new[] { (LayerCategory.Drawing, "도면 레이어"), (LayerCategory.Photo, "포토샵 레이어") })
         {
             var button = Theme.Button(caption, () => { CommitFocusedInspectorField(); layerCategory = category; BuildLayers(); });
-            button.SetResourceReference(StyleProperty, "PanelTab"); button.MinHeight = 34;
+            button.SetResourceReference(StyleProperty, "SegmentButton");
             System.Windows.Automation.AutomationProperties.SetName(button, caption);
             layerCategoryButtons[category] = button; tabs.Children.Add(button);
         }
-        return tabs;
+        return new Border { Background = Theme.Input, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(2), Margin = new Thickness(8, 6, 8, 4), Child = tabs };
     }
 
     LayerListEntry[] DrawingLayerEntries(Dictionary<Guid, LayerCategory> categories)
