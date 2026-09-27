@@ -11,6 +11,10 @@ public sealed partial class MainWindow
     {
         Directory.CreateDirectory(directory);
         RenderPreview(Path.Combine(directory, "startup.png"));
+        // Synthetic entries show the recent-documents list without reading the user's history.
+        recentDocuments = [@"C:\작업\예시\여름 캠페인 포스터.moruproj", @"C:\작업\예시\제품 사진 보정.png", @"C:\작업\예시\카드뉴스 3장.moruproj"];
+        RebuildRecentDocuments(); RenderPreview(Path.Combine(directory, "startup-recent.png"));
+        recentDocuments = []; RebuildRecentDocuments();
         OpenLearningSample(); RenderPreview(Path.Combine(directory, "editor.png"));
         void Capture(Window window, string name, int width, int height)
         {
@@ -24,6 +28,30 @@ public sealed partial class MainWindow
             using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
         }
         Capture(new NewDocumentDialog(null), "new-document", 970, 720);
+        void CaptureFit(Window window, string name, int width)
+        {
+            var content = (FrameworkElement)window.Content; window.Content = null;
+            var host = new System.Windows.Controls.Border { Background = window.Background, Child = content };
+            try
+            {
+                host.Measure(new Size(width, double.PositiveInfinity));
+                int height = (int)Math.Ceiling(host.DesiredSize.Height);
+                host.Measure(new Size(width, height)); host.Arrange(new Rect(0, 0, width, height)); host.UpdateLayout();
+                var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(host);
+                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
+                using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
+            }
+            finally { host.Child = null; window.Close(); }
+        }
+        CaptureFit(Dialogs.CreateFields(null, "캔버스 크기 · 좌측 상단 기준", [("너비 (px)", doc.Width.ToString()), ("높이 (px)", doc.Height.ToString())]).Dialog, "dialog-fields", 420);
+        CaptureFit(new MessageDialog(null, "먼저 선택 도구로 자를 영역을 지정하세요.", "Morupixel", NoticeKind.Warning), "dialog-warning", 460);
+        CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
+        CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
+        CaptureFit(new CompatibilityExportDialog(null!, doc), "compat-export", 510);
+        Capture(ExportDialog.Create(null, doc), "export", 920, 630);
+        Capture(new ColorPickerDialog(null!, foreground), "color-picker", 560, 470);
+        Capture(new CmykExportDialog(null!, doc), "cmyk-export", 990, 710);
+        Capture(new SelectedLayerExportDialog(null!, doc, [doc.Layers[0].Id]), "layer-export", 960, 720);
         var saveChanges = new SaveChangesDialog(null, doc.Name);
         var saveContent = (FrameworkElement)saveChanges.Content;
         saveChanges.Content = null;

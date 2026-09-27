@@ -182,7 +182,12 @@ public sealed partial class CanvasView : FrameworkElement
             dc.DrawRoundedRectangle(Theme.Surface, new Pen(Theme.Accent, 1), new Rect(x, y, label.Width + 22, 32), 5, 5);
             dc.DrawText(label, new Point(x + 11, y + 7));
         }
-        dc.DrawRectangle(Theme.Header, null, new Rect(0, 0, ActualWidth, 22));
+        const double ruler = 22;
+        dc.DrawRectangle(Theme.Header, null, new Rect(0, 0, ActualWidth, ruler));
+        dc.DrawRectangle(Theme.Header, null, new Rect(0, ruler, ruler, Math.Max(0, ActualHeight - ruler)));
+        var rulerEdge = new Pen(Theme.Line, 1);
+        dc.DrawLine(rulerEdge, new Point(ruler, ruler - .5), new Point(ActualWidth, ruler - .5));
+        dc.DrawLine(rulerEdge, new Point(ruler - .5, ruler), new Point(ruler - .5, ActualHeight));
         // Use readable 1/2/5 intervals with at least 60 screen pixels between labels.
         double requestedStep = Math.Max(1, 60 / Zoom);
         double magnitude = Math.Pow(10, Math.Floor(Math.Log10(requestedStep)));
@@ -190,11 +195,25 @@ public sealed partial class CanvasView : FrameworkElement
         double step = (normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10) * magnitude;
         double firstTick = Math.Ceiling(Math.Max(0, -origin.X / Zoom) / step) * step;
         double lastTick = Math.Min(Document.Width, (ActualWidth - origin.X) / Zoom);
+        var tick = new Pen(Theme.Stroke, 1); double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         for (double x = firstTick; x <= lastTick; x += step)
         {
             double sx = origin.X + x * Zoom;
-            dc.DrawLine(new Pen(Theme.Line, 1), new Point(sx, 15), new Point(sx, 22));
-            dc.DrawText(new FormattedText(x.ToString("0"), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 9, Theme.Muted, VisualTreeHelper.GetDpi(this).PixelsPerDip), new Point(sx + 4, 3));
+            if (sx < ruler) continue;
+            dc.DrawLine(tick, new Point(sx, 15), new Point(sx, ruler));
+            dc.DrawText(new FormattedText(x.ToString("0"), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 9, Theme.Muted, pixelsPerDip), new Point(sx + 4, 3));
+        }
+        double firstRow = Math.Ceiling(Math.Max(0, -origin.Y / Zoom) / step) * step;
+        double lastRow = Math.Min(Document.Height, (ActualHeight - origin.Y) / Zoom);
+        for (double y = firstRow; y <= lastRow; y += step)
+        {
+            double sy = origin.Y + y * Zoom;
+            if (sy < ruler) continue;
+            dc.DrawLine(tick, new Point(15, sy), new Point(ruler, sy));
+            var label = new FormattedText(y.ToString("0"), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 9, Theme.Muted, pixelsPerDip);
+            // Vertical labels read bottom to top and sit just below their tick.
+            var labelOrigin = new Point(2, sy + 3 + label.Width);
+            dc.PushTransform(new RotateTransform(-90, labelOrigin.X, labelOrigin.Y)); dc.DrawText(label, labelOrigin); dc.Pop();
         }
     }
     void DrawSelection(DrawingContext dc, Rect bounds, bool ellipse)

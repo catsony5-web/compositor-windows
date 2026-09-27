@@ -35,7 +35,7 @@ public sealed class TextEditorDialog : Window
         Title = "Morupixel · 텍스트"; Width = 760; Height = 570; MinWidth = 650; MinHeight = 450;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Panel; Foreground = Theme.Text;
         var grid = new Grid { Margin = new Thickness(22) }; grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Content = grid;
-        grid.Children.Add(Theme.Label("텍스트", 21));
+        grid.Children.Add(DialogShell.Title("텍스트"));
         var controls = new WrapPanel { Margin = new Thickness(0, 14, 0, 14) }; Grid.SetRow(controls, 1); grid.Children.Add(controls);
         family = new ComboBox { ItemsSource = Fonts.SystemFontFamilies.Select(f => f.Source).Order().ToArray(), Text = initial.FontFamily, IsEditable = true, Width = 190, Margin = new Thickness(3), Padding = new Thickness(6) };
         size = new TextBox { Text = initial.FontSize.ToString(CultureInfo.InvariantCulture), Width = 64 };
@@ -66,9 +66,9 @@ public sealed class TextEditorDialog : Window
             suppressNextEnter = true;
             Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => suppressNextEnter = false));
         }), true);
-        var footer = new DockPanel { Margin = new Thickness(0, 12, 0, 0) }; Grid.SetRow(footer, 3); grid.Children.Add(footer);
-        applyButton = Theme.Button("텍스트 적용", ApplyChanges); applyButton.IsDefault = true; DockPanel.SetDock(applyButton, Dock.Right); footer.Children.Add(applyButton);
-        cancelButton = Theme.Button("취소", CancelChanges); cancelButton.IsCancel = true; DockPanel.SetDock(cancelButton, Dock.Right); footer.Children.Add(cancelButton);
+        var footer = new DockPanel { Margin = new Thickness(0, 12, 0, 0), LastChildFill = false }; Grid.SetRow(footer, 3); grid.Children.Add(footer);
+        applyButton = DialogShell.Primary("텍스트 적용", ApplyChanges); applyButton.IsDefault = true; applyButton.Margin = new Thickness(8, 0, 0, 0); DockPanel.SetDock(applyButton, Dock.Right); footer.Children.Add(applyButton);
+        cancelButton = DialogShell.Secondary("취소", CancelChanges); cancelButton.IsCancel = true; DockPanel.SetDock(cancelButton, Dock.Right); footer.Children.Add(cancelButton);
         editor.ToolTip = "Enter 적용 · Shift+Enter 줄바꿈 · Esc 취소";
         Loaded += (_, _) => { Preview(); editor.Focus(); editor.SelectAll(); };
     }
@@ -105,7 +105,7 @@ public sealed class TextEditorDialog : Window
             Spec = Spec with { Content = editor.Text, FontFamily = family.Text, FontSize = Dialogs.Number(size.Text, 1, 1024), Bold = bold.IsChecked == true, Italic = italic.IsChecked == true, Alignment = (TextAlignment)(align.SelectedItem ?? TextAlignment.Left), ColorArgb = (uint)(color.A << 24 | color.R << 16 | color.G << 8 | color.B) };
             Spec.Validate(); Complete(true);
         }
-        catch (Exception e) { MessageBox.Show(this, e.Message); }
+        catch (Exception e) { MessageDialog.Show(this, e.Message); }
     }
 
     void CancelChanges() => Complete(false);

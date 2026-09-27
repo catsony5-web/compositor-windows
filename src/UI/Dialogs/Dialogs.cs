@@ -9,21 +9,30 @@ public static class Dialogs
 {
     public static string[]? Fields(Window owner, string title, params (string Label, string Value)[] fields)
     {
-        var dialog = new Window { Title = title, Owner = owner, Width = 400, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Theme.Panel, Foreground = Theme.Text, FontFamily = Theme.UiFont };
-        var panel = new StackPanel { Margin = new Thickness(22, 20, 22, 18) }; dialog.Content = panel;
-        var heading = Theme.Label(title, 18); heading.FontWeight = FontWeights.SemiBold; heading.Margin = new Thickness(3, 0, 3, 15); panel.Children.Add(heading);
+        var (dialog, boxes) = CreateFields(owner, title, fields);
+        return dialog.ShowDialog() == true ? boxes.Select(b => b.Text).ToArray() : null;
+    }
+
+    // Used by 15 commands (layer name, transform, canvas size, filters). Built on DialogShell.
+    internal static (Window Dialog, List<TextBox> Boxes) CreateFields(Window? owner, string title, (string Label, string Value)[] fields)
+    {
+        var dialog = new Window { Width = 420, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize };
+        DialogShell.Prepare(dialog, owner, title);
+        var panel = new StackPanel { Margin = new Thickness(24, 22, 24, 22) }; dialog.Content = panel;
+        panel.Children.Add(DialogShell.Title(title));
         var boxes = new List<TextBox>();
         foreach (var field in fields)
         {
-            var caption = Theme.Label(field.Label, 11, Theme.Muted); caption.Margin = new Thickness(3, 8, 3, 2); panel.Children.Add(caption);
-            var box = new TextBox { Text = field.Value, MinWidth = 280 }; boxes.Add(box); panel.Children.Add(box);
+            panel.Children.Add(DialogShell.FieldLabel(field.Label));
+            var box = new TextBox { Text = field.Value, MinWidth = 280, Margin = new Thickness(0) };
+            System.Windows.Automation.AutomationProperties.SetName(box, field.Label);
+            boxes.Add(box); panel.Children.Add(box);
         }
-        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 19, 0, 0) };
-        var cancel = Theme.Button("취소", () => dialog.DialogResult = false); cancel.IsCancel = true;
-        var okay = Theme.Button("적용", () => dialog.DialogResult = true); okay.IsDefault = true; okay.Background = Theme.Primary;
-        row.Children.Add(cancel); row.Children.Add(okay); panel.Children.Add(row);
-        dialog.Loaded += (_, _) => { boxes[0].Focus(); boxes[0].SelectAll(); };
-        return dialog.ShowDialog() == true ? boxes.Select(b => b.Text).ToArray() : null;
+        var cancel = DialogShell.Secondary("취소", () => dialog.DialogResult = false); cancel.IsCancel = true;
+        var okay = DialogShell.Primary("적용", () => dialog.DialogResult = true); okay.IsDefault = true;
+        panel.Children.Add(DialogShell.Footer(cancel, okay));
+        dialog.Loaded += (_, _) => { if (boxes.Count > 0) { boxes[0].Focus(); boxes[0].SelectAll(); } };
+        return (dialog, boxes);
     }
     public static double Number(string text, double min, double max)
     {

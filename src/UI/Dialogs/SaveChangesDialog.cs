@@ -25,7 +25,7 @@ public sealed class SaveChangesDialog : Window
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
-        Background = Theme.Header;
+        Background = Theme.Panel;
         Foreground = Theme.Text;
         FontFamily = Theme.UiFont;
         FontSize = Theme.BodySize;
@@ -40,17 +40,17 @@ public sealed class SaveChangesDialog : Window
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         KeyboardNavigation.SetTabNavigation(root, KeyboardNavigationMode.Cycle);
 
-        var heading = Theme.Label("변경 내용을 저장할까요?", 20);
+        var heading = Theme.Label("변경 내용을 저장할까요?", Theme.TitleSize);
         heading.FontWeight = FontWeights.SemiBold;
         heading.Margin = new Thickness(0);
         root.Children.Add(heading);
 
         var documentCard = new Border
         {
-            Background = Theme.Panel,
+            Background = Theme.Stage,
             BorderBrush = Theme.Line,
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(10),
             Padding = new Thickness(16),
             Margin = new Thickness(0, 18, 0, 0)
         };
@@ -72,7 +72,7 @@ public sealed class SaveChangesDialog : Window
             Focusable = false
         };
         documentRow.Children.Add(documentIcon);
-        var name = Theme.Label(documentName, 14);
+        var name = Theme.Label(documentName, Theme.HeadingSize);
         name.Name = "DocumentName";
         name.FontWeight = FontWeights.SemiBold;
         name.Margin = new Thickness(2, 3, 4, 3);
@@ -115,8 +115,7 @@ public sealed class SaveChangesDialog : Window
         discard.Margin = new Thickness(8, 0, 0, 0);
         var save = ActionButton("저장 후 닫기", DocumentCloseChoice.Save, 128);
         save.Margin = new Thickness(8, 0, 0, 0);
-        save.Background = Theme.Primary;
-        save.BorderBrush = Theme.Primary;
+        Theme.Styled(save, "PrimaryButton");
         save.IsDefault = true;
         Grid.SetColumn(discard, 2); Grid.SetColumn(save, 3);
         actions.Children.Add(cancel);
@@ -136,7 +135,7 @@ public sealed class SaveChangesDialog : Window
             Close();
         });
         button.Width = width;
-        button.MinHeight = 38;
+        button.MinHeight = 36;
         button.Margin = new Thickness(0);
         button.Padding = new Thickness(12, 8, 12, 8);
         button.Focusable = true;

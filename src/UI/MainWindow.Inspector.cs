@@ -9,7 +9,7 @@ namespace Compositor.Windows;
 public sealed partial class MainWindow
 {
     readonly TextBlock layerCountLabel = Theme.Label("", Theme.CaptionSize, Theme.Muted);
-    static readonly Brush inspectorInvalid = Theme.Brush("#D67A79");
+    static readonly Brush inspectorInvalid = Theme.Danger;
     long inspectorVersion;
     Action? pendingInspectorCommit;
     Document? layerPanelDocument;

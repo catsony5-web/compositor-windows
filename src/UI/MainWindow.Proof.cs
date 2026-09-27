@@ -26,7 +26,7 @@ public sealed partial class MainWindow
     {
         if (enabled == cmykProof) return;
         if (enabled) _ = CmykExport.ProfileName(proofProfile);
-        CancelGesture(); ClearTextMovePreview(); cmykProof = enabled; UpdateProofButtons();
+        CancelGesture(); ClearTextMovePreview(); cmykProof = enabled; UpdateProofButtons(); UpdateDocumentInfo();
         if (!enabled && composite != null) { canvas.Composite = composite.Bitmap(); canvas.InvalidateVisual(); }
         QueueRender(); status.Text = enabled ? "CMYK 인쇄색을 준비합니다 · RGB 원본과 레이어는 유지됩니다" : "RGB 편집 화면";
     }

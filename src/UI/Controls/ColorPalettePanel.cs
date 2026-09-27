@@ -13,7 +13,7 @@ public sealed class ColorPalettePanel : StackPanel
 {
     readonly SaturationValuePad pad = new();
     readonly Slider hue;
-    readonly TextBlock values = Theme.Label("", 11, Theme.Muted);
+    readonly TextBlock values = Theme.Label("", Theme.CaptionSize, Theme.Muted);
     readonly UniformGrid recommendations = new() { Columns = 3 };
     readonly List<Button> harmonyButtons = [];
     readonly UniformGrid shades = new() { Columns = ColorShadePalette.Columns, Rows = ColorShadePalette.Rows, Margin = new Thickness(2, 3, 2, 3) };
@@ -195,7 +195,7 @@ public sealed class ColorPalettePanel : StackPanel
             string hex = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
             var content = new StackPanel();
             content.Children.Add(new Border { Height = 30, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)), Margin = new Thickness(0, 0, 0, 2) });
-            var label = Theme.Label(hex, 11); label.TextAlignment = TextAlignment.Center;
+            var label = Theme.Label(hex, Theme.CaptionSize); label.TextAlignment = TextAlignment.Center;
             content.Children.Add(label);
             var button = Theme.Button("", () =>
             {

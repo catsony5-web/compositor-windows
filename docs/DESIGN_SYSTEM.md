@@ -73,11 +73,40 @@
 | 카드 | `GlassPanel`, `ClipBorder` | Panel 바탕, Line 테두리, 모서리 10. `ClipBorder`는 내용을 둥근 모서리로 자른다 |
 | 레이어 행 | `LayerRow` | 40px, 28px 썸네일, 이름 + 캡션 두 줄, 선택 시 Selected + 왼쪽 2px Accent 막대 |
 
+## 다이얼로그
+
+모든 다이얼로그는 `UI/Dialogs/DialogShell.cs`로 같은 틀을 쓴다.
+
+- `DialogShell.Prepare(window, owner, 제목)`: Panel 바탕, 아이콘, 소유 창 가운데, 작업 표시줄 숨김.
+- 머리: `DialogShell.Title`(18 SemiBold) + 필요하면 `Subtitle`(13 Muted).
+- 입력 위 라벨은 `FieldLabel`(12 Muted), 부가 설명은 `Note`(12 Subtle), 오류는 `ErrorText`(12 Danger).
+- 버튼은 `DialogShell.Footer(보조…, 주 동작)`로 오른쪽 정렬. 주 동작 `Primary`는 맨 오른쪽 하나, `IsDefault`. 취소·닫기는 `Secondary` + `IsCancel`.
+- 미리보기와 묶음 설정은 `DialogShell.Card`(Stage 바탕, 모서리 10). 인쇄 미리보기처럼 흰 종이가 기준인 곳만 흰 바탕을 쓴다.
+- 알림은 시스템 `MessageBox` 대신 `MessageDialog.Show(owner, 내용, 제목, NoticeKind)`. 내용은 선택·복사할 수 있고, 오류에는 "내용 복사"가 붙는다. 전역 예외 처리기(`App/Program.cs`)만 마지막 안전장치로 시스템 창을 유지한다.
+- 새 다이얼로그를 만들면 `MainWindow.Preview.cs`의 `RenderStudioPreview`에 캡처를 추가해 오프스크린 검수 대상에 넣는다.
+
 ## 패널 배치
 
 - 오른쪽 위 카드는 히스토그램(사진 편집) · 탭 줄 · 현재 탭 내용이다. 오른쪽에 도킹된 탭 패널은 자기 머리글을 숨기고(`StudioPane.SetEmbedded`), 탭 줄 오른쪽 `⋯`가 같은 도킹 메뉴를 연다.
 - 레이어 카드와, 왼쪽에 두거나 분리한 패널은 머리글(제목 · 개수 · 핀 · `⋯`)을 가진다. 제목을 끌면 분리된다.
 - 캔버스와 오른쪽 패널 사이 8px 간격이 너비 조절 손잡이, 오른쪽 두 카드 사이 8px 간격이 높이 조절 손잡이다. 마우스를 올리면 선이 나타난다.
+
+## UI 파일 지도
+
+| 위치 | 담당 |
+| --- | --- |
+| `App/Theme.cs`, `UI/Theme.xaml` | 토큰, 글꼴, 키 스타일, `Theme.Glyphs` 아이콘 경로 |
+| `UI/MainWindow.cs` | 창 뼈대(제목 표시줄 · 옵션 카드 · 본문 카드 · 상태 표시줄), 문서 명령 |
+| `UI/MainWindow.Chrome.cs`, `.Menu.cs`, `.Modes.cs`, `.Proof.cs` | 제목 표시줄, 메뉴, 사진 편집/디자인 전환, RGB/CMYK 미리보기 |
+| `UI/MainWindow.Studio.cs`, `.Docking.cs`, `.WorkspaceActions.cs` | 오른쪽 탭 카드, 패널 도킹, 탭별 작업 버튼 |
+| `UI/MainWindow.Inspector.cs`, `.DrawingLayers.cs`, `.TextProperties.cs`, `.ShapeProperties.cs` | 속성 패널, 레이어 카드 |
+| `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면과 최근 문서 목록 |
+| `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
+| `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
+| `UI/Dialogs/` | 공통 틀(`DialogShell`), 알림(`MessageDialog`), 범용 입력(`Dialogs.Fields`), 각 다이얼로그 |
+| `Formats/RecentDocuments.cs` | 최근 문서 목록 저장(`%LOCALAPPDATA%\Morupixel\recent.json`, 저장소·배포본에 포함되지 않음) |
+
+`MainWindow`는 기능별 partial 파일로 나뉘어 있다. 여러 작업이 동시에 진행되는 저장소이므로 파일을 옮기거나 합치는 재배치는 따로 합의한 뒤 진행한다.
 
 ## 검증
 
@@ -89,4 +118,4 @@ src\bin\Release\net8.0-windows10.0.19041.0\win-x64\Morupixel.exe --render-studio
 src\bin\Release\net8.0-windows10.0.19041.0\win-x64\Morupixel.exe --self-test <결과 파일>
 ```
 
-`--render-studio-previews`는 시작·편집·색상·브러시·디자인 화면, 속성 패널, 다이얼로그와 함께 `window-1280x720`, `window-1366x768`, `window-1920x1080`, `design-1280x720` 창 크기 변형을 만든다. 호버·드래그·실제 DPI 배율은 오프스크린 렌더에 나타나지 않으므로 실제 실행으로 따로 확인한다.
+`--render-studio-previews`는 시작 화면(최근 문서 예시 포함)·편집·색상·브러시·디자인 화면, 속성 패널, 모든 다이얼로그(입력·알림·오류·AI 연결·내보내기·CMYK·선택 레이어·호환 내보내기·색상 선택 포함)와 `window-1280x720`, `window-1366x768`, `window-1920x1080`, `design-1280x720` 창 크기 변형을 만든다. `ai-connection.png`에는 실행 파일의 로컬 경로가 보이므로 저장소 스크린샷으로 올리지 않는다. 호버·드래그·실제 DPI 배율은 오프스크린 렌더에 나타나지 않으므로 실제 실행으로 따로 확인한다.

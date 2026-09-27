@@ -30,7 +30,7 @@ public sealed class TextPropertiesPanel : StackPanel
         Children.Add(Theme.Section("문자 · 단락"));
         AddLabel("텍스트 내용");
         editor = new TextBox { Text = spec.Content, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 88, MaxHeight = 160,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 14, Padding = new Thickness(8), Margin = new Thickness(0, 3, 0, 8),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = Theme.HeadingSize, Padding = new Thickness(8), Margin = new Thickness(0, 3, 0, 8),
             ToolTip = "Enter 줄바꿈 · Ctrl+Enter 적용" };
         AutomationProperties.SetName(editor, "텍스트 내용"); Children.Add(editor);
         AddLabel("글꼴");
@@ -58,9 +58,9 @@ public sealed class TextPropertiesPanel : StackPanel
             alignmentButtons.Add(button); alignments.Children.Add(button);
         }
         Children.Add(alignments); UpdateAlignment();
-        var apply = Theme.Button("텍스트 적용", () => TryApply(), "내용과 문자 서식을 한 번에 적용 · Ctrl+Enter"); apply.MinHeight = 36;
-        apply.Background = Theme.Primary; apply.Margin = new Thickness(0, 0, 0, 4); Children.Add(apply);
-        message = Theme.Label("", 11, Theme.Muted); message.TextWrapping = TextWrapping.Wrap; message.Visibility = Visibility.Collapsed; Children.Add(message);
+        var apply = Theme.Styled(Theme.Button("텍스트 적용", () => TryApply(), "내용과 문자 서식을 한 번에 적용 · Ctrl+Enter"), "PrimaryButton"); apply.MinHeight = 34;
+        apply.Margin = new Thickness(0, 0, 0, 4); Children.Add(apply);
+        message = Theme.Label("", Theme.CaptionSize, Theme.Muted); message.TextWrapping = TextWrapping.Wrap; message.Visibility = Visibility.Collapsed; Children.Add(message);
         AddLabel("캔버스에 정렬");
         var position = new UniformGrid { Columns = 3, Margin = new Thickness(0, 4, 0, 0) };
         foreach (var (label, command) in new[] { ("왼쪽", "left"), ("가로 중앙", "center"), ("오른쪽", "right"), ("위쪽", "top"), ("세로 중앙", "middle"), ("아래쪽", "bottom") })
@@ -115,22 +115,22 @@ public sealed class TextPropertiesPanel : StackPanel
             throw new FormatException($"{name}: {min}~{max} 사이의 숫자를 입력하세요.");
         return value;
     }
-    void SetError(string error) { message.Text = error; message.Foreground = Theme.Brush("#F2AAAA"); message.Visibility = Visibility.Visible; }
+    void SetError(string error) { message.Text = error; message.Foreground = Theme.Danger; message.Visibility = Visibility.Visible; }
     void ClearError() { if (message == null) return; message.Text = ""; message.Visibility = Visibility.Collapsed; }
     void UpdateColor()
     {
         var contents = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         contents.Children.Add(new Border { Width = 14, Height = 14, Background = new SolidColorBrush(color), BorderBrush = Theme.Muted, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 6, 0) });
-        contents.Children.Add(Theme.Label("글자 색상", 12)); colorButton.Content = contents;
+        contents.Children.Add(Theme.Label("글자 색상", Theme.CaptionSize)); colorButton.Content = contents;
     }
     void UpdateAlignment() { foreach (var button in alignmentButtons) { button.Background = Equals(button.Tag, alignment) ? Theme.Selected : Theme.Surface; button.BorderBrush = Equals(button.Tag, alignment) ? Theme.Accent : Theme.Line; } }
     void AddLabel(string label) { var text = Theme.Label(label, Theme.CaptionSize, Theme.Muted); text.Margin = new Thickness(0, 10, 0, 3); Children.Add(text); }
     static TextBox Number(double value, string name)
     {
-        var box = new TextBox { Text = value.ToString("0.##", CultureInfo.InvariantCulture), MinHeight = 34, Padding = new Thickness(7, 4, 7, 4), Margin = new Thickness(0, 3, 4, 0), HorizontalContentAlignment = HorizontalAlignment.Right };
+        var box = new TextBox { Text = value.ToString("0.##", CultureInfo.InvariantCulture), MinHeight = 30, Padding = new Thickness(7, 4, 7, 4), Margin = new Thickness(0, 3, 4, 0), HorizontalContentAlignment = HorizontalAlignment.Right };
         AutomationProperties.SetName(box, name); box.ToolTip = name + " · Enter 적용"; return box;
     }
-    static StackPanel Field(string label, UIElement element) { var stack = new StackPanel(); var caption = Theme.Label(label, 11, Theme.Muted); caption.TextWrapping = TextWrapping.Wrap; stack.Children.Add(caption); stack.Children.Add(element); return stack; }
+    static StackPanel Field(string label, UIElement element) { var stack = new StackPanel(); var caption = Theme.Label(label, Theme.CaptionSize, Theme.Muted); caption.TextWrapping = TextWrapping.Wrap; stack.Children.Add(caption); stack.Children.Add(element); return stack; }
     static UniformGrid Pair(string a, UIElement left, string b, UIElement right) { var grid = new UniformGrid { Columns = 2 }; grid.Children.Add(Field(a, left)); grid.Children.Add(Field(b, right)); return grid; }
 
     internal TextBox EditorForTesting => editor;

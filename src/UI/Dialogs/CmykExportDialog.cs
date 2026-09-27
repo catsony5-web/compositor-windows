@@ -36,7 +36,7 @@ public sealed class CmykExportDialog : Window
         var root = new Grid { Margin = new Thickness(22) }; Content = root;
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
-        root.Children.Add(Theme.Label("CMYK 내보내기", 20));
+        root.Children.Add(DialogShell.Title("CMYK 인쇄용 내보내기"));
 
         var profileRow = new Grid { Margin = new Thickness(3, 12, 3, 5) };
         profileRow.ColumnDefinitions.Add(new ColumnDefinition());
@@ -50,7 +50,7 @@ public sealed class CmykExportDialog : Window
         Grid.SetRow(profileRow, 1); root.Children.Add(profileRow);
 
         var dimensions = new WrapPanel { Margin = new Thickness(0, 0, 0, 12) };
-        dimensions.Children.Add(Theme.Label("해상도 (DPI)", 12)); dimensions.Children.Add(dpiBox); dimensions.Children.Add(printSize);
+        dimensions.Children.Add(Theme.Label("해상도 (DPI)", Theme.CaptionSize, Theme.Muted)); dimensions.Children.Add(dpiBox); dimensions.Children.Add(printSize);
         Grid.SetRow(dimensions, 2); root.Children.Add(dimensions);
         dpiBox.TextChanged += (_, _) => UpdatePrintSize(); UpdatePrintSize();
 
@@ -64,15 +64,14 @@ public sealed class CmykExportDialog : Window
         notes.Children.Add(new TextBlock
         {
             Text = "투명 영역은 흰색으로 합칩니다. ICC 포함 CMYK TIFF로 저장합니다.\n실제 인쇄색은 프로필·용지·모니터에 따라 달라질 수 있습니다.",
-            Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 4, 3, 12), FontSize = 11
+            Foreground = Theme.Subtle, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 4, 3, 4), FontSize = Theme.CaptionSize
         });
         Grid.SetRow(notes, 4); root.Children.Add(notes);
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var close = Theme.Button("닫기", Close); close.IsCancel = true;
-        exportButton = Theme.Button("CMYK TIFF 저장…", () => _ = SaveAsync());
-        exportButton.Background = Theme.Primary; exportButton.IsEnabled = false;
-        actions.Children.Add(close); actions.Children.Add(exportButton); Grid.SetRow(actions, 5); root.Children.Add(actions);
+        var close = DialogShell.Secondary("닫기", Close); close.IsCancel = true;
+        exportButton = DialogShell.Primary("CMYK TIFF 저장…", () => _ = SaveAsync()); exportButton.IsEnabled = false;
+        var footer = DialogShell.Footer(close, exportButton); footer.Margin = new Thickness(0, 8, 0, 0); Grid.SetRow(footer, 5); root.Children.Add(footer);
         Loaded += (_, _) => _ = RefreshPreviewAsync();
         Closed += (_, _) => closed = true;
     }
@@ -81,8 +80,9 @@ public sealed class CmykExportDialog : Window
     {
         var panel = new Grid { Margin = new Thickness(4) };
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); panel.RowDefinitions.Add(new RowDefinition());
-        panel.Children.Add(Theme.Label(title, 12));
-        var border = new Border { Background = Brushes.White, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), Padding = new Thickness(8), Child = image };
+        var caption = Theme.Label(title, Theme.CaptionSize, Theme.Muted); caption.FontWeight = FontWeights.SemiBold; caption.Margin = new Thickness(1, 0, 1, 6); panel.Children.Add(caption);
+        // Print output is judged against white paper, so this preview keeps a white surface.
+        var border = new Border { Background = Brushes.White, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(8), Child = image };
         Grid.SetRow(border, 1); panel.Children.Add(border); return panel;
     }
 

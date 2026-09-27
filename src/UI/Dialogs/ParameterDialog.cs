@@ -12,7 +12,7 @@ public sealed class ParameterDialog : Window
     readonly ParameterField[] fields;
     readonly List<ParameterSlider> controls = [];
     readonly Func<IReadOnlyList<double>, string?>? validate;
-    readonly TextBlock error = Theme.Label("", Theme.CaptionSize, Theme.Brush("#F8ABAD"));
+    readonly TextBlock error = Theme.Label("", Theme.CaptionSize, Theme.Danger);
     double[] acceptedValues;
 
     // Callers receive only successfully validated values and cannot mutate the dialog's state.

@@ -93,7 +93,7 @@ public sealed class ParameterSlider : StackPanel
     {
         if (!TryReadNumber(out double parsed))
         {
-            number.BorderBrush = Theme.Brush("#EE9292");
+            number.BorderBrush = Theme.Danger;
             number.ToolTip = $"{slider.Minimum} ~ {slider.Maximum} 사이의 숫자를 입력하세요.";
             return false;
         }
