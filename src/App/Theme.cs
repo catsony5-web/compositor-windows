@@ -172,5 +172,6 @@ public static class Theme
         public const string Reset = "M5 5H11V11H5Z M13 13H19V19H13Z";
         public const string Folder = "M3 7V19H21V9H12L10 7Z";
         public const string Adjustment = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z M12 3V21 M12 7H16 M12 11H19 M12 15H18";
+        public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
     }
 }

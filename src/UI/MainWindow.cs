@@ -83,11 +83,11 @@ public sealed partial class MainWindow : Window
         var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
         foreach (var def in toolDefs)
         {
-            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; tools.Children.Add(b);
+            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; toolShortcuts[def.Tool] = (def.Name, def.Key); tools.Children.Add(b);
         }
         foreach (var def in AdvancedToolDefinitions())
         {
-            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; tools.Children.Add(b);
+            var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; toolShortcuts[def.Tool] = (def.Name, def.Key); tools.Children.Add(b);
         }
         var toolColumn = new StackPanel(); toolColumn.Children.Add(tools);
         workspaceTools = tools; photoToolOrder = toolButtons.Keys.ToArray();

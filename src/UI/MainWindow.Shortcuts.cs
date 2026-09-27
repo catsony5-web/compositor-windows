@@ -15,6 +15,8 @@ public sealed partial class MainWindow
         // Resize grips and workspace/color switches own their arrow keys before
         // the window can turn them into layer movement. OriginalSource also covers
         // routed input before a newly focused control is reported by Keyboard.
+        // Ctrl+K opens the command palette from anywhere, including a focused number field.
+        if (key == Key.K && Keyboard.Modifiers == ModifierKeys.Control && !dragging && !panning) { Guard(ShowCommandPalette); e.Handled = true; return; }
         if (e.OriginalSource is Thumb or GlassSwitch || Keyboard.FocusedElement is TextBoxBase or ComboBox or System.Windows.Controls.Slider or SaturationValuePad or Thumb or GlassSwitch) return;
         if (tool == Tool.Move && dragging && key is Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift)
         { if (key is Key.LeftAlt or Key.RightAlt) suppressAltMenu = true; UpdatePointerModifiers(); e.Handled = true; return; }
@@ -37,7 +39,7 @@ public sealed partial class MainWindow
         Action? action;
         if (!HasDocument)
         {
-            action = ctrl ? key switch { Key.N => NewDocument, Key.O => shift ? Import : Open, Key.V => Paste, _ => null }
+            action = ctrl ? key switch { Key.N => NewDocument, Key.O => shift ? Import : Open, Key.V => Paste, Key.K => ShowCommandPalette, _ => null }
                 : key == Key.F1 ? Help : null;
             if (action != null) { Guard(action); return true; }
             // Consume document commands without touching the placeholder model. Leave Tab,
@@ -58,7 +60,7 @@ public sealed partial class MainWindow
         }
         if (ctrl) action = key switch
         {
-            Key.N => NewDocument, Key.O => shift ? Import : Open, Key.S => () => Save(shift), Key.W => CloseTab,
+            Key.N => NewDocument, Key.O => shift ? Import : Open, Key.S => () => Save(shift), Key.W => CloseTab, Key.K => ShowCommandPalette,
             Key.E => shift ? Export : MergeDown, Key.Z => shift ? Redo : Undo, Key.Y => shift ? () => SetProof(!cmykProof) : Redo, Key.J => Duplicate,
             Key.T => Transform, Key.L => Levels, Key.U => () => ShowAdjustment(AdjustmentKind.HueSaturation),
             Key.G => alt ? ToggleClipping : shift ? UngroupSelected : GroupSelected,

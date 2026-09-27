@@ -72,6 +72,8 @@
 | 섹션 | `Theme.Section` | 가는 선 + 13 SemiBold 제목 |
 | 카드 | `GlassPanel`, `ClipBorder` | Panel 바탕, Line 테두리, 모서리 10. `ClipBorder`는 내용을 둥근 모서리로 자른다 |
 | 레이어 행 | `LayerRow` | 40px, 28px 썸네일, 이름 + 캡션 두 줄, 선택 시 Selected + 왼쪽 2px Accent 막대 |
+| 명령 팔레트 | `CommandPalette`, 항목 `"PaletteItem"` | 600px, 모서리 12. 검색칸 · 결과(제목 + 분류 두 줄, 오른쪽 단축키 칩) · 조작 안내. 선택 행은 Selected, 쓸 수 없는 명령은 45% 불투명도 |
+| 명령 검색 버튼 | `BuildCommandSearchButton` | 제목 표시줄, Input 바탕 + 검색 아이콘 · "명령 검색" · `Ctrl K` 칩. 1340px보다 좁으면 아이콘만 남는다 |
 
 ## 다이얼로그
 
@@ -91,6 +93,13 @@
 - 레이어 카드와, 왼쪽에 두거나 분리한 패널은 머리글(제목 · 개수 · 핀 · `⋯`)을 가진다. 제목을 끌면 분리된다.
 - 캔버스와 오른쪽 패널 사이 8px 간격이 너비 조절 손잡이, 오른쪽 두 카드 사이 8px 간격이 높이 조절 손잡이다. 마우스를 올리면 선이 나타난다.
 
+## 명령
+
+- 메뉴 항목, 도구, 오른쪽 탭 패널은 `MainWindow.BuildCommandRegistry()`가 한 목록(`EditorCommand`: Id · 제목 · 분류 · 단축키 · 사용 가능 여부 · 실행)으로 모은다. 메뉴는 트리를 그대로 읽으므로 메뉴에 항목을 추가하면 팔레트에도 나타난다. 실행은 메뉴 클릭과 같은 경로를 탄다.
+- Id는 `menu:상위/항목`, `tool:도구`, `panel:page번호` 형식이다. 같은 단축키는 한 번만 등록한다(메뉴에 있는 도구는 메뉴 항목만 남긴다). 자체 검사가 Id와 단축키 중복을 막는다.
+- 검색은 공백·말줄임표를 무시하고 제목 시작 > 제목 포함 > 한글 초성 > 분류+제목 > 단축키 순으로 순위를 매긴다. 빈 검색에서는 최근 실행한 명령(최대 8개, 현재 실행 세션)을 먼저 보여 준다.
+- **Ctrl+K**는 문서가 없을 때와 숫자 입력칸에 초점이 있을 때도 팔레트를 연다. **K** 단독은 흐림 브러시 그대로다.
+
 ## UI 파일 지도
 
 | 위치 | 담당 |
@@ -98,6 +107,7 @@
 | `App/Theme.cs`, `UI/Theme.xaml` | 토큰, 글꼴, 키 스타일, `Theme.Glyphs` 아이콘 경로 |
 | `UI/MainWindow.cs` | 창 뼈대(제목 표시줄 · 옵션 카드 · 본문 카드 · 상태 표시줄), 문서 명령 |
 | `UI/MainWindow.Chrome.cs`, `.Menu.cs`, `.Modes.cs`, `.Proof.cs` | 제목 표시줄, 메뉴, 사진 편집/디자인 전환, RGB/CMYK 미리보기 |
+| `UI/MainWindow.Commands.cs`, `UI/Dialogs/CommandPalette.cs` | 명령 레지스트리와 명령 팔레트(Ctrl+K), 검색 순위·초성 |
 | `UI/MainWindow.Studio.cs`, `.Docking.cs`, `.WorkspaceActions.cs` | 오른쪽 탭 카드, 패널 도킹, 탭별 작업 버튼 |
 | `UI/MainWindow.Inspector.cs`, `.DrawingLayers.cs`, `.TextProperties.cs`, `.ShapeProperties.cs` | 속성 패널, 레이어 카드 |
 | `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면과 최근 문서 목록 |

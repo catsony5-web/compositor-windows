@@ -26,9 +26,37 @@ public sealed partial class MainWindow
         DockPanel.SetDock(divider, Dock.Right); header.Children.Add(divider);
         var proof = DocumentControl(BuildProofSwitch()); DockPanel.SetDock(proof, Dock.Right); header.Children.Add(proof);
         var modes = BuildWorkspaceSwitch(); DockPanel.SetDock(modes, Dock.Right); header.Children.Add(modes);
+        var find = BuildCommandSearchButton(header); DockPanel.SetDock(find, Dock.Right); header.Children.Add(find);
         var brand = new Image { Source = Theme.BrandIcon, Width = 22, Height = 22, Margin = new Thickness(16, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Morupixel · 모루픽셀" };
         DockPanel.SetDock(brand, Dock.Left); header.Children.Add(brand);
-        header.Children.Add(BuildMenu()); return header;
+        header.Children.Add(mainMenu = BuildMenu()); return header;
+    }
+
+    // Title bar entry to the command palette; the key chip teaches Ctrl+K. Below
+    // CompactHeaderWidth only the icon remains so the menu bar stays on one line.
+    const double CompactHeaderWidth = 1340;
+    Button BuildCommandSearchButton(FrameworkElement header)
+    {
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        var icon = Theme.Glyph(Theme.Glyphs.Search, 14, Theme.Muted); icon.VerticalAlignment = VerticalAlignment.Center; content.Children.Add(icon);
+        var label = new TextBlock { Text = "명령 검색", Foreground = Theme.Muted, FontSize = Theme.BodySize, Margin = new Thickness(7, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        var chip = new Border
+        {
+            BorderBrush = Theme.Stroke, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Padding = new Thickness(5, 0, 5, 1), VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock { Text = "Ctrl K", FontSize = 11, Foreground = Theme.Subtle }
+        };
+        content.Children.Add(label); content.Children.Add(chip);
+        var button = Theme.Styled(Theme.Button("", () => Guard(ShowCommandPalette), "명령·도구·패널 찾기 · Ctrl+K"), "GhostButton");
+        button.Content = content; button.Background = Theme.Input; button.BorderBrush = Theme.Line;
+        button.MinHeight = 28; button.Height = 28; button.Padding = new Thickness(10, 0, 6, 0); button.Margin = new Thickness(8, 0, 6, 0); button.VerticalAlignment = VerticalAlignment.Center;
+        header.SizeChanged += (_, e) =>
+        {
+            bool compact = e.NewSize.Width < CompactHeaderWidth;
+            label.Visibility = chip.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+            button.Padding = compact ? new Thickness(7, 0, 7, 0) : new Thickness(10, 0, 6, 0);
+        };
+        AutomationProperties.SetName(button, "명령 찾기");
+        return button;
     }
 
     FrameworkElement BuildViewportActions()

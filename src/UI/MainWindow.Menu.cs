@@ -14,7 +14,7 @@ public sealed partial class MainWindow
         {
             "파일" => label is not ("새 캔버스…" or "열기…" or "레이어로 가져오기…" or "Compositor .comp 가져오기…"),
             "편집" => label is not ("이미지 붙여넣기" or "버킷 채우기 도구"),
-            "보기" => label is not ("스냅 전환" or "픽셀 격자 전환" or "도움말 / 지원 범위"),
+            "보기" => label is not ("스냅 전환" or "픽셀 격자 전환" or "명령 찾기…" or "도움말 / 지원 범위"),
             "배우기" => false,
             _ => true
         };
@@ -41,7 +41,7 @@ public sealed partial class MainWindow
         Add("조정 레이어", ("레벨…", "", () => ShowAdjustment(AdjustmentKind.Levels)), ("곡선…", "", () => ShowAdjustment(AdjustmentKind.Curves)), ("색조 / 채도…", "Ctrl+U", () => ShowAdjustment(AdjustmentKind.HueSaturation)), ("노출…", "", () => ShowAdjustment(AdjustmentKind.Exposure)), ("그라데이션 맵…", "", () => ShowAdjustment(AdjustmentKind.GradientMap)), ("그레인…", "", () => ShowAdjustment(AdjustmentKind.Grain)), ("선택 조정 레이어 편집…", "", EditAdjustment));
         Add("필터", ("사진 현상…", "Ctrl+Shift+A", () => ShowAdjustment(AdjustmentKind.PhotoDevelop)), ("모션 블러…", "", MotionBlur), ("노이즈…", "", Noise), ("렌즈 왜곡 보정…", "", Lens), ("내용 인식 채우기", "Shift+F5", ContentFill), ("배경색 제거…", "", RemoveColorBackground), ("AI 피사체 배경 제거…", "", RemoveAiBackground), ("마스크 페더…", "", FeatherMask));
         Add("인쇄", ("ICC / CMYK 내보내기…", "", ExportCmyk));
-        Add("보기", ("화면에 맞춤", "Ctrl+0", () => { canvas.Fit(); UpdateStatus(); }), ("실제 크기", "Ctrl+1", () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); }), ("가이드 추가…", "", AddGuide), ("가이드 지우기", "", () => { canvas.Guides.Clear(); canvas.InvalidateVisual(); }), ("스냅 전환", "", () => { snapping = !snapping; status.Text = snapping ? "스냅 켜짐" : "스냅 꺼짐"; }), ("픽셀 격자 전환", "", () => { canvas.PixelGrid = !canvas.PixelGrid; canvas.InvalidateVisual(); }), ("도움말 / 지원 범위", "F1", Help));
+        Add("보기", ("화면에 맞춤", "Ctrl+0", () => { canvas.Fit(); UpdateStatus(); }), ("실제 크기", "Ctrl+1", () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); }), ("가이드 추가…", "", AddGuide), ("가이드 지우기", "", () => { canvas.Guides.Clear(); canvas.InvalidateVisual(); }), ("스냅 전환", "", () => { snapping = !snapping; status.Text = snapping ? "스냅 켜짐" : "스냅 꺼짐"; }), ("픽셀 격자 전환", "", () => { canvas.PixelGrid = !canvas.PixelGrid; canvas.InvalidateVisual(); }), ("명령 찾기…", "Ctrl+K", ShowCommandPalette), ("도움말 / 지원 범위", "F1", Help));
         Add("배우기", ("샘플 작업 열기", "", OpenLearningSample));
         MenuItem Find(string name) => menu.Items.Cast<MenuItem>().Single(item => Equals(item.Header, name));
         var layerMenu = Find("레이어");
@@ -60,7 +60,7 @@ public sealed partial class MainWindow
         var print = Find("인쇄"); menu.Items.Remove(print);
         var printItem = (MenuItem)print.Items[0]; print.Items.RemoveAt(0); printItem.Header = "인쇄용 CMYK 내보내기…";
         Find("파일").Items.Insert(6, printItem);
-        foreach (var (section, before) in new[] { ("파일", "저장"), ("파일", "내보내기 미리보기…"), ("파일", "Compositor .comp 가져오기…"), ("파일", "현재 문서 닫기"), ("편집", "합성 이미지 복사"), ("편집", "선택 픽셀 지우기"), ("레이어", "마스크 추가"), ("보기", "가이드 추가…"), ("보기", "도움말 / 지원 범위") })
+        foreach (var (section, before) in new[] { ("파일", "저장"), ("파일", "내보내기 미리보기…"), ("파일", "Compositor .comp 가져오기…"), ("파일", "현재 문서 닫기"), ("편집", "합성 이미지 복사"), ("편집", "선택 픽셀 지우기"), ("레이어", "마스크 추가"), ("보기", "가이드 추가…"), ("보기", "명령 찾기…") })
         {
             var parent = Find(section); var item = parent.Items.OfType<MenuItem>().First(x => Equals(x.Header, before));
             parent.Items.Insert(parent.Items.IndexOf(item), new Separator());
