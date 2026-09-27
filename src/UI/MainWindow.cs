@@ -122,7 +122,7 @@ public sealed partial class MainWindow : Window
         Deactivated += (_, _) => { if (resizingBrush) EndBrushResize(true); suppressAltMenu = false; ClearPointerHover(); };
         DragOver += (_, e) => { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
         Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Guard(() => { foreach (var file in files) { var ext = Path.GetExtension(file).ToLowerInvariant(); if (ext is ".moruproj" or ".cwproj" or ".comp" || CompatibilityImport.Supports(file)) OpenPath(file); else ImportFiles([file]); } }); };
-        Closing += (_, e) => { CancelGesture(); if (!ConfirmAllTabs()) e.Cancel = true; else { CloseFloatingPanels(); StopRenderingForShutdown(); } };
+        Closing += (_, e) => { CancelGesture(); if (!ConfirmAllTabs()) e.Cancel = true; else { SaveWorkspace(); CloseFloatingPanels(); StopRenderingForShutdown(); } };
         Loaded += (_, _) => InitializeStartup();
         canvas.MouseLeave += (_, _) => { if (!resizingBrush) canvas.BrushPoint = null; ClearPointerHover(); if (!dragging && !panning) lastPointerScreen = null; canvas.InvalidateVisual(); };
         history.Reset(doc); UpdateColor(); UpdateBrushLabel(); UpdateToolOptions(); UpdateDocumentAvailability(); UpdateStatus();

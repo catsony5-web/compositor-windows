@@ -32,7 +32,7 @@ internal sealed class StudioPane : GlassPanel
         var controls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center }; DockPanel.SetDock(controls, Dock.Right); header.Children.Add(controls);
         pin = Theme.IconButton(Theme.Glyphs.Pin, () => { }, "패널을 현재 위치에 고정 / 이동 허용", 26, 14);
         System.Windows.Automation.AutomationProperties.SetName(pin, "패널 고정");
-        pin.Click += (_, _) => { Pinned = !Pinned; pin.Background = Pinned ? Theme.Selected : Brushes.Transparent; };
+        pin.Click += (_, _) => SetPinned(!Pinned);
         controls.Children.Add(pin);
         var options = Theme.IconButton(Theme.Glyphs.More, () => { }, "패널 이동과 도킹", 26, 16); controls.Children.Add(options);
         options.ContextMenu = menu;
@@ -53,7 +53,8 @@ internal sealed class StudioPane : GlassPanel
         };
         root.Children.Add(content);
     }
-    internal void Unlock() { Pinned = false; pin.Background = Brushes.Transparent; }
+    internal void Unlock() => SetPinned(false);
+    internal void SetPinned(bool pinned) { Pinned = pinned; pin.Background = pinned ? Theme.Selected : Brushes.Transparent; }
     internal void SetCaption(string value) { Caption = value; title.Text = value; if (Floating != null) Floating.Title = "Morupixel · " + value; }
     // Secondary header text such as an item count, shown after the title.
     internal void AddHeaderDetail(FrameworkElement detail) { detail.Margin = new Thickness(8, 0, 0, 0); titleRow.Children.Add(detail); }

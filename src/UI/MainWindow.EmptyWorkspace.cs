@@ -113,6 +113,7 @@ public sealed partial class MainWindow
         startupInitialized = true;
         if (!headlessTesting) { recentDocuments = RecentDocuments.Load(); RebuildRecentDocuments(); }
         UpdateColor(); UpdateBrushLabel(); Refresh(); SetTool(Tool.Move);
+        if (savedLayout != null) Guard(() => ApplyPaneLayout(savedLayout));
         if (startupPath != null && (File.Exists(startupPath) || Directory.Exists(startupPath))) Guard(() => OpenPath(startupPath));
     }
 

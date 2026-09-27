@@ -76,6 +76,7 @@ public static class Program
         var window = new MainWindow(automation ? args.Skip(1).FirstOrDefault() : args.FirstOrDefault());
         if (automation) window.EnableAutomation();
         app.Exit += (_, _) => window.DisableAutomation();
+        window.RestoreWorkspace();
         return app.Run(window);
     }
 }

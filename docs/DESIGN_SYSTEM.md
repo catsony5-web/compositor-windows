@@ -104,6 +104,7 @@
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
 | `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
 | `UI/Dialogs/` | 공통 틀(`DialogShell`), 알림(`MessageDialog`), 범용 입력(`Dialogs.Fields`), 각 다이얼로그 |
+| `UI/MainWindow.Layout.cs`, `Formats/WorkspaceLayout.cs` | 작업 공간 배치 저장·복원(`%LOCALAPPDATA%\Morupixel\workspace.json`). 앱 진입점에서만 불러오므로 자체 검사와 오프스크린 렌더는 사용자 배치를 읽거나 쓰지 않는다 |
 | `Formats/RecentDocuments.cs` | 최근 문서 목록 저장(`%LOCALAPPDATA%\Morupixel\recent.json`, 저장소·배포본에 포함되지 않음) |
 
 `MainWindow`는 기능별 partial 파일로 나뉘어 있다. 여러 작업이 동시에 진행되는 저장소이므로 파일을 옮기거나 합치는 재배치는 따로 합의한 뒤 진행한다.
