@@ -6,82 +6,80 @@ namespace Compositor.Windows;
 
 public sealed partial class MainWindow
 {
+    // Section titles fold their groups; the detail explains the group on hover.
     static void WorkspaceSection(StackPanel panel, string title, string? detail = null)
     {
-        var heading = Theme.Label(title, Theme.BodySize, Theme.Muted); heading.FontWeight = FontWeights.SemiBold;
-        heading.Margin = new Thickness(2, panel.Children.Count == 0 ? 2 : 14, 2, 6);
-        heading.ToolTip = detail;
-        panel.Children.Add(heading);
+        var header = Theme.Section(title, panel.Children.Count > 0);
+        if (detail != null) header.ToolTip = detail;
+        panel.Children.Add(header);
     }
 
-    void WorkspaceActions(StackPanel panel, int columns, params (string Name, Action Run, string Tip)[] actions)
-    {
-        var grid = new UniformGrid { Columns = columns };
-        foreach (var action in actions)
-        {
-            var button = Theme.Button(action.Name, () => Guard(() => { CommitFocusedInspectorField(); action.Run(); }), action.Tip);
-            button.Content = new TextBlock { Text = action.Name, FontSize = Theme.BodySize, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
-            button.MinHeight = 32; button.Padding = new Thickness(7, 5, 7, 5); button.Margin = new Thickness(2);
-            System.Windows.Automation.AutomationProperties.SetName(button, action.Name); grid.Children.Add(button);
-        }
-        panel.Children.Add(grid);
-    }
+    Action Run(Action action) => () => Guard(() => { CommitFocusedInspectorField(); action(); });
+
+    // Peer commands as icon tiles: glyph, short label, complete name and tooltip.
+    void WorkspaceTiles(StackPanel panel, int columns, params (string Glyph, string Label, Action Run, string Tip)[] actions) =>
+        panel.Children.Add(QuickActions.Grid(columns, actions.Select(a => QuickActions.Tile(a.Glyph, a.Label, Run(a.Run), a.Tip)), QuickActions.TileWidth));
+
+    // Longer commands as icon rows in two columns.
+    void WorkspaceCommands(StackPanel panel, params (string Glyph, string Label, Action Run, string Tip, string? Name)[] actions) =>
+        panel.Children.Add(QuickActions.Grid(2, actions.Select(a => QuickActions.Command(a.Glyph, a.Label, Run(a.Run), a.Tip, a.Name)), QuickActions.CommandWidth));
 
     void BuildPhotoActions(StackPanel panel)
     {
-        WorkspaceSection(panel, "사진 현상", "화이트 밸런스·명암·질감을 한 번에 조절합니다.");
-        WorkspaceActions(panel, 1, ("사진 현상 열기", () => ShowAdjustment(AdjustmentKind.PhotoDevelop), "Camera Raw 방식의 사진 보정 · 수정 가능한 조정 레이어로 적용"));
-        WorkspaceSection(panel, "조정 레이어", "원본을 유지하며 빛과 색을 보정합니다.");
-        WorkspaceActions(panel, 2,
-            ("노출", () => ShowAdjustment(AdjustmentKind.Exposure), "노출 · 미리보기 후 조정 레이어 추가"),
-            ("레벨", () => ShowAdjustment(AdjustmentKind.Levels), "입력·출력 레벨과 감마 조절"),
-            ("곡선", () => ShowAdjustment(AdjustmentKind.Curves), "RGB와 각 채널의 톤 곡선 조절"),
-            ("색조 / 채도", () => ShowAdjustment(AdjustmentKind.HueSaturation), "색조·채도·명도 조절"),
-            ("그라데이션 맵", () => ShowAdjustment(AdjustmentKind.GradientMap), "명암에 따라 색상 매핑"),
-            ("그레인", () => ShowAdjustment(AdjustmentKind.Grain), "필름 입자 추가"));
-        WorkspaceActions(panel, 1, ("선택한 조정 레이어 편집", EditAdjustment, "선택한 조정 레이어의 값을 다시 편집"));
+        panel.Children.Add(QuickActions.Feature(Theme.Glyphs.Camera, "사진 현상", "화이트 밸런스 · 명암 · 질감을 한 번에 조절",
+            Run(() => ShowAdjustment(AdjustmentKind.PhotoDevelop)), "Camera Raw 방식의 사진 보정 · 수정 가능한 조정 레이어로 적용"));
+        WorkspaceSection(panel, "조정 레이어", "원본을 유지하며 빛과 색을 보정합니다. 미리보기 후 조정 레이어로 추가됩니다.");
+        WorkspaceTiles(panel, 3,
+            (Theme.Glyphs.Exposure, "노출", () => ShowAdjustment(AdjustmentKind.Exposure), "노출 · 미리보기 후 조정 레이어 추가"),
+            (Theme.Glyphs.Levels, "레벨", () => ShowAdjustment(AdjustmentKind.Levels), "입력·출력 레벨과 감마 조절"),
+            (Theme.Glyphs.Curves, "곡선", () => ShowAdjustment(AdjustmentKind.Curves), "RGB와 각 채널의 톤 곡선 조절"),
+            (Theme.Glyphs.HueSaturation, "색조 / 채도", () => ShowAdjustment(AdjustmentKind.HueSaturation), "색조·채도·명도 조절"),
+            (Theme.Glyphs.GradientMap, "그라데이션 맵", () => ShowAdjustment(AdjustmentKind.GradientMap), "명암에 따라 색상 매핑"),
+            (Theme.Glyphs.Grain, "그레인", () => ShowAdjustment(AdjustmentKind.Grain), "필름 입자 추가"));
+        panel.Children.Add(Theme.ActionRow("선택한 조정 레이어 편집", Run(EditAdjustment), "선택한 조정 레이어의 값을 다시 편집", Theme.Glyphs.Sliders));
 
-        WorkspaceSection(panel, "선택과 마스크");
-        WorkspaceActions(panel, 2,
-            ("불투명 픽셀 선택", SelectAlpha, "활성 레이어의 불투명도를 선택 영역으로 불러오기"),
-            ("선택 영역 마스크", () => WorkspacePixelAction(AddMask), "현재 선택 영역으로 마스크 만들기 · 선택이 없으면 전체 표시"),
-            ("선택 픽셀 복제", ExtractSelection, "선택한 픽셀을 새 레이어에 복사"),
-            ("AI 배경 제거", () => WorkspacePixelAction(RemoveAiBackground), "이 컴퓨터에서 배경을 분석해 레이어 마스크 만들기"));
-        WorkspaceSection(panel, "리터치");
-        WorkspaceActions(panel, 2,
-            ("복구 브러시", () => SetTool(Tool.Heal), "Alt+클릭으로 참조 위치 지정 후 드래그"),
-            ("복제 도장", () => SetTool(Tool.CloneStamp), "Alt+클릭으로 참조 위치 지정 후 복제"),
-            ("내용 인식 채우기", ContentFill, "제거할 부분을 선택한 뒤 주변 픽셀로 채우기"),
-            ("브러시 설정", () => ShowStudioPage(3), "크기와 경도, 브러시 프리셋"));
+        WorkspaceSection(panel, "선택과 마스크", "선택 영역을 만들고 마스크나 새 레이어로 바꿉니다.");
+        WorkspaceCommands(panel,
+            (Theme.Glyphs.SelectAlpha, "불투명 픽셀 선택", SelectAlpha, "활성 레이어의 불투명도를 선택 영역으로 불러오기", null),
+            (Theme.Glyphs.Mask, "선택 영역 마스크", () => WorkspacePixelAction(AddMask), "현재 선택 영역으로 마스크 만들기 · 선택이 없으면 전체 표시", null),
+            (Theme.Glyphs.Duplicate, "선택 픽셀 복제", ExtractSelection, "선택한 픽셀을 새 레이어에 복사", null),
+            (Theme.Glyphs.Sparkle, "AI 배경 제거", () => WorkspacePixelAction(RemoveAiBackground), "이 컴퓨터에서 배경을 분석해 레이어 마스크 만들기", null));
+        WorkspaceSection(panel, "리터치", "잡티를 지우고 빈 곳을 주변 픽셀로 채웁니다.");
+        WorkspaceCommands(panel,
+            (ToolIcons.PathData(Tool.Heal), "복구 브러시", () => SetTool(Tool.Heal), "Alt+클릭으로 참조 위치 지정 후 드래그", null),
+            (ToolIcons.PathData(Tool.CloneStamp), "복제 도장", () => SetTool(Tool.CloneStamp), "Alt+클릭으로 참조 위치 지정 후 복제", null),
+            (Theme.Glyphs.FillSelection, "내용 인식 채우기", ContentFill, "제거할 부분을 선택한 뒤 주변 픽셀로 채우기", null),
+            (ToolIcons.PathData(Tool.Brush), "브러시 설정", () => ShowStudioPage(3), "크기와 경도, 브러시 프리셋", null));
     }
 
     void BuildDesignActions(StackPanel panel)
     {
-        WorkspaceSection(panel, "도형과 문자", "도형·텍스트를 이미지와 함께 배치합니다.");
-        WorkspaceActions(panel, 2,
-            ("새 텍스트", () => OpenTextProperties(null), "편집 가능한 텍스트 추가 후 문자·단락 속성 열기"),
-            ("사각형", () => SetTool(Tool.Rectangle), "캔버스에서 드래그하여 편집 가능한 사각형 만들기"),
-            ("타원", () => SetTool(Tool.Ellipse), "캔버스에서 드래그하여 편집 가능한 타원 만들기"),
-            ("채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께 조절"));
-        WorkspaceSection(panel, "캔버스에 정렬", "선택한 이미지·도형·텍스트 각각을 정렬합니다.");
-        WorkspaceActions(panel, 3,
-            ("왼쪽", () => AlignWorkspaceLayers("left"), "선택 레이어를 캔버스 왼쪽에 정렬"),
-            ("가로 중앙", () => AlignWorkspaceLayers("center"), "선택 레이어를 캔버스 가로 중앙에 정렬"),
-            ("오른쪽", () => AlignWorkspaceLayers("right"), "선택 레이어를 캔버스 오른쪽에 정렬"),
-            ("위쪽", () => AlignWorkspaceLayers("top"), "선택 레이어를 캔버스 위쪽에 정렬"),
-            ("세로 중앙", () => AlignWorkspaceLayers("middle"), "선택 레이어를 캔버스 세로 중앙에 정렬"),
-            ("아래쪽", () => AlignWorkspaceLayers("bottom"), "선택 레이어를 캔버스 아래쪽에 정렬"));
+        WorkspaceSection(panel, "만들기", "도형·텍스트를 이미지와 함께 배치합니다.");
+        WorkspaceTiles(panel, 4,
+            (Theme.Glyphs.Text, "새 텍스트", () => OpenTextProperties(null), "편집 가능한 텍스트 추가 후 문자·단락 속성 열기"),
+            (ToolIcons.PathData(Tool.Rectangle), "사각형", () => SetTool(Tool.Rectangle), "캔버스에서 드래그하여 편집 가능한 사각형 만들기"),
+            (ToolIcons.PathData(Tool.Ellipse), "타원", () => SetTool(Tool.Ellipse), "캔버스에서 드래그하여 편집 가능한 타원 만들기"),
+            (Theme.Glyphs.FillStroke, "채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께 조절"));
+        WorkspaceSection(panel, "캔버스에 정렬", "선택한 이미지·도형·텍스트 각각을 캔버스 기준으로 정렬합니다.");
+        panel.Children.Add(QuickActions.IconStrip(CanvasAlignments.Select(a => (a.Glyph, a.Name, Run(() => AlignWorkspaceLayers(a.Direction)))), out _));
         WorkspaceSection(panel, "배치와 그룹");
-        WorkspaceActions(panel, 2,
-            ("앞으로 한 단계", () => WorkspaceArrange(() => Reorder(1)), "활성 레이어를 같은 그룹 안에서 한 단계 앞으로 이동"),
-            ("뒤로 한 단계", () => WorkspaceArrange(() => Reorder(-1)), "활성 레이어를 같은 그룹 안에서 한 단계 뒤로 이동"),
-            ("그룹 만들기", () => WorkspaceArrange(GroupSelected, true), "선택한 연속 레이어를 그룹으로 묶기 · Ctrl+G"),
-            ("그룹 해제", () => WorkspaceArrange(UngroupSelected), "효과나 변형이 없는 선택 그룹 해제 · Ctrl+Shift+G"));
+        WorkspaceCommands(panel,
+            (Theme.Glyphs.Forward, "앞으로 한 단계", () => WorkspaceArrange(() => Reorder(1)), "활성 레이어를 같은 그룹 안에서 한 단계 앞으로 이동", null),
+            (Theme.Glyphs.Backward, "뒤로 한 단계", () => WorkspaceArrange(() => Reorder(-1)), "활성 레이어를 같은 그룹 안에서 한 단계 뒤로 이동", null),
+            (Theme.Glyphs.GroupAdd, "그룹 만들기", () => WorkspaceArrange(GroupSelected, true), "선택한 연속 레이어를 그룹으로 묶기 · Ctrl+G", null),
+            (Theme.Glyphs.GroupRemove, "그룹 해제", () => WorkspaceArrange(UngroupSelected), "효과나 변형이 없는 선택 그룹 해제 · Ctrl+Shift+G", null));
         WorkspaceSection(panel, "색상과 내보내기");
-        WorkspaceActions(panel, 2,
-            ("견본 · 추천 색상", () => ShowStudioPage(2), "색상 견본·채도와 명도 팔레트·추천 색상"),
-            ("선택 레이어 내보내기", ExportSelectedLayers, "선택한 레이어만 PNG·JPEG·TIFF로 내보내기"));
+        WorkspaceCommands(panel,
+            (Theme.Glyphs.Palette, "견본 · 추천 색상", () => ShowStudioPage(2), "색상 견본·채도와 명도 팔레트·추천 색상", null),
+            (Theme.Glyphs.Export, "레이어 내보내기", ExportSelectedLayers, "선택한 레이어만 PNG·JPEG·TIFF로 내보내기", "선택 레이어 내보내기"));
     }
+
+    // Shared by the design panel and the text panel's canvas alignment.
+    internal static readonly (string Glyph, string Name, string Direction)[] CanvasAlignments =
+    [
+        (Theme.Glyphs.AlignLeft, "캔버스 왼쪽 정렬", "left"), (Theme.Glyphs.AlignCenter, "캔버스 가로 중앙 정렬", "center"), (Theme.Glyphs.AlignRight, "캔버스 오른쪽 정렬", "right"),
+        (Theme.Glyphs.AlignTop, "캔버스 위쪽 정렬", "top"), (Theme.Glyphs.AlignMiddle, "캔버스 세로 중앙 정렬", "middle"), (Theme.Glyphs.AlignBottom, "캔버스 아래쪽 정렬", "bottom")
+    ];
 
     void WorkspacePixelAction(Action action)
     {

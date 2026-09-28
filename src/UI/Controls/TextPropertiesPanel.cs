@@ -48,10 +48,11 @@ public sealed class TextPropertiesPanel : StackPanel
         Children.Add(PropertyRows.Pair("자간 · 1/1000 em", tracking, "색상", colorButton, new Thickness(0, 0, 0, 4)));
         AddLabel("단락 정렬");
         var alignments = new UniformGrid { Columns = 3, Margin = new Thickness(0, 3, 0, 9) };
-        foreach (var (label, value) in new[] { ("왼쪽", TextAlignment.Left), ("가운데", TextAlignment.Center), ("오른쪽", TextAlignment.Right) })
+        foreach (var (label, value, glyph) in new[] { ("왼쪽", TextAlignment.Left, Theme.Glyphs.TextLeft), ("가운데", TextAlignment.Center, Theme.Glyphs.TextCenter), ("오른쪽", TextAlignment.Right, Theme.Glyphs.TextRight) })
         {
-            var button = Theme.Button(label, () => { alignment = value; UpdateAlignment(); ClearError(); }, "단락 " + label + " 정렬");
-            button.MinHeight = 34; button.Padding = new Thickness(4); button.Margin = new Thickness(1); button.Tag = value;
+            var button = Theme.Button("", () => { alignment = value; UpdateAlignment(); ClearError(); }, "단락 " + label + " 정렬");
+            button.Content = Theme.Glyph(glyph, 18, Theme.Text); AutomationProperties.SetName(button, "단락 " + label + " 정렬");
+            button.MinHeight = 34; button.Padding = new Thickness(4); button.Margin = new Thickness(1); button.Tag = value; button.HorizontalContentAlignment = HorizontalAlignment.Center;
             alignmentButtons.Add(button); alignments.Children.Add(button);
         }
         Children.Add(alignments); UpdateAlignment();
@@ -59,13 +60,8 @@ public sealed class TextPropertiesPanel : StackPanel
         apply.Margin = new Thickness(0, 0, 0, 4); Children.Add(apply);
         message = Theme.Label("", Theme.CaptionSize, Theme.Muted); message.TextWrapping = TextWrapping.Wrap; message.Visibility = Visibility.Collapsed; Children.Add(message);
         AddLabel("캔버스에 정렬");
-        var position = new UniformGrid { Columns = 3, Margin = new Thickness(0, 4, 0, 0) };
-        foreach (var (label, command) in new[] { ("왼쪽", "left"), ("가로 중앙", "center"), ("오른쪽", "right"), ("위쪽", "top"), ("세로 중앙", "middle"), ("아래쪽", "bottom") })
-        {
-            var button = Theme.Button(label, () => { if (TryApply()) alignLayer(command); }, "텍스트 레이어를 캔버스 " + label + "에 정렬");
-            button.Padding = new Thickness(3, 5, 3, 5); button.MinHeight = 34; button.Margin = new Thickness(1); position.Children.Add(button);
-        }
-        Children.Add(position);
+        var position = QuickActions.IconStrip(MainWindow.CanvasAlignments.Select(a => (a.Glyph, "텍스트 레이어 " + a.Name, (Action)(() => { if (TryApply()) alignLayer(a.Direction); }))), out _);
+        position.Margin = new Thickness(0, 4, 0, 0); Children.Add(position);
         AddHandler(Keyboard.GotKeyboardFocusEvent, new KeyboardFocusChangedEventHandler((_, _) => EditingStarted?.Invoke()));
         AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler((_, _) => ClearError()));
         PreviewKeyDown += (_, e) =>

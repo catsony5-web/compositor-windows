@@ -68,7 +68,11 @@
 | 체크박스 | `CheckBox` 기본 스타일 | 16px, 선택 시 Primary 바탕 + 흰 체크 |
 | 슬라이더 | `Slider`, `"SpectrumSlider"` | 4px 트랙, Accent 채움, 14px 밝은 손잡이와 호버 후광 |
 | 매개변수 슬라이더 | `ParameterSlider` | 한 줄에 라벨 · 초기화 · 이동 간격 · 값, 아래 슬라이더 |
-| 인스펙터 동작 행 | `Theme.ActionRow` | 전체 너비, 줄 바꿈, 오른쪽 셰브론, 호버 시 표면 |
+| 인스펙터 동작 행 | `Theme.ActionRow` | 전체 너비, 줄 바꿈, 오른쪽 셰브론, 호버 시 표면. `glyph`를 주면 왼쪽에 16px 아이콘 |
+| 기능 카드 | `QuickActions.Feature` | 36px Selected 배지 안 Accent 아이콘 · 제목 · 한 줄 설명 · 셰브론. 탭의 대표 작업 하나(사진 현상) |
+| 아이콘 타일 | `QuickActions.Tile` | 20px 아이콘 위 12 Muted 짧은 이름, 62px. 같은 종류의 명령 묶음(조정 레이어, 만들기) |
+| 아이콘 명령 | `QuickActions.Command` | 18px 아이콘 + 13 이름, 40px, 두 열. 이름이 긴 명령(선택과 마스크, 리터치, 배치, 레이어 작업) |
+| 아이콘 줄 | `QuickActions.IconStrip` | Input 트랙 안 아이콘 버튼 한 줄. 정렬처럼 모양으로 구분되는 선택 |
 | 섹션 | `Theme.Section` → `SectionHeader` | 가는 선 + 13 SemiBold 제목 + 오른쪽 셰브론. 누르면 다음 섹션 전까지 접힌다. 접은 제목은 작업 공간 배치와 함께 저장된다 |
 | 속성 행 | `PropertyRows.Field`, `.Pair`, `.Inline` | 12 Muted 캡션 위 30px 입력칸, 두 열 사이 8px. 숫자 칸(`NumberBox`)은 오른쪽 정렬, 색 칩(`ColorChip`)은 16px 견본 + 값 |
 | 카드 | `GlassPanel`, `ClipBorder` | Panel 바탕, Line 테두리, 모서리 10. `ClipBorder`는 내용을 둥근 모서리로 자른다 |
@@ -93,6 +97,14 @@
 - 오른쪽 위 카드는 히스토그램(사진 편집) · 탭 줄 · 현재 탭 내용이다. 오른쪽에 도킹된 탭 패널은 자기 머리글을 숨기고(`StudioPane.SetEmbedded`), 탭 줄 오른쪽 `⋯`가 같은 도킹 메뉴를 연다.
 - 레이어 카드와, 왼쪽에 두거나 분리한 패널은 머리글(제목 · 개수 · 핀 · `⋯`)을 가진다. 제목을 끌면 분리된다.
 - 캔버스와 오른쪽 패널 사이 8px 간격이 너비 조절 손잡이, 오른쪽 두 카드 사이 8px 간격이 높이 조절 손잡이다. 마우스를 올리면 선이 나타난다.
+
+## 오른쪽 패널 작업
+
+- 글자만 있는 버튼을 늘어놓지 않는다. 명령마다 아이콘을 붙이고, 모양으로 구분되는 선택(정렬, 단락 정렬)은 아이콘만 쓴다.
+- 보이는 이름은 짧게 할 수 있지만 접근성 이름과 툴팁은 완전한 명령 이름을 유지한다(예: 보이는 이름 "이름 변경" · 이름 "레이어 이름 변경"). 말줄임표로 줄이지 않는다.
+- 묶음 제목은 `Theme.Section`이라 접을 수 있고, 첫 묶음은 구분선을 생략한다. 묶음 설명은 제목의 툴팁으로 둔다.
+- 타일과 아이콘 명령 격자(`QuickActions.Grid`)는 한 열이 `TileWidth`(84) · `CommandWidth`(150)보다 좁아지면 열 수를 줄여 한글 이름이 글자 중간에서 줄 바뀌지 않게 한다.
+- 도구를 고르는 명령은 도구 막대와 같은 모양(`ToolIcons.PathData`)을 쓴다. 속성 패널 맨 위에는 레이어 종류 배지 · 이름 · 종류를 표시한다.
 
 ## 명령
 
@@ -121,6 +133,7 @@
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
 | `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
 | `UI/Controls/PropertyRows.cs`, `SectionHeader.cs` | 속성 패널 공통 행(캡션 · 입력 · 두 열 · 색 칩)과 접이식 섹션 제목 |
+| `UI/Controls/QuickActions.cs` | 아이콘 타일 · 아이콘 명령 · 아이콘 줄 · 기능 카드와 반응형 격자 |
 | `UI/Dialogs/` | 공통 틀(`DialogShell`), 알림(`MessageDialog`), 범용 입력(`Dialogs.Fields`), 각 다이얼로그 |
 | `UI/MainWindow.Layout.cs`, `Formats/WorkspaceLayout.cs` | 작업 공간 배치 저장·복원(`%LOCALAPPDATA%\Morupixel\workspace.json`). 앱 진입점에서만 불러오므로 자체 검사와 오프스크린 렌더는 사용자 배치를 읽거나 쓰지 않는다 |
 | `Formats/RecentDocuments.cs` | 최근 문서 목록 저장(`%LOCALAPPDATA%\Morupixel\recent.json`, 저장소·배포본에 포함되지 않음) |

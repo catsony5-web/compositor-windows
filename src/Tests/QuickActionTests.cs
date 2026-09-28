@@ -1,0 +1,79 @@
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+
+namespace Compositor.Windows;
+
+public sealed partial class MainWindow
+{
+    internal static void RunQuickActionTests(Action<string, Action> test, string directory)
+    {
+        static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+        static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+        {
+            foreach (var child in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())
+            {
+                yield return child;
+                foreach (var nested in Descendants(child)) yield return nested;
+            }
+        }
+        static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+
+        test("workspace quick actions are icon-led with complete names in both modes", () =>
+        {
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                window.AddTab(NewDocumentDialog.CreateDocument("빠른 작업", "64", "64", 0), null);
+                foreach (bool design in new[] { false, true })
+                {
+                    window.SetWorkspaceMode(design);
+                    var buttons = Descendants(window.studioContents[0]).OfType<Button>().ToArray();
+                    Check(buttons.Length == 16, "Quick actions are missing or duplicated");
+                    Check(buttons.All(b => b.Content is not string && !string.IsNullOrWhiteSpace(AutomationProperties.GetName(b)) && b.ToolTip is string { Length: > 0 }), "A quick action is text-only or lacks a name or tooltip");
+                    var names = buttons.Select(AutomationProperties.GetName).ToArray();
+                    Check(names.Distinct().Count() == names.Length && names.All(n => !n.Contains('…') && !n.Contains("...")), "Quick action names repeat or are abbreviated");
+                    Check(window.studioContents[0].Children.OfType<SectionHeader>().Count() == (design ? 4 : 3), "Quick action groups are not collapsible sections");
+                }
+                Check(Descendants(window.studioContents[0]).OfType<Button>().Any(b => AutomationProperties.GetName(b) == "선택 레이어 내보내기"), "A shortened label lost its complete name");
+                window.AddShape(new Rect(20, 24, 10, 8), false);
+                var layer = window.doc.Active!;
+                Click(Descendants(window.studioContents[0]).OfType<Button>().Single(b => AutomationProperties.GetName(b) == "캔버스 오른쪽 정렬"));
+                double right = new[] { new Point(layer.Pixels.Width, 0), new Point(layer.Pixels.Width, layer.Pixels.Height) }.Max(p => DocumentFeatures.ToDocumentSpace(window.doc, layer, p).X);
+                Check(Math.Abs(right - window.doc.Width) < 1e-6, "The alignment icon did not align the shape");
+                window.Undo();
+                Check(window.history.CanRedo, "Icon alignment was not one undo step");
+            }
+            finally { window.StopRenderingForShutdown(); }
+        });
+
+        test("inspector header and layer commands follow the layer and its lock", () =>
+        {
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                window.AddTab(NewDocumentDialog.CreateDocument("명령", "32", "32", 0), null); window.BuildProperties();
+                Check(window.properties.Children[0] is DockPanel identity && Descendants(identity).OfType<TextBlock>().Any(t => t.Text == "이미지 레이어"), "The inspector lacks its kind header");
+                Button[] Commands() => window.properties.Children.OfType<UniformGrid>().Last().Children.OfType<Button>().ToArray();
+                var names = Commands().Select(AutomationProperties.GetName).ToArray();
+                Check(names.SequenceEqual(["레이어 이름 변경", "레이어 마스크 추가", "클리핑 마스크 만들기", "선택 레이어 그룹 만들기"]), "Layer commands changed: " + string.Join(", ", names));
+                Check(Commands().All(b => b.IsEnabled), "Unlocked layer commands are disabled");
+                window.doc.Active!.Locked = true; window.BuildProperties();
+                Check(Commands().All(b => !b.IsEnabled), "Locked layer commands stayed enabled");
+            }
+            finally { window.StopRenderingForShutdown(); }
+        });
+
+        test("quick action grids drop columns before labels break mid-word", () =>
+        {
+            var buttons = Enumerable.Range(0, 4).Select(i => QuickActions.Command(Theme.Glyphs.Plus, "명령 " + i, () => { }, "명령 " + i)).ToArray();
+            var grid = QuickActions.Grid(2, buttons, QuickActions.CommandWidth);
+            void Layout(double width) { grid.Measure(new Size(width, double.PositiveInfinity)); grid.Arrange(new Rect(0, 0, width, grid.DesiredSize.Height)); grid.UpdateLayout(); }
+            Layout(260); Check(grid.Columns == 1, "A narrow grid kept two columns");
+            Layout(360); Check(grid.Columns == 2, "A wide grid did not return to two columns");
+            var strip = QuickActions.IconStrip(CanvasAlignments.Select(a => (a.Glyph, a.Name, (Action)(() => { }))), out var icons);
+            Check(icons.Length == 6 && icons.All(b => b.Content is Image && AutomationProperties.GetName(b) == (string)b.ToolTip), "The alignment strip lacks named icons");
+        });
+    }
+}

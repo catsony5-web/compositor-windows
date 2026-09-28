@@ -22,7 +22,7 @@ public sealed class SectionHeader : ToggleButton
     public string Key { get; }
     public bool Folded => IsChecked == true;
 
-    public SectionHeader(string title)
+    public SectionHeader(string title, bool rule = true)
     {
         Key = title;
         var label = Theme.Label(title, Theme.BodySize); label.FontWeight = FontWeights.SemiBold; label.VerticalAlignment = VerticalAlignment.Center;
@@ -31,13 +31,11 @@ public sealed class SectionHeader : ToggleButton
         var row = new DockPanel { Margin = new Thickness(0, 12, 0, 6), Background = Brushes.Transparent };
         DockPanel.SetDock(chevron, Dock.Right); row.Children.Add(chevron); row.Children.Add(label);
         var template = new ControlTemplate(typeof(ToggleButton));
-        var border = new FrameworkElementFactory(typeof(Border));
-        border.SetValue(Border.BorderBrushProperty, Theme.Line); border.SetValue(Border.BorderThicknessProperty, new Thickness(0, 1, 0, 0));
-        border.SetValue(Border.BackgroundProperty, Brushes.Transparent);
-        border.AppendChild(new FrameworkElementFactory(typeof(ContentPresenter)));
-        template.VisualTree = border;
-        Template = template; Content = row; Cursor = Cursors.Hand;
-        HorizontalContentAlignment = HorizontalAlignment.Stretch; Margin = new Thickness(0, 10, 0, 2);
+        template.VisualTree = new FrameworkElementFactory(typeof(ContentPresenter));
+        Template = template; Cursor = Cursors.Hand;
+        Content = new Border { BorderBrush = Theme.Line, BorderThickness = new Thickness(0, rule ? 1 : 0, 0, 0), Background = Brushes.Transparent, Child = row };
+        if (!rule) row.Margin = new Thickness(0, 2, 0, 6);
+        HorizontalContentAlignment = HorizontalAlignment.Stretch; Margin = new Thickness(0, rule ? 10 : 0, 0, 2);
         SetResourceReference(FocusVisualStyleProperty, "UiFocusRing");
         AutomationProperties.SetName(this, title); AutomationProperties.SetHelpText(this, "섹션 접기 또는 펼치기");
         IsChecked = collapsed.Contains(title); UpdateChevron();

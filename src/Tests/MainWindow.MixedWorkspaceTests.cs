@@ -74,7 +74,7 @@ public sealed partial class MainWindow
         {
             var w = Create(); w.SetWorkspaceMode(true);
             Button Action(string caption) => w.studioContents[0].Children.OfType<System.Windows.Controls.Primitives.UniformGrid>()
-                .SelectMany(grid => grid.Children.OfType<Button>()).Single(button => button.Content is TextBlock text && text.Text == caption);
+                .SelectMany(grid => grid.Children.OfType<Button>()).Single(button => System.Windows.Automation.AutomationProperties.GetName(button) == caption);
             Action("새 텍스트").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(w.doc.Active?.Text?.Content == "새 텍스트" && w.studioPage == 1 && w.doc.Layers.Count == 2, "Text quick action failed to open editable inspector");
             w.Undo(); Check(w.doc.Layers.Count == 1 && w.history.CanRedo, "Text action did not undo once");

@@ -8,7 +8,14 @@ public static class ToolIcons
 {
     public static FrameworkElement Create(Tool tool)
     {
-        string path = tool switch
+        var drawing = new GeometryDrawing(null, new Pen(Theme.Text, 1.45) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }, Geometry.Parse(PathData(tool)));
+        return new Image { Source = new DrawingImage(drawing), Width = 19, Height = 19, Stretch = Stretch.Uniform };
+    }
+
+    // The same outlines on the 24-unit grid, for panel actions that select a tool (Theme.Glyph).
+    public static string PathData(Tool tool)
+    {
+        return tool switch
         {
             Tool.Move => "M4 3L18 12L11 13L8 20Z M13 14L18 20",
             Tool.RectangleSelect => "M3 3H8 M11 3H16 M19 3H21V8 M21 11V16 M21 19V21H16 M13 21H8 M5 21H3V16 M3 13V8",
@@ -33,7 +40,5 @@ public static class ToolIcons
             Tool.BlurBrush => "M12 2Q4 12 4 16A8 7 0 0 0 20 16Q20 12 12 2Z M8 16Q8 19 12 19",
             _ => "M4 4H20V20H4Z"
         };
-        var drawing = new GeometryDrawing(null, new Pen(Theme.Text, 1.45) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }, Geometry.Parse(path));
-        return new Image { Source = new DrawingImage(drawing), Width = 19, Height = 19, Stretch = Stretch.Uniform };
     }
 }

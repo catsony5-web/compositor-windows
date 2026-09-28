@@ -110,6 +110,7 @@ public sealed partial class MainWindow
             }
             finally { host.Child = null; ShowStudioPage(studioPage, false); }
         }
+        ShowStudioPage(0); CapturePane(studioPanes[0], "photo-actions", 360, 720);
         ShowStudioPage(1); CapturePane(studioPanes[1], "image-properties", 360, 840);
         // A folded section keeps its title; its rows return when it is opened again.
         SectionHeader.SetCollapsedKeys(["위치와 변형"]); CapturePane(studioPanes[1], "image-properties-folded", 360, 640); SectionHeader.SetCollapsedKeys([]);
@@ -121,6 +122,7 @@ public sealed partial class MainWindow
         var shape = VectorShapes.Create(new ShapeSpec { Width = 360, Height = 150, CornerRadius = 28, FillArgb = 0xD92E4862, StrokeEnabled = true, StrokeArgb = 0xFFC0D9F2, StrokeWidth = 2 }, 100, 100);
         doc.Add(shape); SetWorkspaceMode(true); Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
+        ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)
