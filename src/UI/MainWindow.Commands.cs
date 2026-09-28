@@ -27,7 +27,7 @@ public sealed partial class MainWindow
             string title = ToolDisplayName(tool), alias = name.Split(" / ")[0];
             // A tool already reachable from a menu (G: 버킷 채우기) keeps the menu entry only.
             if (shortcuts.Contains(key)) continue;
-            commands.Add(new EditorCommand("tool:" + tool, title + " 도구", alias == title ? "도구" : "도구 · " + alias, key, () => HasDocument, () => SetTool(tool)));
+            commands.Add(new EditorCommand("tool:" + tool, $"{title} 도구", alias == title ? "도구" : "도구 · " + alias, key, () => HasDocument, () => SetTool(tool)));
         }
         for (int page = 0; page < studioTabs.Count; page++)
         {

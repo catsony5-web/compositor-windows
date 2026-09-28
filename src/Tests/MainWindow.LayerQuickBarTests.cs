@@ -70,6 +70,29 @@ public sealed partial class MainWindow
             finally { window.StopRenderingForShutdown(); }
         });
 
+        test("zoom entry hint names the active mode limit and alignment labels are whole sentences", () =>
+        {
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                var document = new Document { Width = 8, Height = 8 };
+                document.Add(new Layer { Name = "바탕", Pixels = Raster.Solid(8, 8, Colors.Red) });
+                window.AddTab(document, null);
+                window.canvas.DesignMode = false;
+                Check(window.ZoomRangeMessage.Contains("1600%"), "Photo mode must say 1600%: " + window.ZoomRangeMessage);
+                window.canvas.DesignMode = true;
+                Check(window.ZoomRangeMessage.Contains("6400%"), "Design mode must say 6400%");
+                window.zoomBox!.Text = "abc"; window.CommitZoomText();
+                Check(window.status.Text == window.ZoomRangeMessage, "Invalid zoom must show the mode-specific hint");
+                window.canvas.DesignMode = false;
+            }
+            finally { window.StopRenderingForShutdown(); }
+            var panelNames = new[] { "단락 왼쪽 정렬", "단락 가운데 정렬", "단락 오른쪽 정렬" };
+            string previous = Loc.Language;
+            try { Loc.Use("en"); foreach (var key in panelNames) Check(Loc.T(key) != key && !Loc.T(key).Contains('단'), "Missing whole-sentence translation: " + key); }
+            finally { Loc.Use(previous); }
+        });
+
         static IEnumerable<T> FindAll<T>(DependencyObject root) where T : DependencyObject
         {
             foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())

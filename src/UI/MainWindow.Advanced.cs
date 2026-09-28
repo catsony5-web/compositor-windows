@@ -273,7 +273,8 @@ public sealed partial class MainWindow
     void ModifySelection(string mode)
     {
         if (selection == null) return;
-        var f = Dialogs.Fields(this, "선택 영역 " + mode, ("반경 (px)", "5")); if (f == null) return;
+        string title = mode switch { "feather" => "선택 영역 페더", "expand" => "선택 영역 확장", _ => "선택 영역 축소" };
+        var f = Dialogs.Fields(this, title, ("반경 (px)", "5")); if (f == null) return;
         int radius = (int)Dialogs.Number(f[0], 1, 100);
         var current = selection; int w = doc.Width, h = doc.Height;
         RunSelectionJob(ct => mode switch { "feather" => SelectionTools.Feather(current, w, h, radius, ct), "expand" => SelectionTools.Expand(current, w, h, radius, ct), _ => SelectionTools.Contract(current, w, h, radius, ct) });

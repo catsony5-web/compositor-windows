@@ -2268,23 +2268,15 @@
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "왼쪽",
+  "ko": "단락 왼쪽 정렬",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "가운데",
+  "ko": "단락 가운데 정렬",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "오른쪽",
-  "file": "UI/Controls/TextPropertiesPanel.cs"
- },
- {
-  "ko": "단락 ",
-  "file": "UI/Controls/TextPropertiesPanel.cs"
- },
- {
-  "ko": " 정렬",
+  "ko": "단락 오른쪽 정렬",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
@@ -2300,7 +2292,7 @@
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "텍스트 레이어 ",
+  "ko": "텍스트 레이어 {0}",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
@@ -3608,7 +3600,15 @@
   "file": "UI/MainWindow.Advanced.cs"
  },
  {
-  "ko": "선택 영역 ",
+  "ko": "선택 영역 페더",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 영역 확장",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 영역 축소",
   "file": "UI/MainWindow.Advanced.cs"
  },
  {
@@ -3777,10 +3777,6 @@
  },
  {
   "ko": "편집할 대지",
-  "file": "UI/MainWindow.Artboards.cs"
- },
- {
-  "ko": "대지 ",
   "file": "UI/MainWindow.Artboards.cs"
  },
  {
@@ -4220,7 +4216,7 @@
   "file": "UI/MainWindow.Chrome.cs"
  },
  {
-  "ko": " 도구",
+  "ko": "{0} 도구",
   "file": "UI/MainWindow.Commands.cs"
  },
  {
@@ -5480,6 +5476,10 @@
   "file": "UI/MainWindow.Modes.cs"
  },
  {
+  "ko": " 도구",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
   "ko": "사진 편집",
   "file": "UI/MainWindow.Modes.cs"
  },
@@ -5884,7 +5884,7 @@
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {
-  "ko": "배율은 1~6400% 사이 숫자로 입력하세요.",
+  "ko": "배율은 1~{0}% 사이 숫자로 입력하세요.",
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {

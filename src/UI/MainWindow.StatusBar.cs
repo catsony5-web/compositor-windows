@@ -93,11 +93,14 @@ public sealed partial class MainWindow
         string text = zoomBox.Text.Trim().TrimEnd('%').Trim();
         double? zoom = text.EndsWith('x') && double.TryParse(text[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var factor) ? factor
             : double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var percent) ? percent / 100 : null;
-        if (zoom is not { } value || !double.IsFinite(value) || value <= 0) { UpdateZoomBox(); status.Text = "배율은 1~6400% 사이 숫자로 입력하세요."; return false; }
+        if (zoom is not { } value || !double.IsFinite(value) || value <= 0) { UpdateZoomBox(); status.Text = ZoomRangeMessage; return false; }
         SetZoom(value); canvas.Focus(); return true;
     }
 
     double MaxZoom => canvas.DesignMode ? 64 : 16;
+
+    // Photo mode stops at 1600%, design mode at 6400%; the hint names the active limit.
+    internal string ZoomRangeMessage => $"배율은 1~{MaxZoom * 100:0}% 사이 숫자로 입력하세요.";
 
     internal void SetZoom(double zoom, bool resetPan = false)
     {
