@@ -28,7 +28,9 @@ public sealed partial class MainWindow
         var find = BuildCommandSearchButton(header); DockPanel.SetDock(find, Dock.Right); header.Children.Add(find);
         var brand = new Image { Source = Theme.BrandIcon, Width = 22, Height = 22, Margin = new Thickness(16, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Morupixel · 모루픽셀" };
         DockPanel.SetDock(brand, Dock.Left); header.Children.Add(brand);
-        header.Children.Add(mainMenu = BuildMenu()); return header;
+        // Menu bar and ribbon tabs share the title bar; one of them is visible.
+        var navigation = new Grid(); navigation.Children.Add(menuHost = mainMenu = BuildMenu()); navigation.Children.Add(BuildRibbonTabs());
+        IndexMenuItems(); header.Children.Add(navigation); return header;
     }
 
     // Title bar entry to the command palette; the key chip teaches Ctrl+K. Below

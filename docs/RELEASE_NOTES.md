@@ -1,4 +1,10 @@
-# Morupixel 0.2.0 Preview 30 — drawing cleanup and layer isolation
+# Morupixel 0.2.0 Preview 31 — ribbon and screen fit
+
+- **Ribbon view.** View → 리본 메뉴로 보기 turns the menus into tabs of titled icon groups. ^ folds the ribbon to its tabs. 내 탭 collects favorite commands: right-click any button to add or remove it, or to move it. The choice is remembered.
+- **Fits small screens.** The main window, dialogs, floating panels and the command palette never open larger than the screen's work area or partly off screen. The minimum window size adapts to small or highly scaled displays.
+- **Validation.** 521 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 30 — drawing cleanup and layer isolation
 
 - **Drawing cleanup on import.** DWG/DXF layers are sorted by name into structure/walls, openings, furniture, annotation, hatch and other. Walls import heavy and dark; furniture and dimensions light and thin. Each layer's role can be changed in the import dialog.
 - **Hatch materials.** Recommended materials come first: concrete, brick, wood, tile, stone, insulation, gravel or diagonal, chosen from the hatch pattern and layer name. Hatches can also stay as boundaries, or use your own material image. Fills are editable material layers under the linework.

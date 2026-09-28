@@ -1,4 +1,11 @@
-# Preview 30 drawing cleanup and layer isolation validation
+# Preview 31 ribbon and screen fit validation
+
+- Source self-tests: **521/521 passed** on Windows x64. Three added checks cover the ribbon mirroring the menu (tabs, separator groups, submenu groups, an icon for every command, buttons running their menu items, fold and unfold), 내 탭 add/move/remove, unknown-command rejection, layout persistence and reset, and fitting oversized or off-screen windows and the main window into the work area.
+- `--render-studio-previews` adds ribbon captures at 1480×920 and 1280×720 (41 captures); reviewed visually.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: multi-monitor work areas other than the primary screen and right-click menus in a shown window.
+
+## Preview 30 drawing cleanup and layer isolation validation
 
 - Source self-tests: **518/518 passed** on Windows x64. Five added checks cover layer-role classification (English and Korean names, reference prefixes) and material recommendation, stable tileable presets, real DXF imports where walls carry more and darker ink than furniture, a concrete hatch becomes a Multiply material layer below the linework, role overrides change weights and "keep" adds no material, the user's material image keeps its proportions and a missing image is reported, the import dialog's defaults and overrides, and layer-list range selection, Ctrl toggling and the three-step Alt isolation with undo.
 - `--render-studio-previews` now also writes the cleanup settings and a synthetic plan before and after cleanup (39 captures); they were reviewed visually.

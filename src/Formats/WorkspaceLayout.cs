@@ -17,6 +17,10 @@ public sealed class WorkspaceLayout
     public PaneLayout[] Panes { get; init; } = [];
     public string[] CollapsedSections { get; init; } = [];
     public bool ShowHistogram { get; init; }
+    public bool RibbonMode { get; init; }
+    public bool RibbonCollapsed { get; init; }
+    public string? RibbonTab { get; init; }
+    public string[]? RibbonFavorites { get; init; }
 }
 
 public sealed record WindowBounds(double Left, double Top, double Width, double Height, bool Maximized);
@@ -74,7 +78,11 @@ public static class WorkspaceLayoutStore
             StudioPage = Math.Clamp(layout.StudioPage, 0, 3),
             Panes = panes,
             CollapsedSections = sections,
-            ShowHistogram = layout.ShowHistogram
+            ShowHistogram = layout.ShowHistogram,
+            RibbonMode = layout.RibbonMode,
+            RibbonCollapsed = layout.RibbonCollapsed,
+            RibbonTab = layout.RibbonTab is { Length: > 0 and <= 80 } tab ? tab : null,
+            RibbonFavorites = layout.RibbonFavorites?.Where(f => f is { Length: > 5 and <= 200 } && f.StartsWith("menu:", StringComparison.Ordinal)).Distinct().Take(64).ToArray()
         };
     }
 }

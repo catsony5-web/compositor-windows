@@ -95,6 +95,9 @@ public sealed partial class MainWindow
         ShowStudioPage(0); Capture(this, "compact", 1200, 750);
         // Small laptop and large desktop client areas for responsive layout review.
         foreach (var (width, height) in new[] { (1280, 720), (1366, 768), (1920, 1080) }) Capture(this, $"window-{width}x{height}", width, height);
+        // Ribbon layout: the favorites tab and a dense menu tab, then back to the menu bar.
+        SetRibbonMode(true); SelectRibbonTab(FavoritesTab); Capture(this, "ribbon", 1480, 920);
+        SelectRibbonTab("레이어"); Capture(this, "ribbon-layer-1280x720", 1280, 720); SetRibbonMode(false);
         void CapturePane(FrameworkElement pane, string name, int width, int height)
         {
             if (pane is StudioPane movable) RemovePane(movable);

@@ -45,18 +45,19 @@ public sealed partial class MainWindow : Window
     public MainWindow(string? path)
     {
         startupPath = path;
-        Title = "Morupixel · 모루픽셀"; Icon = Theme.BrandIcon; Width = 1480; Height = 980; MinWidth = 1200; MinHeight = 780;
+        Title = "Morupixel · 모루픽셀"; Icon = Theme.BrandIcon; Width = 1480; Height = 980; MinWidth = 1000; MinHeight = 640; FitToWorkArea(this);
         WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Theme.Panel; Foreground = Theme.Text;
         FontFamily = Theme.UiFont; FontSize = Theme.BodySize; UseLayoutRounding = true;
         var root = new Grid { Background = Theme.Header }; Content = root;
         // Title bar with inline menu · contextual tool options · floating workspace cards · status.
-        foreach (double h in new[] { 44.0, OptionRowHeight, -1, 30 }) root.RowDefinitions.Add(new RowDefinition { Height = h < 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(h) });
-        optionRow = root.RowDefinitions[1];
+        foreach (double h in new[] { 44.0, -2, OptionRowHeight, -1, 30 }) root.RowDefinitions.Add(new RowDefinition { Height = h == -1 ? new GridLength(1, GridUnitType.Star) : h == -2 ? GridLength.Auto : new GridLength(h) });
+        optionRow = root.RowDefinitions[2];
+        var ribbon = BuildRibbonBody(); Grid.SetRow(ribbon, 1); root.Children.Add(ribbon);
         root.Children.Add(BuildHeader());
 
         var optionHost = new DockPanel { LastChildFill = true, Margin = new Thickness(12, 0, 6, 0) };
         optionCard = new Border { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Margin = new Thickness(8, 0, 8, 4), Child = optionHost };
-        Grid.SetRow(optionCard, 1); root.Children.Add(optionCard);
+        Grid.SetRow(optionCard, 2); root.Children.Add(optionCard);
         var viewport = BuildViewportActions(); DockPanel.SetDock(viewport, Dock.Right); optionHost.Children.Add(viewport);
         var options = new StackPanel { Orientation = Orientation.Horizontal };
         optionHost.Children.Add(DocumentControl(new ScrollViewer { Content = options, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled }));
@@ -78,7 +79,7 @@ public sealed partial class MainWindow : Window
         moveSelectionHint.Margin = new Thickness(14, 0, 2, 0); options.Children.Add(moveSelectionHint);
         autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
-        var body = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 2); root.Children.Add(body);
+        var body = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 3); root.Children.Add(body);
         body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(84) }); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
         var tools = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(4, 8, 4, 8) };
         var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
@@ -105,7 +106,8 @@ public sealed partial class MainWindow : Window
         emptyWorkspace = BuildEmptyWorkspace(); Grid.SetRow(emptyWorkspace, 1); workspace.Children.Add(emptyWorkspace);
         var left = leftPanelHost = new ScrollViewer { Content = leftPanels, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; Grid.SetColumn(left, 1); body.Children.Add(left);
         var right = rightPanelHost = BuildInspectorPanel(); Grid.SetColumn(right, 3); body.Children.Add(right);
-        var bottom = BuildStatusBar(); Grid.SetRow(bottom, 3); root.Children.Add(bottom);
+        var bottom = BuildStatusBar(); Grid.SetRow(bottom, 4); root.Children.Add(bottom);
+        RebuildRibbon();
 
         canvas.MouseDown += OnDown; canvas.MouseMove += OnMove; canvas.MouseUp += OnUp;
         Loaded += (_, _) => LoadCustomBrushTips();
