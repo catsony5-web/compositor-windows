@@ -90,7 +90,7 @@ public sealed partial class MainWindow
         var picker = PropertyRows.Choice("편집할 대지"); picker.DisplayMemberPath = "Name"; picker.ItemsSource = ArtboardEditing.Visible(doc); picker.SelectedItem = board;
         picker.SelectionChanged += (_, _) => { if (picker.SelectedItem is Artboard chosen) { selectedArtboard = chosen.Id; Refresh(false); } };
         properties.Children.Add(PropertyRows.Field("편집할 대지", picker, new Thickness(2, 2, 2, 8)));
-        TextBox Number(string label, double n) => PropertyRows.NumberBox(n, "대지 " + label);
+        TextBox Number(string label, double n) => PropertyRows.NumberBox(n, $"대지 {label}");
         var name = PropertyRows.Input(board.Name, "대지 이름"); properties.Children.Add(PropertyRows.Field("이름", name));
         var x = Number("X", board.X); var y = Number("Y", board.Y); properties.Children.Add(PropertyRows.Pair("X", x, "Y", y));
         var width = Number("너비 (px)", board.Width); var height = Number("높이 (px)", board.Height); properties.Children.Add(PropertyRows.Pair("너비 (px)", width, "높이 (px)", height));

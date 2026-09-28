@@ -20,6 +20,7 @@ public sealed partial class MainWindow
     int studioPage;
     TextBlock? studioColorValue;
     ColorPalettePanel? studioPalette;
+    ColorSwatches? studioColorSwatches;
     ParameterSlider? studioDiameter, studioHardness;
     FrameworkElement BuildStudioTop()
     {
@@ -108,41 +109,64 @@ public sealed partial class MainWindow
     }
     void BuildStudioColors()
     {
-        var actions = new WrapPanel();
-        actions.Children.Add(Theme.Button("전경색", () => ChooseColor(false))); actions.Children.Add(Theme.Button("배경색", () => ChooseColor(true))); actions.Children.Add(Theme.IconButton(Theme.Glyphs.Swap, SwapColors, "색 교환 · X", 30, 15)); studioContent.Children.Add(actions);
-        studioColorValue = Theme.Label("", Theme.CaptionSize, Theme.Muted); studioColorValue.TextWrapping = TextWrapping.Wrap; studioColorValue.Margin = new Thickness(2, 6, 2, 10); studioContent.Children.Add(studioColorValue); UpdateStudioColor();
-        studioContent.Children.Add(Theme.Section("색상 견본"));
-        var swatches = new System.Windows.Controls.Primitives.UniformGrid { Columns = 9 };
-        foreach (string hex in new[] { "#FFFFFF", "#D8DCE2", "#88929F", "#4A515B", "#171A20", "#000000", "#EAE2D5", "#C5AE94", "#8C7061", "#F28792", "#DB5269", "#A12D4D", "#FFB774", "#F28446", "#B75132", "#F4D37A", "#D3AD4E", "#826C35", "#A5D9AF", "#50A98D", "#2A665E", "#AFDCF1", "#76A5E5", "#375C9D", "#CBB5EB", "#9D7BC8", "#624B86" })
-        {
-            var color = (Color)ColorConverter.ConvertFromString(hex);
-            var b = Theme.Button("", () => { foreground = color; UpdateColor(); }, hex + " · 전경색 지정"); b.Background = new SolidColorBrush(color); b.BorderBrush = Theme.Line; b.Height = 24; b.MinHeight = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2); swatches.Children.Add(b);
-        }
-        studioContent.Children.Add(swatches);
+        // Header: large foreground/background pair, then eyedropper and the numeric readout.
+        var header = new DockPanel { Margin = new Thickness(0, 2, 0, 4) };
+        studioColorSwatches = new ColorSwatches(() => ChooseColor(false), () => ChooseColor(true), SwapColors, ResetColors, 1.5) { Margin = new Thickness(0, 4, 12, 4) };
+        DockPanel.SetDock(studioColorSwatches, Dock.Left); header.Children.Add(studioColorSwatches);
+        var side = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        var picker = Theme.Button("", () => { SetTool(Tool.Eyedropper); canvas.Focus(); }, "스포이트 · 클릭: 전경색 · Alt+클릭: 배경색");
+        var pickerContent = new StackPanel { Orientation = Orientation.Horizontal };
+        pickerContent.Children.Add(Theme.Glyph(ToolIcons.PathData(Tool.Eyedropper), 16, Theme.Text, 1.6));
+        var pickerLabel = Theme.Label("스포이트", Theme.BodySize); pickerLabel.Margin = new Thickness(6, 0, 0, 0); pickerLabel.VerticalAlignment = VerticalAlignment.Center; pickerContent.Children.Add(pickerLabel);
+        picker.Content = pickerContent; picker.HorizontalAlignment = HorizontalAlignment.Left;
+        System.Windows.Automation.AutomationProperties.SetName(picker, "스포이트");
+        side.Children.Add(picker);
+        studioColorValue = Theme.Label("", Theme.CaptionSize, Theme.Muted); studioColorValue.TextWrapping = TextWrapping.Wrap; studioColorValue.Margin = new Thickness(2, 8, 2, 0); side.Children.Add(studioColorValue);
+        header.Children.Add(side);
+        studioContent.Children.Add(header);
         studioPalette = new ColorPalettePanel();
         studioPalette.ColorChanged += color => { foreground = color; UpdateColor(); };
         studioPalette.SetColor(foreground);
         studioContent.Children.Add(studioPalette);
+        UpdateStudioColor();
     }
+    void RememberColor(Color color) { if (studioPalette != null) studioPalette.Remember(color); else ColorPalettePanel.RememberShared(color); }
     void UpdateStudioColor()
     {
-        if (studioColorValue != null) studioColorValue.Text = $"전경 #{foreground.R:X2}{foreground.G:X2}{foreground.B:X2}   /   배경 #{backgroundColor.R:X2}{backgroundColor.G:X2}{backgroundColor.B:X2}";
+        if (studioColorValue != null) studioColorValue.Text = $"전경 #{foreground.R:X2}{foreground.G:X2}{foreground.B:X2}\n배경 #{backgroundColor.R:X2}{backgroundColor.G:X2}{backgroundColor.B:X2}";
+        studioColorSwatches?.SetColors(foreground, backgroundColor);
         studioPalette?.SetColor(foreground);
     }
+    internal static readonly (string Label, double Size, double Hardness)[] BrushPresets = [("세밀하게", 12d, 1d), ("부드럽게", 100d, .15), ("넓게", 240d, .7)];
     void BuildStudioBrushes()
     {
         studioContent.Children.Add(BuildBrushTipControls());
         studioContent.Children.Add(Theme.Section("크기와 획"));
-        var presets = new WrapPanel();
-        foreach (var (label, size, edge) in new[] { ("세밀하게", 12d, 1d), ("부드럽게", 100d, .15), ("넓게", 240d, .7) })
-            presets.Children.Add(Theme.Button(label, () => { SetTool(Tool.Brush); brushSize = size; hardness = edge; UpdateBrushLabel(); studioHardness?.SetValue(hardness * 100); }, label + " 브러시 프리셋"));
+        // Presets as stroke samples in the current shape rather than name-only buttons.
+        brushPresetPreviews.Clear();
+        var presets = new StackPanel();
+        foreach (var (label, size, edge) in BrushPresets)
+        {
+            var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new ColumnDefinition());
+            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 10, 0), MinWidth = 64 };
+            var title = Theme.Label(label, Theme.BodySize); title.FontWeight = FontWeights.SemiBold; text.Children.Add(title);
+            text.Children.Add(Theme.Label($"{size:0}px · {edge * 100:0}%", Theme.CaptionSize, Theme.Muted));
+            row.Children.Add(text);
+            var sample = new Image { Height = 40, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Stretch }; Grid.SetColumn(sample, 1); row.Children.Add(sample);
+            brushPresetPreviews.Add((sample, size, edge));
+            var button = Theme.Button("", () => { SetTool(Tool.Brush); brushSize = size; hardness = edge; UpdateBrushLabel(); studioHardness?.SetValue(hardness * 100); }, label + " 브러시 프리셋");
+            button.Content = row; button.HorizontalContentAlignment = HorizontalAlignment.Stretch; button.Padding = new Thickness(8, 6, 8, 6); button.Margin = new Thickness(0, 0, 0, 4);
+            System.Windows.Automation.AutomationProperties.SetName(button, label + " 브러시 프리셋");
+            presets.Children.Add(button);
+        }
         studioContent.Children.Add(presets);
+        UpdateBrushStrokePreviews();
         var diameter = studioDiameter = new ParameterSlider("크기 px", 1, MaxBrushSize, brushSize, 42); diameter.Changed += v => { brushSize = v; UpdateBrushLabel(); }; studioContent.Children.Add(diameter);
         var soft = studioHardness = new ParameterSlider("경도 %", 0, 100, hardness * 100, 80); soft.Changed += v => { hardness = v / 100; UpdateBrushLabel(); }; studioContent.Children.Add(soft);
         var angle = new ParameterSlider("모양 회전 °", -180, 180, brushAngle);
         angle.Changed += v => { brushAngle = v; UpdateBrushTipCursor(); }; studioContent.Children.Add(angle);
         var spacing = new ParameterSlider("찍는 간격 %", 1, 150, brushSpacing * 100, 10);
-        spacing.Changed += v => brushSpacing = v / 100; studioContent.Children.Add(spacing);
+        spacing.Changed += v => { brushSpacing = v / 100; UpdateBrushStrokePreviews(); }; studioContent.Children.Add(spacing);
         spacing.ToolTip = "간격을 늘리면 모양을 띄워 그립니다. 브러시·지우개·마스크에 적용됩니다.";
         diameter.ToolTip = "Alt + 좌우 드래그로 크기 조절";
     }

@@ -34,6 +34,7 @@ public static partial class AutomationCatalog
     static Field Number(double min, double max, string description = "Numeric value.") => new("number", description, min, max);
     static Field Integer(int min, int max, string description = "Whole-number value.") => new("integer", description, min, max);
     static Field Bool(string description) => new("boolean", description);
+    static Field IncludeLayers => new("boolean", "Response size for edits. Defaults to true (legacy: every open document with its full layer list). false returns only the target document's summary without layers.");
     static Field Choice(params string[] choices) => new("string", "One of the listed values (case-sensitive).", Choices: choices);
     static Dictionary<string, Field> Fields(params (string Key, Field Value)[] fields) => fields.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
 
@@ -44,7 +45,7 @@ public static partial class AutomationCatalog
             => commands.Add(name, new(name, description, readOnly, fields, required));
         Dictionary<string, Field> Mutation(params (string Key, Field Value)[] fields)
         {
-            var result = Fields(("documentId", Id), ("expectedRevision", Id));
+            var result = Fields(("documentId", Id), ("expectedRevision", Id), ("includeLayers", IncludeLayers));
             foreach (var (key, value) in fields) result.Add(key, value);
             return result;
         }
@@ -70,12 +71,12 @@ public static partial class AutomationCatalog
         Add("get_layer", "Inspect one exact layer, its parent chain, transforms, retained content and supported edits. Frame bounds describe the transformed surface, not ink or a fillable room boundary.", true,
             Fields(("documentId", Id), ("expectedRevision", Id), ("layerId", Id)), "documentId", "layerId");
         Add("new_document", "Create and activate a document (maximum 16,777,216 pixels). Returns its identifiers and revision.", false,
-            Fields(("name", Name), ("width", Integer(1, 8192)), ("height", Integer(1, 8192)), ("background", Color), ("dpi", Number(1, 9600))),
+            Fields(("name", Name), ("width", Integer(1, 8192)), ("height", Integer(1, 8192)), ("background", Color), ("dpi", Number(1, 9600)), ("includeLayers", IncludeLayers)),
             "name", "width", "height");
-        Add("open_document", "Open a supported local file as a new document; existing unsaved documents remain open.", false,
-            Fields(("path", Path)), "path");
+        Add("open_document", "Open a supported local file as a new document; existing unsaved documents remain open. A .moruproj file that is already open is activated instead and the result has alreadyOpen=true; other formats are imported again as a new document.", false,
+            Fields(("path", Path), ("includeLayers", IncludeLayers)), "path");
         Add("activate_document", "Activate an existing document by its returned identifier before editing it.", false,
-            Fields(("documentId", Id)), "documentId");
+            Fields(("documentId", Id), ("includeLayers", IncludeLayers)), "documentId");
         Add("add_image", "Add a local image as a layer in the active document. Obtain a fresh revision first.", false,
             Mutation(("path", Path), ("x", Coordinate), ("y", Coordinate), ("name", Name)), WriteRequired("path"));
         var addText = Mutation(); foreach (var field in textFields) addText.Add(field.Key, field.Value);
@@ -110,8 +111,8 @@ public static partial class AutomationCatalog
                 ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination.")), ("layerId", Id)), WriteRequired("path"));
         Add("preview", "Render a scaled PNG preview without changing or exporting the document. maxSide defaults to 512.", true,
             Fields(("documentId", Id), ("maxSide", Integer(1, 1024))), "documentId");
-        Add("undo", "Undo one document edit, rejecting a stale expectedRevision.", false, Mutation(), WriteRequired());
-        Add("redo", "Redo one document edit, rejecting a stale expectedRevision.", false, Mutation(), WriteRequired());
+        Add("undo", "Undo one document edit, rejecting a stale expectedRevision. Returns changed=false when there is nothing to undo.", false, Mutation(), WriteRequired());
+        Add("redo", "Redo one document edit, rejecting a stale expectedRevision. Returns changed=false when there is nothing to redo.", false, Mutation(), WriteRequired());
         Add("apply_batch", "Validate and apply up to 64 ordered document edits atomically as one undo step. dryRun=true validates on a snapshot without editing. Reuse operationId only to retry the identical request; successful receipts are retained for the last 128 batches in this editor session. Does not write files or generate AI images.", false,
             Mutation(("operationId", new("string", "Caller-generated nonempty UUID for this logical batch. Use a new UUID for a new operation.", MaxLength: 36, GuidValue: true)),
                 ("label", new("string", "Short undo history label describing the user's intent.", MaxLength: 120)),

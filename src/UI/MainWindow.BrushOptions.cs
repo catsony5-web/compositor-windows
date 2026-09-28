@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -18,13 +19,31 @@ public sealed partial class MainWindow
         var selected = Dialogs.ColorPicker(this, background ? backgroundColor : foreground, background ? "배경색" : "전경색");
         if (selected is not { } color) return;
         if (background) backgroundColor = color; else foreground = color;
-        UpdateColor(); canvas.Focus();
+        UpdateColor(); RememberColor(color); canvas.Focus();
     }
     void SwapColors() { (foreground, backgroundColor) = (backgroundColor, foreground); UpdateColor(); }
     void ResetColors() { foreground = Colors.Black; backgroundColor = Colors.White; UpdateColor(); }
+    readonly ContentControl toolCaptionIcon = new() { Width = 18, Height = 18, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, Focusable = false };
+
+    /// <summary>Current tool as icon + name, the anchor of the options bar.</summary>
+    FrameworkElement BuildToolIdentity()
+    {
+        toolCaption.Margin = new Thickness(0); toolCaption.MinWidth = 0;
+        var row = new StackPanel { Orientation = Orientation.Horizontal }; row.Children.Add(toolCaptionIcon); row.Children.Add(toolCaption);
+        var chip = new Border { Child = row, Background = Theme.Surface, CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 4, 10, 4), Margin = new Thickness(2, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, MinWidth = 96 };
+        System.Windows.Automation.AutomationProperties.SetName(chip, "현재 도구");
+        return chip;
+    }
+
+    static TextBlock OptionLabel(string text, string tooltip)
+    {
+        var label = Theme.Label(text); label.ToolTip = tooltip; label.VerticalAlignment = VerticalAlignment.Center; return label;
+    }
+
     void UpdateToolOptions()
     {
         toolCaption.Text = ToolDisplayName(tool);
+        toolCaptionIcon.Content = Theme.Glyph(ToolIcons.PathData(tool), 18, Theme.Text, 1.6);
         brushOptions.Visibility = BrushTool ? Visibility.Visible : Visibility.Collapsed;
         opacityOptions.Visibility = BrushTool || tool is Tool.Gradient or Tool.Rectangle or Tool.Ellipse or Tool.Bucket ? Visibility.Visible : Visibility.Collapsed;
         bucketOptions.Visibility = tool == Tool.Bucket ? Visibility.Visible : Visibility.Collapsed;

@@ -92,7 +92,7 @@ public static class Theme
 
     // Hairline + 13 SemiBold title; clicking folds the rows up to the next section.
     // The first section of a panel omits the hairline (rule: false).
-    public static FrameworkElement Section(string title, bool rule = true) => new SectionHeader(title, rule);
+    public static FrameworkElement Section(string title, bool rule = true, bool foldedByDefault = false) => new SectionHeader(title, rule, foldedByDefault);
 
     // Action labels remain complete at narrow widths; only the affordance occupies a fixed column.
     public static Button ActionRow(string label, Action action, string? tooltip = null, string? glyph = null)
@@ -225,6 +225,14 @@ public static class Theme
         public const string Forward = "M12 13V3.5 M8 7.5L12 3.5L16 7.5 | ~M5 17H19 M5 20.5H19";
         public const string Backward = "M12 3.5V13 M8 9L12 13L16 9 | ~M5 17H19 M5 20.5H19";
         public const string FillStroke = "*M5.5 3.5H12.5A2 2 0 0 1 14.5 5.5V12.5A2 2 0 0 1 12.5 14.5H5.5A2 2 0 0 1 3.5 12.5V5.5A2 2 0 0 1 5.5 3.5Z | M5.5 3.5H12.5A2 2 0 0 1 14.5 5.5V12.5A2 2 0 0 1 12.5 14.5H5.5A2 2 0 0 1 3.5 12.5V5.5A2 2 0 0 1 5.5 3.5Z | M11.5 9.5H18.5A2 2 0 0 1 20.5 11.5V18.5A2 2 0 0 1 18.5 20.5H11.5A2 2 0 0 1 9.5 18.5V11.5A2 2 0 0 1 11.5 9.5Z";
+        public const string Contiguous = "M5.5 4.5H11A1 1 0 0 1 12 5.5V12H5.5A1 1 0 0 1 4.5 11V5.5A1 1 0 0 1 5.5 4.5Z | ~M12 12H18.5A1 1 0 0 1 19.5 13V18.5A1 1 0 0 1 18.5 19.5H13A1 1 0 0 1 12 18.5Z | *M5.5 4.5H11A1 1 0 0 1 12 5.5V12H5.5A1 1 0 0 1 4.5 11V5.5A1 1 0 0 1 5.5 4.5Z";
+        public const string LayerStack = "M12 4L20 8L12 12L4 8Z | ~M4 12L12 16L20 12 M4 16L12 20L20 16 | *M12 4L20 8L12 12L4 8Z";
+        public const string SoftEdge = "M5 19L19 5 | ~M5 14.5L14.5 5 M9.5 19L19 9.5";
+        public const string AutoSelect = "M6 5.5L17.5 13.2L12.2 14.5L9.6 19.5Z | ~M15 6.5L17 4.5 M17.8 9.5H20.3 M12 4.5V2 | *M6 5.5L17.5 13.2L12.2 14.5L9.6 19.5Z";
+        public const string TipRound = "M12 4.5A7.5 7.5 0 1 1 12 19.5A7.5 7.5 0 1 1 12 4.5Z | *M12 4.5A7.5 7.5 0 1 1 12 19.5A7.5 7.5 0 1 1 12 4.5Z";
+        public const string TipSquare = "M6.5 5H17.5A1.5 1.5 0 0 1 19 6.5V17.5A1.5 1.5 0 0 1 17.5 19H6.5A1.5 1.5 0 0 1 5 17.5V6.5A1.5 1.5 0 0 1 6.5 5Z | *M6.5 5H17.5A1.5 1.5 0 0 1 19 6.5V17.5A1.5 1.5 0 0 1 17.5 19H6.5A1.5 1.5 0 0 1 5 17.5V6.5A1.5 1.5 0 0 1 6.5 5Z";
+        public const string TipDiamond = "M12 3.5L20.5 12L12 20.5L3.5 12Z | *M12 3.5L20.5 12L12 20.5L3.5 12Z";
+        public const string TipStar = "M12 4.3L14.1 9.9L20.1 10.2L15.4 13.9L17 19.7L12 16.4L7 19.7L8.6 13.9L3.9 10.2L9.9 9.9Z | *M12 4.3L14.1 9.9L20.1 10.2L15.4 13.9L17 19.7L12 16.4L7 19.7L8.6 13.9L3.9 10.2L9.9 9.9Z";
         public const string Palette = "M12 3.5A8.5 8.5 0 1 0 12 20.5C13.1 20.5 13.6 19.6 13.1 18.7C12.5 17.7 13.1 16.5 14.5 16.5H16.5A4 4 0 0 0 20.5 12.5C20.5 7.5 16.7 3.5 12 3.5Z | ~M7.8 10.05A0.95 0.95 0 1 0 7.8 11.95A0.95 0.95 0 1 0 7.8 10.05Z M10.2 6.65A0.95 0.95 0 1 0 10.2 8.55A0.95 0.95 0 1 0 10.2 6.65Z M14.4 6.65A0.95 0.95 0 1 0 14.4 8.55A0.95 0.95 0 1 0 14.4 6.65Z M16.8 10.05A0.95 0.95 0 1 0 16.8 11.95A0.95 0.95 0 1 0 16.8 10.05Z";
         public const string Image = "M6 5H18A2.5 2.5 0 0 1 20.5 7.5V16.5A2.5 2.5 0 0 1 18 19H6A2.5 2.5 0 0 1 3.5 16.5V7.5A2.5 2.5 0 0 1 6 5Z | M4 16.5L8.8 11.8L13 16 M11.5 14.5L14.2 11.8L20 17.5 | ~M15.5 7.6A1.4 1.4 0 1 0 15.5 10.4A1.4 1.4 0 1 0 15.5 7.6Z";
         public const string Text = "M5.5 7V5H18.5V7 M12 5V19 M9.5 19H14.5";

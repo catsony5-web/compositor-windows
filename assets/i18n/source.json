@@ -1820,7 +1820,7 @@
   "file": "UI/Controls/CanvasView.Design.cs"
  },
  {
-  "ko": "채도 · 명도",
+  "ko": "아직 사용한 색이 없습니다",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -1829,6 +1829,30 @@
  },
  {
   "ko": "팔레트 색조",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "HEX 색상값",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "#RRGGBB 입력 후 Enter",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "최근 사용 색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "색상 견본",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": " · 전경색 지정",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "견본 {0}",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -1917,6 +1941,14 @@
  },
  {
   "ko": "선택된 전경색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": " · 최근 사용 색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "최근 {0}",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -2020,6 +2052,18 @@
   "file": "UI/Controls/LayerRow.cs"
  },
  {
+  "ko": "표시됨",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "숨김",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 표시: {0}, {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
   "ko": "그룹 접기",
   "file": "UI/Controls/LayerRow.cs"
  },
@@ -2028,11 +2072,35 @@
   "file": "UI/Controls/LayerRow.cs"
  },
  {
+  "ko": "접기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "펼치기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "그룹 {0}: {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
   "ko": "레이어 잠금 해제",
   "file": "UI/Controls/LayerRow.cs"
  },
  {
   "ko": "레이어 잠금",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "잠김",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "잠금 해제",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 잠금: {0}, {1}",
   "file": "UI/Controls/LayerRow.cs"
  },
  {
@@ -2086,10 +2154,6 @@
  {
   "ko": "{0} ~ {1} 사이의 숫자를 입력하세요.",
   "file": "UI/Controls/ParameterSlider.cs"
- },
- {
-  "ko": "글자 색상",
-  "file": "UI/Controls/PropertyRows.cs"
  },
  {
   "ko": "섹션 접기 또는 펼치기",
@@ -2192,6 +2256,10 @@
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
+  "ko": "글자 색상",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
   "ko": "색상",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
@@ -2200,23 +2268,15 @@
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "왼쪽",
+  "ko": "단락 왼쪽 정렬",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "가운데",
+  "ko": "단락 가운데 정렬",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "오른쪽",
-  "file": "UI/Controls/TextPropertiesPanel.cs"
- },
- {
-  "ko": "단락 ",
-  "file": "UI/Controls/TextPropertiesPanel.cs"
- },
- {
-  "ko": " 정렬",
+  "ko": "단락 오른쪽 정렬",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
@@ -2232,7 +2292,7 @@
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
-  "ko": "텍스트 레이어 ",
+  "ko": "텍스트 레이어 {0}",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
@@ -2968,7 +3028,31 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
-  "ko": "JPEG 품질 95",
+  "ko": "파일 이름",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "JPEG 품질",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "투명 배경 유지",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "배율",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "사용자 지정",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "사용자 지정 배율 (%)",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "5–800% 사이 백분율",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -2976,11 +3060,19 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
-  "ko": "JPEG 품질 ",
+  "ko": "작은 파일, 투명한 곳은 흰색으로 채워집니다.",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
-  "ko": "예상 파일 크기 {0} KB",
+  "ko": "무손실 압축, 인쇄·보관용.",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "무손실, 투명도를 지원합니다.",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "예상 파일 크기 {0}",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -3024,7 +3116,79 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
+  "ko": "최근",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "화면",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인쇄",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "사진",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
   "ko": "현재 Windows 화면",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "정사각형 1:1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "세로 4:5",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "세로 9:16",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "가로 16:9",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "가로 1.91:1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "배너 3:1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "엽서",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "명함",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "3:2 가로",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "4:3 가로",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "3:2 세로",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인화 10×15cm",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인화 13×18cm",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인화 20×25cm",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -3036,11 +3200,19 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
-  "ko": "프리셋을 고르거나 오른쪽에서 크기를 직접 입력하세요.",
+  "ko": "용도를 고르고 크기를 선택하거나 오른쪽에서 직접 입력하세요.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "화면용",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
   "ko": "문서 설정",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "비율 미리보기",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -3076,7 +3248,35 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
+  "ko": "현재 크기를 내 프리셋으로 저장",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "이름 칸의 이름으로 저장합니다. 최근 탭에 표시됩니다.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
   "ko": "문서 만들기  →",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "최근 크기",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "최근에 만든 크기와 저장한 프리셋이 여기에 표시됩니다.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "프리셋 삭제",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "마우스 오른쪽 단추로 삭제",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "내 프리셋",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -3400,7 +3600,15 @@
   "file": "UI/MainWindow.Advanced.cs"
  },
  {
-  "ko": "선택 영역 ",
+  "ko": "선택 영역 페더",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 영역 확장",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 영역 축소",
   "file": "UI/MainWindow.Advanced.cs"
  },
  {
@@ -3572,10 +3780,6 @@
   "file": "UI/MainWindow.Artboards.cs"
  },
  {
-  "ko": "대지 ",
-  "file": "UI/MainWindow.Artboards.cs"
- },
- {
   "ko": "대지 이름",
   "file": "UI/MainWindow.Artboards.cs"
  },
@@ -3661,6 +3865,54 @@
  },
  {
   "ko": "연결 켜기",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "요청 예시",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결을 켠 다음 연결 테스트로 AI 프로그램이 이 창에 닿는지 확인하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 테스트",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "확인 중…",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "Morupixel에 열린 문서의 레이어 구성을 알려줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "현재 문서에 제목 글자를 가운데 정렬로 추가하고 미리보기를 보여줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "선택한 사진 레이어의 노출을 조금 올리고 PNG로 내보내줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "평면도의 방 영역에 등록한 바닥 재질을 적용해줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결이 꺼져 있습니다. 먼저 연결을 켜세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 테스트 실패: {0}",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 확인됨 · 문서 {0}개 · 명령 {1}개 · 버전 {2}",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "\n세션 목록에 아직 보이지 않습니다. 잠시 후 다시 시도하세요.",
   "file": "UI/MainWindow.Automation.cs"
  },
  {
@@ -3784,6 +4036,10 @@
   "file": "UI/MainWindow.BrushOptions.cs"
  },
  {
+  "ko": "현재 도구",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
   "ko": "Alt + 좌우 드래그: 크기",
   "file": "UI/MainWindow.BrushOptions.cs"
  },
@@ -3798,6 +4054,10 @@
  {
   "ko": "참조 위치 지정됨 ({0}, {1}) · 드래그하여 적용",
   "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
+  "ko": "현재 브러시 획 미리보기",
+  "file": "UI/MainWindow.BrushTips.cs"
  },
  {
   "ko": "브러시 모양",
@@ -3956,7 +4216,7 @@
   "file": "UI/MainWindow.Chrome.cs"
  },
  {
-  "ko": " 도구",
+  "ko": "{0} 도구",
   "file": "UI/MainWindow.Commands.cs"
  },
  {
@@ -3980,11 +4240,23 @@
   "file": "UI/MainWindow.cs"
  },
  {
+  "ko": "브러시 지름 · Alt + 좌우 드래그로도 조절",
+  "file": "UI/MainWindow.cs"
+ },
+ {
   "ko": "경도",
   "file": "UI/MainWindow.cs"
  },
  {
+  "ko": "가장자리 선명도 · 낮을수록 부드럽게",
+  "file": "UI/MainWindow.cs"
+ },
+ {
   "ko": "농도",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "한 번 칠할 때의 불투명도",
   "file": "UI/MainWindow.cs"
  },
  {
@@ -3996,7 +4268,7 @@
   "file": "UI/MainWindow.cs"
  },
  {
-  "ko": "이동 도구(V): 클릭한 대상의 레이어 선택. 끄면 목록에서 선택한 레이어만 이동합니다.",
+  "ko": "이동 도구(V): 클릭한 대상의 레이어를 선택합니다. 끄면 목록에서 선택한 레이어만 이동합니다.",
   "file": "UI/MainWindow.cs"
  },
  {
@@ -4276,10 +4548,6 @@
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
-  "ko": "세로 4:5",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
   "ko": "와이드 16:9",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
@@ -4312,6 +4580,18 @@
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
+  "ko": "흰 배경",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "투명 배경",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "{0} · {1}{2} · {3}으로 새 문서 만들기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
   "ko": "빠른 시작: {0} {1}",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
@@ -4329,10 +4609,6 @@
  },
  {
   "ko": "파일을 찾을 수 없어 최근 문서 목록에서 뺐습니다.\n",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "배우기 · ",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
@@ -4401,6 +4677,10 @@
  },
  {
   "ko": "선택 레이어 복제 · Ctrl+J",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 마스크 추가",
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
@@ -4497,10 +4777,6 @@
  },
  {
   "ko": "선택한 레이어의 이름을 변경합니다.",
-  "file": "UI/MainWindow.Inspector.cs"
- },
- {
-  "ko": "레이어 마스크 추가",
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
@@ -4708,6 +4984,10 @@
   "file": "UI/MainWindow.LayerExport.cs"
  },
  {
+  "ko": "JPEG 품질 95",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
   "ko": "Morupixel · 선택 레이어 내보내기",
   "file": "UI/MainWindow.LayerExport.cs"
  },
@@ -4740,6 +5020,10 @@
   "file": "UI/MainWindow.LayerExport.cs"
  },
  {
+  "ko": "예상 파일 크기 {0} KB",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
   "ko": "\n클리핑 {0}개: 기준 레이어가 선택되지 않아 독립 이미지로 내보냅니다.",
   "file": "UI/MainWindow.LayerExport.cs"
  },
@@ -4758,6 +5042,62 @@
  {
   "ko": "이미지를 저장하고 있습니다…",
   "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어의 혼합 모드",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "레이어 혼합 모드",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "선택 레이어의 불투명도 · 놓으면 적용",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "레이어 불투명도",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "문서를 열거나 새로 만들면 레이어가 여기에 표시됩니다.",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "도면 레이어가 없습니다.\nDWG·DXF·PDF 도면을 가져오면 원본 레이어별로 표시됩니다.",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "사진 레이어가 없습니다.\n아래 + 단추로 새 레이어를 만들거나 이미지를 가져오세요.",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "노출…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "레벨…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "곡선…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "색조 / 채도…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "그라데이션 맵…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "그레인…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "사진 현상…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
  },
  {
   "ko": "레이어 {0}개 범위 선택",
@@ -4956,14 +5296,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "레벨…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "노출…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "채도…",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -5004,31 +5336,11 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "곡선…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "색조 / 채도…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "그라데이션 맵…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "그레인…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "선택 조정 레이어 편집…",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
   "ko": "필터",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "사진 현상…",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
@@ -5053,10 +5365,6 @@
  },
  {
   "ko": "마스크 페더…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "인쇄",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
@@ -5132,6 +5440,18 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
+  "ko": "언어 · Language",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "언어",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
   "ko": "리본 메뉴로 보기",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -5152,11 +5472,11 @@
   "file": "UI/MainWindow.Modes.cs"
  },
  {
-  "ko": "사진",
+  "ko": "리터치",
   "file": "UI/MainWindow.Modes.cs"
  },
  {
-  "ko": "리터치",
+  "ko": " 도구",
   "file": "UI/MainWindow.Modes.cs"
  },
  {
@@ -5242,6 +5562,10 @@
  {
   "ko": "ICC 프로필|*.icc;*.icm",
   "file": "UI/MainWindow.Proof.cs"
+ },
+ {
+  "ko": "CMYK 미리보기",
+  "file": "UI/MainWindow.Rendering.cs"
  },
  {
   "ko": "CMYK 인쇄색을 준비합니다",
@@ -5333,10 +5657,6 @@
  },
  {
   "ko": "그룹·합성",
-  "file": "UI/MainWindow.Ribbon.cs"
- },
- {
-  "ko": "화면",
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {
@@ -5564,7 +5884,7 @@
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {
-  "ko": "배율은 1~6400% 사이 숫자로 입력하세요.",
+  "ko": "배율은 1~{0}% 사이 숫자로 입력하세요.",
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {
@@ -5604,23 +5924,15 @@
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": "색 교환 · X",
+  "ko": "스포이트 · 클릭: 전경색 · Alt+클릭: 배경색",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": "색상 견본",
+  "ko": "스포이트",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": " · 전경색 지정",
-  "file": "UI/MainWindow.Studio.cs"
- },
- {
-  "ko": "전경 #{0}{1}{2}   /   배경 #{3}{4}{5}",
-  "file": "UI/MainWindow.Studio.cs"
- },
- {
-  "ko": "크기와 획",
+  "ko": "전경 #{0}{1}{2}\n배경 #{3}{4}{5}",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
@@ -5633,6 +5945,10 @@
  },
  {
   "ko": "넓게",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "크기와 획",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
@@ -5700,7 +6016,7 @@
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
-  "ko": "끄면 문서 전체의 비슷한 색을 선택합니다. Ctrl+클릭으로도 전체 색을 선택할 수 있습니다.",
+  "ko": "켜면 클릭한 곳과 이어진 영역만, 끄면 문서 전체의 비슷한 색을 선택합니다. Ctrl+클릭으로도 전체 색을 선택할 수 있습니다.",
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
@@ -5716,7 +6032,7 @@
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
-  "ko": "끄면 문서 전체에서 같은 색 영역을 채웁니다.",
+  "ko": "켜면 클릭한 곳과 이어진 영역만, 끄면 문서 전체에서 같은 색 영역을 채웁니다.",
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
@@ -5982,69 +6298,5 @@
  {
   "ko": "선택 레이어 캔버스 정렬",
   "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "표시됨",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "숨김",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "레이어 표시: {0}, {1}",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "접기",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "펼치기",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "그룹 {0}: {1}",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "잠김",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "잠금 해제",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "레이어 잠금: {0}, {1}",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "흰 배경",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "투명 배경",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "{0} · {1}{2} · {3}으로 새 문서 만들기",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "언어 · Language",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "언어",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "CMYK 미리보기",
-  "file": "UI/MainWindow.Rendering.cs"
  }
 ]

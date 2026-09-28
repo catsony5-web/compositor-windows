@@ -11,6 +11,19 @@ public static class BrushTipTests
         static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
         static Layer Layer(Color? color = null) => new() { Pixels = Raster.Solid(40, 40, color ?? Colors.Transparent) };
         static byte Alpha(Layer layer, int x, int y) => layer.Pixels.Data[(y * layer.Pixels.Width + x) * 4 + 3];
+        test("brush stroke preview reflects size, hardness and shape with the real engine", () =>
+        {
+            static double Coverage(Raster r) { double sum = 0; for (int i = 3; i < r.Data.Length; i += 4) sum += r.Data[i]; return sum / 255; }
+            var small = BrushPreview.Stroke(BrushTip.Round, 4, 1, .1, 0, 200, 48);
+            var large = BrushPreview.Stroke(BrushTip.Round, 400, 1, .1, 0, 200, 48);
+            var soft = BrushPreview.Stroke(BrushTip.Round, 400, 0, .1, 0, 200, 48);
+            var square = BrushPreview.Stroke(BrushTip.Square, 400, 1, .1, 0, 200, 48);
+            Check(small.Width == 200 && small.Height == 48 && Coverage(small) > 0, "Preview stroke is empty");
+            Check(Coverage(large) > Coverage(small) * 1.5, "Larger brush must preview wider");
+            Check(Coverage(soft) < Coverage(large), "Softer brush must preview lighter");
+            Check(!square.Data.SequenceEqual(large.Data), "Tip shape must change the preview");
+            Check(BrushPreview.DisplayDiameter(5000, 48) <= 48 * .72 + 1e-9 && BrushPreview.DisplayDiameter(double.NaN, 48) >= 3, "Display diameter must stay inside the preview");
+        });
         static void Reject(Action action)
         {
             try { action(); } catch (InvalidDataException) { return; }

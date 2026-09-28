@@ -8,12 +8,18 @@ using System.Windows.Media;
 
 namespace Compositor.Windows;
 
-/// <summary>Foreground-based tone swatches, a modeless HSV picker and color harmonies.</summary>
+/// <summary>HSV picker with HEX entry on top, then recent colors, swatches, a folded tone grid and harmonies.</summary>
 public sealed class ColorPalettePanel : StackPanel
 {
     readonly SaturationValuePad pad = new();
     readonly Slider hue;
     readonly TextBlock values = Theme.Label("", Theme.CaptionSize, Theme.Muted);
+    readonly TextBox hex = new() { MinHeight = 30, MinWidth = 96, FontFamily = new FontFamily("Consolas"), VerticalContentAlignment = VerticalAlignment.Center };
+    readonly UniformGrid recent = new() { Columns = RecentLimit, Rows = 1, Margin = new Thickness(0, 0, 0, 2) };
+    readonly TextBlock recentEmpty = Theme.Label("아직 사용한 색이 없습니다", Theme.CaptionSize, Theme.Muted);
+    public const int RecentLimit = 9;
+    static readonly List<Color> recentColors = [];
+    internal static readonly string[] SwatchHexes = ["#FFFFFF", "#D8DCE2", "#88929F", "#4A515B", "#171A20", "#000000", "#EAE2D5", "#C5AE94", "#8C7061", "#F28792", "#DB5269", "#A12D4D", "#FFB774", "#F28446", "#B75132", "#F4D37A", "#D3AD4E", "#826C35", "#A5D9AF", "#50A98D", "#2A665E", "#AFDCF1", "#76A5E5", "#375C9D", "#CBB5EB", "#9D7BC8", "#624B86"];
     readonly UniformGrid recommendations = new() { Columns = 3 };
     readonly List<Button> harmonyButtons = [];
     readonly UniformGrid shades = new() { Columns = ColorShadePalette.Columns, Rows = ColorShadePalette.Rows, Margin = new Thickness(2, 3, 2, 3) };
@@ -33,9 +39,7 @@ public sealed class ColorPalettePanel : StackPanel
 
     public ColorPalettePanel()
     {
-        Margin = new Thickness(0, 10, 0, 2);
-        BuildShadePalette();
-        Children.Add(Theme.Section("채도 · 명도"));
+        Margin = new Thickness(0, 4, 0, 2);
         Children.Add(pad);
         hue = new Slider
         {
@@ -46,8 +50,29 @@ public sealed class ColorPalettePanel : StackPanel
         if (TryFindResource("SpectrumSlider") is Style style) hue.Style = style;
         AutomationProperties.SetName(hue, "팔레트 색조");
         Children.Add(hue);
-        values.TextWrapping = TextWrapping.Wrap;
-        Children.Add(values);
+        values.TextWrapping = TextWrapping.Wrap; values.VerticalAlignment = VerticalAlignment.Center; values.Margin = new Thickness(8, 0, 0, 0);
+        AutomationProperties.SetName(hex, "HEX 색상값"); hex.ToolTip = "#RRGGBB 입력 후 Enter";
+        hex.KeyDown += (_, e) => { if (e.Key == Key.Enter) { CommitHex(); e.Handled = true; } else if (e.Key == Key.Escape) { UpdateReadout(); e.Handled = true; } };
+        hex.LostKeyboardFocus += (_, _) => CommitHex();
+        var hexRow = new DockPanel { Margin = new Thickness(0, 6, 0, 2) };
+        var hexLabel = Theme.Label("HEX", Theme.CaptionSize, Theme.Muted); hexLabel.VerticalAlignment = VerticalAlignment.Center; hexLabel.Margin = new Thickness(0, 0, 6, 0);
+        DockPanel.SetDock(hexLabel, Dock.Left); DockPanel.SetDock(hex, Dock.Left);
+        hexRow.Children.Add(hexLabel); hexRow.Children.Add(hex); hexRow.Children.Add(values);
+        Children.Add(hexRow);
+        Children.Add(Theme.Section("최근 사용 색"));
+        AutomationProperties.SetName(recent, "최근 사용 색");
+        Children.Add(recent); Children.Add(recentEmpty); RebuildRecent();
+        Children.Add(Theme.Section("색상 견본"));
+        var swatches = new UniformGrid { Columns = 9 };
+        AutomationProperties.SetName(swatches, "색상 견본");
+        foreach (string code in SwatchHexes)
+        {
+            var color = (Color)ColorConverter.ConvertFromString(code);
+            var b = Theme.Button("", () => Choose(color), code + " · 전경색 지정"); b.Background = new SolidColorBrush(color); b.BorderBrush = Theme.Line; b.Height = 24; b.MinHeight = 0; b.MinWidth = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2);
+            AutomationProperties.SetName(b, $"견본 {code}"); swatches.Children.Add(b);
+        }
+        Children.Add(swatches);
+        BuildShadePalette();
         Children.Add(Theme.Section("추천 색상"));
         var modes = new UniformGrid { Columns = 3, Margin = new Thickness(0, 1, 0, 5) };
         foreach (var (label, kind, help) in new[]
@@ -71,6 +96,10 @@ public sealed class ColorPalettePanel : StackPanel
             PublishColor();
         };
         pad.Changed += (_, _) => PublishColor();
+        // A drag or key run on the pad ends as one recent color, not one per step.
+        pad.LostMouseCapture += (_, _) => Remember(selectedColor);
+        pad.LostKeyboardFocus += (_, _) => Remember(selectedColor);
+        hue.LostMouseCapture += (_, _) => Remember(selectedColor);
         SetColor(Color.FromRgb(188, 217, 250));
     }
 
@@ -105,7 +134,8 @@ public sealed class ColorPalettePanel : StackPanel
 
     void BuildShadePalette()
     {
-        Children.Add(Theme.Section("선택 색상 톤"));
+        var toneHeader = (SectionHeader)Theme.Section("선택 색상 톤", foldedByDefault: true);
+        Children.Add(toneHeader);
         Children.Add(shadeBasis);
         AutomationProperties.SetName(shades, "선택 색상 톤 그리드");
         for (int i = 0; i < ColorShadePalette.Columns * ColorShadePalette.Rows; i++)
@@ -125,6 +155,8 @@ public sealed class ColorPalettePanel : StackPanel
         var reset = Theme.Button("현재 색을 기준으로", () => SetShadeBase(selectedColor), "현재 전경색으로 톤 팔레트의 기준색을 다시 설정합니다");
         reset.MinHeight = 32; reset.Padding = new Thickness(5, 5, 5, 5);
         Children.Add(reset);
+        // Fold now rather than on the next dispatcher pass so the first frame is already compact.
+        toneHeader.Apply();
         shades.SizeChanged += (_, e) =>
         {
             double height = Math.Clamp(e.NewSize.Width / ColorShadePalette.Columns, 20, 34);
@@ -165,6 +197,7 @@ public sealed class ColorPalettePanel : StackPanel
         SetColor(color, false);
         selectedShade = index;
         UpdateShadeSelection();
+        Remember(color);
         if (changed) ColorChanged?.Invoke(color);
     }
 
@@ -177,7 +210,71 @@ public sealed class ColorPalettePanel : StackPanel
         }
     }
 
-    void UpdateReadout() => values.Text = $"H {currentHue:0}°  ·  S {pad.Saturation * 100:0}%  ·  V {pad.Value * 100:0}%     #{selectedColor.R:X2}{selectedColor.G:X2}{selectedColor.B:X2}";
+    void UpdateReadout()
+    {
+        values.Text = $"H {currentHue:0}°  S {pad.Saturation * 100:0}%  V {pad.Value * 100:0}%";
+        if (!hex.IsKeyboardFocused) hex.Text = Hex(selectedColor);
+    }
+
+    static string Hex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    /// <summary>Accepts #RGB, #RRGGBB or #AARRGGBB, with or without '#'.</summary>
+    public static bool TryParseHex(string? text, out Color color)
+    {
+        color = default;
+        string t = (text ?? "").Trim().TrimStart('#');
+        if (t.Length == 3) t = string.Concat(t.Select(c => $"{c}{c}"));
+        if (t.Length is not (6 or 8) || !uint.TryParse(t, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out uint v)) return false;
+        color = t.Length == 6 ? Color.FromRgb((byte)(v >> 16), (byte)(v >> 8), (byte)v) : Color.FromArgb((byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v);
+        return true;
+    }
+
+    internal void CommitHex()
+    {
+        if (!TryParseHex(hex.Text, out var parsed)) { hex.Text = Hex(selectedColor); return; }
+        if (hex.Text.Trim().TrimStart('#').Length != 8) parsed.A = selectedColor.A == 0 ? (byte)255 : selectedColor.A;
+        Choose(parsed);
+        hex.Text = Hex(selectedColor);
+    }
+
+    /// <summary>Discrete pick (swatch, recent, HEX, harmony): adopt, remember and publish once.</summary>
+    void Choose(Color color)
+    {
+        bool changed = color != selectedColor;
+        SetColor(color);
+        Remember(color);
+        if (changed) ColorChanged?.Invoke(color);
+    }
+
+    public static IReadOnlyList<Color> RecentColors => recentColors;
+
+    /// <summary>Adds a color to the shared recent row (newest first, no duplicates).</summary>
+    public void Remember(Color color) { if (RememberShared(color)) RebuildRecent(); }
+
+    /// <summary>Records a color picked while no panel is open (eyedropper, color dialog).</summary>
+    public static bool RememberShared(Color color)
+    {
+        if (color.A == 0 || (recentColors.Count > 0 && recentColors[0] == color)) return false;
+        recentColors.Remove(color); recentColors.Insert(0, color);
+        if (recentColors.Count > RecentLimit) recentColors.RemoveRange(RecentLimit, recentColors.Count - RecentLimit);
+        return true;
+    }
+
+    internal static void ClearRecent() => recentColors.Clear();
+
+    void RebuildRecent()
+    {
+        recent.Children.Clear();
+        foreach (var color in recentColors)
+        {
+            var c = color; string code = Hex(c);
+            var b = Theme.Button("", () => Choose(c), code + " · 최근 사용 색"); b.Background = new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B)); b.BorderBrush = Theme.Line; b.Height = 24; b.MinHeight = 0; b.MinWidth = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2);
+            b.Tag = c; AutomationProperties.SetName(b, $"최근 {code}"); recent.Children.Add(b);
+        }
+        bool any = recentColors.Count > 0;
+        recent.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+        recentEmpty.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+    }
 
     void SetHarmony(ColorHarmonyKind kind) { harmonyKind = kind; UpdateRecommendations(); }
 
@@ -197,12 +294,7 @@ public sealed class ColorPalettePanel : StackPanel
             content.Children.Add(new Border { Height = 30, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)), Margin = new Thickness(0, 0, 0, 2) });
             var label = Theme.Label(hex, Theme.CaptionSize); label.TextAlignment = TextAlignment.Center;
             content.Children.Add(label);
-            var button = Theme.Button("", () =>
-            {
-                bool changed = color != selectedColor;
-                SetColor(color);
-                if (changed) ColorChanged?.Invoke(color);
-            }, hex + " · 추천 전경색");
+            var button = Theme.Button("", () => Choose(color), hex + " · 추천 전경색");
             button.Content = content; button.Padding = new Thickness(3);
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             AutomationProperties.SetName(button, "추천색 " + hex);

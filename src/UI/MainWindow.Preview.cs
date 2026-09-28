@@ -27,7 +27,7 @@ public sealed partial class MainWindow
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
             using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
         }
-        Capture(new NewDocumentDialog(null), "new-document", 970, 720);
+        Capture(new NewDocumentDialog(null), "new-document", 1020, 760);
         void CaptureFit(Window window, string name, int width)
         {
             var content = (FrameworkElement)window.Content; window.Content = null;
@@ -56,7 +56,7 @@ public sealed partial class MainWindow
         CaptureFit(paletteSearch, "command-palette-search", 600);
         recentCommands.Clear();
         CaptureFit(new CompatibilityExportDialog(null!, doc), "compat-export", 510);
-        Capture(ExportDialog.Create(null, doc), "export", 920, 630);
+        Capture(ExportDialog.Create(null, doc), "export", 1040, 680);
         Capture(new ColorPickerDialog(null!, foreground), "color-picker", 560, 470);
         Capture(new CmykExportDialog(null!, doc), "cmyk-export", 990, 710);
         Capture(new SelectedLayerExportDialog(null!, doc, [doc.Layers[0].Id]), "layer-export", 960, 720);

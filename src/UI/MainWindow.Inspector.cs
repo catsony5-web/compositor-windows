@@ -89,14 +89,17 @@ public sealed partial class MainWindow
     {
         var panel = new Grid { Background = Brushes.Transparent };
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
         panel.Children.Add(BuildLayerCategoryTabs());
+        var quick = BuildLayerQuickBar(); Grid.SetRow(quick, 1); panel.Children.Add(quick);
 
         layerList.ToolTip = "레이어를 드래그하여 순서 변경";
         layerList.CreateRow = CreateLayerRow;
         layerList.Margin = new Thickness(6, 0, 6, 0);
-        Grid.SetRow(layerList, 1); panel.Children.Add(layerList);
+        Grid.SetRow(layerList, 2); panel.Children.Add(layerList);
+        var hint = BuildLayerEmptyHint(); Grid.SetRow(hint, 2); panel.Children.Add(hint);
 
         var actions = new DockPanel { Margin = new Thickness(8, 0, 8, 0), LastChildFill = false };
         var footer = new Border { BorderBrush = Theme.Line, BorderThickness = new Thickness(0, 1, 0, 0), Child = actions };
@@ -104,10 +107,15 @@ public sealed partial class MainWindow
         var delete = ActionButton(Theme.Glyphs.Delete, "선택 레이어 삭제", DeleteLayer); DockPanel.SetDock(delete, Dock.Right); actions.Children.Add(delete);
         actions.Children.Add(ActionButton(Theme.Glyphs.Plus, "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = $"레이어 {doc.Layers.Count + 1}", Pixels = new Raster(doc.Width, doc.Height) }))));
         actions.Children.Add(ActionButton(Theme.Glyphs.Duplicate, "선택 레이어 복제 · Ctrl+J", Duplicate));
-        actions.Children.Add(new Border { Width = 1, Height = 16, Background = Theme.Line, Margin = new Thickness(5, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center });
+        Border Divider() => new() { Width = 1, Height = 16, Background = Theme.Line, Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
+        actions.Children.Add(Divider());
+        actions.Children.Add(ActionButton(Theme.Glyphs.GroupAdd, "선택 레이어 그룹 만들기", () => WorkspaceArrange(GroupSelected, true)));
+        actions.Children.Add(ActionButton(Theme.Glyphs.Mask, "레이어 마스크 추가", AddMask));
+        actions.Children.Add(LayerAdjustmentButton(ActionButton));
+        actions.Children.Add(Divider());
         actions.Children.Add(ActionButton(Theme.Glyphs.ArrowUp, "선택 레이어를 위로", () => Reorder(1)));
         actions.Children.Add(ActionButton(Theme.Glyphs.ArrowDown, "선택 레이어를 아래로", () => Reorder(-1)));
-        Grid.SetRow(footer, 2); panel.Children.Add(footer);
+        Grid.SetRow(footer, 3); panel.Children.Add(footer);
         return DocumentControl(panel);
     }
 
@@ -323,6 +331,7 @@ public sealed partial class MainWindow
         if (pendingLayerReveal is { } reveal && !entries.Any(e => e.Layer.Id == reveal))
             pendingLayerReveal = entries.FirstOrDefault(e => e.GroupMembers?.Contains(reveal) == true)?.Layer.Id;
         layerList.SetEntries(entries, pendingLayerReveal); pendingLayerReveal = null;
+        UpdateLayerQuickBar(entries.Length);
     }
 
     // Alt+click on the eye isolates; releasing Alt must not then open the menu bar.

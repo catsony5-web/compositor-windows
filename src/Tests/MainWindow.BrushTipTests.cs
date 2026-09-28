@@ -44,6 +44,11 @@ public sealed partial class MainWindow
                 Parameter("찍는 간격 %").Value = 150;
                 Parameter("크기 px").Value = 16;
                 Check(window.brushAngle == 90 && window.brushSpacing == 1.5 && window.brushSize == 16, "Brush sliders did not publish their displayed values");
+                var strokeBefore = window.selectedBrushPreview!.Source;
+                Parameter("크기 px").Value = 200;
+                Check(!ReferenceEquals(strokeBefore, window.selectedBrushPreview.Source), "Changing size did not refresh the stroke preview");
+                Check(window.brushPresetPreviews.Count == BrushPresets.Length && window.brushPresetPreviews.All(p => p.Image.Source != null), "Preset rows lack stroke previews");
+                Parameter("크기 px").Value = 16;
 
                 var custom = BrushTip.FromAlpha("테스트용 가로 팁", 8, 2, Enumerable.Repeat((byte)255, 16).ToArray());
                 window.customBrushTips.Add(custom); window.UpdateCustomBrushList();

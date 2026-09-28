@@ -80,6 +80,7 @@ public static class SelfTests
         MainWindow.RunInspectorTests(Test);
         MainWindow.RunPanelNavigationTests(Test);
         MainWindow.RunObjectLayerPanelTests(Test);
+        MainWindow.RunLayerQuickBarTests(Test);
         MainWindow.RunDrawingWorkspaceTests(Test, directory);
         MainWindow.RunTransformCursorTests(Test);
         ThemeFontTests.Run(Test);
@@ -97,6 +98,8 @@ public static class SelfTests
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);
+        ExportDialogTests.Run(Test);
+        NewDocumentDialogTests.Run(Test, directory);
         ParameterSliderTests.Run(Test);
         ParameterDialogTests.Run(Test);
         TextEditorDialogTests.Run(Test);

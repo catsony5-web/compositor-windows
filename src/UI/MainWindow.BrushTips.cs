@@ -17,22 +17,31 @@ public sealed partial class MainWindow
     ComboBox? customBrushPicker;
     TextBlock? brushTipName;
     Image? selectedBrushPreview;
+    readonly List<(Image Image, double Size, double Hardness)> brushPresetPreviews = [];
+
+    internal static string TipGlyph(BrushTip tip) => tip.Id switch
+    {
+        "square" => Theme.Glyphs.TipSquare, "diamond" => Theme.Glyphs.TipDiamond, "star" => Theme.Glyphs.TipStar, _ => Theme.Glyphs.TipRound
+    };
     bool syncingBrushTips;
 
     FrameworkElement BuildBrushTipControls()
     {
         var panel = new StackPanel();
+        // Current brush as a real stroke sample; follows shape, size, hardness, angle and spacing.
+        var current = new Grid { Margin = new Thickness(0, 2, 0, 4) };
+        current.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); current.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        brushTipName = Theme.Label("", Theme.BodySize); brushTipName.FontWeight = FontWeights.SemiBold; brushTipName.Margin = new Thickness(2, 0, 2, 4); current.Children.Add(brushTipName);
+        selectedBrushPreview = new Image { Height = 64, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(selectedBrushPreview, "현재 브러시 획 미리보기");
+        var stage = new Border { Background = Theme.Canvas, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(6), Child = selectedBrushPreview };
+        Grid.SetRow(stage, 1); current.Children.Add(stage);
+        panel.Children.Add(current);
         panel.Children.Add(Theme.Section("브러시 모양"));
         var shapes = new UniformGrid { Columns = 4 };
         foreach (var tip in BrushTip.BuiltIns)
         {
-            var content = new StackPanel();
-            content.Children.Add(new Image { Source = tip.Preview(Colors.White, 40), Width = 32, Height = 32, Margin = new Thickness(0, 2, 0, 5) });
-            var name = Theme.Label(tip.Name, Theme.CaptionSize); name.TextAlignment = TextAlignment.Center;
-            content.Children.Add(name);
-            var button = Theme.Button("", () => SelectBrushTip(tip), tip.Name + " 브러시");
-            button.Content = content; button.Padding = new Thickness(3, 5, 3, 5);
-            AutomationProperties.SetName(button, tip.Name + " 브러시");
+            var button = QuickActions.Tile(TipGlyph(tip), tip.Name, () => SelectBrushTip(tip), tip.Name + " 브러시", tip.Name + " 브러시");
             brushTipButtons[tip] = button; shapes.Children.Add(button);
         }
         panel.Children.Add(shapes);
@@ -50,12 +59,6 @@ public sealed partial class MainWindow
         };
         panel.Children.Add(customBrushPicker);
         panel.Children.Add(Theme.Button("이미지로 브러시 추가", () => Guard(ImportBrushTip), "PNG · JPEG · BMP · TIFF\n투명 이미지는 불투명한 부분, 흰 배경 이미지는 어두운 부분을 모양으로 사용합니다."));
-        var selected = new Grid { Margin = new Thickness(3, 9, 3, 5) };
-        selected.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(54) }); selected.ColumnDefinitions.Add(new ColumnDefinition());
-        selectedBrushPreview = new Image { Width = 42, Height = 42, Margin = new Thickness(0, 0, 10, 0) };
-        selected.Children.Add(selectedBrushPreview);
-        brushTipName = Theme.Label("", Theme.BodySize); Grid.SetColumn(brushTipName, 1); selected.Children.Add(brushTipName);
-        panel.Children.Add(selected);
         UpdateBrushTipControls(); UpdateCustomBrushList();
         return panel;
     }
@@ -115,7 +118,7 @@ public sealed partial class MainWindow
             pair.Value.BorderBrush = active ? Theme.Accent : Theme.Line;
         }
         if (brushTipName != null) brushTipName.Text = brushTip.Name;
-        if (selectedBrushPreview != null) selectedBrushPreview.Source = brushTip.Preview(Colors.White, 48);
+        UpdateBrushStrokePreviews();
         if (customBrushPicker != null)
         {
             syncingBrushTips = true;
@@ -125,12 +128,24 @@ public sealed partial class MainWindow
         if (studioHardness != null) studioHardness.IsEnabled = !brushTip.IsCustom || IsRetouch(tool);
     }
 
+    /// <summary>Redraws the current-brush stroke and each preset's stroke in the active shape.</summary>
+    internal void UpdateBrushStrokePreviews()
+    {
+        // The page is rebuilt when shown, so a hidden panel need not repaint on every size drag.
+        if (IsLoaded && selectedBrushPreview is { IsVisible: false }) return;
+        if (selectedBrushPreview != null)
+            selectedBrushPreview.Source = BrushPreview.Stroke(brushTip, brushSize, hardness, brushSpacing, brushAngle, 280, 64).Bitmap();
+        foreach (var (image, size, edge) in brushPresetPreviews)
+            image.Source = BrushPreview.Stroke(brushTip, size, edge, brushSpacing, brushAngle, 200, 40).Bitmap();
+    }
+
     void UpdateBrushTipCursor()
     {
         canvas.BrushTipPreview = tool is Tool.Brush or Tool.Eraser && !ReferenceEquals(brushTip, BrushTip.Round)
             ? brushTip.Preview(Colors.White, 128, inset: false) : null;
         canvas.BrushTipAspectRatio = brushTip.Width / (double)brushTip.Height;
         canvas.BrushTipAngle = brushAngle;
+        UpdateBrushStrokePreviews();
         hardnessSlider.IsEnabled = !brushTip.IsCustom || tool is not (Tool.Brush or Tool.Eraser);
         if (studioHardness != null) studioHardness.IsEnabled = !brushTip.IsCustom || IsRetouch(tool);
         canvas.InvalidateVisual();
