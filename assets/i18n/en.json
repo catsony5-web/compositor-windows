@@ -1582,6 +1582,13 @@
     "사진 레이어가 없습니다.": "No photo layers.",
     "아래 + 단추로 새 레이어를 만들거나 이미지를 가져오세요.": "Use the + button below to add a layer, or import an image.",
     "선택 레이어의 불투명도 · 놓으면 적용": "Opacity of the selected layer · applied on release",
-    "선택 레이어의 혼합 모드": "Blend mode of the selected layer"
+    "선택 레이어의 혼합 모드": "Blend mode of the selected layer",
+    "가장자리 선명도 · 낮을수록 부드럽게": "Edge sharpness · lower is softer",
+    "브러시 지름 · Alt + 좌우 드래그로도 조절": "Brush diameter · also Alt + drag left/right",
+    "이동 도구(V): 클릭한 대상의 레이어를 선택합니다. 끄면 목록에서 선택한 레이어만 이동합니다.": "Move tool (V): selects the layer you click. When off, only the layer chosen in the list moves.",
+    "켜면 클릭한 곳과 이어진 영역만, 끄면 문서 전체에서 같은 색 영역을 채웁니다.": "On: fills only the area connected to the click. Off: fills matching colors across the whole document.",
+    "켜면 클릭한 곳과 이어진 영역만, 끄면 문서 전체의 비슷한 색을 선택합니다. Ctrl+클릭으로도 전체 색을 선택할 수 있습니다.": "On: selects only the area connected to the click. Off: selects similar colors across the whole document. Ctrl+click also selects all matching colors.",
+    "한 번 칠할 때의 불투명도": "Opacity of a single stroke",
+    "현재 도구": "Current tool"
   }
 }

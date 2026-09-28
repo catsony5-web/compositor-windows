@@ -50,6 +50,26 @@ public sealed partial class MainWindow
             finally { window.StopRenderingForShutdown(); }
         });
 
+        test("tool options bar shows the tool icon with its name and uses icon toggles", () =>
+        {
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                var document = new Document { Width = 8, Height = 8 };
+                document.Add(new Layer { Name = "바탕", Pixels = Raster.Solid(8, 8, Colors.Red) });
+                window.AddTab(document, null);
+                window.SetTool(Tool.Bucket);
+                Check(window.toolCaption.Text == ToolDisplayName(Tool.Bucket) && window.toolCaptionIcon.Content is FrameworkElement, "Tool identity must show icon and name");
+                var toggles = window.bucketOptions.Children.OfType<OptionToggle>().ToArray();
+                Check(toggles.Length == 2 && toggles.All(t => t.ToolTip is string tip && tip.Length > 10), "Bucket options must be icon toggles with tooltips");
+                toggles[0].IsChecked = false; toggles[0].RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(!window.bucketContiguous, "Toggle must reach the fill setting");
+                window.SetTool(Tool.Move);
+                Check(window.autoSelectToggle.Visibility == Visibility.Visible && window.autoSelectToggle.IsChecked == true, "Move tool shows the auto-select toggle");
+            }
+            finally { window.StopRenderingForShutdown(); }
+        });
+
         static IEnumerable<T> FindAll<T>(DependencyObject root) where T : DependencyObject
         {
             foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())

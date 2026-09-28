@@ -4040,6 +4040,10 @@
   "file": "UI/MainWindow.BrushOptions.cs"
  },
  {
+  "ko": "현재 도구",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
   "ko": "Alt + 좌우 드래그: 크기",
   "file": "UI/MainWindow.BrushOptions.cs"
  },
@@ -4240,11 +4244,23 @@
   "file": "UI/MainWindow.cs"
  },
  {
+  "ko": "브러시 지름 · Alt + 좌우 드래그로도 조절",
+  "file": "UI/MainWindow.cs"
+ },
+ {
   "ko": "경도",
   "file": "UI/MainWindow.cs"
  },
  {
+  "ko": "가장자리 선명도 · 낮을수록 부드럽게",
+  "file": "UI/MainWindow.cs"
+ },
+ {
   "ko": "농도",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "한 번 칠할 때의 불투명도",
   "file": "UI/MainWindow.cs"
  },
  {
@@ -4256,7 +4272,7 @@
   "file": "UI/MainWindow.cs"
  },
  {
-  "ko": "이동 도구(V): 클릭한 대상의 레이어 선택. 끄면 목록에서 선택한 레이어만 이동합니다.",
+  "ko": "이동 도구(V): 클릭한 대상의 레이어를 선택합니다. 끄면 목록에서 선택한 레이어만 이동합니다.",
   "file": "UI/MainWindow.cs"
  },
  {
@@ -6000,7 +6016,7 @@
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
-  "ko": "끄면 문서 전체의 비슷한 색을 선택합니다. Ctrl+클릭으로도 전체 색을 선택할 수 있습니다.",
+  "ko": "켜면 클릭한 곳과 이어진 영역만, 끄면 문서 전체의 비슷한 색을 선택합니다. Ctrl+클릭으로도 전체 색을 선택할 수 있습니다.",
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
@@ -6016,7 +6032,7 @@
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {
-  "ko": "끄면 문서 전체에서 같은 색 영역을 채웁니다.",
+  "ko": "켜면 클릭한 곳과 이어진 영역만, 끄면 문서 전체에서 같은 색 영역을 채웁니다.",
   "file": "UI/MainWindow.ToolOptions.cs"
  },
  {

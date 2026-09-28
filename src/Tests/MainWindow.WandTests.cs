@@ -33,7 +33,7 @@ public sealed partial class MainWindow
             var revision = window.doc.Revision; var pixels = window.doc.Active!.Pixels;
             window.wandToleranceSlider!.Value = 12;
             Assert(window.wandTolerance == 12 && window.wandOptions.Visibility == Visibility.Visible, "Toolbar does not reach wand settings");
-            var checkbox = window.wandOptions.Children.OfType<CheckBox>().Single(c => Equals(c.Content, "가장자리 보정"));
+            var checkbox = window.wandOptions.Children.OfType<OptionToggle>().Single(c => System.Windows.Automation.AutomationProperties.GetName(c) == "가장자리 보정");
             checkbox.IsChecked = false; checkbox.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
             Assert(!window.wandAntialias, "Antialias toggle does not reach the command");
             Assert(Complete(() => window.SelectWandAsync(new(47, 38), true, SelectionCombine.Replace)), "UI selection did not complete");
