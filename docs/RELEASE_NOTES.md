@@ -1,4 +1,11 @@
-# Morupixel 0.2.0 Preview 29 — focused start screen and status-bar zoom
+# Morupixel 0.2.0 Preview 30 — drawing cleanup and layer isolation
+
+- **Drawing cleanup on import.** DWG/DXF layers are sorted by name into structure/walls, openings, furniture, annotation, hatch and other. Walls import heavy and dark; furniture and dimensions light and thin. Each layer's role can be changed in the import dialog.
+- **Hatch materials.** Recommended materials come first: concrete, brick, wood, tile, stone, insulation, gravel or diagonal, chosen from the hatch pattern and layer name. Hatches can also stay as boundaries, or use your own material image. Fills are editable material layers under the linework.
+- **Layer range and isolation.** Shift+click selects a range of layers, Ctrl+click adds or removes one. Alt+click on a visibility icon shows only that layer, then hides only that layer, then restores the original visibility; each step can be undone.
+- **Validation.** 518 source checks passed, including real DXF imports with walls, furniture and hatches. [Validation](VALIDATION.md) lists the details.
+
+## Preview 29 — focused start screen and status-bar zoom
 
 - **A calmer start.** Without a document, the start screen uses the whole window; the tool rail, side panels and tool options appear once a document opens, in the same arrangement as before.
 - **Quick start sizes.** Square 1080×1080, portrait 4:5 1080×1350, wide 16:9 1920×1080 and A4 print (150 DPI, white background) create a document in one click.

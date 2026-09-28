@@ -75,6 +75,7 @@ internal sealed partial class CompatibilityDialog : Window
         {
             details.Text = "도면 정보를 확인하고 있어요…";
             Field(settings, "편집 방식", structure); settings.Children.Add(structureHint); DescribeStructure();
+            BuildCleanupSettings(settings);
             Field(advancedSettings, "가져올 도면", space);
             space.ToolTip = "자동 선택으로 시작하세요. 다른 도면이 보이면 모델 공간이나 배치를 직접 선택할 수 있어요.";
             Field(advancedSettings, "작업 크기 (px)", edge, "가로·세로 중 긴 쪽 기준 · 256~4,096 px");
@@ -110,6 +111,8 @@ internal sealed partial class CompatibilityDialog : Window
                 {
                     var spaces = await Task.Run(() => CadCompatibility.Inspect(path), lifetime.Token);
                     if (closed) return; space.ItemsSource = new[] { new CadCompatibility.Space("", "자동 선택") }.Concat(spaces); space.SelectedIndex = 0;
+                    var layers = await Task.Run(() => CadCompatibility.InspectLayers(path), lifetime.Token);
+                    if (closed) return; ShowDrawingInfo(layers);
                     details.Text = "CAD 도면";
                 }
                 render.IsEnabled = true; await RenderAsync();
@@ -130,7 +133,7 @@ internal sealed partial class CompatibilityDialog : Window
         CadLongEdge: cad ? Integer(edge.Text, 256, 4096) : 2400, SeparateLayers: separate.IsChecked == true,
         CadLayout: cad && space.SelectedItem is CadCompatibility.Space selected && selected.Key.Length > 0 ? selected.Key : null,
         PreservePdfLayers: pdf && separate.IsChecked == true, CadStructure: cad ? SelectedStructure : null, RetainVectors: retain.IsChecked == true,
-        GroupDrawingObjects: cad || pdf && retain.IsChecked == true);
+        GroupDrawingObjects: cad || pdf && retain.IsChecked == true, Cleanup: ReadCleanup());
     void ClearPrepared()
     {
         prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null;

@@ -47,6 +47,8 @@ public sealed partial class MainWindow
         CaptureFit(new MessageDialog(null, "먼저 선택 도구로 자를 영역을 지정하세요.", "Morupixel", NoticeKind.Warning), "dialog-warning", 460);
         CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
         CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
+        Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf")), "import-cad-cleanup", 940, 700);
+        RenderCleanupPreviews(directory);
         // Palette states: recent commands first, then a ranked search.
         recentCommands.Clear(); recentCommands.AddRange(["menu:레이어/레이어 복제", "tool:Brush", "menu:보정/레벨…"]);
         CaptureFit(new CommandPalette(null, BuildCommandRegistry(), recentCommands.ToArray()), "command-palette", 600);
