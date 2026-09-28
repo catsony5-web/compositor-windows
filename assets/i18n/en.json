@@ -1571,6 +1571,17 @@
     "프리셋 삭제": "Delete preset",
     "최근에 만든 크기와 저장한 프리셋이 여기에 표시됩니다.": "Sizes you recently created and presets you saved appear here.",
     "화면용": "Screen",
-    "현재 브러시 획 미리보기": "Current brush stroke preview"
+    "현재 브러시 획 미리보기": "Current brush stroke preview",
+    "도면 레이어가 없습니다.\nDWG·DXF·PDF 도면을 가져오면 원본 레이어별로 표시됩니다.": "No drawing layers.\nImport a DWG·DXF·PDF drawing to list it by its original layers.",
+    "도면 레이어가 없습니다.": "No drawing layers.",
+    "DWG·DXF·PDF 도면을 가져오면 원본 레이어별로 표시됩니다.": "Import a DWG·DXF·PDF drawing to list it by its original layers.",
+    "레이어 불투명도": "Layer opacity",
+    "레이어 혼합 모드": "Layer blend mode",
+    "문서를 열거나 새로 만들면 레이어가 여기에 표시됩니다.": "Open or create a document to see its layers here.",
+    "사진 레이어가 없습니다.\n아래 + 단추로 새 레이어를 만들거나 이미지를 가져오세요.": "No photo layers.\nUse the + button below to add a layer, or import an image.",
+    "사진 레이어가 없습니다.": "No photo layers.",
+    "아래 + 단추로 새 레이어를 만들거나 이미지를 가져오세요.": "Use the + button below to add a layer, or import an image.",
+    "선택 레이어의 불투명도 · 놓으면 적용": "Opacity of the selected layer · applied on release",
+    "선택 레이어의 혼합 모드": "Blend mode of the selected layer"
   }
 }

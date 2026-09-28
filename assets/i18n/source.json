@@ -4668,6 +4668,10 @@
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
+  "ko": "레이어 마스크 추가",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
   "ko": "선택 레이어를 위로",
   "file": "UI/MainWindow.Inspector.cs"
  },
@@ -4761,10 +4765,6 @@
  },
  {
   "ko": "선택한 레이어의 이름을 변경합니다.",
-  "file": "UI/MainWindow.Inspector.cs"
- },
- {
-  "ko": "레이어 마스크 추가",
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
@@ -5032,6 +5032,62 @@
   "file": "UI/MainWindow.LayerExport.cs"
  },
  {
+  "ko": "선택 레이어의 혼합 모드",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "레이어 혼합 모드",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "선택 레이어의 불투명도 · 놓으면 적용",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "레이어 불투명도",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "문서를 열거나 새로 만들면 레이어가 여기에 표시됩니다.",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "도면 레이어가 없습니다.\nDWG·DXF·PDF 도면을 가져오면 원본 레이어별로 표시됩니다.",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "사진 레이어가 없습니다.\n아래 + 단추로 새 레이어를 만들거나 이미지를 가져오세요.",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "노출…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "레벨…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "곡선…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "색조 / 채도…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "그라데이션 맵…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "그레인…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
+  "ko": "사진 현상…",
+  "file": "UI/MainWindow.LayerQuickBar.cs"
+ },
+ {
   "ko": "레이어 {0}개 범위 선택",
   "file": "UI/MainWindow.LayerSelection.cs"
  },
@@ -5228,14 +5284,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "레벨…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "노출…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "채도…",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -5276,31 +5324,11 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "곡선…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "색조 / 채도…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "그라데이션 맵…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "그레인…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "선택 조정 레이어 편집…",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
   "ko": "필터",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "사진 현상…",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
