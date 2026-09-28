@@ -2,7 +2,8 @@
 
 - **Four display languages.** View → 언어 · Language switches between 한국어, English, 日本語 and 简体中文 after a restart. Menus, the ribbon, panels, dialogs, notices, tooltips and the command palette follow the language, and the UI font matches the script. The first launch follows the Windows display language.
 - **Your content stays yours.** Layer, document and file names are never translated. New documents and the learning sample use the selected language.
-- **Validation.** 523 source checks passed, including complete tables for every UI string with matching placeholders. Offscreen captures in all three languages were reviewed.
+- **Clearer AI connection errors.** Blank text arguments, unknown material or region ids and missing files now return specific error codes and messages instead of misleading limits or raw system text.
+- **Validation.** 525 source checks passed, including complete tables for every UI string with matching placeholders. Offscreen captures in all three languages were reviewed.
 
 ## Preview 31 — ribbon and screen fit
 

@@ -1,6 +1,6 @@
 # Preview 32 display language validation
 
-- Source self-tests: **523/523 passed** on Windows x64. Two added checks cover exact, template, fragment and multi-line translation, bindings and formatted runs, `Loc.Keep` for user data, Korean pass-through, and the embedded English, Japanese and Chinese tables: 1,512 entries each, the same placeholders and line breaks, no third-party product names.
+- Source self-tests: **525/525 passed** on Windows x64, including two AI-automation error regressions. Two added localization checks cover exact, template, fragment and multi-line translation, bindings and formatted runs, `Loc.Keep` for user data, Korean pass-through, and the embedded English, Japanese and Chinese tables: 1,512 entries each, the same placeholders and line breaks, no third-party product names.
 - `tools/i18n/extract.py` reports 0 missing keys for all three languages against a fresh scan of the sources (including literals nested in interpolation holes).
 - `--render-studio-previews` with `MORUPIXEL_LANGUAGE=en`, `ja` and `zh` produced 44 captures each; editor, ribbon, panels, dialogs and the start screen were reviewed.
 - Not covered: native-speaker review of every string, right-to-left layouts (none supported), and strings composed at runtime from untranslated fragments, which may read stiffly.
