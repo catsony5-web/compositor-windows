@@ -1,4 +1,15 @@
-# Morupixel 0.2.0 Preview 27 — studio interface refresh
+# Morupixel 0.2.0 Preview 28 — command palette, icon panels and saved workspace
+
+- **Your workspace comes back.** Window size and position, the right panel width, photo/design mode, the last tab, docked, floating or pinned panels and folded sections are restored on the next launch. They are stored only in the user's local application data.
+- **Find any command with Ctrl+K.** Search menus, tools and panels by name, Korean initial consonants (`ㅂㄹㅅ` → 브러시 도구) or shortcut. Recent commands appear first. The palette also opens from View → 명령 찾기… and the search button in the title bar.
+- **Icon-led right panel.** Adjustment layers, creation, selection and masks, retouching, arrangement and layer actions use icon tiles and icon rows instead of plain text buttons, and canvas alignment is one row of icons. Every control keeps its complete name in the tooltip. Section titles fold their groups, and folded sections stay folded.
+- **One icon family.** Toolbar tools, panel commands, layer visibility and lock, and notices are redrawn with consistent rounded strokes and subtle layered tints.
+- **Cleaner inspector.** Fields share one 30 DIP row style with aligned columns, and the inspector opens with the layer's kind and name.
+- **Optional histogram.** The histogram is hidden by default; turn it on from View → 히스토그램 표시.
+- **Our own terms.** The photo layer tab is 사진 레이어, the surrounding-pixel retouch command is 주변으로 채우기, and file types are named by their extensions.
+- **Validation.** 510 source checks passed, and 38 offscreen captures were reviewed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 27 — studio interface refresh
 
 - **Layered studio layout.** Panels float as cards on a dark window base. Buttons sit above the panel surface and input fields below it, so controls are easier to tell apart; blue marks selection, focus and one primary action per screen. The menu moves into the title bar and tool options into one card below it.
 - **More room at small windows.** Layer rows shrink from 60 to 40 DIP and parameter sliders from three rows to two. A 1280×720 window now shows the whole toolbar, both colors and the layer list.
