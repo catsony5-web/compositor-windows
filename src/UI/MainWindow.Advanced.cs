@@ -169,15 +169,15 @@ public sealed partial class MainWindow
             }
         }
     }
-    void AddAdvancedProperties(Layer layer)
+    void AddAdvancedProperties(Layer layer, List<Button> commands)
     {
         if (layer.Kind == LayerKind.Text)
-            properties.Children.Add(InspectorAction("텍스트 내용과 서식 편집", EditText, "문자·단락 속성에서 내용과 서식을 편집합니다.", layer));
+            commands.Add(InspectorCommand(Theme.Glyphs.Text, "텍스트 편집", "텍스트 내용과 서식 편집", EditText, "문자·단락 속성에서 내용과 서식을 편집합니다.", layer));
         if (layer.Kind == LayerKind.Adjustment)
-            properties.Children.Add(InspectorAction("조정 레이어 효과 편집", EditAdjustment, "선택한 조정 레이어의 효과와 값을 변경합니다.", layer));
-        properties.Children.Add(InspectorAction(layer.Clipped ? "클리핑 마스크 해제" : "클리핑 마스크 만들기", ToggleClipping,
+            commands.Add(InspectorCommand(Theme.Glyphs.Sliders, "효과 편집", "조정 레이어 효과 편집", EditAdjustment, "선택한 조정 레이어의 효과와 값을 변경합니다.", layer));
+        commands.Add(InspectorCommand(Theme.Glyphs.Clip, layer.Clipped ? "클리핑 해제" : "클리핑 만들기", layer.Clipped ? "클리핑 마스크 해제" : "클리핑 마스크 만들기", ToggleClipping,
             layer.Clipped ? "아래 레이어에 적용된 클리핑을 해제합니다." : "아래 레이어의 불투명 영역 안에 표시합니다.", layer));
-        properties.Children.Add(InspectorAction("선택 레이어 그룹 만들기", () => WorkspaceArrange(GroupSelected, true), "선택한 연속 레이어를 하나의 그룹으로 묶습니다.", layer));
+        commands.Add(InspectorCommand(Theme.Glyphs.GroupAdd, "그룹 만들기", "선택 레이어 그룹 만들기", () => WorkspaceArrange(GroupSelected, true), "선택한 연속 레이어를 하나의 그룹으로 묶습니다.", layer));
     }
     void GroupSelected()
     {
@@ -317,10 +317,10 @@ public sealed partial class MainWindow
         Edit("선택 픽셀 복제", () => doc.Add(new Layer { Name = layer.Name + " 선택", Pixels = pixels })); SetTool(Tool.Move);
     }
     void ApplySelection(Selection incoming) { selection = SelectionTools.Combine(selection, incoming, doc.Width, doc.Height, selectionMode); Refresh(false); }
-    void ContentFill()
+    void FillFromSurroundings()
     {
         if (selection == null) { status.Text = "제거할 부분을 먼저 선택하세요."; return; }
-        RunRasterJob("내용 인식 채우기", (l, s, ct) => RetouchTools.ContentAwareFill(l, s!, ct));
+        RunRasterJob("주변으로 채우기", (l, s, ct) => RetouchTools.FillFromSurroundings(l, s!, ct));
     }
     void MotionBlur()
     {

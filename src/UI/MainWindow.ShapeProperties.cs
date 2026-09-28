@@ -18,20 +18,18 @@ public sealed partial class MainWindow
         bool Current() => ReferenceEquals(doc, boundDocument) && inspectorVersion == version && doc.ActiveId == layer.Id && !IsLockedWithParents(layer);
         void ColorRow(string name, bool enabled, uint argb, bool fill)
         {
-            var row = new Grid { Margin = new Thickness(2, 5, 2, 0) };
+            var row = new Grid { Margin = new Thickness(2, 0, 2, 8) };
             row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(148) });
             var toggle = new CheckBox { Content = name, IsChecked = enabled, Foreground = Theme.Text, VerticalAlignment = VerticalAlignment.Center, IsEnabled = !IsLockedWithParents(layer) };
             toggle.Click += (_, _) => { if (Current()) EditLayer(name, l => VectorShapes.Update(l, fill ? l.Shape! with { FillEnabled = toggle.IsChecked == true } : l.Shape! with { StrokeEnabled = toggle.IsChecked == true })); };
             row.Children.Add(toggle);
-            var chip = Theme.Button("", () =>
+            var chip = PropertyRows.ColorChip(VectorShapes.Color(argb), $"#{argb & 0xFFFFFF:X6}", () =>
             {
                 if (!Current()) return;
                 var dialog = new ColorPickerDialog(this, VectorShapes.Color(argb), name);
                 if (dialog.ShowDialog() == true && Current()) EditLayer(name + " 색상", l => VectorShapes.Update(l, fill ? l.Shape! with { FillArgb = VectorShapes.Argb(dialog.SelectedColor) } : l.Shape! with { StrokeArgb = VectorShapes.Argb(dialog.SelectedColor) }));
             }, name + " 색상 변경");
-            var chipContent = new StackPanel { Orientation = Orientation.Horizontal };
-            chipContent.Children.Add(new Border { Width = 18, Height = 18, CornerRadius = new CornerRadius(4), Background = new SolidColorBrush(VectorShapes.Color(argb)), BorderBrush = Theme.Muted, BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 8, 0) });
-            chipContent.Children.Add(Theme.Label($"#{argb & 0xFFFFFF:X6}", 11)); chip.Content = chipContent; chip.MinHeight = 34; chip.IsEnabled = !IsLockedWithParents(layer);
+            chip.IsEnabled = !IsLockedWithParents(layer);
             Grid.SetColumn(chip, 1); row.Children.Add(chip); content.Children.Add(row);
         }
         ColorRow("채우기", shape.FillEnabled, shape.FillArgb, true); ColorRow("선", shape.StrokeEnabled, shape.StrokeArgb, false);

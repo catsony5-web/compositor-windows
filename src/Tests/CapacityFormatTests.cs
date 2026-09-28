@@ -9,7 +9,7 @@ public static class CapacityFormatTests
         static void RejectBeforeOutput(Document document, string messagePart)
         {
             using var output = new NoWriteStream();
-            try { PhotoshopCompatibility.Write(document, output, layers: true); }
+            try { PsdCompatibility.Write(document, output, layers: true); }
             catch (InvalidDataException e) when (e.Message.Contains(messagePart, StringComparison.Ordinal)) { return; }
             throw new InvalidOperationException("PSD capacity validation did not reject the document before output.");
         }

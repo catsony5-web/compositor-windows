@@ -9,6 +9,7 @@
 3. **파란색은 상태에만 쓴다.** 파우더 블루(Accent)는 선택·포커스·진행 표시, 블루(Primary)는 화면당 하나의 주 동작에만 쓴다. 장식에 쓰지 않는다.
 4. **실무 밀도.** 오래 작업하는 화면이므로 행 높이와 여백을 줄이되, 명령 이름은 줄이지 않는다(`이름…` 같은 축약 금지).
 5. **작은 글자는 선명하게.** UI 글꼴은 힌팅이 된 Segoe UI + 맑은 고딕을 정수 크기로 쓴다.
+6. **우리 말로 이름 짓는다.** 메뉴·패널·알림·툴팁·문서에 다른 회사의 제품명이나 상표인 기능명을 쓰지 않는다. 다른 제품과 같거나 비슷하다는 비교도 하지 않는다. 파일 형식은 확장자(PSD, AI, DWG/DXF)로 부르고, 형식 사양 출처 링크와 원작(Compositor) 표기처럼 꼭 필요한 인용만 남긴다. 예: 사진 레이어, 주변으로 채우기, 사진 현상, 내장 개체.
 
 ## 색 토큰
 
@@ -68,10 +69,17 @@
 | 체크박스 | `CheckBox` 기본 스타일 | 16px, 선택 시 Primary 바탕 + 흰 체크 |
 | 슬라이더 | `Slider`, `"SpectrumSlider"` | 4px 트랙, Accent 채움, 14px 밝은 손잡이와 호버 후광 |
 | 매개변수 슬라이더 | `ParameterSlider` | 한 줄에 라벨 · 초기화 · 이동 간격 · 값, 아래 슬라이더 |
-| 인스펙터 동작 행 | `Theme.ActionRow` | 전체 너비, 줄 바꿈, 오른쪽 셰브론, 호버 시 표면 |
-| 섹션 | `Theme.Section` | 가는 선 + 13 SemiBold 제목 |
+| 인스펙터 동작 행 | `Theme.ActionRow` | 전체 너비, 줄 바꿈, 오른쪽 셰브론, 호버 시 표면. `glyph`를 주면 왼쪽에 16px 아이콘 |
+| 기능 카드 | `QuickActions.Feature` | 36px Selected 배지 안 Accent 아이콘 · 제목 · 한 줄 설명 · 셰브론. 탭의 대표 작업 하나(사진 현상) |
+| 아이콘 타일 | `QuickActions.Tile` | 20px 아이콘 위 12 Muted 짧은 이름, 62px. 같은 종류의 명령 묶음(조정 레이어, 만들기) |
+| 아이콘 명령 | `QuickActions.Command` | 18px 아이콘 + 13 이름, 40px, 두 열. 이름이 긴 명령(선택과 마스크, 리터치, 배치, 레이어 작업) |
+| 아이콘 줄 | `QuickActions.IconStrip` | Input 트랙 안 아이콘 버튼 한 줄. 정렬처럼 모양으로 구분되는 선택 |
+| 섹션 | `Theme.Section` → `SectionHeader` | 가는 선 + 13 SemiBold 제목 + 오른쪽 셰브론. 누르면 다음 섹션 전까지 접힌다. 접은 제목은 작업 공간 배치와 함께 저장된다 |
+| 속성 행 | `PropertyRows.Field`, `.Pair`, `.Inline` | 12 Muted 캡션 위 30px 입력칸, 두 열 사이 8px. 숫자 칸(`NumberBox`)은 오른쪽 정렬, 색 칩(`ColorChip`)은 16px 견본 + 값 |
 | 카드 | `GlassPanel`, `ClipBorder` | Panel 바탕, Line 테두리, 모서리 10. `ClipBorder`는 내용을 둥근 모서리로 자른다 |
 | 레이어 행 | `LayerRow` | 40px, 28px 썸네일, 이름 + 캡션 두 줄, 선택 시 Selected + 왼쪽 2px Accent 막대 |
+| 명령 팔레트 | `CommandPalette`, 항목 `"PaletteItem"` | 600px, 모서리 12. 검색칸 · 결과(제목 + 분류 두 줄, 오른쪽 단축키 칩) · 조작 안내. 선택 행은 Selected, 쓸 수 없는 명령은 45% 불투명도 |
+| 명령 검색 버튼 | `BuildCommandSearchButton` | 제목 표시줄, Input 바탕 + 검색 아이콘 · "명령 검색" · `Ctrl K` 칩. 1340px보다 좁으면 아이콘만 남는다 |
 
 ## 다이얼로그
 
@@ -87,9 +95,37 @@
 
 ## 패널 배치
 
-- 오른쪽 위 카드는 히스토그램(사진 편집) · 탭 줄 · 현재 탭 내용이다. 오른쪽에 도킹된 탭 패널은 자기 머리글을 숨기고(`StudioPane.SetEmbedded`), 탭 줄 오른쪽 `⋯`가 같은 도킹 메뉴를 연다.
+- 오른쪽 위 카드는 탭 줄 · 현재 탭 내용이다. 히스토그램은 기본으로 숨기고, 보기 → 히스토그램 표시로 켜면 사진 편집 모드에서 탭 줄 위에 나타난다(켠 상태는 작업 공간 배치와 함께 저장). 오른쪽에 도킹된 탭 패널은 자기 머리글을 숨기고(`StudioPane.SetEmbedded`), 탭 줄 오른쪽 `⋯`가 같은 도킹 메뉴를 연다.
 - 레이어 카드와, 왼쪽에 두거나 분리한 패널은 머리글(제목 · 개수 · 핀 · `⋯`)을 가진다. 제목을 끌면 분리된다.
 - 캔버스와 오른쪽 패널 사이 8px 간격이 너비 조절 손잡이, 오른쪽 두 카드 사이 8px 간격이 높이 조절 손잡이다. 마우스를 올리면 선이 나타난다.
+
+## 아이콘
+
+- 모든 아이콘은 24단위 격자의 `Theme.Glyph`로 그린다. 둥근 끝·둥근 모서리, 기본 굵기 1.7(도구 막대 1.6), 내용은 대략 3~21 안에 둔다.
+- 경로 문자열은 `주 선 | ~보조 선 | *채움` 층으로 나눈다. 보조 선은 45%, 채움은 같은 색 20%로 그려서 한 가지 색으로도 깊이가 생긴다(계층형 심볼 방식).
+- 도구 막대(`ToolIcons`)와 패널 명령, 레이어 행(눈 · 잠금 · 펼침), 알림 창과 저장 확인 창이 같은 모양 체계를 쓴다. 새 아이콘은 `Theme.Glyphs`에 추가하고 따로 `Path`를 만들지 않는다.
+- 크기: 버튼 16, 명령 18, 타일 20, 도구 막대 22, 다이얼로그 22~32.
+
+## 오른쪽 패널 작업
+
+- 글자만 있는 버튼을 늘어놓지 않는다. 명령마다 아이콘을 붙이고, 모양으로 구분되는 선택(정렬, 단락 정렬)은 아이콘만 쓴다.
+- 보이는 이름은 짧게 할 수 있지만 접근성 이름과 툴팁은 완전한 명령 이름을 유지한다(예: 보이는 이름 "이름 변경" · 이름 "레이어 이름 변경"). 말줄임표로 줄이지 않는다.
+- 묶음 제목은 `Theme.Section`이라 접을 수 있고, 첫 묶음은 구분선을 생략한다. 묶음 설명은 제목의 툴팁으로 둔다.
+- 타일과 아이콘 명령 격자(`QuickActions.Grid`)는 한 열이 `TileWidth`(84) · `CommandWidth`(150)보다 좁아지면 열 수를 줄여 한글 이름이 글자 중간에서 줄 바뀌지 않게 한다.
+- 도구를 고르는 명령은 도구 막대와 같은 모양(`ToolIcons.PathData`)을 쓴다. 속성 패널 맨 위에는 레이어 종류 배지 · 이름 · 종류를 표시한다.
+
+## 명령
+
+- 메뉴 항목, 도구, 오른쪽 탭 패널은 `MainWindow.BuildCommandRegistry()`가 한 목록(`EditorCommand`: Id · 제목 · 분류 · 단축키 · 사용 가능 여부 · 실행)으로 모은다. 메뉴는 트리를 그대로 읽으므로 메뉴에 항목을 추가하면 팔레트에도 나타난다. 실행은 메뉴 클릭과 같은 경로를 탄다.
+- Id는 `menu:상위/항목`, `tool:도구`, `panel:page번호` 형식이다. 같은 단축키는 한 번만 등록한다(메뉴에 있는 도구는 메뉴 항목만 남긴다). 자체 검사가 Id와 단축키 중복을 막는다.
+- 검색은 공백·말줄임표를 무시하고 제목 시작 > 제목 포함 > 한글 초성 > 분류+제목 > 단축키 순으로 순위를 매긴다. 빈 검색에서는 최근 실행한 명령(최대 8개, 현재 실행 세션)을 먼저 보여 준다.
+- **Ctrl+K**는 문서가 없을 때와 숫자 입력칸에 초점이 있을 때도 팔레트를 연다. **K** 단독은 흐림 브러시 그대로다.
+
+## 속성 패널
+
+- 속성·문자·도형·대지 패널의 입력은 `PropertyRows`로 만든다. 행은 입력칸을 바로 자식으로 가진 `Grid`라서 패널 코드와 자체 검사가 추가 래퍼 없이 입력칸을 찾는다.
+- 섹션을 접으면 제목 다음부터 다음 섹션 제목 전까지의 형제 요소를 숨긴다. 패널의 자식 구조는 그대로 두고, 펼 때 원래 표시 상태로 되돌린다. 패널을 다시 만들어도 접은 상태를 유지한다.
+- 접은 섹션 제목은 `WorkspaceLayout.CollapsedSections`로 저장되어 다음 실행에서 복원된다. 같은 제목의 섹션은 모든 패널과 다이얼로그에서 같이 접힌다.
 
 ## UI 파일 지도
 
@@ -98,12 +134,16 @@
 | `App/Theme.cs`, `UI/Theme.xaml` | 토큰, 글꼴, 키 스타일, `Theme.Glyphs` 아이콘 경로 |
 | `UI/MainWindow.cs` | 창 뼈대(제목 표시줄 · 옵션 카드 · 본문 카드 · 상태 표시줄), 문서 명령 |
 | `UI/MainWindow.Chrome.cs`, `.Menu.cs`, `.Modes.cs`, `.Proof.cs` | 제목 표시줄, 메뉴, 사진 편집/디자인 전환, RGB/CMYK 미리보기 |
+| `UI/MainWindow.Commands.cs`, `UI/Dialogs/CommandPalette.cs` | 명령 레지스트리와 명령 팔레트(Ctrl+K), 검색 순위·초성 |
 | `UI/MainWindow.Studio.cs`, `.Docking.cs`, `.WorkspaceActions.cs` | 오른쪽 탭 카드, 패널 도킹, 탭별 작업 버튼 |
 | `UI/MainWindow.Inspector.cs`, `.DrawingLayers.cs`, `.TextProperties.cs`, `.ShapeProperties.cs` | 속성 패널, 레이어 카드 |
 | `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면과 최근 문서 목록 |
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
 | `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
+| `UI/Controls/PropertyRows.cs`, `SectionHeader.cs` | 속성 패널 공통 행(캡션 · 입력 · 두 열 · 색 칩)과 접이식 섹션 제목 |
+| `UI/Controls/QuickActions.cs` | 아이콘 타일 · 아이콘 명령 · 아이콘 줄 · 기능 카드와 반응형 격자 |
 | `UI/Dialogs/` | 공통 틀(`DialogShell`), 알림(`MessageDialog`), 범용 입력(`Dialogs.Fields`), 각 다이얼로그 |
+| `UI/MainWindow.Layout.cs`, `Formats/WorkspaceLayout.cs` | 작업 공간 배치 저장·복원(`%LOCALAPPDATA%\Morupixel\workspace.json`). 앱 진입점에서만 불러오므로 자체 검사와 오프스크린 렌더는 사용자 배치를 읽거나 쓰지 않는다 |
 | `Formats/RecentDocuments.cs` | 최근 문서 목록 저장(`%LOCALAPPDATA%\Morupixel\recent.json`, 저장소·배포본에 포함되지 않음) |
 
 `MainWindow`는 기능별 partial 파일로 나뉘어 있다. 여러 작업이 동시에 진행되는 저장소이므로 파일을 옮기거나 합치는 재배치는 따로 합의한 뒤 진행한다.

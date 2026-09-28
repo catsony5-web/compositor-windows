@@ -154,7 +154,7 @@ public static class RetouchTools
         return result;
     }
 
-    public static Raster ContentAwareFill(Layer layer, Selection selection, CancellationToken token = default)
+    public static Raster FillFromSurroundings(Layer layer, Selection selection, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
         var source = layer.Pixels; int w = source.Width, h = source.Height;

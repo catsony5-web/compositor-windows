@@ -114,18 +114,18 @@ public static class ObjectCapacityTests
         {
             var doc = new Document { Width = 1, Height = 1 }; var source = Vector();
             for (int i = 0; i < Document.MaxLayers; i++) doc.Add(Object(source));
-            Check(PhotoshopCompatibility.CanWriteLayers(doc), "The existing 128-layer PSD limit was narrowed");
+            Check(PsdCompatibility.CanWriteLayers(doc), "The existing 128-layer PSD limit was narrowed");
             doc.Add(Object(source));
-            Check(!PhotoshopCompatibility.CanWriteLayers(doc), "Layered PSD must reject scenes the importer cannot reopen");
+            Check(!PsdCompatibility.CanWriteLayers(doc), "Layered PSD must reject scenes the importer cannot reopen");
             using var output = new MemoryStream();
-            Reject<InvalidDataException>(() => PhotoshopCompatibility.Write(doc, output, true));
+            Reject<InvalidDataException>(() => PsdCompatibility.Write(doc, output, true));
             Check(output.Length == 0, "Rejected PSD wrote a partial header");
             string package = Path.Combine(directory, "too-many-legacy-objects.comp");
             Reject<InvalidDataException>(() => CompositorPackage.Export(doc, package));
             Check(!Directory.Exists(package) && !Directory.EnumerateDirectories(directory, "too-many-legacy-objects.comp.*.tmp").Any(), "Rejected package created output folders");
             string flattened = Path.Combine(directory, "many-objects-flattened.psd");
-            using (var file = File.Create(flattened)) PhotoshopCompatibility.Write(doc, file, false);
-            var reopened = PhotoshopCompatibility.Read(flattened, true).Document;
+            using (var file = File.Create(flattened)) PsdCompatibility.Write(doc, file, false);
+            var reopened = PsdCompatibility.Read(flattened, true).Document;
             Check(reopened.Layers.Count == 1 && Imaging.Render(reopened).Data.SequenceEqual(Imaging.Render(doc).Data), "Large scenes must still export a usable merged PSD");
         });
         test("native version four stores shared group pixels once and preserves each mask and transform", () =>

@@ -14,7 +14,7 @@ public sealed partial class MainWindow
     FrameworkElement BuildLayerCategoryTabs()
     {
         var tabs = new UniformGrid { Columns = 2 };
-        foreach (var (category, caption) in new[] { (LayerCategory.Drawing, "도면 레이어"), (LayerCategory.Photo, "포토샵 레이어") })
+        foreach (var (category, caption) in new[] { (LayerCategory.Drawing, "도면 레이어"), (LayerCategory.Photo, "사진 레이어") })
         {
             var button = Theme.Button(caption, () => { CommitFocusedInspectorField(); layerCategory = category; BuildLayers(); });
             button.SetResourceReference(StyleProperty, "SegmentButton");

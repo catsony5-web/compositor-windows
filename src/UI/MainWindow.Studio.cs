@@ -13,6 +13,9 @@ public sealed partial class MainWindow
     readonly ScrollViewer studioScroll = new() { Height = 320, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(0) };
     readonly List<Button> studioTabs = [];
     StackPanel? histogramCard;
+    MenuItem? histogramToggle;
+    // The histogram is optional (View menu); hidden, the tabbed panel gets its height.
+    bool showHistogram;
     System.Windows.Controls.Primitives.UniformGrid? studioTabStrip;
     int studioPage;
     TextBlock? studioColorValue;
@@ -23,8 +26,10 @@ public sealed partial class MainWindow
         var stack = new StackPanel();
         BuildWorkspaceTools();
         histogramCard = new StackPanel { Margin = new Thickness(12, 9, 12, 2) };
-        var label = new DockPanel(); var badge = Theme.Label("RGB", Theme.CaptionSize, Theme.Subtle); DockPanel.SetDock(badge, Dock.Right); label.Children.Add(badge);
-        var histogramTitle = Theme.Label("히스토그램", Theme.CaptionSize, Theme.Muted); histogramTitle.FontWeight = FontWeights.SemiBold; label.Children.Add(histogramTitle);
+        var label = new DockPanel();
+        var hide = Theme.IconButton(Theme.Glyphs.Close, () => SetHistogramVisible(false), "히스토그램 숨기기 · 보기 메뉴에서 다시 표시", 22, 11);
+        DockPanel.SetDock(hide, Dock.Right); label.Children.Add(hide);
+        var histogramTitle = Theme.Label("히스토그램", Theme.CaptionSize, Theme.Muted); histogramTitle.FontWeight = FontWeights.SemiBold; histogramTitle.VerticalAlignment = VerticalAlignment.Center; label.Children.Add(histogramTitle);
         histogram.Height = 62; histogram.Margin = new Thickness(0, 2, 0, 0);
         histogramInfo.FontSize = Theme.CaptionSize; histogramInfo.Foreground = Theme.Subtle; histogramInfo.Margin = new Thickness(2, 3, 2, 0);
         histogramCard.Children.Add(label); histogramCard.Children.Add(histogram); histogramCard.Children.Add(histogramInfo); stack.Children.Add(histogramCard);
@@ -65,13 +70,13 @@ public sealed partial class MainWindow
     }
     double PreferredStudioHeight(double height)
     {
-        double available = Math.Max(380, height - (designWorkspace ? 260 : 400));
+        double available = Math.Max(380, height - (designWorkspace || !showHistogram ? 260 : 400));
         return Math.Clamp(available * (studioPage is 1 or 2 ? .62 : .56), 240, 560);
     }
     void ApplyWorkspaceStudio()
     {
         if (studioPanes.Length > 0) studioPanes[0].SetCaption(designWorkspace ? "디자인" : "사진 보정");
-        if (histogramCard != null) histogramCard.Visibility = HasDocument && !designWorkspace ? Visibility.Visible : Visibility.Collapsed;
+        UpdateHistogramVisibility();
         if (studioTabs.Count == 4 && studioTabStrip != null)
         {
             studioTabs[0].Content = designWorkspace ? "디자인" : "보정";
@@ -81,6 +86,19 @@ public sealed partial class MainWindow
         studioContents[0].Children.Clear();
         if (designWorkspace) BuildDesignActions(studioContents[0]); else BuildPhotoActions(studioContents[0]);
     }
+    void UpdateHistogramVisibility()
+    {
+        if (histogramCard != null) histogramCard.Visibility = HasDocument && !designWorkspace && showHistogram ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    internal void SetHistogramVisible(bool visible)
+    {
+        showHistogram = visible;
+        if (histogramToggle != null) histogramToggle.IsChecked = visible;
+        UpdateHistogramVisibility();
+        studioScroll.Height = PreferredStudioHeight(ActualHeight);
+    }
+
     void BuildStudioPage(int page)
     {
         if (page == 1) { studioContent.Children.Add(properties); return; }

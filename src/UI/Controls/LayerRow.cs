@@ -74,12 +74,8 @@ public sealed class LayerRow : Grid
 
         if (layer.Kind == LayerKind.Group && toggleExpand != null)
         {
-            var chevron = new Path
-            {
-                Data = Geometry.Parse(expanded ? "M 1 3 L 5 7 L 9 3" : "M 3 1 L 7 5 L 3 9"), Stroke = Theme.Muted, StrokeThickness = 1.5,
-                StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round,
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
-            };
+            var chevron = Theme.Glyph(expanded ? Theme.Glyphs.ChevronDown : Theme.Glyphs.ChevronRight, 12, Theme.Muted, 2);
+            chevron.HorizontalAlignment = HorizontalAlignment.Center; chevron.VerticalAlignment = VerticalAlignment.Center;
             var expand = IconButton(chevron, expanded ? "그룹 접기" : "그룹 펼치기", toggleExpand);
             expand.Width = 14;
             AutomationProperties.SetName(expand, $"그룹 {(expanded ? "접기" : "펼치기")}: {layer.Name}");
@@ -102,43 +98,8 @@ public sealed class LayerRow : Grid
         return button;
     }
 
-    static UIElement EyeIcon(bool visible)
-    {
-        var icon = new Grid { Width = 18, Height = 18 };
-        var stroke = visible ? Theme.Muted : Theme.Subtle;
-        icon.Children.Add(new Path
-        {
-            Data = Geometry.Parse("M 1,9 C 4.5,3.8 13.5,3.8 17,9 C 13.5,14.2 4.5,14.2 1,9 Z"),
-            Stroke = stroke, StrokeThickness = 1.4, Fill = Brushes.Transparent, StrokeLineJoin = PenLineJoin.Round
-        });
-        icon.Children.Add(new Ellipse
-        {
-            Width = 4.5, Height = 4.5, Fill = stroke,
-            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
-        });
-        if (!visible) icon.Children.Add(new Path
-        {
-            Data = Geometry.Parse("M 2.5,15.5 L 15.5,2.5"), Stroke = Theme.Subtle,
-            StrokeThickness = 1.6, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round
-        });
-        return icon;
-    }
+    static UIElement EyeIcon(bool visible) => Theme.Glyph(visible ? Theme.Glyphs.Eye : Theme.Glyphs.EyeSlash, 18, visible ? Theme.Muted : Theme.Subtle);
 
-    static UIElement LockIcon(bool locked)
-    {
-        var icon = new Grid { Width = 18, Height = 18 };
-        var stroke = locked ? Theme.Text : Theme.Subtle;
-        icon.Children.Add(new Path
-        {
-            Data = locked ? Geometry.Parse("M 5,8 V 5.5 C 5,1 13,1 13,5.5 V 8") : Geometry.Parse("M 5.5,8 V 5.5 C 5.5,1 13.5,1 13.5,5.5"),
-            Stroke = stroke, StrokeThickness = 1.5,
-            StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round
-        });
-        icon.Children.Add(new Path
-        {
-            Data = Geometry.Parse("M 3.5,8 H 14.5 V 16 H 3.5 Z"), Stroke = stroke,
-            StrokeThickness = 1.5, Fill = Brushes.Transparent, StrokeLineJoin = PenLineJoin.Round
-        });
-        return icon;
-    }
+    // Locked layers show a filled, bright lock; unlocked rows keep a quiet open shackle.
+    static UIElement LockIcon(bool locked) => Theme.Glyph(locked ? Theme.Glyphs.Lock : Theme.Glyphs.LockOpen, 17, locked ? Theme.Text : Theme.Subtle);
 }

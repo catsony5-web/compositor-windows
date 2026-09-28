@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Compositor.Windows;
 
-public static class PhotoshopCompatibility
+public static class PsdCompatibility
 {
     internal static readonly Dictionary<string, BlendMode> Blends = new()
     {

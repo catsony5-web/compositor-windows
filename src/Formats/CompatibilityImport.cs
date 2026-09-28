@@ -11,7 +11,7 @@ public sealed record CompatibilityResult(Document Document, IReadOnlyList<string
 public static class CompatibilityImport
 {
     public const long MaxFileBytes = 8L * 1024 * 1024 * 1024;
-    public const string Filter = "지원 파일|*.moruproj;*.cwproj;*.pdf;*.ai;*.psd;*.psb;*.dwg;*.dxf;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.gif;*.heic;*.heif|PDF / Illustrator (PDF 호환)|*.pdf;*.ai|Photoshop|*.psd;*.psb|AutoCAD 도면|*.dwg;*.dxf|모든 파일|*.*";
+    public const string Filter = "지원 파일|*.moruproj;*.cwproj;*.pdf;*.ai;*.psd;*.psb;*.dwg;*.dxf;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.gif;*.heic;*.heif|PDF / AI (PDF 호환)|*.pdf;*.ai|PSD / PSB 이미지|*.psd;*.psb|CAD 도면 (DWG / DXF)|*.dwg;*.dxf|모든 파일|*.*";
     public static bool Supports(string path) => Path.GetExtension(path).ToLowerInvariant() is ".pdf" or ".ai" or ".psd" or ".psb" or ".dwg" or ".dxf";
     public static void ValidateFile(string path)
     {
@@ -26,7 +26,7 @@ public static class CompatibilityImport
         var result = extension is ".pdf" or ".ai" ? await PdfCompatibility.ReadAsync(path, options, token).ConfigureAwait(false)
             : await OnSta(() => extension switch
         {
-            ".psd" or ".psb" => PhotoshopCompatibility.Read(path, options.SeparateLayers, token),
+            ".psd" or ".psb" => PsdCompatibility.Read(path, options.SeparateLayers, token),
             ".dwg" or ".dxf" => CadCompatibility.Read(path, options, token),
             _ => throw new NotSupportedException("지원하지 않는 호환 파일 형식입니다.")
         }, token).ConfigureAwait(false);

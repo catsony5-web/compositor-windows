@@ -11,17 +11,17 @@ Reference source: [Compositor snapshot 9d5582dc59429501e270828b27879de9ca30a853]
 | Workspace | Up to 8 document tabs, per-document history and view, dark Korean UI, guides and snapping | No assertion of equivalent keyboard coverage, accessibility or measured responsiveness |
 | Layers | Up to 128, groups, multiple selection, opacity, visibility, locking and reordering | 8GiB source layer/mask limit; groups composite in isolation, unlike upstream pass-through |
 | Blends | Normal, Multiply, Screen, Overlay, Soft Light, Darken, Lighten, Difference, Color Dodge, Color Burn, Hue, Saturation, Color, Luminosity | CPU 8-bit sRGB rendering; platform/rounding differences possible |
-| Transforms | Numeric and gesture move/scale/rotate/flip, nonuniform scale, multiple layers, four-corner projective warp | Boundary antialiasing and sampling differ from CoreGraphics/CoreImage; not every upstream transform interaction is reproduced |
+| Transforms | Numeric and gesture move/scale/rotate/flip, nonuniform scale, multiple layers, four-corner projective warp | Boundary antialiasing and sampling differ from the original macOS rendering; not every upstream transform interaction is reproduced |
 | Masks | Layer and isolated-group masks, clipping to lower layer, brush editing | No independently placed/unlinked masks or arbitrary live mask reference graph |
 | Selection | Rectangle, ellipse, lasso, polygon, contiguous magic wand, add/subtract/intersect/invert, feather/grow/shrink, alpha selection | CPU coverage mask; no upstream selection-geometry or edge-quality equivalence claim |
-| Retouch | Clone, healing, blur brush, smudge, liquify displacement, bounded content-aware fill | Algorithms and limits differ; complex fills require visual review and manual cleanup |
+| Retouch | Clone, healing, blur brush, smudge, liquify displacement, bounded fill from surrounding pixels | Algorithms and limits differ; complex fills require visual review and manual cleanup |
 | Text | Editable content, system font, size, bold/italic, alignment, leading, tracking and color | No fixed paragraph box or justified text; WPF metrics differ from AppKit |
 | Shapes | Retained rectangles/ellipses with fill/stroke and raster gradients | No Bezier anchors, boolean paths or SVG exchange |
 | Adjustment layers | Composite and individual RGB-channel Levels/Curves, Hue/Saturation, Exposure+Offset+Gamma, Gradient Map, Grain | No range-aware/colorize HSV |
 | Filters | Gaussian blur, motion blur, noise and radial lens distortion | CPU approximations; no professional camera/lens profile calibration |
-| Background removal | Bundled 4.6MB U²-NetP, local ONNX Runtime CPU, editable mask result | Not Apple's Vision model; thin/transparent edges need manual correction; no comparative benchmark establishes equal quality |
+| Background removal | Bundled 4.6MB U²-NetP, local ONNX Runtime CPU, editable mask result | Not the original's system-provided segmentation; thin/transparent edges need manual correction; no comparative benchmark establishes equal quality |
 | Import | WIC PNG/JPEG/BMP/TIFF/GIF; EXIF 1–8; embedded ICC conversion to sRGB; HEIC/HEIF with installed Windows codec | First frame only, normalized to 8-bit; general raster source ICC/PPI metadata is not preserved |
-| Compatibility import | PDF/PDF-compatible AI pages, RGB/gray 8-bit PSD/PSB composite or basic layers, DWG/DXF model-space images | Limited pixel interchange, not full native Adobe/CAD editing; [exact scope](FILE_COMPATIBILITY.md) |
+| Compatibility import | PDF/PDF-compatible AI pages, RGB/gray 8-bit PSD/PSB composite or basic layers, DWG/DXF model-space images | Limited pixel interchange, not full native editing of the source formats; [exact scope](FILE_COMPATIBILITY.md) |
 | Export | PNG, ZIP-compressed TIFF, JPEG quality 1–100, selected-layer export, single-page image PDF and RGB8 PSD | JPEG uses white matte; no HEIC/AI/DWG/DXF output or original metadata preservation; limited PSD pixel layers |
 | Print export | ICC-profiled CMYK TIFF with DPI setting and an sRGB round-trip preview | Native editing remains 8-bit sRGB; this is not a CMYK editing workspace or a press-certified proof. See [CMYK](CMYK.md). |
 | Projects | `.moruproj` v2; reads prior `.cwproj` v1/v2; atomic saves | Separate format; unsupported versions are rejected |
@@ -50,7 +50,7 @@ An import succeeds only when the complete document validates. Unsupported files 
 | `Model.cs`, `History` | `Document/DocumentHistory.swift` | Snapshot and retained backing-store concepts; independent bounds and implementation |
 | `BackgroundRemoval.cs` | U²-Net and rembg session documentation | Independent C# local inference integration, original pretrained weights; model terms in `models/README.md` |
 
-`ImportExport.cs` implements WIC color conversion/EXIF orientation, encoders and premultiplied Lanczos3 resizing. The engine uses independent managed BGRA surfaces and CPU rendering, not Apple's SwiftUI/Metal/CoreImage frameworks.
+`ImportExport.cs` implements WIC color conversion/EXIF orientation, encoders and premultiplied Lanczos3 resizing. The engine uses independent managed BGRA surfaces and CPU rendering, not the original's macOS UI and GPU frameworks.
 
 ## Native Morupixel format
 

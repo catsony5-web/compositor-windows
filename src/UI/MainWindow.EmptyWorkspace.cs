@@ -103,7 +103,7 @@ public sealed partial class MainWindow
         if (emptyWorkspace != null) emptyWorkspace.Visibility = opened ? Visibility.Collapsed : Visibility.Visible;
         studioContents[0].IsEnabled = opened;
         properties.IsEnabled = opened;
-        if (histogramCard != null) histogramCard.Visibility = opened && !designWorkspace ? Visibility.Visible : Visibility.Collapsed;
+        UpdateHistogramVisibility();
         if (!opened) histogramInfo.Text = "";
     }
 
@@ -113,6 +113,7 @@ public sealed partial class MainWindow
         startupInitialized = true;
         if (!headlessTesting) { recentDocuments = RecentDocuments.Load(); RebuildRecentDocuments(); }
         UpdateColor(); UpdateBrushLabel(); Refresh(); SetTool(Tool.Move);
+        if (savedLayout != null) Guard(() => ApplyPaneLayout(savedLayout));
         if (startupPath != null && (File.Exists(startupPath) || Directory.Exists(startupPath))) Guard(() => OpenPath(startupPath));
     }
 

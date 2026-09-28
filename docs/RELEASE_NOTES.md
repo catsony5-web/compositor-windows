@@ -1,4 +1,15 @@
-# Morupixel 0.2.0 Preview 27 — studio interface refresh
+# Morupixel 0.2.0 Preview 28 — command palette, icon panels and saved workspace
+
+- **Your workspace comes back.** Window size and position, the right panel width, photo/design mode, the last tab, docked, floating or pinned panels and folded sections are restored on the next launch. They are stored only in the user's local application data.
+- **Find any command with Ctrl+K.** Search menus, tools and panels by name, Korean initial consonants (`ㅂㄹㅅ` → 브러시 도구) or shortcut. Recent commands appear first. The palette also opens from View → 명령 찾기… and the search button in the title bar.
+- **Icon-led right panel.** Adjustment layers, creation, selection and masks, retouching, arrangement and layer actions use icon tiles and icon rows instead of plain text buttons, and canvas alignment is one row of icons. Every control keeps its complete name in the tooltip. Section titles fold their groups, and folded sections stay folded.
+- **One icon family.** Toolbar tools, panel commands, layer visibility and lock, and notices are redrawn with consistent rounded strokes and subtle layered tints.
+- **Cleaner inspector.** Fields share one 30 DIP row style with aligned columns, and the inspector opens with the layer's kind and name.
+- **Optional histogram.** The histogram is hidden by default; turn it on from View → 히스토그램 표시.
+- **Our own terms.** The photo layer tab is 사진 레이어, the surrounding-pixel retouch command is 주변으로 채우기, and file types are named by their extensions.
+- **Validation.** 510 source checks passed, and 38 offscreen captures were reviewed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 27 — studio interface refresh
 
 - **Layered studio layout.** Panels float as cards on a dark window base. Buttons sit above the panel surface and input fields below it, so controls are easier to tell apart; blue marks selection, focus and one primary action per screen. The menu moves into the title bar and tool options into one card below it.
 - **More room at small windows.** Layer rows shrink from 60 to 40 DIP and parameter sliders from three rows to two. A 1280×720 window now shows the whole toolbar, both colors and the layer list.
@@ -22,7 +33,7 @@
 
 ## Morupixel 0.2.0 Preview 25 — drawing layers and artboards
 
-- **Drawing and photo layers.** CAD and retained PDF/AI imports appear inside a collapsed drawing layer. Repeated CAD source layers share one expandable row while their objects remain separately editable and their paint order is preserved. Drawing and Photoshop layer tabs separate the lists.
+- **Drawing and photo layers.** CAD and retained PDF/AI imports appear inside a collapsed drawing layer. Repeated CAD source layers share one expandable row while their objects remain separately editable and their paint order is preserved. Drawing and photo layer tabs separate the lists.
 - **Directional object selection.** With the Move tool, drag from empty space: left to right selects fully enclosed objects; right to left selects touched objects. Retained CAD paths and shape edges are tested against their actual geometry. Shift adds, Alt subtracts, and Shift+Alt intersects. Large selections run in a cancellable worker and cannot overwrite a changed document or selection.
 - **Artboards.** Shift+O opens artboard editing. Drag empty space to create, drag a board to move it, or use its handles and properties to resize it. Alt+drag creates inside an existing board. Board edits preserve object positions, support undo/redo, and persist in native projects. Export can choose a board. Imported drawing folders do not crop objects moved to another board.
 - **Compatibility.** Native projects with drawing metadata or artboards use format version 5. Older projects still open; use Preview 25 or later for newly saved version 5 projects. Existing vector, photo, PDF/AI and privacy safeguards remain available.
@@ -39,7 +50,7 @@ These controls apply to new source and packages; historical commits and previous
 
 - **Clearer choices.** CAD opens with “편집 방식” and “부분별로 편집 (추천)”. Alternative choices keep source-layer editing or import the whole drawing together.
 - **Less text up front.** Drawing layout, working size, DPI and vector retention are under “세부 설정”. Complete conversion notes and document counts are under “변환 안내”. Vector and saved PDF/AI layer retention remain enabled by default.
-- **Preview and import.** Supported compatibility files generate a preview on opening, including Photoshop files. The “가져오기” action stays visible while scrolling details. Changed settings require a refreshed preview; failures stay visible and cannot import stale content.
+- **Preview and import.** Supported compatibility files generate a preview on opening, including PSD files. The “가져오기” action stays visible while scrolling details. Changed settings require a refreshed preview; failures stay visible and cannot import stale content.
 
 Source self-tests passed **459/459**. Actual CAD and PDF-compatible AI dialogs were checked offscreen at normal and minimum sizes and 150% rendering scale. This version retains Preview 22's unified features and compatibility limits.
 

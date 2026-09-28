@@ -72,6 +72,7 @@ public sealed partial class MainWindow
     }
     void ResetPanelLayout()
     {
+        rightPanelColumn.Width = new GridLength(396);
         foreach (var pane in movablePanels) { pane.Unlock(); if (pane.Location != "right") MovePane(pane, "right"); }
         ShowStudioPage(0);
     }

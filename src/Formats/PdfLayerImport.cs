@@ -11,7 +11,7 @@ namespace Compositor.Windows;
 
 // PDF optional-content groups retain separate source streams and preview pixels,
 // with original paint order and visibility. The native renderer owns fonts, clipping,
-// images and colour conversion; no Illustrator installation or Python is required.
+// images and colour conversion; no design application or Python is required.
 internal static class PdfLayerImport
 {
     sealed record Definition(string Key, string Name, bool Visible, bool Locked);

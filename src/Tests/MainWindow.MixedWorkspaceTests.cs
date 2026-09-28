@@ -68,13 +68,17 @@ public sealed partial class MainWindow
             Check(w.histogramCard!.Visibility == Visibility.Collapsed && w.studioPage == 0 && (string)w.studioTabs[0].Content == "디자인", "Design shortcuts not opened");
             Check(Toolbar(w).Distinct().Count() == Enum.GetValues<Tool>().Length, "Design profile omitted or duplicated tools");
             w.SetWorkspaceMode(false);
-            Check(w.histogramCard.Visibility == Visibility.Visible && w.studioPanes[2].Location == "left", "Photo profile did not restore histogram or preserve dock");
+            Check(w.histogramCard.Visibility == Visibility.Collapsed && w.studioPanes[2].Location == "left", "The optional histogram appeared by default or the dock moved");
+            w.SetHistogramVisible(true);
+            Check(w.histogramCard.Visibility == Visibility.Visible && w.histogramToggle!.IsChecked, "The photo profile did not show the enabled histogram");
+            w.SetWorkspaceMode(true); Check(w.histogramCard.Visibility == Visibility.Collapsed, "Design mode showed the histogram");
+            w.SetWorkspaceMode(false); w.SetHistogramVisible(false);
         });
         test("design quick actions add editable text with one undo and keep shape tools available", () =>
         {
             var w = Create(); w.SetWorkspaceMode(true);
             Button Action(string caption) => w.studioContents[0].Children.OfType<System.Windows.Controls.Primitives.UniformGrid>()
-                .SelectMany(grid => grid.Children.OfType<Button>()).Single(button => button.Content is TextBlock text && text.Text == caption);
+                .SelectMany(grid => grid.Children.OfType<Button>()).Single(button => System.Windows.Automation.AutomationProperties.GetName(button) == caption);
             Action("새 텍스트").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(w.doc.Active?.Text?.Content == "새 텍스트" && w.studioPage == 1 && w.doc.Layers.Count == 2, "Text quick action failed to open editable inspector");
             w.Undo(); Check(w.doc.Layers.Count == 1 && w.history.CanRedo, "Text action did not undo once");

@@ -47,6 +47,12 @@ public sealed partial class MainWindow
         CaptureFit(new MessageDialog(null, "먼저 선택 도구로 자를 영역을 지정하세요.", "Morupixel", NoticeKind.Warning), "dialog-warning", 460);
         CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
         CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
+        // Palette states: recent commands first, then a ranked search.
+        recentCommands.Clear(); recentCommands.AddRange(["menu:레이어/레이어 복제", "tool:Brush", "menu:보정/레벨…"]);
+        CaptureFit(new CommandPalette(null, BuildCommandRegistry(), recentCommands.ToArray()), "command-palette", 600);
+        var paletteSearch = new CommandPalette(null, BuildCommandRegistry(), recentCommands.ToArray()); paletteSearch.SetQuery("브러시");
+        CaptureFit(paletteSearch, "command-palette-search", 600);
+        recentCommands.Clear();
         CaptureFit(new CompatibilityExportDialog(null!, doc), "compat-export", 510);
         Capture(ExportDialog.Create(null, doc), "export", 920, 630);
         Capture(new ColorPickerDialog(null!, foreground), "color-picker", 560, 470);
@@ -104,7 +110,10 @@ public sealed partial class MainWindow
             }
             finally { host.Child = null; ShowStudioPage(studioPage, false); }
         }
+        ShowStudioPage(0); CapturePane(studioPanes[0], "photo-actions", 360, 720);
         ShowStudioPage(1); CapturePane(studioPanes[1], "image-properties", 360, 840);
+        // A folded section keeps its title; its rows return when it is opened again.
+        SectionHeader.SetCollapsedKeys(["위치와 변형"]); CapturePane(studioPanes[1], "image-properties-folded", 360, 640); SectionHeader.SetCollapsedKeys([]);
         ShowStudioPage(2); CapturePane(studioPanes[2], "color-palette", 360, 1180);
         ShowStudioPage(3); SelectBrushTip(BrushTip.Star); CapturePane(studioPanes[3], "brush-settings", 360, 1120);
         SelectBrushTip(BrushTip.Round);
@@ -113,6 +122,7 @@ public sealed partial class MainWindow
         var shape = VectorShapes.Create(new ShapeSpec { Width = 360, Height = 150, CornerRadius = 28, FillArgb = 0xD92E4862, StrokeEnabled = true, StrokeArgb = 0xFFC0D9F2, StrokeWidth = 2 }, 100, 100);
         doc.Add(shape); SetWorkspaceMode(true); Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
+        ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)

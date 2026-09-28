@@ -85,6 +85,10 @@ public static class SelfTests
         ThemeFontTests.Run(Test);
         MainWindow.RunStudioTests(Test);
         MainWindow.RunStudioUiTests(Test, directory);
+        MainWindow.RunWorkspaceLayoutTests(Test, directory);
+        MainWindow.RunCommandPaletteTests(Test, directory);
+        MainWindow.RunPropertyPanelTests(Test, directory);
+        MainWindow.RunQuickActionTests(Test, directory);
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);

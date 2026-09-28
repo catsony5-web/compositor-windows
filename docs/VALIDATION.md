@@ -1,4 +1,11 @@
-# Preview 27 studio interface validation
+# Preview 28 workspace and panel validation
+
+- Source self-tests: **510/510 passed** on Windows x64. Eleven added checks cover the workspace layout store and restore (including the histogram choice and headless isolation from the user's layout), command-palette ranking and Korean initial consonants, registry uniqueness and Ctrl+K routing, section folding and restore, shared 30 DIP inspector rows, icon-led quick actions with complete names, locked-layer command state, responsive columns and the absence of third-party product names in user-facing text.
+- `--render-studio-previews` produced **38 offscreen captures**, adding the command palette, a folded inspector section and the photo and design action panels. Before/after renders of the same synthetic sample were compared visually, and the tracked screenshots were refreshed.
+- Release build reported zero warnings and zero errors; the privacy check passed on each staged commit.
+- Not covered by offscreen rendering: hover and drag states, live 150%/200% scaling and palette focus in a shown window. No existing editor session, user layout or user document was used.
+
+## Preview 27 studio interface validation
 
 - Source self-tests: **499/499 passed** on Windows x64. Four added checks cover recent-document ordering, deduplication, limits and corrupt stores, headless isolation from the user's recent list, labeled field dialog actions and selectable message dialogs.
 - `--render-studio-previews` produced **33 offscreen captures**: every dialog, the start screen with and without recent documents, the photo and design workspaces, and 1280×720, 1366×768 and 1920×1080 editor windows. Before/after renders of the same synthetic sample were compared visually.
