@@ -36,6 +36,7 @@ public sealed partial class MainWindow
     // Title bar entry to the command palette; the key chip teaches Ctrl+K. Below
     // CompactHeaderWidth only the icon remains so the menu bar stays on one line.
     const double CompactHeaderWidth = 1180;
+    Action? updateSearchCompact;
     Button BuildCommandSearchButton(FrameworkElement header)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
@@ -50,12 +51,15 @@ public sealed partial class MainWindow
         var button = Theme.Styled(Theme.Button("", () => Guard(ShowCommandPalette), "명령·도구·패널 찾기 · Ctrl+K"), "GhostButton");
         button.Content = content; button.Background = Theme.Input; button.BorderBrush = Theme.Line;
         button.MinHeight = 28; button.Height = 28; button.Padding = new Thickness(10, 0, 6, 0); button.Margin = new Thickness(8, 0, 6, 0); button.VerticalAlignment = VerticalAlignment.Center;
-        header.SizeChanged += (_, e) =>
+        // Ribbon tabs need more room than the menu bar, so the search shrinks earlier there.
+        updateSearchCompact = () =>
         {
-            bool compact = e.NewSize.Width < CompactHeaderWidth;
+            double width = header.ActualWidth;
+            bool compact = width > 0 && width < (ribbonMode ? CompactHeaderWidth + 220 : CompactHeaderWidth);
             label.Visibility = chip.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
             button.Padding = compact ? new Thickness(7, 0, 7, 0) : new Thickness(10, 0, 6, 0);
         };
+        header.SizeChanged += (_, _) => updateSearchCompact();
         AutomationProperties.SetName(button, "명령 찾기");
         return button;
     }
