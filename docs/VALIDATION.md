@@ -1,4 +1,11 @@
-# Preview 26 material mapping validation
+# Preview 27 studio interface validation
+
+- Source self-tests: **499/499 passed** on Windows x64. Four added checks cover recent-document ordering, deduplication, limits and corrupt stores, headless isolation from the user's recent list, labeled field dialog actions and selectable message dialogs.
+- `--render-studio-previews` produced **33 offscreen captures**: every dialog, the start screen with and without recent documents, the photo and design workspaces, and 1280×720, 1366×768 and 1920×1080 editor windows. Before/after renders of the same synthetic sample were compared visually.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered by offscreen rendering: hover and drag states, live 150%/200% scaling and the interactive `tools/qa/panel-layout` matrix. No existing editor session or user document was used.
+
+## Preview 26 material mapping validation
 
 - Source self-tests: **495/495 passed** on Windows x64. Thirteen added checks cover polygon holes, pattern rotation and retained original rendering, parent transforms and masks, native embedded-source roundtrip, cross-document copying, rasterize/undo, closed CAD boundaries, selection contours, artboard origin changes, malformed projects, library preservation of user selection, strict schemas, batch rollback and replay.
 - Real executable, named-pipe, CLI and stdio MCP smoke test: **10 integration scenarios passed**, exercising all **29 tools**. Synthetic texture registration, polygon holes, closed-object boundaries, paged material/region queries, batch mapping, pattern update, preview, save/reopen and undo succeeded. `tools/qa/automation-smoke.cjs` reproduces this flow with its own hidden processes.
