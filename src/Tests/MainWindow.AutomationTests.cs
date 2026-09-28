@@ -299,7 +299,7 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 3 && capabilities["commands"]!.AsArray().Count == 29,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 4 && capabilities["commands"]!.AsArray().Count == 33,
                 "Running editor did not advertise its command contract");
             Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
                 "Supported 2D mapping must remain distinct from unsupported 3D operations");
@@ -613,6 +613,48 @@ public sealed partial class MainWindow
             finally { window.DisableAutomation(); }
             Check(!AutomationMcpServer.ApplicationVersion.Contains('+') && AutomationMcpServer.ApplicationVersion.StartsWith("0."), "serverInfo version must be the app version without build metadata");
             Check(AutomationExamplePrompts.Length >= 3, "Example prompts missing");
+        });
+        Case("artboards can be added, edited, exported alone and deleted through undoable AI commands", window =>
+        {
+            New(window, "대지 문서", 100, 80);
+            Success(Call(window, "add_shape", Write(window, ("shape", "rectangle"), ("width", 100), ("height", 80), ("fill", "#FF0000"))));
+            var added = Success(Call(window, "add_artboard", Write(window, ("name", "표지"), ("x", 0), ("y", 0), ("width", 50), ("height", 40), ("includeLayers", false))));
+            var boardId = Text(added, "artboardId");
+            var boards = DocumentState(added)["artboards"]!.AsArray();
+            Check(boards.Count == 2 && boards.Any(b => b!["artboardId"]?.GetValue<string>() == boardId && b["name"]!.GetValue<string>() == "표지"), "add_artboard must turn the canvas into a board and add the new one");
+            Success(Call(window, "update_artboard", Write(window, ("artboardId", boardId), ("name", "앞면"), ("width", 60))));
+            var updated = DocumentState(State(window))["artboards"]!.AsArray().Single(b => b!["artboardId"]?.GetValue<string>() == boardId)!;
+            Check(updated["name"]!.GetValue<string>() == "앞면" && updated["width"]!.GetValue<double>() == 60 && updated["height"]!.GetValue<double>() == 40, "update_artboard must change only the given fields");
+            string png = Path.Combine(files, "board.png");
+            var exported = Success(Call(window, "export_image", Write(window, ("path", png), ("artboardId", boardId), ("scale", 2), ("keepTransparency", false))));
+            var image = Raster.Load(png);
+            Check(exported["width"]!.GetValue<int>() == 120 && image.Width == 120 && image.Height == 80 && image.Data[3] == 255, "Artboard export must crop, scale and flatten");
+            Failure(Call(window, "export_image", Write(window, ("path", Path.Combine(files, "both.png")), ("artboardId", boardId), ("layerId", window.doc.Layers[0].Id.ToString()))), "invalid_arguments");
+            Failure(Call(window, "export_image", Write(window, ("path", Path.Combine(files, "alpha.jpg")), ("keepTransparency", true))), "invalid_arguments");
+            Failure(Call(window, "update_artboard", Write(window, ("artboardId", Guid.NewGuid().ToString()), ("width", 10))), "artboard_not_found");
+            Success(Call(window, "delete_artboard", Write(window, ("artboardId", boardId))));
+            Check(DocumentState(State(window))["artboards"]!.AsArray().Count == 1, "delete_artboard must remove the board");
+            var last = DocumentState(State(window))["artboards"]!.AsArray()[0]!["artboardId"]!.GetValue<string>();
+            Failure(Call(window, "delete_artboard", Write(window, ("artboardId", last))), "artboard_invalid");
+            Success(Call(window, "undo", Write(window)));
+            Check(DocumentState(State(window))["artboards"]!.AsArray().Count == 2, "Undo must restore the deleted artboard");
+        });
+        Case("inspect_file lists PDF pages and CAD layouts and open_document honors page and structure", window =>
+        {
+            string pdf = Path.Combine(files, "two.pdf"); CompatibilityTests.WriteTwoPages(pdf);
+            var info = Success(Call(window, "inspect_file", new JsonObject { ["path"] = pdf }));
+            Check(Text(info, "format") == "pdf" && info["pageCount"]!.GetValue<uint>() == 2, "PDF inspection must report two pages");
+            var second = Success(Call(window, "open_document", new JsonObject { ["path"] = pdf, ["page"] = 2, ["dpi"] = 72, ["includeLayers"] = false }));
+            var pixels = Imaging.Render(window.doc);
+            Check(pixels.Data[2] < 40 && pixels.Data[0] > 200, "page=2 must open the blue second page");
+            Failure(Call(window, "open_document", new JsonObject { ["path"] = pdf, ["page"] = 5 }), "invalid_arguments");
+            string dxf = Path.Combine(files, "plan.dxf"); File.WriteAllText(dxf, CompatibilityTests.DxfFixture());
+            var cad = Success(Call(window, "inspect_file", new JsonObject { ["path"] = dxf }));
+            Check(Text(cad, "format") == "cad" && cad["layouts"]!.AsArray().Any(l => l!["model"]!.GetValue<bool>()), "CAD inspection must list model space");
+            int before = window.tabs.Count;
+            Success(Call(window, "open_document", new JsonObject { ["path"] = dxf, ["cadStructure"] = "layers", ["cadLongEdge"] = 600, ["cadLayout"] = "*Model_Space" }));
+            Check(window.tabs.Count == before + 1 && window.doc.Width == 600, "CAD options must reach the importer");
+            Failure(Call(window, "open_document", new JsonObject { ["path"] = dxf, ["cadLayout"] = "없는 배치" }), "layout_not_found");
         });
     }
 }

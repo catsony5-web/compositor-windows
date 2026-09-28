@@ -56,7 +56,9 @@ public sealed partial class MainWindow
             Panes = panes,
             CollapsedSections = SectionHeader.CollapsedKeys,
             ShowHistogram = showHistogram,
-            RibbonMode = ribbonMode, RibbonCollapsed = ribbonCollapsed, RibbonTab = ribbonTab, RibbonFavorites = ribbonFavorites.ToArray()
+            RibbonMode = ribbonMode, RibbonCollapsed = ribbonCollapsed, RibbonTab = ribbonTab, RibbonFavorites = ribbonFavorites.ToArray(),
+            RecentColors = ColorPalettePanel.RecentColors.Select(c => $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}").ToArray(),
+            OpenedSections = SectionHeader.OpenedDefaultKeys
         };
     }
 
@@ -77,7 +79,8 @@ public sealed partial class MainWindow
             if (saved.Pinned) pane.SetPinned(true);
         }
         ShowStudioPage(Math.Clamp(layout.StudioPage, 0, 3), false);
-        SectionHeader.SetCollapsedKeys(layout.CollapsedSections);
+        SectionHeader.SetCollapsedKeys(layout.CollapsedSections, layout.OpenedSections);
+        if (layout.RecentColors != null) { ColorPalettePanel.SetRecent(layout.RecentColors.Select(ColorPalettePanel.ParseStored)); studioPalette?.RefreshRecent(); }
         SetHistogramVisible(layout.ShowHistogram);
         ribbonMode = layout.RibbonMode; ribbonCollapsed = layout.RibbonCollapsed;
         if (layout.RibbonTab != null && RibbonTabNames().Contains(layout.RibbonTab)) ribbonTab = layout.RibbonTab;

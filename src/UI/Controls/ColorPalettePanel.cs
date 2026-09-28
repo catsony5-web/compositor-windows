@@ -262,6 +262,17 @@ public sealed class ColorPalettePanel : StackPanel
 
     internal static void ClearRecent() => recentColors.Clear();
 
+    /// <summary>Restores the saved recent row (workspace layout), newest first.</summary>
+    public static void SetRecent(IEnumerable<Color> colors)
+    {
+        recentColors.Clear();
+        foreach (var c in colors) if (c.A != 0 && !recentColors.Contains(c) && recentColors.Count < RecentLimit) recentColors.Add(c);
+    }
+
+    public static Color ParseStored(string hex) => TryParseHex(hex, out var c) ? c : Colors.Transparent;
+
+    public void RefreshRecent() => RebuildRecent();
+
     void RebuildRecent()
     {
         recent.Children.Clear();

@@ -73,8 +73,15 @@ public static partial class AutomationCatalog
         Add("new_document", "Create and activate a document (maximum 16,777,216 pixels). Returns its identifiers and revision.", false,
             Fields(("name", Name), ("width", Integer(1, 8192)), ("height", Integer(1, 8192)), ("background", Color), ("dpi", Number(1, 9600)), ("includeLayers", IncludeLayers)),
             "name", "width", "height");
-        Add("open_document", "Open a supported local file as a new document; existing unsaved documents remain open. A .moruproj file that is already open is activated instead and the result has alreadyOpen=true; other formats are imported again as a new document.", false,
-            Fields(("path", Path), ("includeLayers", IncludeLayers)), "path");
+        Add("inspect_file", "Read import choices of a local PDF/AI or DWG/DXF file without opening it: PDF page count, page size and layer count; CAD model space and paper-space layouts. Use the results as open_document page or cadLayout.", true,
+            Fields(("path", Path)), "path");
+        Add("open_document", "Open a supported local file as a new document; existing unsaved documents remain open. A .moruproj file that is already open is activated instead and the result has alreadyOpen=true; other formats are imported again as a new document. PDF/AI accept page and dpi; DWG/DXF accept cadLayout (from inspect_file), cadLongEdge and cadStructure.", false,
+            Fields(("path", Path), ("includeLayers", IncludeLayers),
+                ("page", Integer(1, 100_000, "PDF/AI page number, 1-based; defaults to 1.")),
+                ("dpi", Number(36, 600, "PDF/AI render resolution; defaults to 150.")),
+                ("cadLayout", new("string", "CAD layout key or name from inspect_file; defaults to model space.", MaxLength: 256)),
+                ("cadLongEdge", Integer(512, 8192, "Long edge in pixels of the CAD preview; defaults to 2400.")),
+                ("cadStructure", Choice("objects", "layers", "combined"))), "path");
         Add("activate_document", "Activate an existing document by its returned identifier before editing it.", false,
             Fields(("documentId", Id), ("includeLayers", IncludeLayers)), "documentId");
         Add("add_image", "Add a local image as a layer in the active document. Obtain a fresh revision first.", false,
@@ -106,9 +113,17 @@ public static partial class AutomationCatalog
             Mutation(("layerId", Id)), WriteRequired("layerId"));
         Add("save_project", "Save the active document to an absolute .moruproj path. Existing files require overwrite=true.", false,
             Mutation(("path", Path), ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path"));
-        Add("export_image", "Export the active document or one selected layer to an image file. Existing files require overwrite=true.", false,
+        Add("export_image", "Export the active document, one artboard or one selected layer to PNG, JPEG or TIFF, optionally scaled. Existing files require overwrite=true.", false,
             Mutation(("path", Path), ("quality", Integer(1, 100, "JPEG quality; defaults to 95.")),
-                ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination.")), ("layerId", Id)), WriteRequired("path"));
+                ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination.")), ("layerId", Id),
+                ("artboardId", Id), ("scale", Number(.05, 8, "Output scale multiplier; 1 is actual size, 2 doubles pixels.")),
+                ("keepTransparency", Bool("PNG/TIFF only; false fills transparent areas with white. Defaults to true."))), WriteRequired("path"));
+        Add("add_artboard", "Add an artboard in document pixels. The canvas grows to include it; a document without artboards first turns its whole canvas into one. Returns artboardId.", false,
+            Mutation(("name", Name), ("x", Coordinate), ("y", Coordinate), ("width", Number(1, 16384)), ("height", Number(1, 16384))), WriteRequired("width", "height"));
+        Add("update_artboard", "Rename, move or resize an existing artboard by artboardId from get_state.", false,
+            Mutation(("artboardId", Id), ("name", Name), ("x", Coordinate), ("y", Coordinate), ("width", Number(1, 16384)), ("height", Number(1, 16384))), WriteRequired("artboardId"));
+        Add("delete_artboard", "Delete an artboard; its layers stay on the canvas. The last artboard cannot be deleted.", false,
+            Mutation(("artboardId", Id)), WriteRequired("artboardId"));
         Add("preview", "Render a scaled PNG preview without changing or exporting the document. maxSide defaults to 512.", true,
             Fields(("documentId", Id), ("maxSide", Integer(1, 1024))), "documentId");
         Add("undo", "Undo one document edit, rejecting a stale expectedRevision. Returns changed=false when there is nothing to undo.", false, Mutation(), WriteRequired());

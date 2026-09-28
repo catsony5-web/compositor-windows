@@ -39,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 29); checks.push('MCP initialization and 29 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 33); checks.push('MCP initialization and 33 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -50,7 +50,7 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 3); assert.equal(capabilities.commands.length, 29);
+  assert.equal(capabilities.contractVersion, 4); assert.equal(capabilities.commands.length, 33);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
   let state = data(await call('get_state')); assert.equal(state.documents.length, 0);

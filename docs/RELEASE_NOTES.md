@@ -1,4 +1,13 @@
-# Morupixel 0.2.0 Preview 33 — clearer panels and dialogs
+# Morupixel 0.2.0 Preview 34 — artboards and import options for AI connection
+
+- **Artboards through AI connection.** New commands add, rename, move, resize and delete artboards; each step can be undone. A document without artboards turns its canvas into the first one.
+- **Export options match the export window.** `export_image` can export one artboard, scale the output (0.05–8×) and fill transparency with white for PNG/TIFF. The result reports the output size.
+- **Import options.** `inspect_file` lists PDF/AI pages and DWG/DXF layouts without opening the file. `open_document` accepts the PDF page and resolution, and the CAD layout, preview size and layer structure.
+- **Recent colors are remembered.** The recent-color row and an opened tone grid are saved with the workspace and come back on the next launch. Your new-document presets were already saved per user.
+- **Compatibility.** The command contract is now version 4 (33 commands). Existing commands and their defaults are unchanged.
+- **Validation.** 545 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 33 — clearer panels and dialogs
 
 - **Export.** Choose PNG, JPEG or TIFF with one click; only the options for that format appear (JPEG quality, or keep a transparent background for PNG/TIFF). Scale 1x, 2x or a custom percentage, see the output size and estimated file size, type the file name before saving, and pick an artboard from a list next to a larger preview.
 - **Color panel.** Large foreground/background colors, the saturation/value picker, HEX entry and the eyedropper come first, followed by a row of recently used colors and the swatches. The tone grid starts folded.

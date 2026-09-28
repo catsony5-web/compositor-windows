@@ -131,7 +131,7 @@ public static class CompatibilityTests
             path = PathFor("empty.dwg"); File.WriteAllBytes(path, []); Throws(() => Read(path));
         });
     }
-    static string DxfFixture(bool ray = false) => "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nRED\n62\n1\n10\n0\n20\n0\n30\n0\n11\n100\n21\n0\n31\n0\n0\nLINE\n8\nBLUE\n62\n5\n10\n0\n20\n30\n30\n0\n11\n100\n21\n30\n31\n0\n" + (ray ? "0\nRAY\n8\nRED\n10\n0\n20\n0\n30\n0\n11\n1\n21\n1\n31\n0\n" : "") + "0\nENDSEC\n0\nEOF\n";
+    internal static string DxfFixture(bool ray = false) => "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nRED\n62\n1\n10\n0\n20\n0\n30\n0\n11\n100\n21\n0\n31\n0\n0\nLINE\n8\nBLUE\n62\n5\n10\n0\n20\n30\n30\n0\n11\n100\n21\n30\n31\n0\n" + (ray ? "0\nRAY\n8\nRED\n10\n0\n20\n0\n30\n0\n11\n1\n21\n1\n31\n0\n" : "") + "0\nENDSEC\n0\nEOF\n";
     static void WriteMaskPsd(string path)
     {
         using var stream = File.Create(path); using var writer = new BinaryWriter(stream);
@@ -162,7 +162,7 @@ public static class CompatibilityTests
             using var z = new System.IO.Compression.ZLibStream(stream, System.IO.Compression.CompressionLevel.Optimal, true); z.Write(data);
         }
     }
-    static void WriteTwoPages(string path)
+    internal static void WriteTwoPages(string path)
     {
         var objects = new[] { "<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 72 48] /Resources << >> /Contents 5 0 R >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 72 48] /Resources << >> /Contents 6 0 R >>", "", "" };
         var red = "1 0 0 rg 0 0 72 48 re f\n"; var blue = "0 0 1 rg 0 0 72 48 re f\n";
