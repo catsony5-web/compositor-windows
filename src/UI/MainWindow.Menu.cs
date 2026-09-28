@@ -39,13 +39,13 @@ public sealed partial class MainWindow
         Add("보정", ("레벨…", "Ctrl+L", Levels), ("노출…", "", Exposure), ("채도…", "", Saturation), ("흑백", "", () => Adjust("grayscale")), ("색상 반전", "Ctrl+I", () => Adjust("invert")), ("가우시안 흐림…", "", Blur));
         Add("합성", ("선택 레이어 그룹화", "Ctrl+G", GroupSelected), ("그룹 해제", "Ctrl+Shift+G", UngroupSelected), ("그룹으로 이동…", "", MoveToGroup), ("클리핑 마스크 전환", "Ctrl+Alt+G", ToggleClipping), ("아래 레이어와 병합", "Ctrl+E", MergeDown), ("텍스트 내용·서식 편집…", "", EditText), ("픽셀 레이어로 변환", "", RasterizeActive), ("다른 문서로 레이어 복사…", "", CopyLayerToTab));
         Add("조정 레이어", ("레벨…", "", () => ShowAdjustment(AdjustmentKind.Levels)), ("곡선…", "", () => ShowAdjustment(AdjustmentKind.Curves)), ("색조 / 채도…", "Ctrl+U", () => ShowAdjustment(AdjustmentKind.HueSaturation)), ("노출…", "", () => ShowAdjustment(AdjustmentKind.Exposure)), ("그라데이션 맵…", "", () => ShowAdjustment(AdjustmentKind.GradientMap)), ("그레인…", "", () => ShowAdjustment(AdjustmentKind.Grain)), ("선택 조정 레이어 편집…", "", EditAdjustment));
-        Add("필터", ("사진 현상…", "Ctrl+Shift+A", () => ShowAdjustment(AdjustmentKind.PhotoDevelop)), ("모션 블러…", "", MotionBlur), ("노이즈…", "", Noise), ("렌즈 왜곡 보정…", "", Lens), ("내용 인식 채우기", "Shift+F5", ContentFill), ("배경색 제거…", "", RemoveColorBackground), ("AI 피사체 배경 제거…", "", RemoveAiBackground), ("마스크 페더…", "", FeatherMask));
+        Add("필터", ("사진 현상…", "Ctrl+Shift+A", () => ShowAdjustment(AdjustmentKind.PhotoDevelop)), ("모션 블러…", "", MotionBlur), ("노이즈…", "", Noise), ("렌즈 왜곡 보정…", "", Lens), ("주변으로 채우기", "Shift+F5", FillFromSurroundings), ("배경색 제거…", "", RemoveColorBackground), ("AI 피사체 배경 제거…", "", RemoveAiBackground), ("마스크 페더…", "", FeatherMask));
         Add("인쇄", ("ICC / CMYK 내보내기…", "", ExportCmyk));
         Add("보기", ("화면에 맞춤", "Ctrl+0", () => { canvas.Fit(); UpdateStatus(); }), ("실제 크기", "Ctrl+1", () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); }), ("가이드 추가…", "", AddGuide), ("가이드 지우기", "", () => { canvas.Guides.Clear(); canvas.InvalidateVisual(); }), ("스냅 전환", "", () => { snapping = !snapping; status.Text = snapping ? "스냅 켜짐" : "스냅 꺼짐"; }), ("픽셀 격자 전환", "", () => { canvas.PixelGrid = !canvas.PixelGrid; canvas.InvalidateVisual(); }), ("명령 찾기…", "Ctrl+K", ShowCommandPalette), ("도움말 / 지원 범위", "F1", Help));
         Add("배우기", ("샘플 작업 열기", "", OpenLearningSample));
         MenuItem Find(string name) => menu.Items.Cast<MenuItem>().Single(item => Equals(item.Header, name));
         var layerMenu = Find("레이어");
-        var compatibilityExport = DocumentControl(new MenuItem { Header = "PDF / Photoshop 파일로 내보내기…" });
+        var compatibilityExport = DocumentControl(new MenuItem { Header = "PDF / PSD 파일로 내보내기…" });
         compatibilityExport.Click += (_, _) => { if (HasDocument) Guard(ExportCompatibility); }; Find("파일").Items.Add(compatibilityExport);
         foreach (var target in new[] { Find("파일"), layerMenu })
         {

@@ -48,11 +48,11 @@ internal sealed class PsdReader : IDisposable
     }
     CompatibilityResult Load(string path, bool layers)
     {
-        if (Tag() != "8BPS") throw new InvalidDataException("Photoshop PSD/PSB 서명이 아닙니다.");
+        if (Tag() != "8BPS") throw new InvalidDataException("PSD/PSB 파일 서명이 아닙니다.");
         int version = U16(); if (version is not (1 or 2)) throw new NotSupportedException("지원하지 않는 PSD 버전입니다."); large = version == 2;
         Bytes(6); channels = U16(); height = checked((int)U32()); width = checked((int)U32()); Raster.ValidateSize(width, height);
         int depth = U16(); mode = U16();
-        if (depth != 8 || mode is not (1 or 3)) throw new NotSupportedException("현재 PSD/PSB 가져오기는 RGB 또는 회색조 / 8비트를 지원합니다. Photoshop에서 RGB / 8비트 사본으로 저장하거나 PDF·TIFF로 내보내 주세요.");
+        if (depth != 8 || mode is not (1 or 3)) throw new NotSupportedException("현재 PSD/PSB 가져오기는 RGB 또는 회색조 / 8비트를 지원합니다. 파일을 만든 프로그램에서 RGB / 8비트 사본으로 저장하거나 PDF·TIFF로 내보내 주세요.");
         if (channels < (mode == 3 ? 3 : 1) || channels > 16) throw new NotSupportedException("PSD 채널 구성이 지원 범위를 벗어났습니다.");
         Seek(End(Length(), stream.Length)); ReadResources();
         long maskEnd = End(Length(large), stream.Length);
@@ -72,13 +72,13 @@ internal sealed class PsdReader : IDisposable
         long mergedOffset = stream.Position;
         if (!layers || records.Count == 0)
         {
-            var raster = DecodeMerged(mergedOffset); warnings.Add("Photoshop에서 저장한 합성 이미지를 가져왔습니다. 레이어·효과·문자는 하나의 이미지에 합쳐져 있습니다.");
-            return new(CompatibilityImport.Single(path, raster, dpi, "Photoshop 합성 이미지"), warnings.Distinct().ToArray());
+            var raster = DecodeMerged(mergedOffset); warnings.Add("파일에 저장된 합성 이미지를 가져왔습니다. 레이어·효과·문자는 하나의 이미지에 합쳐져 있습니다.");
+            return new(CompatibilityImport.Single(path, raster, dpi, "PSD 합성 이미지"), warnings.Distinct().ToArray());
         }
         long memory = 0;
         foreach (var record in records)
         {
-            if (record.Complex || !PhotoshopCompatibility.Blends.ContainsKey(record.Blend)) throw new NotSupportedException("그룹·조정 레이어 또는 지원하지 않는 혼합 모드가 있습니다. ‘합성 이미지’로 가져와 주세요.");
+            if (record.Complex || !PsdCompatibility.Blends.ContainsKey(record.Blend)) throw new NotSupportedException("그룹·조정 레이어 또는 지원하지 않는 혼합 모드가 있습니다. ‘합성 이미지’로 가져와 주세요.");
             if (record.Width == 0 || record.Height == 0) continue;
             Raster.ValidateSize(record.Width, record.Height); memory = checked(memory + (long)record.Width * record.Height * 5);
             if (memory > Document.MaxLayerBytes) throw new InvalidDataException($"PSD 레이어 메모리가 {Document.MaxLayerBytes / (1024L * 1024 * 1024):N0}GB를 초과합니다. 합성 이미지로 가져와 주세요.");
@@ -104,7 +104,7 @@ internal sealed class PsdReader : IDisposable
             }
             if (!used.Contains(0) || mode == 3 && (!used.Contains(1) || !used.Contains(2))) throw new InvalidDataException("PSD 레이어에 필요한 색상 채널이 없습니다.");
             var layer = new Layer { Name = string.IsNullOrWhiteSpace(record.Name) ? "PSD 레이어" : record.Name, Pixels = raster, X = record.Left, Y = record.Top,
-                Visible = (record.Flags & 2) == 0, Locked = (record.Flags & 1) != 0, Opacity = record.Opacity / 255d, Clipped = record.Clip, Blend = PhotoshopCompatibility.Blends[record.Blend] };
+                Visible = (record.Flags & 2) == 0, Locked = (record.Flags & 1) != 0, Opacity = record.Opacity / 255d, Clipped = record.Clip, Blend = PsdCompatibility.Blends[record.Blend] };
             if (record.HasMask && (record.MaskFlags & 2) == 0)
             {
                 layer.Mask = Enumerable.Repeat(record.MaskDefault, record.Width * record.Height).ToArray();
@@ -118,7 +118,7 @@ internal sealed class PsdReader : IDisposable
             doc.Add(layer);
         }
         if (doc.Layers.Count == 0) throw new NotSupportedException("가져올 픽셀 레이어가 없습니다. 합성 이미지로 열어 주세요.");
-        warnings.Add("기본 픽셀 레이어·위치·표시·불투명도·마스크·지원 혼합 모드를 가져왔습니다. 문자·스마트 오브젝트는 저장된 픽셀로 읽으며 편집 속성은 유지되지 않습니다.");
+        warnings.Add("기본 픽셀 레이어·위치·표시·불투명도·마스크·지원 혼합 모드를 가져왔습니다. 문자·내장 개체는 저장된 픽셀로 읽으며 편집 속성은 유지되지 않습니다.");
         doc.Validate(); return new(doc, warnings.Distinct().ToArray());
     }
     void ReadResources()
@@ -133,7 +133,7 @@ internal sealed class PsdReader : IDisposable
             {
                 double value = U32() / 65536d; int units = U16(); if (units == 2) value *= 2.54; if (value >= 1 && value <= 9600) dpi = value;
             }
-            if (id == 1039) warnings.Add("PSD의 내장 ICC는 색상 변환에 적용하지 않습니다. 정확한 색상 확인은 Photoshop에서 sRGB로 변환한 파일을 사용하세요.");
+            if (id == 1039) warnings.Add("PSD의 내장 ICC는 색상 변환에 적용하지 않습니다. 정확한 색상이 필요하면 파일을 만든 프로그램에서 sRGB로 변환해 저장한 파일을 사용하세요.");
             Seek(resourceEnd); if ((length & 1) != 0) Byte(); if (stream.Position > end) throw new InvalidDataException("PSD 리소스 패딩 오류입니다.");
         }
     }

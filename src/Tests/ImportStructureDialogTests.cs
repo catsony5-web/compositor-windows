@@ -43,7 +43,7 @@ internal sealed partial class CompatibilityDialog
             }
             finally { dialog.Close(); }
         });
-        test("CAD structure selector does not change PDF or Photoshop import options", () =>
+        test("CAD structure selector does not change PDF or PSD import options", () =>
         {
             foreach (string name in new[] { "layers.pdf", "layers.ai", "layers.psd", "layers.psb" })
             {

@@ -160,12 +160,12 @@ public static class AdvancedToolTests
                 Assert(initial.Pixels.Data.SequenceEqual(original));
             }
         });
-        test("content aware fill removes object using intact texture patches", () =>
+        test("surrounding fill removes object using intact texture patches", () =>
         {
             var l = Solid(Colors.Black, 24, 24);
             for (int y = 0; y < 24; y++) for (int x = 0; x < 24; x++) Pixel(l.Pixels, x, y, (x + y) % 2 == 0 ? Colors.White : Colors.Black);
             for (int y = 8; y < 14; y++) for (int x = 8; x < 14; x++) Pixel(l.Pixels, x, y, Colors.Red);
-            var original = (byte[])l.Pixels.Data.Clone(); var result = RetouchTools.ContentAwareFill(l, new Selection(new Rect(8, 8, 6, 6)));
+            var original = (byte[])l.Pixels.Data.Clone(); var result = RetouchTools.FillFromSurroundings(l, new Selection(new Rect(8, 8, 6, 6)));
             var filled = new HashSet<byte>();
             for (int y = 0; y < 24; y++) for (int x = 0; x < 24; x++)
             {
@@ -175,9 +175,9 @@ public static class AdvancedToolTests
             }
             Assert(filled.SetEquals(new byte[] { 0, 255 }), "Texture was averaged instead of sampled"); Assert(l.Pixels.Data.SequenceEqual(original));
         });
-        test("content aware fill rejects selection without donor pixels", () =>
+        test("surrounding fill rejects selection without donor pixels", () =>
         {
-            bool threw = false; try { _ = RetouchTools.ContentAwareFill(Solid(Colors.Red, 3, 3), new Selection(new Rect(0, 0, 3, 3))); } catch (InvalidOperationException) { threw = true; } Assert(threw);
+            bool threw = false; try { _ = RetouchTools.FillFromSurroundings(Solid(Colors.Red, 3, 3), new Selection(new Rect(0, 0, 3, 3))); } catch (InvalidOperationException) { threw = true; } Assert(threw);
         });
         test("background extraction retains disconnected matching interior", () =>
         {
@@ -235,7 +235,7 @@ public static class AdvancedToolTests
         {
             var l = Solid(Colors.White, 40, 40); var original = (byte[])l.Pixels.Data.Clone(); using var cts = new CancellationTokenSource(); cts.Cancel();
             int canceled = 0;
-            foreach (Action action in new Action[] { () => SelectionTools.MagicWand(l.Pixels, new(.5, .5), 10, true, cts.Token), () => SelectionTools.Feather(new Selection(new Rect(5, 5, 10, 10)), 40, 40, 2, cts.Token), () => RetouchTools.ContentAwareFill(l, new Selection(new Rect(10, 10, 10, 10)), cts.Token), () => RetouchTools.RemoveBackgroundByColor(l, 20, 2, cts.Token), () => AdvancedFilters.MotionBlur(l, 45, 20, null, cts.Token) })
+            foreach (Action action in new Action[] { () => SelectionTools.MagicWand(l.Pixels, new(.5, .5), 10, true, cts.Token), () => SelectionTools.Feather(new Selection(new Rect(5, 5, 10, 10)), 40, 40, 2, cts.Token), () => RetouchTools.FillFromSurroundings(l, new Selection(new Rect(10, 10, 10, 10)), cts.Token), () => RetouchTools.RemoveBackgroundByColor(l, 20, 2, cts.Token), () => AdvancedFilters.MotionBlur(l, 45, 20, null, cts.Token) })
             { try { action(); } catch (OperationCanceledException) { canceled++; } }
             Assert(canceled == 5 && l.Pixels.Data.SequenceEqual(original));
         });

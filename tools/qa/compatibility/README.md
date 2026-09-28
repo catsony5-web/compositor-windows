@@ -11,4 +11,4 @@ The C# runner renders import/export controls offscreen at regular and minimum si
 
 `fixtures/2layers.psd` and `layer_mask_data.psd` are from the MIT-licensed [psd-tools test corpus](https://github.com/psd-tools/psd-tools/tree/30bf79c2a88e0fc63104ee85713e23b04362153d/tests/psd_files). The associated license is in `fixtures/psd-tools-LICENSE.txt`. `block-rotation.dwg` is the MIT-licensed [ACadSharp BLOCKROTATIONPARAMETER sample](https://github.com/DomCR/ACadSharp/blob/3feabba4b2cbcb226f10b288aaee32442b03af6f/samples/dynamic-blocks/BLOCKROTATIONPARAMETER.dwg); see `licenses/ACadSharp-LICENSE.txt`. Exact source revisions are in `fixtures/sources.json`. These small fixtures are embedded for regression tests of the portable executable.
 
-These tests do not establish complete Photoshop/Illustrator/AutoCAD parity or exercise those commercial applications.
+These tests do not establish complete parity with the applications that create these formats and do not run those applications.

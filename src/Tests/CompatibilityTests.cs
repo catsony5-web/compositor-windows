@@ -42,56 +42,56 @@ public static class CompatibilityTests
         test("AI PDF compatible data opens and PostScript AI has actionable rejection", () =>
         {
             string path = PathFor("compatible.ai"); ProjectStore.AtomicWrite(path, s => PdfCompatibility.Write(Single(), s)); Assert(Read(path).Document.Layers.Count == 1);
-            path = PathFor("legacy.ai"); File.WriteAllText(path, "%!PS-Adobe-3.0\n%%Creator: Illustrator\n"); Throws(() => Read(path));
+            path = PathFor("legacy.ai"); File.WriteAllText(path, "%!PS-Adobe-3.0\n%%Creator: Legacy vector editor\n"); Throws(() => Read(path));
         });
-        test("Photoshop merged export is externally parseable and preserves alpha DPI", () =>
+        test("PSD merged export is externally parseable and preserves alpha DPI", () =>
         {
-            var doc = Single(); doc.Active!.Pixels.Data[3] = 42; string path = PathFor("flat.psd"); ProjectStore.AtomicWrite(path, s => PhotoshopCompatibility.Write(doc, s, false));
+            var doc = Single(); doc.Active!.Pixels.Data[3] = 42; string path = PathFor("flat.psd"); ProjectStore.AtomicWrite(path, s => PsdCompatibility.Write(doc, s, false));
             using var input = File.OpenRead(path); var psd = PsdFile.Open(input); Assert(psd.Header.WidthInPixels == 64 && psd.Header.NumberOfChannels == 4 && psd.Layers.Count == 1);
             var actual = Read(path).Document; Assert(actual.Dpi == 150); Assert(actual.Active!.Pixels.Data.SequenceEqual(doc.Active.Pixels.Data));
         });
-        test("Photoshop layer export preserves order unicode names visibility blend and pixels", () =>
+        test("PSD layer export preserves order unicode names visibility blend and pixels", () =>
         {
             var doc = Single(); doc.Add(new Layer { Name = "위쪽 글씨 가나다", Pixels = Raster.Solid(12, 9, Color.FromArgb(170, 0, 0, 255)), X = 4, Y = 5, Opacity = .6, Blend = BlendMode.Screen });
             doc.Add(new Layer { Name = "숨김", Pixels = Raster.Solid(3, 3, Colors.Green), Visible = false });
-            string path = PathFor("layers.psd"); ProjectStore.AtomicWrite(path, s => PhotoshopCompatibility.Write(doc, s, true)); var actual = Read(path, new(SeparateLayers: true)).Document;
+            string path = PathFor("layers.psd"); ProjectStore.AtomicWrite(path, s => PsdCompatibility.Write(doc, s, true)); var actual = Read(path, new(SeparateLayers: true)).Document;
             Assert(actual.Layers.Count == 3 && actual.Layers[1].Name == "위쪽 글씨 가나다" && actual.Layers[1].Blend == BlendMode.Screen && !actual.Layers[2].Visible);
             var expectedPixels = Imaging.Render(doc).Data; var actualPixels = Imaging.Render(actual).Data; Assert(expectedPixels.Zip(actualPixels, (a, b) => Math.Abs(a - b)).Max() <= 1);
             ProjectStore.Save(actual, PathFor("layers.moruproj")); Assert(ProjectStore.Load(PathFor("layers.moruproj")).Layers.Count == 3);
         });
-        test("Photoshop transformed masked layer export bakes geometry without changing original", () =>
+        test("PSD transformed masked layer export bakes geometry without changing original", () =>
         {
             var doc = Single(); doc.Active!.X = -3; doc.Active.Rotation = 8; doc.Active.Mask = Enumerable.Repeat((byte)128, 64 * 40).ToArray(); var before = Imaging.Render(doc).Data;
-            string path = PathFor("masked.psd"); ProjectStore.AtomicWrite(path, s => PhotoshopCompatibility.Write(doc, s, true)); var actual = Read(path, new(SeparateLayers: true)).Document;
+            string path = PathFor("masked.psd"); ProjectStore.AtomicWrite(path, s => PsdCompatibility.Write(doc, s, true)); var actual = Read(path, new(SeparateLayers: true)).Document;
             var after = Imaging.Render(actual).Data; double maximum = 0; int alphaDifference = 0;
             for (int i = 0; i < before.Length; i += 4) { alphaDifference = Math.Max(alphaDifference, Math.Abs(before[i + 3] - after[i + 3])); for (int c = 0; c < 3; c++) maximum = Math.Max(maximum, Math.Abs(before[i + c] * before[i + 3] / 255d - after[i + c] * after[i + 3] / 255d)); }
             Assert(maximum <= 1 && alphaDifference <= 1, $"Masked transform premultiplied difference {maximum}, alpha {alphaDifference}"); Assert(doc.Active.Mask[0] == 128 && doc.Active.Rotation == 8);
         });
-        test("Photoshop unsupported layered export does not replace existing destination", () =>
+        test("PSD unsupported layered export does not replace existing destination", () =>
         {
             var doc = Single(); doc.Add(new Layer { Name = "그룹", Kind = LayerKind.Group, Pixels = new Raster(1, 1) });
-            string path = PathFor("preserved.psd"); File.WriteAllText(path, "preserve"); Throws(() => ProjectStore.AtomicWrite(path, s => PhotoshopCompatibility.Write(doc, s, true))); Assert(File.ReadAllText(path) == "preserve");
+            string path = PathFor("preserved.psd"); File.WriteAllText(path, "preserve"); Throws(() => ProjectStore.AtomicWrite(path, s => PsdCompatibility.Write(doc, s, true))); Assert(File.ReadAllText(path) == "preserve");
         });
-        test("Photoshop real external two layer PSD reads composite and pixel layers", () =>
+        test("PSD real external two layer PSD reads composite and pixel layers", () =>
         {
             string path = Fixture("2layers.psd"); var merged = Read(path); var layered = Read(path, new(SeparateLayers: true));
             Assert(merged.Document.Width == layered.Document.Width && layered.Document.Layers.Count >= 2); Assert(Imaging.Render(layered.Document).Data.Any(b => b != 0));
         });
-        test("Photoshop real external mask PSD composite is supported", () =>
+        test("PSD real external mask PSD composite is supported", () =>
         {
             var result = Read(Fixture("layer_mask_data.psd")); Assert(result.Document.Width > 0 && result.Document.Active!.Pixels.Data.Any(b => b != 0));
         });
-        test("Photoshop oversized header is rejected before decoding allocation", () =>
+        test("PSD oversized header is rejected before decoding allocation", () =>
         {
             byte[] header = new byte[26]; "8BPS"u8.CopyTo(header); BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan(4), 1); BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(14), 50000); BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(18), 50000);
             string path = PathFor("huge.psd"); File.WriteAllBytes(path, header); Throws(() => Read(path));
             path = PathFor("broken.psd"); File.WriteAllBytes(path, [1, 2, 3]); Throws(() => Read(path));
         });
-        test("Photoshop complex external mask document rejects unsupported layer structure", () =>
+        test("PSD complex external mask document rejects unsupported layer structure", () =>
         {
             Throws(() => Read(Fixture("layer_mask_data.psd"), new(SeparateLayers: true)));
         });
-        test("Photoshop independent layer mask respects document position and outside default", () =>
+        test("PSD independent layer mask respects document position and outside default", () =>
         {
             string path = PathFor("mask-reference.psd"); WriteMaskPsd(path); var doc = Read(path, new(SeparateLayers: true)).Document;
             Assert(doc.Active!.X == 2 && doc.Active.Y == 1 && doc.Active.Mask!.SequenceEqual(new byte[] { 0, 128, 0, 255 }));
@@ -119,7 +119,7 @@ public static class CompatibilityTests
         {
             string path = PathFor("with-ray.dxf"); File.WriteAllText(path, DxfFixture(true)); var result = Read(path, new(CadLongEdge: 512)); Assert(result.Warnings.Any(w => w.Contains("RAY")));
         });
-        test("DWG real external binary file opens without AutoCAD or external converter", () =>
+        test("DWG real external binary file opens without a CAD application or external converter", () =>
         {
             var result = Read(Fixture("block-rotation.dwg"), new(CadLongEdge: 700)); Assert(result.Document.Layers.Count >= 2); Assert(Math.Max(result.Document.Width, result.Document.Height) == 700);
             Assert(result.Document.Layers.Skip(1).Any(l => l.Pixels.Data.Where((b, i) => i % 4 == 3).Any(b => b > 0)));

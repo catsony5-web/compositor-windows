@@ -65,6 +65,28 @@ public sealed partial class MainWindow
             finally { window.StopRenderingForShutdown(); }
         });
 
+        test("user-facing names avoid third-party product and trademarked feature names", () =>
+        {
+            string[] banned = ["포토샵", "Photoshop", "Adobe", "어도비", "Illustrator", "일러스트레이터", "AutoCAD", "오토캐드", "Camera Raw", "Lightroom", "라이트룸", "내용 인식", "Content-Aware", "스마트 오브젝트", "Figma", "Apple"];
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                window.AddTab(NewDocumentDialog.CreateDocument("이름", "32", "32", 0), null);
+                var names = new List<string> { CompatibilityImport.Filter };
+                names.AddRange(window.BuildCommandRegistry().SelectMany(c => new[] { c.Title, c.Category }));
+                foreach (bool design in new[] { false, true })
+                {
+                    window.SetWorkspaceMode(design);
+                    names.AddRange(Descendants(window.studioContents[0]).OfType<Button>().SelectMany(b => new[] { AutomationProperties.GetName(b), b.ToolTip as string ?? "" }));
+                }
+                names.AddRange(window.layerCategoryButtons.Values.Select(b => b.Content?.ToString() ?? ""));
+                var found = names.SelectMany(name => banned.Where(word => name.Contains(word, StringComparison.OrdinalIgnoreCase)).Select(word => word + " in " + name)).Distinct().ToArray();
+                Check(found.Length == 0, "Third-party names in the UI: " + string.Join("; ", found));
+                Check(window.layerCategoryButtons.Values.Any(b => Equals(b.Content, "사진 레이어")), "The photo layer tab lost its name");
+            }
+            finally { window.StopRenderingForShutdown(); }
+        });
+
         test("quick action grids drop columns before labels break mid-word", () =>
         {
             var buttons = Enumerable.Range(0, 4).Select(i => QuickActions.Command(Theme.Glyphs.Plus, "명령 " + i, () => { }, "명령 " + i)).ToArray();

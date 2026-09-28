@@ -83,7 +83,7 @@ public sealed partial class MainWindow
             Key.T => () => SetTool(Tool.Text), Key.I => () => SetTool(Tool.Eyedropper), Key.H => () => SetTool(Tool.Hand),
             Key.L => () => SetTool(shift ? Tool.PolygonLasso : Tool.Lasso), Key.W => () => SetTool(Tool.MagicWand),
             Key.S => () => SetTool(Tool.CloneStamp), Key.J => () => SetTool(Tool.Heal), Key.R => () => SetTool(shift ? Tool.Liquify : Tool.Smudge), Key.K => () => SetTool(Tool.BlurBrush),
-            Key.F5 when shift => ContentFill, Key.Delete when designWorkspace && tool == Tool.Move => DeleteSelectedObjects, Key.Delete => ClearPixels,
+            Key.F5 when shift => FillFromSurroundings, Key.Delete when designWorkspace && tool == Tool.Move => DeleteSelectedObjects, Key.Delete => ClearPixels,
             Key.Escape => () => { CancelGesture(); ResetInteractionTransient(); selection = null; Refresh(false); },
             Key.OemOpenBrackets => () => { brushSize = Math.Max(1, brushSize - 5); UpdateBrushLabel(); },
             Key.OemCloseBrackets => () => { brushSize = Math.Min(MaxBrushSize, brushSize + 5); UpdateBrushLabel(); },

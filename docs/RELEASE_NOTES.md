@@ -22,7 +22,7 @@
 
 ## Morupixel 0.2.0 Preview 25 — drawing layers and artboards
 
-- **Drawing and photo layers.** CAD and retained PDF/AI imports appear inside a collapsed drawing layer. Repeated CAD source layers share one expandable row while their objects remain separately editable and their paint order is preserved. Drawing and Photoshop layer tabs separate the lists.
+- **Drawing and photo layers.** CAD and retained PDF/AI imports appear inside a collapsed drawing layer. Repeated CAD source layers share one expandable row while their objects remain separately editable and their paint order is preserved. Drawing and photo layer tabs separate the lists.
 - **Directional object selection.** With the Move tool, drag from empty space: left to right selects fully enclosed objects; right to left selects touched objects. Retained CAD paths and shape edges are tested against their actual geometry. Shift adds, Alt subtracts, and Shift+Alt intersects. Large selections run in a cancellable worker and cannot overwrite a changed document or selection.
 - **Artboards.** Shift+O opens artboard editing. Drag empty space to create, drag a board to move it, or use its handles and properties to resize it. Alt+drag creates inside an existing board. Board edits preserve object positions, support undo/redo, and persist in native projects. Export can choose a board. Imported drawing folders do not crop objects moved to another board.
 - **Compatibility.** Native projects with drawing metadata or artboards use format version 5. Older projects still open; use Preview 25 or later for newly saved version 5 projects. Existing vector, photo, PDF/AI and privacy safeguards remain available.
@@ -39,7 +39,7 @@ These controls apply to new source and packages; historical commits and previous
 
 - **Clearer choices.** CAD opens with “편집 방식” and “부분별로 편집 (추천)”. Alternative choices keep source-layer editing or import the whole drawing together.
 - **Less text up front.** Drawing layout, working size, DPI and vector retention are under “세부 설정”. Complete conversion notes and document counts are under “변환 안내”. Vector and saved PDF/AI layer retention remain enabled by default.
-- **Preview and import.** Supported compatibility files generate a preview on opening, including Photoshop files. The “가져오기” action stays visible while scrolling details. Changed settings require a refreshed preview; failures stay visible and cannot import stale content.
+- **Preview and import.** Supported compatibility files generate a preview on opening, including PSD files. The “가져오기” action stays visible while scrolling details. Changed settings require a refreshed preview; failures stay visible and cannot import stale content.
 
 Source self-tests passed **459/459**. Actual CAD and PDF-compatible AI dialogs were checked offscreen at normal and minimum sizes and 150% rendering scale. This version retains Preview 22's unified features and compatibility limits.
 

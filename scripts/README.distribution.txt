@@ -28,7 +28,7 @@ See README.md, docs/PORTING.md and docs/RELEASE_NOTES.md for supported
 features, interoperability limits and validation status.
 PDF, PDF-compatible AI, RGB/gray 8-bit PSD/PSB and DWG/DXF image import,
 plus PDF/PSD export: see docs/FILE_COMPATIBILITY.md for supported scope.
-Windows provides the PDF renderer; no Adobe or AutoCAD installation is needed.
+Windows provides the PDF renderer; no other design or CAD application is needed.
 
 Licenses: LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.md,
 DOTNET-LICENSE.txt, DOTNET-THIRD-PARTY-NOTICES.txt,

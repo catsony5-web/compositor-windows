@@ -317,10 +317,10 @@ public sealed partial class MainWindow
         Edit("선택 픽셀 복제", () => doc.Add(new Layer { Name = layer.Name + " 선택", Pixels = pixels })); SetTool(Tool.Move);
     }
     void ApplySelection(Selection incoming) { selection = SelectionTools.Combine(selection, incoming, doc.Width, doc.Height, selectionMode); Refresh(false); }
-    void ContentFill()
+    void FillFromSurroundings()
     {
         if (selection == null) { status.Text = "제거할 부분을 먼저 선택하세요."; return; }
-        RunRasterJob("내용 인식 채우기", (l, s, ct) => RetouchTools.ContentAwareFill(l, s!, ct));
+        RunRasterJob("주변으로 채우기", (l, s, ct) => RetouchTools.FillFromSurroundings(l, s!, ct));
     }
     void MotionBlur()
     {

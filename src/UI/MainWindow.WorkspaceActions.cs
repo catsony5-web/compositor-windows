@@ -27,7 +27,7 @@ public sealed partial class MainWindow
     void BuildPhotoActions(StackPanel panel)
     {
         panel.Children.Add(QuickActions.Feature(Theme.Glyphs.Camera, "사진 현상", "화이트 밸런스 · 명암 · 질감을 한 번에 조절",
-            Run(() => ShowAdjustment(AdjustmentKind.PhotoDevelop)), "Camera Raw 방식의 사진 보정 · 수정 가능한 조정 레이어로 적용"));
+            Run(() => ShowAdjustment(AdjustmentKind.PhotoDevelop)), "화이트 밸런스·톤·질감을 한 번에 보정 · 수정 가능한 조정 레이어로 적용"));
         WorkspaceSection(panel, "조정 레이어", "원본을 유지하며 빛과 색을 보정합니다. 미리보기 후 조정 레이어로 추가됩니다.");
         WorkspaceTiles(panel, 3,
             (Theme.Glyphs.Exposure, "노출", () => ShowAdjustment(AdjustmentKind.Exposure), "노출 · 미리보기 후 조정 레이어 추가"),
@@ -48,7 +48,7 @@ public sealed partial class MainWindow
         WorkspaceCommands(panel,
             (ToolIcons.PathData(Tool.Heal), "복구 브러시", () => SetTool(Tool.Heal), "Alt+클릭으로 참조 위치 지정 후 드래그", null),
             (ToolIcons.PathData(Tool.CloneStamp), "복제 도장", () => SetTool(Tool.CloneStamp), "Alt+클릭으로 참조 위치 지정 후 복제", null),
-            (Theme.Glyphs.FillSelection, "내용 인식 채우기", ContentFill, "제거할 부분을 선택한 뒤 주변 픽셀로 채우기", null),
+            (Theme.Glyphs.FillSelection, "주변으로 채우기", FillFromSurroundings, "제거할 부분을 선택한 뒤 주변 픽셀로 채우기", null),
             (ToolIcons.PathData(Tool.Brush), "브러시 설정", () => ShowStudioPage(3), "크기와 경도, 브러시 프리셋", null));
     }
 

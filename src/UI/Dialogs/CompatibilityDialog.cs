@@ -81,7 +81,7 @@ internal sealed partial class CompatibilityDialog : Window
         }
         else
         {
-            details.Text = "Photoshop 이미지";
+            details.Text = "PSD 이미지";
             separate.Content = "레이어별로 편집";
             separate.ToolTip = "RGB / 회색조 · 8비트 픽셀 레이어를 가져옵니다. 그룹이나 조정 레이어가 있으면 이 옵션을 꺼 주세요.";
             settings.Children.Add(separate);
@@ -188,7 +188,7 @@ internal sealed class CompatibilityExportDialog : Window
     bool busy;
     public CompatibilityExportDialog(Window owner, Document document)
     {
-        snapshot = document.Snapshot(); Owner = owner; Title = "Morupixel · PDF / Photoshop 내보내기"; Width = 510; SizeToContent = SizeToContent.Height;
+        snapshot = document.Snapshot(); Owner = owner; Title = "Morupixel · PDF / PSD 내보내기"; Width = 510; SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Panel; Foreground = Theme.Text; FontFamily = Theme.UiFont;
         var panel = new StackPanel { Margin = new Thickness(24) }; Content = panel;
         panel.Children.Add(DialogShell.Title("호환 형식 내보내기")); panel.Children.Add(DialogShell.FieldLabel("파일 형식")); panel.Children.Add(format); panel.Children.Add(message);
@@ -199,10 +199,10 @@ internal sealed class CompatibilityExportDialog : Window
     }
     void Describe()
     {
-        bool valid = (format.SelectedIndex != 2 || PhotoshopCompatibility.CanWriteLayers(snapshot)) && (format.SelectedIndex != 3 || VectorPdfExport.Limitation(snapshot) == null); save.IsEnabled = valid;
+        bool valid = (format.SelectedIndex != 2 || PsdCompatibility.CanWriteLayers(snapshot)) && (format.SelectedIndex != 3 || VectorPdfExport.Limitation(snapshot) == null); save.IsEnabled = valid;
         message.Text = format.SelectedIndex switch
         {
-            0 => "문서 DPI에 맞춘 한 페이지 RGB PDF입니다. 현재 합성 결과를 이미지로 담습니다. Illustrator에서도 열 수 있지만 문자·벡터·레이어를 개별 편집하는 AI 파일은 아닙니다.",
+            0 => "문서 DPI에 맞춘 한 페이지 RGB PDF입니다. 현재 합성 결과를 이미지로 담습니다. PDF를 여는 다른 프로그램에서도 열 수 있지만 문자·벡터·레이어를 개별 편집할 수 있는 원본 파일은 아닙니다.",
             1 => "현재 합성 결과를 RGB / 8비트 PSD로 저장합니다. 원본 문서의 레이어·문자·벡터를 개별 편집하려면 .moruproj도 함께 보관하세요.",
             3 => valid ? "CAD 경로·문자·도형과 원본 PDF/AI의 벡터를 유지합니다. 사진은 원본 픽셀로 포함됩니다. 편집 레이어는 .moruproj에도 저장하세요." : VectorPdfExport.Limitation(snapshot),
             _ => valid ? "레이어 이름·표시·불투명도·혼합 모드를 저장합니다. 문자·도형·변형·마스크는 각 레이어의 픽셀에 적용됩니다. 그룹·조정·클리핑 문서는 합성 PSD로 출력하세요."
@@ -214,11 +214,11 @@ internal sealed class CompatibilityExportDialog : Window
     async Task SaveAsync()
     {
         if (busy) return; int selected = format.SelectedIndex; bool pdf = selected is 0 or 3; string extension = pdf ? ".pdf" : ".psd";
-        var picker = new SaveFileDialog { Filter = pdf ? "PDF 문서|*.pdf" : "Photoshop PSD|*.psd", DefaultExt = extension, AddExtension = true, FileName = snapshot.Name + extension };
+        var picker = new SaveFileDialog { Filter = pdf ? "PDF 문서|*.pdf" : "PSD 이미지|*.psd", DefaultExt = extension, AddExtension = true, FileName = snapshot.Name + extension };
         if (picker.ShowDialog(this) != true) return; busy = true; save.IsEnabled = false; format.IsEnabled = false; message.Text = "파일을 저장하고 있습니다…";
         try
         {
-            await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => { if (selected == 3) VectorPdfExport.Write(snapshot, stream); else if (selected == 0) PdfCompatibility.Write(snapshot, stream); else PhotoshopCompatibility.Write(snapshot, stream, selected == 2); }));
+            await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => { if (selected == 3) VectorPdfExport.Write(snapshot, stream); else if (selected == 0) PdfCompatibility.Write(snapshot, stream); else PsdCompatibility.Write(snapshot, stream, selected == 2); }));
             busy = false; Close();
         }
         catch (Exception e) { message.Text = "저장 실패: " + e.Message; }
