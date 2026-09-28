@@ -1602,6 +1602,9 @@
     "JPEG에는 투명도가 없어 keepTransparency를 사용할 수 없습니다.": "JPEG には透明度がないため keepTransparency は使えません。",
     "inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.": "inspect_file は PDF/AI と DWG/DXF ファイルを読み取ります。",
     "layerId와 artboardId 중 하나만 지정하세요.": "layerId と artboardId のどちらか一方だけを指定してください。",
-    "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "アートボードが見つかりません。get_state の artboardId を使用してください。"
+    "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "アートボードが見つかりません。get_state の artboardId を使用してください。",
+    "cadHatches=image에는 cadMaterialImage가 필요합니다.": "cadHatches=image には cadMaterialImage が必要です。",
+    "도면 정리 옵션은 cadCleanup=true와 함께 사용하세요.": "図面整理のオプションは cadCleanup=true と一緒に使用してください。",
+    "재질 이미지를 찾을 수 없습니다.": "素材画像が見つかりません。"
   }
 }

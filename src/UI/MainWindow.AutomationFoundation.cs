@@ -59,6 +59,13 @@ public sealed partial class MainWindow
             var arguments = AutomationCatalog.BatchArguments(args, step["arguments"]!.AsObject());
             try
             {
+                if (command is "add_artboard" or "update_artboard" or "delete_artboard")
+                {
+                    var board = ApplyArtboardEdit(candidate, command, arguments);
+                    candidate.Validate();
+                    results.Add(new JsonObject { ["stepIndex"] = i, ["command"] = command, ["artboardId"] = dryRun || command == "delete_artboard" ? null : board.ToString() });
+                    continue;
+                }
                 affected = await ApplyAutomationEditAsync(candidate, command, arguments, token);
                 candidate.Validate();
             }

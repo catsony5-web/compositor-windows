@@ -87,7 +87,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 편집은 **RGB 8비트** 기준입니다. `save_project`는 편집 가능한 `.moruproj`를 저장하고, `export_image`는 **PNG·JPEG·TIFF**로 출력합니다. `layerId`를 지정하면 해당 레이어를, `artboardId`를 지정하면 그 대지 영역만 출력합니다(둘 중 하나만). `scale`(0.05~8, 기본 1)로 크기를 바꾸고, PNG·TIFF는 `keepTransparency: false`로 투명한 곳을 흰색으로 채웁니다. JPEG는 투명도가 없어 이 옵션을 받지 않습니다. 결과에는 출력 `width`·`height`가 들어갑니다. 이 자동화 명령에는 PDF·PSD·CMYK 출력 옵션이 아직 없습니다. 앱 화면에서 제공하는 내보내기 기능의 범위와 구분하세요.
 
-`inspect_file`은 파일을 열지 않고 PDF/AI의 페이지 수·첫 페이지 크기·레이어 수, DWG/DXF의 모델 공간과 배치(레이아웃) 목록을 돌려줍니다. `open_document`는 PDF/AI에 `page`(1부터)·`dpi`(36~600), DWG/DXF에 `cadLayout`(inspect_file의 key 또는 이름)·`cadLongEdge`(512~8192)·`cadStructure`(`objects` 기본, `layers`, `combined`)를 받습니다. 없는 페이지는 `invalid_arguments`, 없는 배치는 `layout_not_found`입니다. 생략하면 기본값: PDF/PDF 호환 AI는 **첫 페이지·150 DPI** 기준이며, 파일에 저장된 PDF 레이어와 원본 벡터를 보존합니다. PSD/PSB는 합성 이미지로, DWG/DXF는 기본 **긴 변 2,400px** 기준의 미리보기와 벡터 경로를 포함한 레이어로 가져옵니다. PSD 레이어 분리와 도면 정리 설정은 자동화 명령에 아직 없습니다. 원본 CAD의 치수·축척·모든 객체 속성이 그대로 편집되는 것은 아닙니다. [파일별 보존 범위](FILE_COMPATIBILITY.md)
+`inspect_file`은 파일을 열지 않고 PDF/AI의 페이지 수·첫 페이지 크기·레이어 수, DWG/DXF의 모델 공간과 배치(레이아웃) 목록을 돌려줍니다. `open_document`는 PDF/AI에 `page`(1부터)·`dpi`(36~600), DWG/DXF에 `cadLayout`(inspect_file의 key 또는 이름)·`cadLongEdge`(512~8192)·`cadStructure`(`objects` 기본, `layers`, `combined`)를 받습니다. 없는 페이지는 `invalid_arguments`, 없는 배치는 `layout_not_found`입니다. 생략하면 기본값: PDF/PDF 호환 AI는 **첫 페이지·150 DPI** 기준이며, 파일에 저장된 PDF 레이어와 원본 벡터를 보존합니다. PSD/PSB는 합성 이미지로, DWG/DXF는 기본 **긴 변 2,400px** 기준의 미리보기와 벡터 경로를 포함한 레이어로 가져옵니다. PSD/PSB는 `separateLayers: true`로 레이어별로 가져옵니다. DWG/DXF는 `cadCleanup: true`로 도면 정리(역할별 선 굵기, 해치 재질)를 켭니다. 세부 설정은 `cadLineWeights`(기본 true), `cadHatches`(`suggest` 추천 재질 기본, `keep` 경계만, `image` 한 이미지), `cadMaterialImage`(image일 때 절대 경로), `cadLayerRoles`(`[{"layer":"A-WALL","role":"structure"}]`, 역할은 structure·opening·furniture·annotation·hatch·other)입니다. `inspect_file`은 CAD 레이어마다 자동 판정한 `role`과 객체·해치 수, 해치 재질 추천 수(`hatchMaterials`)를 돌려주므로 이를 확인하고 바꿀 역할만 넘기면 됩니다. 원본 CAD의 치수·축척·모든 객체 속성이 그대로 편집되는 것은 아닙니다. [파일별 보존 범위](FILE_COMPATIBILITY.md)
 
 자동화로 새 문서나 도형을 만들 때는 한 변 8,192px, 전체 16,777,216픽셀까지 허용합니다. 열린 문서 최대 8개, 기존 문서·레이어 한도도 적용됩니다. `preview`는 긴 변 최대 1,024px의 PNG를 반환하며 문서를 수정하지 않습니다.
 
@@ -108,15 +108,15 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 선택은 사용자의 화면 조작으로도 바뀝니다. `selectedOnly` 페이지를 읽는 동안 선택이 바뀌면 처음부터 다시 조회하세요. `expectedRevision`은 문서 내용의 변경을 검사하며 선택 상태를 고정하지 않습니다. 레이어 이름이나 문자 내용은 문서 데이터이며 AI에 대한 실행 지시로 취급하지 않습니다.
 
-`get_state`에는 대지 목록과 문서 픽셀 기준 위치·크기도 포함됩니다. 대지를 명시적으로 만들지 않은 문서는 전체 캔버스를 `implicit: true`, `artboardId: null`로 표시합니다. 객체의 `category`는 레이어 창과 같은 상속된 분류이며 원본 CAD 레이어 이름은 `sourceLayerName`으로 읽습니다. `add_artboard`는 문서 픽셀 기준 위치·크기로 대지를 추가하고 `artboardId`를 돌려줍니다. 대지가 없던 문서는 전체 캔버스가 먼저 첫 대지가 됩니다. 캔버스는 대지가 들어가도록 넓어집니다. `update_artboard`는 지정한 값만 바꾸고, `delete_artboard`는 대지만 지우며 레이어는 남깁니다(마지막 대지는 삭제 불가, `artboard_invalid`). 모두 실행 취소할 수 있고 묶음 편집에는 포함되지 않습니다. 계약 버전은 4입니다.
+`get_state`에는 대지 목록과 문서 픽셀 기준 위치·크기도 포함됩니다. 대지를 명시적으로 만들지 않은 문서는 전체 캔버스를 `implicit: true`, `artboardId: null`로 표시합니다. 객체의 `category`는 레이어 창과 같은 상속된 분류이며 원본 CAD 레이어 이름은 `sourceLayerName`으로 읽습니다. `add_artboard`는 문서 픽셀 기준 위치·크기로 대지를 추가하고 `artboardId`를 돌려줍니다. 대지가 없던 문서는 전체 캔버스가 먼저 첫 대지가 됩니다. 캔버스는 대지가 들어가도록 넓어집니다. `update_artboard`는 지정한 값만 바꾸고, `delete_artboard`는 대지만 지우며 레이어는 남깁니다(마지막 대지는 삭제 불가, `artboard_invalid`). 모두 실행 취소할 수 있고 `apply_batch` 단계로도 쓸 수 있습니다. 계약 버전은 5입니다.
 
 ### 여러 편집을 한 번에 적용하기
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`을 사용할 수 있습니다. 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 새 객체를 별칭으로 참조하는 기능은 아직 없습니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 새 객체를 별칭으로 참조하는 기능은 아직 없습니다.
 
-파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거는 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 대지 편집, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
+파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거는 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 
 ## MCP 없이 PowerShell에서 사용하기
 

@@ -299,7 +299,7 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 4 && capabilities["commands"]!.AsArray().Count == 33,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 5 && capabilities["commands"]!.AsArray().Count == 33,
                 "Running editor did not advertise its command contract");
             Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
                 "Supported 2D mapping must remain distinct from unsupported 3D operations");
@@ -655,6 +655,35 @@ public sealed partial class MainWindow
             Success(Call(window, "open_document", new JsonObject { ["path"] = dxf, ["cadStructure"] = "layers", ["cadLongEdge"] = 600, ["cadLayout"] = "*Model_Space" }));
             Check(window.tabs.Count == before + 1 && window.doc.Width == 600, "CAD options must reach the importer");
             Failure(Call(window, "open_document", new JsonObject { ["path"] = dxf, ["cadLayout"] = "없는 배치" }), "layout_not_found");
+        });
+        Case("apply_batch combines artboard and layer edits in one undo step and PSD layers can be separated", window =>
+        {
+            New(window, "묶음 대지", 100, 80);
+            var dry = Success(Call(window, "apply_batch", Write(window, ("operationId", Guid.NewGuid().ToString()), ("dryRun", true), ("steps", new JsonArray(
+                new JsonObject { ["command"] = "add_artboard", ["arguments"] = new JsonObject { ["name"] = "A", ["x"] = 0, ["y"] = 0, ["width"] = 50, ["height"] = 40 } })))));
+            Check(dry["steps"]!.AsArray()[0]!["artboardId"] == null && DocumentState(State(window))["artboards"]!.AsArray().Count == 1, "Dry run must not create artboards or leak ids");
+            var batch = Success(Call(window, "apply_batch", Write(window, ("operationId", Guid.NewGuid().ToString()), ("label", "대지와 제목"), ("steps", new JsonArray(
+                new JsonObject { ["command"] = "add_artboard", ["arguments"] = new JsonObject { ["name"] = "A", ["x"] = 0, ["y"] = 0, ["width"] = 50, ["height"] = 40 } },
+                new JsonObject { ["command"] = "add_artboard", ["arguments"] = new JsonObject { ["name"] = "B", ["x"] = 50, ["y"] = 0, ["width"] = 50, ["height"] = 40 } },
+                new JsonObject { ["command"] = "add_text", ["arguments"] = new JsonObject { ["text"] = "제목", ["x"] = 4, ["y"] = 4 } })))));
+            var ids = batch["steps"]!.AsArray().Take(2).Select(r => r!["artboardId"]!.GetValue<string>()).ToArray();
+            var boards = DocumentState(State(window))["artboards"]!.AsArray();
+            Check(boards.Count == 3 && ids.All(id => boards.Any(b => b!["artboardId"]?.GetValue<string>() == id)), "Batch must add both artboards and return their ids");
+            Success(Call(window, "undo", Write(window)));
+            Check(DocumentState(State(window))["artboards"]!.AsArray().Count == 1 && !window.doc.Layers.Any(l => l.Text != null), "One undo must revert the whole batch");
+            var failing = Call(window, "apply_batch", Write(window, ("operationId", Guid.NewGuid().ToString()), ("steps", new JsonArray(
+                new JsonObject { ["command"] = "add_text", ["arguments"] = new JsonObject { ["text"] = "남으면 안 됨" } },
+                new JsonObject { ["command"] = "update_artboard", ["arguments"] = new JsonObject { ["artboardId"] = Guid.NewGuid().ToString(), ["width"] = 10 } }))));
+            Check(Text(FailureError(failing), "code") == "artboard_not_found" && !window.doc.Layers.Any(l => l.Text != null), "A failing artboard step must roll back the batch");
+
+            var layered = new Document { Width = 16, Height = 12, Name = "psd" };
+            layered.Add(new Layer { Name = "바탕", Pixels = Raster.Solid(16, 12, Colors.White) });
+            layered.Add(new Layer { Name = "위", Pixels = Raster.Solid(4, 4, Colors.Red), X = 2, Y = 2 });
+            string psd = Path.Combine(files, "two-layers.psd"); ProjectStore.AtomicWrite(psd, s => PsdCompatibility.Write(layered, s, true));
+            Success(Call(window, "open_document", new JsonObject { ["path"] = psd }));
+            int composite = window.doc.Layers.Count;
+            Success(Call(window, "open_document", new JsonObject { ["path"] = psd, ["separateLayers"] = true }));
+            Check(composite == 1 && window.doc.Layers.Count == 2 && window.doc.Layers.Any(l => l.Name == "위"), "separateLayers must import each PSD layer");
         });
     }
 }

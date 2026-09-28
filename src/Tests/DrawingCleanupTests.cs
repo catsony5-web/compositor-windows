@@ -87,6 +87,42 @@ public sealed partial class MainWindow
             Check(kept.Layers.All(l => l.Kind != LayerKind.Material), "Keeping hatches still added a material");
         });
 
+        test("AI connection reports CAD layer roles and applies cleanup settings with role overrides", () =>
+        {
+            string file = Plan("ai-plan.dxf");
+            var window = new MainWindow(null) { headlessTesting = true };
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(window.Dispatcher));
+            try
+            {
+                System.Text.Json.Nodes.JsonObject Call(string command, System.Text.Json.Nodes.JsonObject args)
+                {
+                    var task = window.ExecuteAutomationAsync(new System.Text.Json.Nodes.JsonObject { ["command"] = command, ["arguments"] = args });
+                    var frame = new System.Windows.Threading.DispatcherFrame();
+                    _ = task.ContinueWith(_ => window.Dispatcher.BeginInvoke(new Action(() => frame.Continue = false)));
+                    if (!task.IsCompleted) System.Windows.Threading.Dispatcher.PushFrame(frame);
+                    return task.GetAwaiter().GetResult();
+                }
+                var info = Call("inspect_file", new() { ["path"] = file });
+                var layers = info["result"]!["layers"]!.AsArray();
+                Check(layers.Any(l => l!["layer"]!.GetValue<string>() == "A-WALL" && l["role"]!.GetValue<string>() == "structure")
+                    && info["result"]!["hatchMaterials"]!["concrete"]!.GetValue<int>() == 1, "inspect_file must list roles and hatch materials: " + info.ToJsonString());
+                var bad = Call("open_document", new() { ["path"] = file, ["cadHatches"] = "keep" });
+                Check(bad["ok"]!.GetValue<bool>() == false && bad["error"]!["code"]!.GetValue<string>() == "invalid_arguments", "Cleanup options without cadCleanup must be rejected");
+                var opened = Call("open_document", new() { ["path"] = file, ["cadStructure"] = "layers", ["cadLongEdge"] = 600, ["cadCleanup"] = true });
+                Check(opened["ok"]!.GetValue<bool>(), "Cleanup import failed: " + opened.ToJsonString());
+                var cleaned = window.doc; var wall = Ink(cleaned.Layers.First(l => l.Name == "A-WALL"));
+                Check(cleaned.Layers.Any(l => l.Kind == LayerKind.Material), "cadCleanup must fill the hatch with a material");
+                var overridden = Call("open_document", new() { ["path"] = file, ["cadStructure"] = "layers", ["cadLongEdge"] = 600, ["cadCleanup"] = true, ["cadHatches"] = "keep",
+                    ["cadLayerRoles"] = new System.Text.Json.Nodes.JsonArray(new System.Text.Json.Nodes.JsonObject { ["layer"] = "A-WALL", ["role"] = "furniture" }) });
+                Check(overridden["ok"]!.GetValue<bool>(), "Override import failed: " + overridden.ToJsonString());
+                Check(Ink(window.doc.Layers.First(l => l.Name == "A-WALL")).Ink < wall.Ink && window.doc.Layers.All(l => l.Kind != LayerKind.Material), "Role override and kept hatches were not applied");
+                var badRole = Call("open_document", new() { ["path"] = file, ["cadCleanup"] = true, ["cadLayerRoles"] = new System.Text.Json.Nodes.JsonArray(new System.Text.Json.Nodes.JsonObject { ["layer"] = "A-WALL", ["role"] = "wall" }) });
+                Check(badRole["ok"]!.GetValue<bool>() == false, "Unknown role must be rejected");
+                foreach (var tab in window.tabs) tab.History.MarkSaved(tab.Document);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); window.StopRenderingForShutdown(); }
+        });
         test("drawing cleanup applies the user's material image to every hatch", () =>
         {
             string file = Plan("plan-image.dxf"), image = Path.Combine(root, "오크 마루.png");

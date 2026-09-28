@@ -132,7 +132,7 @@ public static class AutomationProtocolTests
         {
             var schema = AutomationCatalog.Tools().Single(t => t!["name"]!.GetValue<string>() == "morupixel_apply_batch")!["inputSchema"]!;
             var stepsSchema = schema["properties"]!["steps"]!;
-            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 9,
+            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 12,
                 "Atomic edits must advertise their supported typed steps");
             var args = Mutation(); args["sessionId"] = Session; args["operationId"] = "55555555-5555-4555-8555-555555555555";
             args["dryRun"] = true;
