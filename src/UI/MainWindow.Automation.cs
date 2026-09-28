@@ -374,6 +374,10 @@ public sealed partial class MainWindow
         switch (command)
         {
             case "apply_material":
+                if (!MaterialEditing.Assets(candidate).Any(a => a.Id == Guid.Parse(AString(args, "materialId"))))
+                    throw new AutomationFault("material_not_found", "등록된 재료 ID가 없습니다.");
+                if (!candidate.MaterialRegions.Any(r => r.Id == Guid.Parse(AString(args, "regionId"))))
+                    throw new AutomationFault("region_not_found", "등록된 영역 ID가 없습니다.");
                 var mapped = await CompatibilityImport.OnSta(() => MaterialEditing.Apply(candidate, Guid.Parse(AString(args, "materialId")), Guid.Parse(AString(args, "regionId")),
                     ANumber(args, "tileWidth"), ANumber(args, "tileHeight"), ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY")), token);
                 mapped.Opacity = ANumber(args, "opacity", 1);
@@ -393,7 +397,7 @@ public sealed partial class MainWindow
                 }
                 if (args.ContainsKey("name")) materialLayer.Name = AString(args, "name"); break;
             case "add_image":
-                string source = AutomationPath(args);
+                string source = AutomationSourcePath(args);
                 var pixels = await CompatibilityImport.OnSta(() => ImportExport.LoadImage(source), token);
                 Add(new Layer { Name = Path.GetFileNameWithoutExtension(source), Pixels = pixels, X = ANumber(args, "x"), Y = ANumber(args, "y") }); break;
             case "add_text":
@@ -477,6 +481,13 @@ public sealed partial class MainWindow
         if (!Path.IsPathFullyQualified(path)) throw new ArgumentException("절대 파일 경로를 지정하세요.");
         string full = Path.GetFullPath(path);
         if (!Directory.Exists(Path.GetDirectoryName(full))) throw new DirectoryNotFoundException("대상 폴더가 없습니다.");
+        return full;
+    }
+    /// <summary>An existing input file; reports a missing source with the same message as open_document.</summary>
+    static string AutomationSourcePath(JsonObject args)
+    {
+        string full = AutomationPath(args);
+        if (!File.Exists(full)) throw new FileNotFoundException("파일을 찾을 수 없습니다.", full);
         return full;
     }
     static TextSpec AutomationText(JsonObject args, TextSpec current) => current with

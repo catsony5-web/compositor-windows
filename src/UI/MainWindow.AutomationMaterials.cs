@@ -31,7 +31,7 @@ public sealed partial class MainWindow
         if (command == "register_material")
         {
             if (MaterialEditing.Assets(candidate).Count >= MaterialEditing.MaxAssets) throw new AutomationFault("capacity_exceeded", "재료 라이브러리가 가득 찼습니다.");
-            string path = AutomationPath(args);
+            string path = AutomationSourcePath(args);
             var pixels = await CompatibilityImport.OnSta(() => MaterialTextures.Load(path), token);
             var asset = new MaterialAsset(Guid.NewGuid(), AString(args, "name"), pixels, args.ContainsKey("source") ? AString(args, "source") : "", ABool(args, "tileable"));
             candidate.Materials.Add(asset); added = AutomationMaterials.Asset(asset);
