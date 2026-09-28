@@ -1,3 +1,11 @@
+# Preview 33 panels and dialogs validation
+
+- Source self-tests: **541/541 passed** on Windows x64. Sixteen added checks cover export settings (scale, flattening, file names, format-specific options, artboard list), the color panel order, folded tone grid, HEX parsing and recent colors, new-document purpose groups, ratios and the per-user preset store, real-engine brush stroke previews and their refresh, layer quick blend/opacity with undo and lock state, empty-layer hints and footer buttons, tool-option toggles, the mode-specific zoom hint, compact AI edit responses, `changed` on undo/redo, `alreadyOpen` on reopening, the local-pipe connection test and the MCP server version.
+- `tools/i18n/extract.py` reports 0 missing keys (1,598 entries per language).
+- `--render-studio-previews` in Korean and English produced 44 captures each; export, color, brush, new document, AI connection, editor and options bar were reviewed. Tracked screenshots were refreshed.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: the export preview image and file-size estimate are filled asynchronously and appear blank in offscreen captures; drag of the layer opacity slider and the connection test button in a shown window; Japanese and Chinese captures were not reviewed this time.
+
 # Preview 32 display language validation
 
 - Source self-tests: **525/525 passed** on Windows x64, including two AI-automation error regressions. Two added localization checks cover exact, template, fragment and multi-line translation, bindings and formatted runs, `Loc.Keep` for user data, Korean pass-through, and the embedded English, Japanese and Chinese tables: 1,512 entries each, the same placeholders and line breaks, no third-party product names.

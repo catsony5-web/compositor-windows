@@ -1,4 +1,16 @@
-# Morupixel 0.2.0 Preview 32 — English, Japanese and Chinese
+# Morupixel 0.2.0 Preview 33 — clearer panels and dialogs
+
+- **Export.** Choose PNG, JPEG or TIFF with one click; only the options for that format appear (JPEG quality, or keep a transparent background for PNG/TIFF). Scale 1x, 2x or a custom percentage, see the output size and estimated file size, type the file name before saving, and pick an artboard from a list next to a larger preview.
+- **Color panel.** Large foreground/background colors, the saturation/value picker, HEX entry and the eyedropper come first, followed by a row of recently used colors and the swatches. The tone grid starts folded.
+- **New document.** Sizes are grouped by purpose — Recent, Screen, SNS, Print and Photo. SNS sizes are named by ratio (1:1, 4:5, 9:16 …). A ratio preview follows the typed size. Recently created sizes are remembered, and the current size can be saved as your own preset (right-click to delete).
+- **Brush panel.** The current brush and each preset are shown as real stroke samples that follow shape, size, hardness, angle and spacing. Shape tiles use the new icon set.
+- **Layer panel.** Blend mode and opacity for the selected layer sit above the list (one undo step per change). An empty category explains what to do, and the footer adds group, mask and adjustment-layer buttons.
+- **Tool options bar.** The current tool shows its icon and name; options such as auto select, contiguous and sample visible layers are icon toggles with explanations in the tooltip.
+- **AI connection.** Edit commands accept `includeLayers: false` to return only the target document without its layer list (the default is unchanged). Undo/redo report `changed: false` when there is nothing to undo, reopening an open project reports `alreadyOpen: true`, and the MCP server version matches the app version. The connection settings add a connection test and example requests.
+- **Small fixes.** The zoom entry hint names the real limit for the current mode (1600% photo, 6400% design). Labels that were assembled from fragments, such as paragraph alignment and selection feather/expand/contract titles, are now whole sentences in every language.
+- **Validation.** 541 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 32 — English, Japanese and Chinese
 
 - **Four display languages.** View → 언어 · Language switches between 한국어, English, 日本語 and 简体中文 after a restart. Menus, the ribbon, panels, dialogs, notices, tooltips and the command palette follow the language, and the UI font matches the script. The first launch follows the Windows display language.
 - **Your content stays yours.** Layer, document and file names are never translated. New documents and the learning sample use the selected language.
