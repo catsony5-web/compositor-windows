@@ -20,7 +20,8 @@ public static class CadCompatibility
     {
         public override string ToString() => Name;
     }
-    sealed record Mark(string Layer, Geometry Geometry, Color Color, bool Fill, Geometry? Clip, int ObjectId, string ObjectName);
+    sealed record Mark(string Layer, Geometry Geometry, Color Color, bool Fill, Geometry? Clip, int ObjectId, string ObjectName, double Weight = 1.2);
+    sealed record HatchMark(string Layer, Geometry Region, string Pattern, Geometry? Clip);
     sealed record PaintObject(string Name, string Layer, Mark[] Marks);
     sealed record PixelArea(int Left, int Top, int Width, int Height);
     sealed record PaintGroup(string Name, PaintObject[] Objects);
@@ -33,6 +34,36 @@ public static class CadCompatibility
         return new[] { new Space("*Model_Space", "모델 공간") }.Concat(cad.BlockRecords
             .Where(b => b.Layout?.IsPaperSpace == true && b.Entities.Any(e => e is not Viewport || e is Viewport v && !v.RepresentsPaper))
             .OrderBy(b => b.Layout.TabOrder).Select(b => new Space(b.Name, b.Layout.Name))).ToArray();
+    }
+    // Layer names with object and hatch counts, their detected roles and the materials
+    // recommended for their hatches, for the import dialog's cleanup settings.
+    public static CadDrawingInfo InspectLayers(string path)
+    {
+        CompatibilityImport.ValidateFile(path); EncodingRegister(); var cad = Load(path);
+        var objects = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); var hatches = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var materials = new Dictionary<MaterialKind, int>();
+        int visited = 0;
+        void Count(IEnumerable<Entity> entities, string? inherited, int depth)
+        {
+            foreach (var entity in entities)
+            {
+                if (++visited > 1_000_000 || depth > 16) return;
+                string layer = entity.Layer.Name == "0" && inherited != null ? inherited : entity.Layer.Name;
+                objects[layer] = objects.GetValueOrDefault(layer) + 1;
+                if (entity is Hatch hatch)
+                {
+                    hatches[layer] = hatches.GetValueOrDefault(layer) + 1;
+                    var kind = DrawingCleanup.Suggest(hatch.Pattern?.Name ?? "", layer, DrawingCleanup.Classify(layer));
+                    materials[kind] = materials.GetValueOrDefault(kind) + 1;
+                }
+                else if (entity is Insert { Block: { } block } && (block.BlockEntity.Flags & (BlockTypeFlags.XRef | BlockTypeFlags.XRefOverlay)) == 0)
+                    Count(block.Entities, layer, depth + 1);
+            }
+        }
+        Count(cad.Entities, null, 0);
+        var layers = objects.Keys.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .Select(name => new CadLayerInfo(name, DrawingCleanup.Classify(name), objects[name], hatches.GetValueOrDefault(name))).ToArray();
+        return new(layers, materials);
     }
     public static CompatibilityResult Read(string path, CompatibilityOptions options, CancellationToken token = default)
     {
@@ -54,6 +85,9 @@ public static class CadCompatibility
         long referenceBytes = 0;
         Geometry? currentClip = null; HashSet<string>? frozenLayers = null;
         var marks = new List<Mark>(); int visited = 0, nextObjectId = 0; long pointCount = 0;
+        var cleanup = options.Cleanup; var hatchMarks = new List<HatchMark>();
+        var roles = new Dictionary<string, DrawingRole>(StringComparer.OrdinalIgnoreCase);
+        DrawingRole Role(string name) => roles.TryGetValue(name, out var role) ? role : roles[name] = cleanup!.RoleFor(name);
         var markedObjects = separateObjects ? new HashSet<int>() : null;
         void Unsupported(string type) => unsupported[type] = unsupported.GetValueOrDefault(type) + 1;
         Point P(XYZ p) { if (Math.Abs(p.Z) > .00001) warnings.Add("Z 좌표가 있는 객체는 XY 평면으로 투영했습니다. 3D 모델·입면의 정확한 표현은 지원하지 않습니다."); return new(p.X, p.Y); }
@@ -66,7 +100,9 @@ public static class CadCompatibility
             if (currentClip != null && !bounds.IntersectsWith(currentClip.Bounds)) return;
             if (markedObjects != null && markedObjects.Add(objectId) && markedObjects.Count >= Document.MaxNodes)
                 throw new InvalidDataException($"도면 객체 수가 가져오기 한도({Document.MaxNodes:N0}개, 그룹 포함)를 초과합니다. ‘레이어별’ 또는 ‘하나로’를 선택하거나 필요한 객체만 별도 도면으로 저장해 주세요.");
-            geometry.Freeze(); marks.Add(new(layer, geometry, color, fill, currentClip, objectId, objectName));
+            double weight = 1.2;
+            if (cleanup is { LineWeights: true }) { var role = Role(layer); weight = DrawingCleanup.Weight(role); color = DrawingCleanup.Tone(role); }
+            geometry.Freeze(); marks.Add(new(layer, geometry, color, fill, currentClip, objectId, objectName, weight));
         }
         Geometry Poly(IReadOnlyList<Point> points, bool closed, IReadOnlyList<double>? bulges = null)
         {
@@ -177,8 +213,10 @@ public static class CadCompatibility
                 case TextEntity text: geometry = TextGeometry(text.Value, text.InsertPoint, text.Height, text.Rotation, text.WidthFactor); fill = true; break;
                 case MText text: geometry = TextGeometry(text.PlainText, text.InsertPoint, text.Height, text.Rotation); fill = true; break;
                 case Hatch hatch:
-                    // Render boundaries explicitly, rather than inventing unsupported pattern fills.
-                    warnings.Add("해치는 경계선으로 가져왔습니다. 솔리드/패턴 채움은 재현하지 않습니다.");
+                    // Boundaries are always drawn. With a cleanup material the closed boundary also becomes a fill region.
+                    if (cleanup is { Hatches: not HatchTreatment.Keep } && HatchRegion(hatch) is { } region)
+                    { region.Transform = new MatrixTransform(transform); region.Freeze(); hatchMarks.Add(new(layer, region, hatch.Pattern?.Name ?? "", currentClip)); }
+                    else warnings.Add("해치는 경계선으로 가져왔습니다. 솔리드/패턴 채움은 재현하지 않습니다.");
                     foreach (var boundary in hatch.Paths) foreach (var edge in boundary.Edges)
                     { var child = edge.ToEntity(); child.Layer = entity.Layer; child.Color = active; Visit(child, transform, layer, active, depth + 1, source, prefix, objectId, objectName); }
                     return;
@@ -287,7 +325,7 @@ public static class CadCompatibility
                 {
                     Geometry? clip = null;
                     if (mark.Clip != null && !clips.TryGetValue(mark.Clip, out clip)) clips[mark.Clip] = clip = LocalGeometry(mark.Clip);
-                    return new VectorPrimitive(LocalGeometry(mark.Geometry), mark.Color, mark.Fill, 1.2, clip);
+                    return new VectorPrimitive(LocalGeometry(mark.Geometry), mark.Color, mark.Fill, mark.Weight, clip);
                 });
                 vector = VectorContent.FromPaths(pixelWidth, pixelHeight, primitives);
                 retainedVectorBytes += vector.ByteLength;
@@ -298,11 +336,11 @@ public static class CadCompatibility
             {
                 drawing.PushTransform(new MatrixTransform(localFit));
                 Geometry? activeClip = null;
-                var styles = new Dictionary<Color, (Brush Brush, Pen Pen)>();
+                var styles = new Dictionary<(Color, double), (Brush Brush, Pen Pen)>();
                 foreach (var mark in content.Marks)
                 {
                     if (!ReferenceEquals(activeClip, mark.Clip)) { if (activeClip != null) drawing.Pop(); activeClip = mark.Clip; if (activeClip != null) drawing.PushClip(activeClip); }
-                    if (!styles.TryGetValue(mark.Color, out var style)) { var brush = new SolidColorBrush(mark.Color); brush.Freeze(); var pen = new Pen(brush, 1.2 / scale); pen.Freeze(); style = (brush, pen); styles.Add(mark.Color, style); }
+                    if (!styles.TryGetValue((mark.Color, mark.Weight), out var style)) { var brush = new SolidColorBrush(mark.Color); brush.Freeze(); var pen = new Pen(brush, mark.Weight / scale); pen.Freeze(); style = (brush, pen); styles.Add((mark.Color, mark.Weight), style); }
                     drawing.DrawGeometry(mark.Fill ? style.Brush : null, mark.Fill ? null : style.Pen, mark.Geometry);
                 }
                 if (activeClip != null) drawing.Pop();
@@ -329,6 +367,7 @@ public static class CadCompatibility
                 doc.Layers.Add(layer);
             }
         }
+        if (cleanup != null) ApplyCleanup(doc, cleanup, hatchMarks, marks, fit, width, height, Role, warnings, token);
         // Preflight and incremental source budgets above permit linear assembly;
         // repeated Document.Add validation would make large CAD drawings quadratic.
         doc.ActiveId = doc.Layers[^1].Id;
@@ -338,6 +377,86 @@ public static class CadCompatibility
         warnings.Add($"‘{spaceName}’을 가져왔습니다" + (references.Count > 1 ? $" · 외부참조 {references.Count - 1}개 읽음." : ".") + (options.RetainVectors ? " 벡터 경로를 보존하며 디자인 모드에서 확대 배율에 맞춰 그립니다." : "픽셀 이미지로 가져왔습니다.") + " 도면 단위·실측 축척·CTB 선종류/선굵기는 보존하지 않습니다.");
         return new(doc, warnings.ToArray());
     }
+    // Closed boundary loops of a hatch as one even-odd region in CAD coordinates.
+    static Geometry? HatchRegion(Hatch hatch)
+    {
+        var region = new StreamGeometry { FillRule = FillRule.EvenOdd }; int figures = 0;
+        using (var context = region.Open())
+        {
+            foreach (var path in hatch.Paths)
+            {
+                // GetPoints interpolates arcs and polyline bulges along the loop.
+                var points = new List<Point>();
+                foreach (var v in path.GetPoints(16)) { var p = new Point(v.X, v.Y); if (points.Count == 0 || (points[^1] - p).LengthSquared > 1e-18) points.Add(p); }
+                if (points.Count < 3 || points.Any(p => !double.IsFinite(p.X + p.Y))) continue;
+                context.BeginFigure(points[0], true, true); context.PolyLineTo(points.Skip(1).ToArray(), true, false); figures++;
+            }
+        }
+        return figures == 0 ? null : region;
+    }
+
+    // Groups hatch regions by material, converts them to document pixels and adds one
+    // Multiply material layer per group below the linework. Regions over the path
+    // budget are split; any beyond the document's region limit are reported.
+    static void ApplyCleanup(Document doc, CadCleanup cleanup, List<HatchMark> hatches, List<Mark> marks, Matrix fit, int width, int height,
+        Func<string, DrawingRole> role, HashSet<string> warnings, CancellationToken token)
+    {
+        if (cleanup.LineWeights)
+        {
+            var summary = marks.Select(m => m.Layer).Distinct(StringComparer.OrdinalIgnoreCase).GroupBy(role).OrderBy(g => g.Key)
+                .Select(g => $"{DrawingCleanup.RoleName(g.Key).Split(' ')[0]} {g.Count()}");
+            warnings.Add("레이어 역할에 맞춰 선 굵기와 농도를 정리했습니다: " + string.Join(" · ", summary) + " (레이어 수).");
+        }
+        if (hatches.Count == 0 || cleanup.Hatches == HatchTreatment.Keep) return;
+        MaterialAsset? custom = null;
+        if (cleanup.Hatches == HatchTreatment.Image)
+        {
+            if (string.IsNullOrWhiteSpace(cleanup.MaterialImage) || !File.Exists(cleanup.MaterialImage)) throw new FileNotFoundException("해치에 적용할 재질 이미지를 찾을 수 없습니다.", cleanup.MaterialImage);
+            custom = new MaterialAsset(Guid.NewGuid(), Path.GetFileNameWithoutExtension(cleanup.MaterialImage), MaterialTextures.Load(cleanup.MaterialImage), Path.GetFileName(cleanup.MaterialImage), false);
+        }
+        var canvas = new RectangleGeometry(new Rect(0, 0, width, height)); canvas.Freeze();
+        double tile = Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
+        int insertAt = 1, skipped = 0; var counts = new Dictionary<string, int>();
+        var groups = hatches.GroupBy(h => custom != null ? MaterialKind.Solid : DrawingCleanup.Suggest(h.Pattern, h.Layer, role(h.Layer))).OrderBy(g => g.Key);
+        foreach (var group in groups)
+        {
+            var asset = custom ?? MaterialPresets.Create(group.Key);
+            if (!doc.Materials.Any(m => m.Id == asset.Id)) doc.Materials.Add(asset);
+            string label = custom != null ? asset.Name : DrawingCleanup.MaterialName(group.Key);
+            var chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; int chunkBytes = 0, part = 0;
+            void Flush()
+            {
+                if (chunk.Children.Count == 0) return;
+                if (doc.MaterialRegions.Count >= MaterialEditing.MaxRegions) { skipped += chunk.Children.Count; chunk = new GeometryGroup(); chunkBytes = 0; return; }
+                part++;
+                var region = MaterialEditing.Region(doc, part == 1 ? "해치 · " + label : $"해치 · {label} {part}", chunk, "polygon");
+                doc.MaterialRegions.Add(region);
+                var layer = MaterialEditing.Apply(doc, asset.Id, region.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
+                layer.Name = "재질 · " + region.Name[5..];
+                doc.Layers.Insert(insertAt++, layer);
+                chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
+            }
+            foreach (var hatch in group)
+            {
+                token.ThrowIfCancellationRequested();
+                var local = hatch.Region.CloneCurrentValue(); var m = local.Transform.Value; m.Append(fit); local.Transform = new MatrixTransform(m);
+                Geometry pixels = Geometry.Combine(local, canvas, GeometryCombineMode.Intersect, null);
+                if (hatch.Clip != null) { var clip = hatch.Clip.CloneCurrentValue(); var c = clip.Transform.Value; c.Append(fit); clip.Transform = new MatrixTransform(c); pixels = Geometry.Combine(pixels, clip, GeometryCombineMode.Intersect, null); }
+                if (pixels.IsEmpty() || pixels.GetArea() < 1) continue;
+                int bytes = RegionPath.From(pixels).Data.Length;
+                if (bytes > MaterialEditing.MaxPathBytes - 1024) { skipped++; continue; }
+                if (chunkBytes + bytes > MaterialEditing.MaxPathBytes - 1024) Flush();
+                pixels.Freeze(); chunk.Children.Add(pixels); chunkBytes += bytes;
+                counts[label] = counts.GetValueOrDefault(label) + 1;
+            }
+            Flush();
+        }
+        if (counts.Count > 0)
+            warnings.Add((custom != null ? "해치에 선택한 재질 이미지를 적용했습니다: " : "해치 재질을 추천해 채웠습니다: ") + string.Join(" · ", counts.Select(p => $"{p.Key} {p.Value}개"))
+                + ". 재질 레이어는 선 아래에 곱하기로 놓이며, 숨기거나 삭제해 원래 해치로 돌아갈 수 있습니다.");
+        if (skipped > 0) warnings.Add($"복잡하거나 너무 많은 해치 {skipped}개는 경계선만 가져왔습니다.");
+    }
+
     static string ObjectLabel(Entity entity) => entity switch
     {
         Line => "선", LwPolyline p => p.IsClosed ? "닫힌 폴리라인" : "폴리라인",

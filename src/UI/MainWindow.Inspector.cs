@@ -325,20 +325,27 @@ public sealed partial class MainWindow
         layerList.SetEntries(entries, pendingLayerReveal); pendingLayerReveal = null;
     }
 
+    // Alt+click on the eye isolates; releasing Alt must not then open the menu bar.
+    bool IsolationClick()
+    {
+        if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) return false;
+        suppressAltMenu = true; return true;
+    }
+
     LayerRow CreateLayerRow(LayerListEntry entry)
     {
         var id = entry.Layer.Id;
         if (entry.GroupMembers is { } members)
         {
-            var grouped = new LayerRow(entry.Layer, entry.Selected, () => SelectSourceLayer(members),
-                visible => ToggleSourceLayer(members, visible), () => ToggleSourceLayer(members), entry.Expanded,
+            var grouped = new LayerRow(entry.Layer, entry.Selected, () => ClickLayerRow(entry, Keyboard.Modifiers),
+                visible => { if (IsolationClick()) IsolateLayers(members); else ToggleSourceLayer(members, visible); }, () => ToggleSourceLayer(members), entry.Expanded,
                 () => { foreach (var member in members) if (entry.Expanded) collapsedGroups.Add(member); else collapsedGroups.Remove(member); BuildLayers(); }, entry.Description);
             grouped.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1);
             return grouped;
         }
         var row = new LayerRow(entry.Layer, entry.Selected,
-            () => SelectLayer(id),
-            visible => Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible),
+            () => ClickLayerRow(entry, Keyboard.Modifiers),
+            visible => { if (IsolationClick()) IsolateLayers([id]); else Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible); },
             () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
             entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); }, entry.Description);
         row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;

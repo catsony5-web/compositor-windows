@@ -90,6 +90,8 @@ public static class SelfTests
         MainWindow.RunPropertyPanelTests(Test, directory);
         MainWindow.RunQuickActionTests(Test, directory);
         MainWindow.RunStartFocusTests(Test, directory);
+        MainWindow.RunDrawingCleanupTests(Test, directory);
+        CompatibilityDialog.RunCleanupTests(Test);
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);

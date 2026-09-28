@@ -1,4 +1,11 @@
-# Preview 29 start screen and status bar validation
+# Preview 30 drawing cleanup and layer isolation validation
+
+- Source self-tests: **518/518 passed** on Windows x64. Five added checks cover layer-role classification (English and Korean names, reference prefixes) and material recommendation, stable tileable presets, real DXF imports where walls carry more and darker ink than furniture, a concrete hatch becomes a Multiply material layer below the linework, role overrides change weights and "keep" adds no material, the user's material image keeps its proportions and a missing image is reported, the import dialog's defaults and overrides, and layer-list range selection, Ctrl toggling and the three-step Alt isolation with undo.
+- `--render-studio-previews` now also writes the cleanup settings and a synthetic plan before and after cleanup (39 captures); they were reviewed visually.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: CTB/plot-style line weights from real office drawings, very large hatch sets beyond the 128-region document limit, and Alt+click in a shown window. Synthetic drawings only; no user drawing was used.
+
+## Preview 29 start screen and status bar validation
 
 - Source self-tests: **513/513 passed** on Windows x64. Three added checks cover the focused start screen and its return to the saved arrangement (including unchanged panel widths), one-click quick sizes with 150 DPI A4, zoom steps, typed percentages and factors, invalid input, limits, presets and Ctrl shortcuts, and RGB/CMYK segments following the proof state.
 - `--render-studio-previews` produced **38 offscreen captures**; the start screen, 1280×720, 1366×768 and 1920×1080 windows were compared with Preview 28, and the tracked screenshots were refreshed.

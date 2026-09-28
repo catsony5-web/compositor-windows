@@ -49,7 +49,7 @@ public sealed class LayerRow : Grid
         {
             Content = content, Margin = new Thickness(0), Padding = new Thickness(0),
             Background = Brushes.Transparent, BorderBrush = Brushes.Transparent,
-            ToolTip = $"{layer.Name} 선택", Focusable = false
+            ToolTip = $"{layer.Name} 선택 · Shift+클릭: 범위 선택 · Ctrl+클릭: 추가/빼기", Focusable = false
         };
         // The default Button template limits its clickable content area.
         var template = new ControlTemplate(typeof(Button));
@@ -68,7 +68,7 @@ public sealed class LayerRow : Grid
             MouseLeave += (_, _) => Background = Brushes.Transparent;
         }
 
-        var visible = IconButton(EyeIcon(layer.Visible), layer.Visible ? "레이어 숨기기" : "레이어 표시", () => setVisible(!layer.Visible));
+        var visible = IconButton(EyeIcon(layer.Visible), (layer.Visible ? "레이어 숨기기" : "레이어 표시") + " · Alt+클릭: 이 레이어만 보기", () => setVisible(!layer.Visible));
         AutomationProperties.SetName(visible, $"레이어 표시: {layer.Name}, {(layer.Visible ? "표시됨" : "숨김")}");
         Children.Add(visible);
 
