@@ -102,10 +102,52 @@ public sealed partial class MainWindow
             toggle.Content = automationBridge?.IsRunning == true ? "연결 끄기" : "연결 켜기";
             UpdateState();
         });
+        root.Children.Add(DialogShell.FieldLabel("요청 예시"));
+        var examples = new StackPanel();
+        foreach (string example in AutomationExamplePrompts)
+        {
+            var line = Theme.Label("· " + example, Theme.BodySize, Theme.Text); line.TextWrapping = TextWrapping.Wrap; line.Margin = new Thickness(0, 0, 0, 3);
+            examples.Children.Add(line);
+        }
+        root.Children.Add(examples);
+        var testResult = DialogShell.Note("연결을 켠 다음 연결 테스트로 AI 프로그램이 이 창에 닿는지 확인하세요.");
+        testResult.Margin = new Thickness(0, 10, 0, 0); root.Children.Add(testResult);
+        Button? test = null;
+        test = DialogShell.Secondary("연결 테스트", async () =>
+        {
+            test!.IsEnabled = false; testResult.Text = "확인 중…";
+            try { var (ok, text) = await TestAutomationConnectionAsync(CancellationToken.None); testResult.Text = text; testResult.Foreground = ok ? Theme.Success : Theme.Danger; }
+            finally { test.IsEnabled = true; }
+        });
         var close = DialogShell.Secondary("닫기", dialog.Close); close.IsCancel = true;
-        root.Children.Add(DialogShell.Footer(copy, close, toggle));
+        root.Children.Add(DialogShell.Footer(copy, test, close, toggle));
         UpdateState();
         return dialog;
+    }
+
+    internal static readonly string[] AutomationExamplePrompts =
+    [
+        "Morupixel에 열린 문서의 레이어 구성을 알려줘.",
+        "현재 문서에 제목 글자를 가운데 정렬로 추가하고 미리보기를 보여줘.",
+        "선택한 사진 레이어의 노출을 조금 올리고 PNG로 내보내줘.",
+        "평면도의 방 영역에 등록한 바닥 재질을 적용해줘."
+    ];
+
+    /// <summary>Round trip through the real local pipe: the same get_state/get_capabilities an AI client would call.</summary>
+    internal async Task<(bool Ok, string Text)> TestAutomationConnectionAsync(CancellationToken token)
+    {
+        if (automationBridge?.IsRunning != true) return (false, "연결이 꺼져 있습니다. 먼저 연결을 켜세요.");
+        string session = automationBridge.SessionId;
+        bool listed = AutomationBridge.ListSessions().OfType<JsonObject>().Any(s => s["sessionId"]?.GetValue<string>() == session);
+        var state = await AutomationBridge.SendAsync(session, new JsonObject { ["command"] = "get_state", ["arguments"] = new JsonObject { ["includeLayers"] = false } }, token);
+        if (state["ok"]?.GetValue<bool>() != true) return (false, $"연결 테스트 실패: {state["error"]?["message"]?.GetValue<string>()}");
+        var capabilities = await AutomationBridge.SendAsync(session, new JsonObject { ["command"] = "get_capabilities", ["arguments"] = new JsonObject() }, token);
+        if (capabilities["ok"]?.GetValue<bool>() != true) return (false, $"연결 테스트 실패: {capabilities["error"]?["message"]?.GetValue<string>()}");
+        int documents = state["result"]?["documents"]?.AsArray().Count ?? 0;
+        int commands = capabilities["result"]?["commands"]?.AsArray().Count ?? 0;
+        string text = $"연결 확인됨 · 문서 {documents}개 · 명령 {commands}개 · 버전 {AutomationMcpServer.ApplicationVersion}";
+        if (!listed) text += "\n세션 목록에 아직 보이지 않습니다. 잠시 후 다시 시도하세요.";
+        return (true, text);
     }
 
     // The bridge only schedules a fixed command catalog. No script evaluation, shell commands,
@@ -223,9 +265,12 @@ public sealed partial class MainWindow
             ["coordinates"] = AutomationCatalog.Coordinates(), ["documents"] = documents };
     }
 
+    // includeLayers=false on an edit returns only the target document without its layer list.
+    bool automationResultLayers = true;
+
     JsonObject AutomationResult(Guid? layerId = null)
     {
-        var state = AutomationState();
+        var state = automationResultLayers || activeTab < 0 ? AutomationState() : AutomationState(tabs[activeTab].Id, false);
         if (activeTab >= 0) { state["documentId"] = tabs[activeTab].Id.ToString(); state["revision"] = doc.Revision.ToString(); }
         if (layerId.HasValue) state["layerId"] = layerId.Value.ToString();
         return state;
@@ -238,6 +283,7 @@ public sealed partial class MainWindow
         string command = AString(request, "command");
         var args = request["arguments"] as JsonObject ?? throw new ArgumentException("arguments must be an object.");
         AutomationCatalog.Validate(command, args);
+        automationResultLayers = ABool(args, "includeLayers", true);
         if (command == "list_sessions") return new JsonObject { ["sessions"] = AutomationBridge.ListSessions() };
         if (command == "get_capabilities") return AutomationCatalog.Capabilities();
         StoreTab();
@@ -270,7 +316,7 @@ public sealed partial class MainWindow
                 if (Path.GetExtension(source).ToLowerInvariant() is ".moruproj" or ".cwproj")
                 {
                     int existing = FindPathTab(source);
-                    if (existing >= 0) { SwitchTab(existing); return AutomationResult(); }
+                    if (existing >= 0) { SwitchTab(existing); var reopened = AutomationResult(); reopened["alreadyOpen"] = true; reopened["changed"] = false; return reopened; }
                     opened = await CompatibilityImport.OnSta(() => ProjectStore.Load(source), token); path = source;
                 }
                 else if (CompatibilityImport.Supports(source))
@@ -285,7 +331,9 @@ public sealed partial class MainWindow
                 throw new AutomationFault("workspace_changed", "작업 중인 문서가 변경되었습니다. 상태를 확인하고 다시 시도하세요.");
             opened.Validate(); AddTab(opened, path);
             if (path == null) { doc.Revision = Guid.NewGuid(); Refresh(false); } // Imported/new work must prompt before closing.
-            var result = AutomationResult(); result["warnings"] = new JsonArray(warnings.Select(w => (JsonNode?)JsonValue.Create(w)).ToArray()); return result;
+            var result = AutomationResult(); result["warnings"] = new JsonArray(warnings.Select(w => (JsonNode?)JsonValue.Create(w)).ToArray());
+            if (command == "open_document") result["alreadyOpen"] = false;
+            return result;
         }
         if (command == "preview")
         {
@@ -306,7 +354,13 @@ public sealed partial class MainWindow
         void Recheck() { RequireAutomationIdle(token); _ = AutomationTab(args, true); }
         if (command is "undo" or "redo")
         {
-            Recheck(); if (command == "undo") Undo(); else Redo(); return AutomationResult();
+            Recheck();
+            bool possible = command == "undo" ? history.CanUndo : history.CanRedo;
+            var revisionBefore = doc.Revision;
+            if (possible) { if (command == "undo") Undo(); else Redo(); }
+            var undone = AutomationResult(); undone["changed"] = possible && doc.Revision != revisionBefore;
+            if (!possible) undone["message"] = command == "undo" ? "Nothing to undo." : "Nothing to redo.";
+            return undone;
         }
         if (command is "save_project" or "export_image")
         {

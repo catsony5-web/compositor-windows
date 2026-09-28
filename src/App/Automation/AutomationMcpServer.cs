@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -19,6 +20,18 @@ public static class AutomationMcpServer
     public static Task<int> RunAsync(TextReader input, TextWriter output, TextWriter error,
         Func<string, JsonObject, CancellationToken, Task<JsonObject>> send, Func<JsonArray> listSessions, CancellationToken token = default)
         => new Server(input, output, error, send, listSessions).RunAsync(token);
+
+    /// <summary>The published app version (e.g. 0.2.0-preview.33) without build metadata.</summary>
+    public static string ApplicationVersion
+    {
+        get
+        {
+            string? informational = typeof(AutomationMcpServer).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (string.IsNullOrWhiteSpace(informational)) return typeof(AutomationMcpServer).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+            int plus = informational.IndexOf('+');
+            return plus >= 0 ? informational[..plus] : informational;
+        }
+    }
 
     sealed class RpcException(int code, string message, JsonObject? data = null) : Exception(message)
     {
@@ -46,7 +59,7 @@ public static class AutomationMcpServer
         static JsonObject Identity() => new()
         {
             ["name"] = "morupixel",
-            ["version"] = typeof(AutomationMcpServer).Assembly.GetName().Version?.ToString() ?? "1.0.0"
+            ["version"] = ApplicationVersion
         };
 
         public async Task<int> RunAsync(CancellationToken token)

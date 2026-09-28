@@ -3764,6 +3764,54 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": "요청 예시",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결을 켠 다음 연결 테스트로 AI 프로그램이 이 창에 닿는지 확인하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 테스트",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "확인 중…",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "Morupixel에 열린 문서의 레이어 구성을 알려줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "현재 문서에 제목 글자를 가운데 정렬로 추가하고 미리보기를 보여줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "선택한 사진 레이어의 노출을 조금 올리고 PNG로 내보내줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "평면도의 방 영역에 등록한 바닥 재질을 적용해줘.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결이 꺼져 있습니다. 먼저 연결을 켜세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 테스트 실패: {0}",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 확인됨 · 문서 {0}개 · 명령 {1}개 · 버전 {2}",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "\n세션 목록에 아직 보이지 않습니다. 잠시 후 다시 시도하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
   "ko": "현재 편집 또는 대화상자를 마친 다음 다시 시도하세요.",
   "file": "UI/MainWindow.Automation.cs"
  },

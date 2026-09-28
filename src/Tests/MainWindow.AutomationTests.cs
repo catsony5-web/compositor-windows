@@ -569,5 +569,40 @@ public sealed partial class MainWindow
             queuedCancellation.Cancel(); Failure(Await(pending), "cancelled");
             Unchanged(window, before, false, false);
         });
+        Case("compact edit responses, honest undo redo and reopened projects", window =>
+        {
+            New(window, "첫 문서"); New(window, "둘째 문서");
+            var compact = Success(Call(window, "add_text", Write(window, ("text", "작게"), ("includeLayers", false))));
+            var docs = compact["documents"]!.AsArray();
+            Check(docs.Count == 1 && Text(docs[0]!.AsObject(), "documentId") == Text(compact, "documentId") && docs[0]!["layers"] == null && docs[0]!["layersIncluded"]!.GetValue<bool>() == false,
+                "includeLayers=false must return only the target document without layers: " + compact.ToJsonString());
+            var legacy = Success(Call(window, "add_text", Write(window, ("text", "기존"))));
+            Check(legacy["documents"]!.AsArray().Count == 2 && legacy["documents"]!.AsArray().All(d => d!["layers"] is JsonArray), "Default edit responses must keep the legacy full inventory");
+            Check(Success(Call(window, "undo", Write(window)))["changed"]!.GetValue<bool>(), "Real undo must report changed=true");
+            Check(Success(Call(window, "undo", Write(window)))["changed"]!.GetValue<bool>(), "Second undo must report changed=true");
+            var none = Success(Call(window, "undo", Write(window)));
+            Check(none["changed"]!.GetValue<bool>() == false && none["message"] != null, "Undo without history must say changed=false");
+            Check(Success(Call(window, "redo", Write(window)))["changed"]!.GetValue<bool>(), "Redo must report changed=true");
+            string project = Path.Combine(files, "reopen.moruproj");
+            Success(Call(window, "save_project", Write(window, ("path", project))));
+            int count = window.tabs.Count;
+            var reopened = Success(Call(window, "open_document", new JsonObject { ["path"] = project, ["includeLayers"] = false }));
+            Check(reopened["alreadyOpen"]!.GetValue<bool>() && window.tabs.Count == count && reopened["documents"]!.AsArray().Count == 1, "Reopening an open project must activate it and say alreadyOpen=true");
+        });
+        Case("connection test round-trips through the local pipe and reports the app version", window =>
+        {
+            var (offOk, offText) = Await(window.TestAutomationConnectionAsync(CancellationToken.None));
+            Check(!offOk && offText.Contains("꺼져"), "Connection test must explain that the connection is off");
+            window.EnableAutomation();
+            try
+            {
+                New(window, "연결 테스트");
+                var (ok, text) = Await(window.TestAutomationConnectionAsync(CancellationToken.None));
+                Check(ok && text.Contains("문서 1개") && text.Contains(AutomationMcpServer.ApplicationVersion), "Connection test did not report state: " + text);
+            }
+            finally { window.DisableAutomation(); }
+            Check(!AutomationMcpServer.ApplicationVersion.Contains('+') && AutomationMcpServer.ApplicationVersion.StartsWith("0."), "serverInfo version must be the app version without build metadata");
+            Check(AutomationExamplePrompts.Length >= 3, "Example prompts missing");
+        });
     }
 }
