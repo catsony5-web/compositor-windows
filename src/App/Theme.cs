@@ -92,7 +92,7 @@ public static class Theme
 
     // Hairline + 13 SemiBold title; clicking folds the rows up to the next section.
     // The first section of a panel omits the hairline (rule: false).
-    public static FrameworkElement Section(string title, bool rule = true) => new SectionHeader(title, rule);
+    public static FrameworkElement Section(string title, bool rule = true, bool foldedByDefault = false) => new SectionHeader(title, rule, foldedByDefault);
 
     // Action labels remain complete at narrow widths; only the affordance occupies a fixed column.
     public static Button ActionRow(string label, Action action, string? tooltip = null, string? glyph = null)

@@ -18,7 +18,7 @@ public sealed partial class MainWindow
         var selected = Dialogs.ColorPicker(this, background ? backgroundColor : foreground, background ? "배경색" : "전경색");
         if (selected is not { } color) return;
         if (background) backgroundColor = color; else foreground = color;
-        UpdateColor(); canvas.Focus();
+        UpdateColor(); RememberColor(color); canvas.Focus();
     }
     void SwapColors() { (foreground, backgroundColor) = (backgroundColor, foreground); UpdateColor(); }
     void ResetColors() { foreground = Colors.Black; backgroundColor = Colors.White; UpdateColor(); }

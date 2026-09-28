@@ -391,7 +391,7 @@ public sealed partial class MainWindow
         if (raster == null || raster.Width != doc.Width || raster.Height != doc.Height) raster = Imaging.Render(doc);
         int i = ((int)point.Y * raster.Width + (int)point.X) * 4;
         var color = Color.FromArgb(raster.Data[i + 3], raster.Data[i + 2], raster.Data[i + 1], raster.Data[i]);
-        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) backgroundColor = color; else foreground = color; UpdateColor();
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) backgroundColor = color; else foreground = color; UpdateColor(); RememberColor(color);
     }
     static string ToolLabel(Tool selected) => selected switch
     {

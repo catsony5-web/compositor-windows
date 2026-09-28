@@ -1820,7 +1820,7 @@
   "file": "UI/Controls/CanvasView.Design.cs"
  },
  {
-  "ko": "채도 · 명도",
+  "ko": "아직 사용한 색이 없습니다",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -1829,6 +1829,30 @@
  },
  {
   "ko": "팔레트 색조",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "HEX 색상값",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "#RRGGBB 입력 후 Enter",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "최근 사용 색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "색상 견본",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": " · 전경색 지정",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "견본 {0}",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -1917,6 +1941,14 @@
  },
  {
   "ko": "선택된 전경색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": " · 최근 사용 색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "최근 {0}",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -5704,19 +5736,15 @@
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": "색 교환 · X",
+  "ko": "스포이트 · 클릭: 전경색 · Alt+클릭: 배경색",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": "색상 견본",
+  "ko": "스포이트",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": " · 전경색 지정",
-  "file": "UI/MainWindow.Studio.cs"
- },
- {
-  "ko": "전경 #{0}{1}{2}   /   배경 #{3}{4}{5}",
+  "ko": "전경 #{0}{1}{2}\n배경 #{3}{4}{5}",
   "file": "UI/MainWindow.Studio.cs"
  },
  {

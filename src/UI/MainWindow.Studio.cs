@@ -20,6 +20,7 @@ public sealed partial class MainWindow
     int studioPage;
     TextBlock? studioColorValue;
     ColorPalettePanel? studioPalette;
+    ColorSwatches? studioColorSwatches;
     ParameterSlider? studioDiameter, studioHardness;
     FrameworkElement BuildStudioTop()
     {
@@ -108,25 +109,32 @@ public sealed partial class MainWindow
     }
     void BuildStudioColors()
     {
-        var actions = new WrapPanel();
-        actions.Children.Add(Theme.Button("전경색", () => ChooseColor(false))); actions.Children.Add(Theme.Button("배경색", () => ChooseColor(true))); actions.Children.Add(Theme.IconButton(Theme.Glyphs.Swap, SwapColors, "색 교환 · X", 30, 15)); studioContent.Children.Add(actions);
-        studioColorValue = Theme.Label("", Theme.CaptionSize, Theme.Muted); studioColorValue.TextWrapping = TextWrapping.Wrap; studioColorValue.Margin = new Thickness(2, 6, 2, 10); studioContent.Children.Add(studioColorValue); UpdateStudioColor();
-        studioContent.Children.Add(Theme.Section("색상 견본"));
-        var swatches = new System.Windows.Controls.Primitives.UniformGrid { Columns = 9 };
-        foreach (string hex in new[] { "#FFFFFF", "#D8DCE2", "#88929F", "#4A515B", "#171A20", "#000000", "#EAE2D5", "#C5AE94", "#8C7061", "#F28792", "#DB5269", "#A12D4D", "#FFB774", "#F28446", "#B75132", "#F4D37A", "#D3AD4E", "#826C35", "#A5D9AF", "#50A98D", "#2A665E", "#AFDCF1", "#76A5E5", "#375C9D", "#CBB5EB", "#9D7BC8", "#624B86" })
-        {
-            var color = (Color)ColorConverter.ConvertFromString(hex);
-            var b = Theme.Button("", () => { foreground = color; UpdateColor(); }, hex + " · 전경색 지정"); b.Background = new SolidColorBrush(color); b.BorderBrush = Theme.Line; b.Height = 24; b.MinHeight = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2); swatches.Children.Add(b);
-        }
-        studioContent.Children.Add(swatches);
+        // Header: large foreground/background pair, then eyedropper and the numeric readout.
+        var header = new DockPanel { Margin = new Thickness(0, 2, 0, 4) };
+        studioColorSwatches = new ColorSwatches(() => ChooseColor(false), () => ChooseColor(true), SwapColors, ResetColors, 1.5) { Margin = new Thickness(0, 4, 12, 4) };
+        DockPanel.SetDock(studioColorSwatches, Dock.Left); header.Children.Add(studioColorSwatches);
+        var side = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        var picker = Theme.Button("", () => { SetTool(Tool.Eyedropper); canvas.Focus(); }, "스포이트 · 클릭: 전경색 · Alt+클릭: 배경색");
+        var pickerContent = new StackPanel { Orientation = Orientation.Horizontal };
+        pickerContent.Children.Add(Theme.Glyph(ToolIcons.PathData(Tool.Eyedropper), 16, Theme.Text, 1.6));
+        var pickerLabel = Theme.Label("스포이트", Theme.BodySize); pickerLabel.Margin = new Thickness(6, 0, 0, 0); pickerLabel.VerticalAlignment = VerticalAlignment.Center; pickerContent.Children.Add(pickerLabel);
+        picker.Content = pickerContent; picker.HorizontalAlignment = HorizontalAlignment.Left;
+        System.Windows.Automation.AutomationProperties.SetName(picker, "스포이트");
+        side.Children.Add(picker);
+        studioColorValue = Theme.Label("", Theme.CaptionSize, Theme.Muted); studioColorValue.TextWrapping = TextWrapping.Wrap; studioColorValue.Margin = new Thickness(2, 8, 2, 0); side.Children.Add(studioColorValue);
+        header.Children.Add(side);
+        studioContent.Children.Add(header);
         studioPalette = new ColorPalettePanel();
         studioPalette.ColorChanged += color => { foreground = color; UpdateColor(); };
         studioPalette.SetColor(foreground);
         studioContent.Children.Add(studioPalette);
+        UpdateStudioColor();
     }
+    void RememberColor(Color color) { if (studioPalette != null) studioPalette.Remember(color); else ColorPalettePanel.RememberShared(color); }
     void UpdateStudioColor()
     {
-        if (studioColorValue != null) studioColorValue.Text = $"전경 #{foreground.R:X2}{foreground.G:X2}{foreground.B:X2}   /   배경 #{backgroundColor.R:X2}{backgroundColor.G:X2}{backgroundColor.B:X2}";
+        if (studioColorValue != null) studioColorValue.Text = $"전경 #{foreground.R:X2}{foreground.G:X2}{foreground.B:X2}\n배경 #{backgroundColor.R:X2}{backgroundColor.G:X2}{backgroundColor.B:X2}";
+        studioColorSwatches?.SetColors(foreground, backgroundColor);
         studioPalette?.SetColor(foreground);
     }
     void BuildStudioBrushes()
