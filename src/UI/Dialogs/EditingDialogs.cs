@@ -277,9 +277,32 @@ public static class ExportDialog
     public static void Show(Window owner, Document doc, Guid? selectedArtboard = null) => Create(owner, doc, selectedArtboard).ShowDialog();
 
     /// <summary>Named parts of the dialog so self-tests can drive it without a visible window.</summary>
-    internal sealed record Parts(SegmentedChoice<ExportFormat> Format, SegmentedChoice<double> Scale, TextBox CustomScale, CheckBox Transparency, FrameworkElement QualityRow, Slider Quality, TextBox FileName, TextBlock Dimensions, TextBlock Size, Image Preview, ListBox? Boards, Func<ExportSettings> Settings);
+    internal sealed record Parts(SegmentedChoice<ExportFormat> Format, SegmentedChoice<double> Scale, TextBox CustomScale, CheckBox Transparency, FrameworkElement QualityRow, Slider Quality, TextBox FileName, TextBlock Dimensions, TextBlock Size, Image Preview, ListBox? Boards, Func<ExportSettings> Settings, Action Refresh);
 
     internal static Parts? PartsOf(Window window) => window.Tag as Parts;
+
+    /// <summary>Starts the preview without showing the window and pumps the dispatcher until the image and size estimate arrive.</summary>
+    internal static bool WaitForPreview(Window window, TimeSpan timeout)
+    {
+        if (PartsOf(window) is not { } parts) return false;
+        // Offscreen callers may lack the app's dispatcher context; async continuations must return to this thread.
+        var previous = SynchronizationContext.Current;
+        if (previous is not System.Windows.Threading.DispatcherSynchronizationContext)
+            SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(window.Dispatcher));
+        try { parts.Refresh(); return Pump(parts, timeout); }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
+    }
+
+    static bool Pump(Parts parts, TimeSpan timeout)
+    {
+        var frame = new System.Windows.Threading.DispatcherFrame();
+        var deadline = DateTime.UtcNow + timeout;
+        var poll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+        poll.Tick += (_, _) => { if (parts.Preview.Source != null || DateTime.UtcNow > deadline) frame.Continue = false; };
+        poll.Start();
+        try { System.Windows.Threading.Dispatcher.PushFrame(frame); } finally { poll.Stop(); }
+        return parts.Preview.Source != null;
+    }
 
     internal static Window Create(Window? owner, Document doc, Guid? selectedArtboard = null)
     {
@@ -425,7 +448,7 @@ public static class ExportDialog
         var saveButton = DialogShell.Primary("파일로 저장…", Save); saveButton.IsDefault = true; saveButton.Margin = new Thickness(0, 12, 0, 0);
         var cancel = DialogShell.Secondary("닫기", window.Close); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0);
         var footer = new StackPanel(); footer.Children.Add(saveButton); footer.Children.Add(cancel); Grid.SetRow(footer, 1); sideGrid.Children.Add(footer);
-        window.Tag = new Parts(format, scale, customScale, transparency, qualityRow, quality, fileName, dimensions, size, image, boards, Settings);
+        window.Tag = new Parts(format, scale, customScale, transparency, qualityRow, quality, fileName, dimensions, size, image, boards, Settings, Update);
         SyncOptions();
         window.Closed += (_, _) => { closed = true; generation++; lifetime.Cancel(); pending?.Cancel(); }; window.Loaded += (_, _) => Update(); return window;
     }

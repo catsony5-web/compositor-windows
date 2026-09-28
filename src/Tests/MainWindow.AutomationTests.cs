@@ -599,6 +599,16 @@ public sealed partial class MainWindow
                 New(window, "연결 테스트");
                 var (ok, text) = Await(window.TestAutomationConnectionAsync(CancellationToken.None));
                 Check(ok && text.Contains("문서 1개") && text.Contains(AutomationMcpServer.ApplicationVersion), "Connection test did not report state: " + text);
+                // The dialog button runs the same round trip and shows the result under the examples.
+                var dialog = window.CreateAutomationSettingsDialog();
+                static IEnumerable<DependencyObject> Tree(DependencyObject root) { foreach (var c in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>()) { yield return c; foreach (var n in Tree(c)) yield return n; } }
+                var button = Tree(dialog).OfType<System.Windows.Controls.Button>().Single(b => Equals(b.Content, "연결 테스트"));
+                var note = Tree(dialog).OfType<System.Windows.Controls.TextBlock>().Single(t => t.Text.StartsWith("연결을 켠 다음"));
+                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                var deadline = DateTime.UtcNow.AddSeconds(20);
+                while (!note.Text.StartsWith("연결 확인됨") && DateTime.UtcNow < deadline) Await(Task.Delay(50).ContinueWith(_ => true));
+                Check(note.Text.StartsWith("연결 확인됨") && button.IsEnabled, "Connection test button did not report success: " + note.Text);
+                dialog.Close();
             }
             finally { window.DisableAutomation(); }
             Check(!AutomationMcpServer.ApplicationVersion.Contains('+') && AutomationMcpServer.ApplicationVersion.StartsWith("0."), "serverInfo version must be the app version without build metadata");

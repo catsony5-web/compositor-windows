@@ -52,6 +52,25 @@ public static class ExportDialogTests
             Assert(parts.CustomScale.Visibility == Visibility.Visible && Math.Abs(parts.Settings().Scale - .5) < 1e-9, "Custom percent applies");
             window.Close();
         });
+        test("export dialog fills its preview and size estimate, and the estimate follows the format", () =>
+        {
+            var d = new Document { Width = 64, Height = 48, Name = "preview" };
+            d.Add(new Layer { Pixels = Raster.Solid(64, 48, Color.FromArgb(128, 40, 120, 200)) });
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext());
+            try
+            {
+            var window = ExportDialog.Create(null, d);
+            var parts = ExportDialog.PartsOf(window)!;
+            Assert(ExportDialog.WaitForPreview(window, TimeSpan.FromSeconds(20)), "Preview image never arrived");
+            Assert(parts.Size.Text.StartsWith("예상 파일 크기") && (parts.Size.Text.EndsWith("KB") || parts.Size.Text.EndsWith("MB")), "Size estimate missing: " + parts.Size.Text);
+            string png = parts.Size.Text;
+            parts.Preview.Source = null; parts.Scale.Select(2);
+            Assert(ExportDialog.WaitForPreview(window, TimeSpan.FromSeconds(20)) && parts.Size.Text != png, "2x estimate did not change");
+            window.Close();
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+        });
         test("export dialog lists artboards as a selectable list", () =>
         {
             var d = Doc(20, 20);
