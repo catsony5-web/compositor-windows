@@ -40,13 +40,14 @@ public sealed partial class MainWindow
                 Check(!source.persistWorkspace && source.savedLayout == null, "A headless window loaded the user's layout");
                 source.MovePane(source.studioPanes[1], "left"); source.studioPanes[1].SetPinned(true);
                 source.rightPanelColumn.Width = new System.Windows.GridLength(450);
-                source.SetWorkspaceMode(true); source.ShowStudioPage(2);
+                source.SetWorkspaceMode(true); source.ShowStudioPage(2); source.SetHistogramVisible(true);
                 var layout = source.CaptureLayout();
                 Check(layout.RightPanelWidth == 450 && layout.DesignWorkspace && layout.StudioPage == 2 && layout.Window == null, "Captured values are incomplete");
                 Check(layout.Panes.Single() == new PaneLayout("page1", "left", true), "Captured panes are incorrect");
                 target.ApplyPaneLayout(layout);
                 Check(target.studioPanes[1].Location == "left" && target.studioPanes[1].Pinned && target.leftPanels.Children.Contains(target.studioPanes[1]), "Pane docking was not restored");
                 Check(target.rightPanelColumn.Width.Value == 450 && target.designWorkspace && target.studioPage == 2, "Width, mode or tab was not restored");
+                Check(layout.ShowHistogram && target.showHistogram && target.histogramToggle!.IsChecked, "The histogram choice was not restored");
                 target.ApplyPaneLayout(new WorkspaceLayout { RightPanelWidth = 9000 });
                 Check(target.rightPanelColumn.Width.Value == target.rightPanelColumn.MaxWidth, "Restored width escaped the panel limits");
             }

@@ -103,7 +103,7 @@ public sealed partial class MainWindow
         if (emptyWorkspace != null) emptyWorkspace.Visibility = opened ? Visibility.Collapsed : Visibility.Visible;
         studioContents[0].IsEnabled = opened;
         properties.IsEnabled = opened;
-        if (histogramCard != null) histogramCard.Visibility = opened && !designWorkspace ? Visibility.Visible : Visibility.Collapsed;
+        UpdateHistogramVisibility();
         if (!opened) histogramInfo.Text = "";
     }
 

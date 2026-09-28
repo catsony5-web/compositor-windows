@@ -131,14 +131,26 @@ public static class Theme
         return element;
     }
 
-    // Stroked UI glyphs drawn on a 24-unit grid, matching the tool icon family.
+    // UI glyphs on a 24-unit grid, drawn in layers like hierarchical symbols:
+    // "primary | ~secondary | *tint". Secondary strokes draw at 45% and tints fill the
+    // shape at 20% of the same color, so one brush gives depth without extra colors.
+    public const double SecondaryOpacity = .45, TintOpacity = .2;
     public static FrameworkElement Glyph(string data, double size = 16, Brush? stroke = null, double thickness = 1.7)
     {
-        var pen = new Pen(stroke ?? Text, thickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
+        var brush = stroke ?? Text;
+        var pen = new Pen(brush, thickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
         // A transparent 24x24 frame keeps every glyph on the same scale and stroke weight.
         var drawing = new DrawingGroup();
         drawing.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 24, 24))));
-        drawing.Children.Add(new GeometryDrawing(null, pen, Geometry.Parse(data)));
+        var layers = data.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var layer in layers.OrderBy(layer => layer[0] == '*' ? 0 : 1))
+        {
+            bool tint = layer[0] == '*', secondary = layer[0] == '~';
+            var geometry = Geometry.Parse(tint || secondary ? layer[1..] : layer);
+            var group = new DrawingGroup { Opacity = tint ? TintOpacity : secondary ? SecondaryOpacity : 1 };
+            group.Children.Add(tint ? new GeometryDrawing(brush, null, geometry) : new GeometryDrawing(null, pen, geometry));
+            drawing.Children.Add(group);
+        }
         var image = new DrawingImage(drawing);
         image.Freeze();
         return new Image { Source = image, Width = size, Height = size, Stretch = Stretch.Uniform, SnapsToDevicePixels = true };
@@ -156,64 +168,74 @@ public static class Theme
     // Shared glyph paths (24-unit grid).
     public static class Glyphs
     {
-        public const string Undo = "M9 14L4 9L9 4 M4 9H15A5 5 0 0 1 15 19H11";
-        public const string Redo = "M15 14L20 9L15 4 M20 9H9A5 5 0 0 0 9 19H13";
+        public const string Undo = "M9 14L4 9L9 4 M4 9H14.5A5.5 5.5 0 0 1 14.5 20H11";
+        public const string Redo = "M15 14L20 9L15 4 M20 9H9.5A5.5 5.5 0 0 0 9.5 20H13";
         public const string Plus = "M12 5V19 M5 12H19";
-        public const string Duplicate = "M8 8H19V19H8Z M5 16V5H16";
+        public const string Duplicate = "M11.2 9H17.8A2.2 2.2 0 0 1 20 11.2V17.8A2.2 2.2 0 0 1 17.8 20H11.2A2.2 2.2 0 0 1 9 17.8V11.2A2.2 2.2 0 0 1 11.2 9Z | ~M15 9V6.2A2.2 2.2 0 0 0 12.8 4H6.2A2.2 2.2 0 0 0 4 6.2V12.8A2.2 2.2 0 0 0 6.2 15H9";
         public const string ArrowUp = "M12 19V5 M6 11L12 5L18 11";
         public const string ArrowDown = "M12 5V19 M6 13L12 19L18 13";
-        public const string Delete = "M4 7H20 M9 7V4H15V7 M6 7L7 20H17L18 7 M10 11V16 M14 11V16";
+        public const string Delete = "M4 7H20 M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4H13.3A1.2 1.2 0 0 1 14.5 5.2V7 M6.5 7L7.3 18.2A2 2 0 0 0 9.3 20H14.7A2 2 0 0 0 16.7 18.2L17.5 7 | ~M10 11V16 M14 11V16";
         public const string More = "M5 12H5.01 M12 12H12.01 M19 12H19.01";
-        public const string Pin = "M9 3H15 M10 3V9L6 13H18L14 9V3 M12 13V21";
+        public const string Pin = "M9 3.5H15 M10 3.5V9L7 12.5V14H17V12.5L14 9V3.5 M12 14V20.5 | *M10 3.5H14V9L17 12.5V14H7V12.5L10 9Z";
         public const string Close = "M6 6L18 18 M18 6L6 18";
-        public const string Fit = "M4 9V4H9 M15 4H20V9 M20 15V20H15 M9 20H4V15";
-        public const string NewFile = "M13 3H6V21H18V8Z M13 3V8H18 M12 11V17 M9 14H15";
-        public const string Open = "M3 7V19H21V9H12L10 7Z M3 7V5H9L11 7";
-        public const string Learn = "M3 7L12 3L21 7L12 11Z M7 9V15C9 17 15 17 17 15V9 M21 7V13";
-        public const string Import = "M12 4V15 M7 10L12 15L17 10 M4 19H20";
-        public const string Export = "M12 15V4 M7 9L12 4L17 9 M4 19H20";
+        public const string Fit = "M4 9V6A2 2 0 0 1 6 4H9 M15 4H18A2 2 0 0 1 20 6V9 M20 15V18A2 2 0 0 1 18 20H15 M9 20H6A2 2 0 0 1 4 18V15";
+        public const string NewFile = "M13.5 3H7A2 2 0 0 0 5 5V19A2 2 0 0 0 7 21H17A2 2 0 0 0 19 19V8.5Z M13.5 3V8.5H19 | ~M12 12V17.5 M9.25 14.75H14.75";
+        public const string Open = "M3.5 8A2 2 0 0 1 5.5 6H9.3L11.1 7.8H18.5A2 2 0 0 1 20.5 9.8V17A2 2 0 0 1 18.5 19H5.5A2 2 0 0 1 3.5 17Z | ~M3.5 11H20.5";
+        public const string Learn = "M2.5 9L12 4.5L21.5 9L12 13.5Z | ~M6.5 11V15.3C8 16.9 10 17.8 12 17.8C14 17.8 16 16.9 17.5 15.3V11 M21.5 9V14 | *M2.5 9L12 4.5L21.5 9L12 13.5Z";
+        public const string Import = "M12 3.5V14 M8 10L12 14L16 10 M5 14V18A2 2 0 0 0 7 20H17A2 2 0 0 0 19 18V14";
+        public const string Export = "M12 14.5V4 M8 8L12 4L16 8 M5 12V18A2 2 0 0 0 7 20H17A2 2 0 0 0 19 18V12";
         public const string Swap = "M7 4L4 7L7 10 M4 7H16A4 4 0 0 1 20 11 M17 20L20 17L17 14 M20 17H8A4 4 0 0 1 4 13";
-        public const string Reset = "M5 5H11V11H5Z M13 13H19V19H13Z";
-        public const string Folder = "M3 7V19H21V9H12L10 7Z";
-        public const string Adjustment = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z M12 3V21 M12 7H16 M12 11H19 M12 15H18";
+        public const string Reset = "M6 4.5H10A1.5 1.5 0 0 1 11.5 6V10A1.5 1.5 0 0 1 10 11.5H6A1.5 1.5 0 0 1 4.5 10V6A1.5 1.5 0 0 1 6 4.5Z | M14 12.5H18A1.5 1.5 0 0 1 19.5 14V18A1.5 1.5 0 0 1 18 19.5H14A1.5 1.5 0 0 1 12.5 18V14A1.5 1.5 0 0 1 14 12.5Z | *M6 4.5H10A1.5 1.5 0 0 1 11.5 6V10A1.5 1.5 0 0 1 10 11.5H6A1.5 1.5 0 0 1 4.5 10V6A1.5 1.5 0 0 1 6 4.5Z";
+        public const string Folder = "M3.5 8A2 2 0 0 1 5.5 6H9.3L11.1 7.8H18.5A2 2 0 0 1 20.5 9.8V17A2 2 0 0 1 18.5 19H5.5A2 2 0 0 1 3.5 17Z";
+        public const string Adjustment = "M12 3.5A8.5 8.5 0 1 0 12 20.5A8.5 8.5 0 1 0 12 3.5Z | M12 3.5V20.5 | *M12 3.5A8.5 8.5 0 0 0 12 20.5Z";
+        public const string ChevronRight = "M9 6L15 12L9 18";
+        public const string Eye = "M2.5 12C4.8 7.6 8.2 5.5 12 5.5C15.8 5.5 19.2 7.6 21.5 12C19.2 16.4 15.8 18.5 12 18.5C8.2 18.5 4.8 16.4 2.5 12Z | M12 9A3 3 0 1 0 12 15A3 3 0 1 0 12 9Z | *M12 9A3 3 0 1 0 12 15A3 3 0 1 0 12 9Z";
+        public const string EyeSlash = "~M2.5 12C4.8 7.6 8.2 5.5 12 5.5C15.8 5.5 19.2 7.6 21.5 12C19.2 16.4 15.8 18.5 12 18.5C8.2 18.5 4.8 16.4 2.5 12Z | M4.5 4.5L19.5 19.5";
+        public const string Lock = "M7.7 10.5H16.3A2.2 2.2 0 0 1 18.5 12.7V18.3A2.2 2.2 0 0 1 16.3 20.5H7.7A2.2 2.2 0 0 1 5.5 18.3V12.7A2.2 2.2 0 0 1 7.7 10.5Z | M8.5 10.5V7.5A3.5 3.5 0 0 1 15.5 7.5V10.5 | *M7.7 10.5H16.3A2.2 2.2 0 0 1 18.5 12.7V18.3A2.2 2.2 0 0 1 16.3 20.5H7.7A2.2 2.2 0 0 1 5.5 18.3V12.7A2.2 2.2 0 0 1 7.7 10.5Z";
+        public const string LockOpen = "M7.7 10.5H16.3A2.2 2.2 0 0 1 18.5 12.7V18.3A2.2 2.2 0 0 1 16.3 20.5H7.7A2.2 2.2 0 0 1 5.5 18.3V12.7A2.2 2.2 0 0 1 7.7 10.5Z | M8.5 10.5V7.5A3.5 3.5 0 0 1 15.3 6.3";
+        public const string Revert = "M4.5 12A7.5 7.5 0 1 0 7 6.4 M4.5 3.5V8H9";
+        public const string Info = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M12 11V16.5 M12 7.8V7.9 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";
+        public const string Warning = "M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z | M12 9.5V13.5 M12 16.8V16.9 | *M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z";
+        public const string Error = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M9 9L15 15 M15 9L9 15 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";
+        public const string Document = "M13.5 3H7A2 2 0 0 0 5 5V19A2 2 0 0 0 7 21H17A2 2 0 0 0 19 19V8.5Z M13.5 3V8.5H19 | ~M9 13H15 M9 16.5H15 | *M13.5 3H7A2 2 0 0 0 5 5V19A2 2 0 0 0 7 21H17A2 2 0 0 0 19 19V8.5Z";
         public const string ChevronDown = "M6 9L12 15L18 9";
         // Adjustments and photo work.
-        public const string Camera = "M4 8H8L10 5H14L16 8H20V19H4Z M12 10A3.5 3.5 0 1 0 12 17A3.5 3.5 0 1 0 12 10Z";
-        public const string Exposure = "M12 8A4 4 0 1 0 12 16A4 4 0 1 0 12 8Z M12 2.5V4.5 M12 19.5V21.5 M5.3 5.3L6.7 6.7 M17.3 17.3L18.7 18.7 M2.5 12H4.5 M19.5 12H21.5 M5.3 18.7L6.7 17.3 M17.3 6.7L18.7 5.3";
-        public const string Levels = "M3 20H21 M5 20V14 M9 20V8 M13 20V4 M17 20V10 M21 20V16";
-        public const string Curves = "M4 4V20H20 M4 19C11 19 12 6 20 5";
-        public const string HueSaturation = "M12 3C12 3 6 10 6 14.5A6 6 0 0 0 18 14.5C18 10 12 3 12 3Z M12 20.5V9";
-        public const string GradientMap = "M3 7H21V17H3Z M8 7V17 M13 7V17 M17.5 7V17";
-        public const string Grain = "M6 6H6.01 M12 6H12.01 M18 6H18.01 M9 10H9.01 M15 10H15.01 M6 14H6.01 M12 14H12.01 M18 14H18.01 M9 18H9.01 M15 18H15.01";
-        public const string Sliders = "M4 7H13 M17 7H20 M15 5V9 M4 17H7 M11 17H20 M9 15V19";
-        public const string SelectAlpha = "M4 7V4H7 M10 4H14 M17 4H20V7 M20 10V14 M20 17V20H17 M14 20H10 M7 20H4V17 M4 14V10 M9 9H15V15H9Z";
-        public const string Mask = "M4 4H20V20H4Z M12 8A4 4 0 1 0 12 16A4 4 0 1 0 12 8Z";
-        public const string Sparkle = "M11 3L12.4 7.6L17 9L12.4 10.4L11 15L9.6 10.4L5 9L9.6 7.6Z M18 14L18.8 16.2L21 17L18.8 17.8L18 20L17.2 17.8L15 17L17.2 16.2Z";
-        public const string FillSelection = "M4 4H20V20H4Z M12 8L13 11L16 12L13 13L12 16L11 13L8 12L11 11Z";
+        public const string Camera = "M4 8.5A2 2 0 0 1 6 6.5H7.8L9.3 4.5H14.7L16.2 6.5H18A2 2 0 0 1 20 8.5V17.5A2 2 0 0 1 18 19.5H6A2 2 0 0 1 4 17.5Z | M12 9.5A3.5 3.5 0 1 0 12 16.5A3.5 3.5 0 1 0 12 9.5Z | *M12 9.5A3.5 3.5 0 1 0 12 16.5A3.5 3.5 0 1 0 12 9.5Z";
+        public const string Exposure = "M12 8A4 4 0 1 0 12 16A4 4 0 1 0 12 8Z | M12 2.5V4.5 M12 19.5V21.5 M5.3 5.3L6.7 6.7 M17.3 17.3L18.7 18.7 M2.5 12H4.5 M19.5 12H21.5 M5.3 18.7L6.7 17.3 M17.3 6.7L18.7 5.3 | *M12 8A4 4 0 1 0 12 16A4 4 0 1 0 12 8Z";
+        public const string Levels = "M5 13H7A1 1 0 0 1 8 14V19A1 1 0 0 1 7 20H5A1 1 0 0 1 4 19V14A1 1 0 0 1 5 13Z | M11 6.5H13A1 1 0 0 1 14 7.5V19A1 1 0 0 1 13 20H11A1 1 0 0 1 10 19V7.5A1 1 0 0 1 11 6.5Z | M17 10H19A1 1 0 0 1 20 11V19A1 1 0 0 1 19 20H17A1 1 0 0 1 16 19V11A1 1 0 0 1 17 10Z | *M11 6.5H13A1 1 0 0 1 14 7.5V19A1 1 0 0 1 13 20H11A1 1 0 0 1 10 19V7.5A1 1 0 0 1 11 6.5Z";
+        public const string Curves = "M4 20C11 20 13 4 20 4 | ~M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z M12 4V20 M4 12H20";
+        public const string HueSaturation = "M12 3.5C12 3.5 5.5 10.4 5.5 14.6A6.5 6.5 0 0 0 18.5 14.6C18.5 10.4 12 3.5 12 3.5Z | *M12 3.5C12 3.5 18.5 10.4 18.5 14.6A6.5 6.5 0 0 1 12 21.1Z";
+        public const string GradientMap = "M5.5 6H18.5A2.5 2.5 0 0 1 21 8.5V15.5A2.5 2.5 0 0 1 18.5 18H5.5A2.5 2.5 0 0 1 3 15.5V8.5A2.5 2.5 0 0 1 5.5 6Z | *M5.5 6H9V18H5.5A2.5 2.5 0 0 1 3 15.5V8.5A2.5 2.5 0 0 1 5.5 6Z | ~M13 6V18 M17 6V18";
+        public const string Grain = "M7 5.95A1.05 1.05 0 1 0 7 8.05A1.05 1.05 0 1 0 7 5.95Z M17 5.95A1.05 1.05 0 1 0 17 8.05A1.05 1.05 0 1 0 17 5.95Z M12 10.95A1.05 1.05 0 1 0 12 13.05A1.05 1.05 0 1 0 12 10.95Z M7 15.95A1.05 1.05 0 1 0 7 18.05A1.05 1.05 0 1 0 7 15.95Z M17 15.95A1.05 1.05 0 1 0 17 18.05A1.05 1.05 0 1 0 17 15.95Z | ~M12 5.95A1.05 1.05 0 1 0 12 8.05A1.05 1.05 0 1 0 12 5.95Z M7 10.95A1.05 1.05 0 1 0 7 13.05A1.05 1.05 0 1 0 7 10.95Z M17 10.95A1.05 1.05 0 1 0 17 13.05A1.05 1.05 0 1 0 17 10.95Z M12 15.95A1.05 1.05 0 1 0 12 18.05A1.05 1.05 0 1 0 12 15.95Z";
+        public const string Sliders = "M4 7H12.5 M17.5 7H20 M15 4.8A2.2 2.2 0 1 0 15 9.2A2.2 2.2 0 1 0 15 4.8Z M4 12H6 M10.5 12H20 M8.2 9.8A2.2 2.2 0 1 0 8.2 14.2A2.2 2.2 0 1 0 8.2 9.8Z M4 17H11 M16 17H20 M13.5 14.8A2.2 2.2 0 1 0 13.5 19.2A2.2 2.2 0 1 0 13.5 14.8Z";
+        public const string SelectAlpha = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z | *M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z";
+        public const string Mask = "M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z | M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z | *M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z";
+        public const string Sparkle = "M10 3.5C11.43 8.57 11.43 8.57 16.5 10C11.43 11.43 11.43 11.43 10 16.5C8.57 11.43 8.57 11.43 3.5 10C8.57 8.57 8.57 8.57 10 3.5Z | M18 14.5C18.66 16.84 18.66 16.84 21 17.5C18.66 18.16 18.66 18.16 18 20.5C17.34 18.16 17.34 18.16 15 17.5C17.34 16.84 17.34 16.84 18 14.5Z | *M10 3.5C11.43 8.57 11.43 8.57 16.5 10C11.43 11.43 11.43 11.43 10 16.5C8.57 11.43 8.57 11.43 3.5 10C8.57 8.57 8.57 8.57 10 3.5Z";
+        public const string FillSelection = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M12 7.8C12.92 11.08 12.92 11.08 16.2 12C12.92 12.92 12.92 12.92 12 16.2C11.08 12.92 11.08 12.92 7.8 12C11.08 11.08 11.08 11.08 12 7.8Z | *M12 7.8C12.92 11.08 12.92 11.08 16.2 12C12.92 12.92 12.92 12.92 12 16.2C11.08 12.92 11.08 12.92 7.8 12C11.08 11.08 11.08 11.08 12 7.8Z";
         // Layers, arrangement and design.
-        public const string Rename = "M4 20H8L19 9L15 5L4 16Z M13 7L17 11";
-        public const string Clip = "M6 4V11A3 3 0 0 0 9 14H18 M15 11L18 14L15 17 M4 20H20";
-        public const string Transform = "M4 8V4H8 M16 4H20V8 M20 16V20H16 M8 20H4V16 M8.5 8.5H15.5V15.5H8.5Z";
-        public const string GroupAdd = "M3 7V19H21V9H12L10 7Z M12 11.5V16.5 M9.5 14H14.5";
-        public const string GroupRemove = "M3 7V19H21V9H12L10 7Z M9.5 14H14.5";
-        public const string Forward = "M12 13V3 M8 7L12 3L16 7 M4 17H20 M4 21H20";
-        public const string Backward = "M12 3V13 M8 9L12 13L16 9 M4 17H20 M4 21H20";
-        public const string FillStroke = "M4 4H14V14H4Z M10 10H20V20H10Z";
-        public const string Palette = "M12 3A9 9 0 1 0 12 21C13.2 21 13.6 20 13 19C12.4 18 13 17 14.5 17H17A4 4 0 0 0 21 13C21 7.5 17 3 12 3Z M7.5 11H7.51 M10 7.5H10.01 M14.5 7.5H14.51 M17 11H17.01";
-        public const string Image = "M4 5H20V19H4Z M4 16L9 11L13 15L15.5 12.5L20 17 M15 8.5H15.01";
-        public const string Text = "M6 6.5V4.5H18V6.5 M12 4.5V19.5 M9 19.5H15";
-        public const string Shape = "M4 4H13V13H4Z M16 11A5 5 0 1 0 16 21A5 5 0 1 0 16 11Z";
+        public const string Rename = "M15.4 4.6A2.1 2.1 0 0 1 18.4 7.6L8.2 17.8L4.5 19L5.7 15.3Z | ~M13.4 6.6L16.4 9.6 M12.5 19.5H19.5";
+        public const string Clip = "M7 4V11.5A2.5 2.5 0 0 0 9.5 14H17.5 M14.5 11L17.5 14L14.5 17 | ~M4 20H20";
+        public const string Transform = "M4.5 3.5H6.5A1 1 0 0 1 7.5 4.5V6.5A1 1 0 0 1 6.5 7.5H4.5A1 1 0 0 1 3.5 6.5V4.5A1 1 0 0 1 4.5 3.5Z M17.5 3.5H19.5A1 1 0 0 1 20.5 4.5V6.5A1 1 0 0 1 19.5 7.5H17.5A1 1 0 0 1 16.5 6.5V4.5A1 1 0 0 1 17.5 3.5Z M4.5 16.5H6.5A1 1 0 0 1 7.5 17.5V19.5A1 1 0 0 1 6.5 20.5H4.5A1 1 0 0 1 3.5 19.5V17.5A1 1 0 0 1 4.5 16.5Z M17.5 16.5H19.5A1 1 0 0 1 20.5 17.5V19.5A1 1 0 0 1 19.5 20.5H17.5A1 1 0 0 1 16.5 19.5V17.5A1 1 0 0 1 17.5 16.5Z | ~M7.5 5.5H16.5 M7.5 18.5H16.5 M5.5 7.5V16.5 M18.5 7.5V16.5";
+        public const string GroupAdd = "M3.5 8A2 2 0 0 1 5.5 6H9.3L11.1 7.8H18.5A2 2 0 0 1 20.5 9.8V17A2 2 0 0 1 18.5 19H5.5A2 2 0 0 1 3.5 17Z | M12 10.5V16.5 M9 13.5H15";
+        public const string GroupRemove = "M3.5 8A2 2 0 0 1 5.5 6H9.3L11.1 7.8H18.5A2 2 0 0 1 20.5 9.8V17A2 2 0 0 1 18.5 19H5.5A2 2 0 0 1 3.5 17Z | M9 13.5H15";
+        public const string Forward = "M12 13V3.5 M8 7.5L12 3.5L16 7.5 | ~M5 17H19 M5 20.5H19";
+        public const string Backward = "M12 3.5V13 M8 9L12 13L16 9 | ~M5 17H19 M5 20.5H19";
+        public const string FillStroke = "*M5.5 3.5H12.5A2 2 0 0 1 14.5 5.5V12.5A2 2 0 0 1 12.5 14.5H5.5A2 2 0 0 1 3.5 12.5V5.5A2 2 0 0 1 5.5 3.5Z | M5.5 3.5H12.5A2 2 0 0 1 14.5 5.5V12.5A2 2 0 0 1 12.5 14.5H5.5A2 2 0 0 1 3.5 12.5V5.5A2 2 0 0 1 5.5 3.5Z | M11.5 9.5H18.5A2 2 0 0 1 20.5 11.5V18.5A2 2 0 0 1 18.5 20.5H11.5A2 2 0 0 1 9.5 18.5V11.5A2 2 0 0 1 11.5 9.5Z";
+        public const string Palette = "M12 3.5A8.5 8.5 0 1 0 12 20.5C13.1 20.5 13.6 19.6 13.1 18.7C12.5 17.7 13.1 16.5 14.5 16.5H16.5A4 4 0 0 0 20.5 12.5C20.5 7.5 16.7 3.5 12 3.5Z | ~M7.8 10.05A0.95 0.95 0 1 0 7.8 11.95A0.95 0.95 0 1 0 7.8 10.05Z M10.2 6.65A0.95 0.95 0 1 0 10.2 8.55A0.95 0.95 0 1 0 10.2 6.65Z M14.4 6.65A0.95 0.95 0 1 0 14.4 8.55A0.95 0.95 0 1 0 14.4 6.65Z M16.8 10.05A0.95 0.95 0 1 0 16.8 11.95A0.95 0.95 0 1 0 16.8 10.05Z";
+        public const string Image = "M6 5H18A2.5 2.5 0 0 1 20.5 7.5V16.5A2.5 2.5 0 0 1 18 19H6A2.5 2.5 0 0 1 3.5 16.5V7.5A2.5 2.5 0 0 1 6 5Z | M4 16.5L8.8 11.8L13 16 M11.5 14.5L14.2 11.8L20 17.5 | ~M15.5 7.6A1.4 1.4 0 1 0 15.5 10.4A1.4 1.4 0 1 0 15.5 7.6Z";
+        public const string Text = "M5.5 7V5H18.5V7 M12 5V19 M9.5 19H14.5";
+        public const string Shape = "M5.3 3.5H11.2A1.8 1.8 0 0 1 13 5.3V11.2A1.8 1.8 0 0 1 11.2 13H5.3A1.8 1.8 0 0 1 3.5 11.2V5.3A1.8 1.8 0 0 1 5.3 3.5Z | M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z | *M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z";
         // Canvas alignment: a guide line and two bars.
-        public const string AlignLeft = "M4 3V21 M8 6H19V10H8Z M8 14H14V18H8Z";
-        public const string AlignCenter = "M12 3V21 M6 6H18V10H6Z M8.5 14H15.5V18H8.5Z";
-        public const string AlignRight = "M20 3V21 M5 6H16V10H5Z M10 14H16V18H10Z";
-        public const string AlignTop = "M3 4H21 M6 8H10V19H6Z M14 8H18V14H14Z";
-        public const string AlignMiddle = "M3 12H21 M6 6H10V18H6Z M14 8.5H18V15.5H14Z";
-        public const string AlignBottom = "M3 20H21 M6 5H10V16H6Z M14 10H18V16H14Z";
+        public const string AlignLeft = "M4 3.5V20.5 | M7.5 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H7.5A1 1 0 0 1 6.5 9.5V7.5A1 1 0 0 1 7.5 6.5Z | M7.5 13.5H13.5A1 1 0 0 1 14.5 14.5V16.5A1 1 0 0 1 13.5 17.5H7.5A1 1 0 0 1 6.5 16.5V14.5A1 1 0 0 1 7.5 13.5Z | *M7.5 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H7.5A1 1 0 0 1 6.5 9.5V7.5A1 1 0 0 1 7.5 6.5Z M7.5 13.5H13.5A1 1 0 0 1 14.5 14.5V16.5A1 1 0 0 1 13.5 17.5H7.5A1 1 0 0 1 6.5 16.5V14.5A1 1 0 0 1 7.5 13.5Z";
+        public const string AlignCenter = "M12 3.5V20.5 | M6 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H6A1 1 0 0 1 5 9.5V7.5A1 1 0 0 1 6 6.5Z | M8.5 13.5H15.5A1 1 0 0 1 16.5 14.5V16.5A1 1 0 0 1 15.5 17.5H8.5A1 1 0 0 1 7.5 16.5V14.5A1 1 0 0 1 8.5 13.5Z | *M6 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H6A1 1 0 0 1 5 9.5V7.5A1 1 0 0 1 6 6.5Z M8.5 13.5H15.5A1 1 0 0 1 16.5 14.5V16.5A1 1 0 0 1 15.5 17.5H8.5A1 1 0 0 1 7.5 16.5V14.5A1 1 0 0 1 8.5 13.5Z";
+        public const string AlignRight = "M20 3.5V20.5 | M6 6.5H16.5A1 1 0 0 1 17.5 7.5V9.5A1 1 0 0 1 16.5 10.5H6A1 1 0 0 1 5 9.5V7.5A1 1 0 0 1 6 6.5Z | M10.5 13.5H16.5A1 1 0 0 1 17.5 14.5V16.5A1 1 0 0 1 16.5 17.5H10.5A1 1 0 0 1 9.5 16.5V14.5A1 1 0 0 1 10.5 13.5Z | *M6 6.5H16.5A1 1 0 0 1 17.5 7.5V9.5A1 1 0 0 1 16.5 10.5H6A1 1 0 0 1 5 9.5V7.5A1 1 0 0 1 6 6.5Z M10.5 13.5H16.5A1 1 0 0 1 17.5 14.5V16.5A1 1 0 0 1 16.5 17.5H10.5A1 1 0 0 1 9.5 16.5V14.5A1 1 0 0 1 10.5 13.5Z";
+        public const string AlignTop = "M3.5 4H20.5 | M7.5 6.5H9.5A1 1 0 0 1 10.5 7.5V18A1 1 0 0 1 9.5 19H7.5A1 1 0 0 1 6.5 18V7.5A1 1 0 0 1 7.5 6.5Z | M14.5 6.5H16.5A1 1 0 0 1 17.5 7.5V13.5A1 1 0 0 1 16.5 14.5H14.5A1 1 0 0 1 13.5 13.5V7.5A1 1 0 0 1 14.5 6.5Z | *M7.5 6.5H9.5A1 1 0 0 1 10.5 7.5V18A1 1 0 0 1 9.5 19H7.5A1 1 0 0 1 6.5 18V7.5A1 1 0 0 1 7.5 6.5Z M14.5 6.5H16.5A1 1 0 0 1 17.5 7.5V13.5A1 1 0 0 1 16.5 14.5H14.5A1 1 0 0 1 13.5 13.5V7.5A1 1 0 0 1 14.5 6.5Z";
+        public const string AlignMiddle = "M3.5 12H20.5 | M7.5 5H9.5A1 1 0 0 1 10.5 6V18A1 1 0 0 1 9.5 19H7.5A1 1 0 0 1 6.5 18V6A1 1 0 0 1 7.5 5Z | M14.5 7.5H16.5A1 1 0 0 1 17.5 8.5V15.5A1 1 0 0 1 16.5 16.5H14.5A1 1 0 0 1 13.5 15.5V8.5A1 1 0 0 1 14.5 7.5Z | *M7.5 5H9.5A1 1 0 0 1 10.5 6V18A1 1 0 0 1 9.5 19H7.5A1 1 0 0 1 6.5 18V6A1 1 0 0 1 7.5 5Z M14.5 7.5H16.5A1 1 0 0 1 17.5 8.5V15.5A1 1 0 0 1 16.5 16.5H14.5A1 1 0 0 1 13.5 15.5V8.5A1 1 0 0 1 14.5 7.5Z";
+        public const string AlignBottom = "M3.5 20H20.5 | M7.5 5H9.5A1 1 0 0 1 10.5 6V16.5A1 1 0 0 1 9.5 17.5H7.5A1 1 0 0 1 6.5 16.5V6A1 1 0 0 1 7.5 5Z | M14.5 9.5H16.5A1 1 0 0 1 17.5 10.5V16.5A1 1 0 0 1 16.5 17.5H14.5A1 1 0 0 1 13.5 16.5V10.5A1 1 0 0 1 14.5 9.5Z | *M7.5 5H9.5A1 1 0 0 1 10.5 6V16.5A1 1 0 0 1 9.5 17.5H7.5A1 1 0 0 1 6.5 16.5V6A1 1 0 0 1 7.5 5Z M14.5 9.5H16.5A1 1 0 0 1 17.5 10.5V16.5A1 1 0 0 1 16.5 17.5H14.5A1 1 0 0 1 13.5 16.5V10.5A1 1 0 0 1 14.5 9.5Z";
         // Paragraph alignment.
-        public const string TextLeft = "M4 6H20 M4 10H14 M4 14H20 M4 18H14";
-        public const string TextCenter = "M4 6H20 M7 10H17 M4 14H20 M7 18H17";
-        public const string TextRight = "M4 6H20 M10 10H20 M4 14H20 M10 18H20";
+        public const string TextLeft = "M4 6H20 M4 14H20 | ~M4 10H14 M4 18H14";
+        public const string TextCenter = "M4 6H20 M4 14H20 | ~M7 10H17 M7 18H17";
+        public const string TextRight = "M4 6H20 M4 14H20 | ~M10 10H20 M10 18H20";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
     }
 }

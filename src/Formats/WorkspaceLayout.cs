@@ -4,7 +4,8 @@ using System.Text.Json;
 namespace Compositor.Windows;
 
 // Workspace arrangement restored on the next launch: window bounds, right column width,
-// photo/design mode, the active tab, docked or floating panes and collapsed sections.
+// photo/design mode, the active tab, docked or floating panes, collapsed sections and
+// whether the histogram is shown.
 // Stored per user in %LOCALAPPDATA%\Morupixel\workspace.json; never part of a document.
 public sealed class WorkspaceLayout
 {
@@ -15,6 +16,7 @@ public sealed class WorkspaceLayout
     public int StudioPage { get; init; }
     public PaneLayout[] Panes { get; init; } = [];
     public string[] CollapsedSections { get; init; } = [];
+    public bool ShowHistogram { get; init; }
 }
 
 public sealed record WindowBounds(double Left, double Top, double Width, double Height, bool Maximized);
@@ -71,7 +73,8 @@ public static class WorkspaceLayoutStore
             DesignWorkspace = layout.DesignWorkspace,
             StudioPage = Math.Clamp(layout.StudioPage, 0, 3),
             Panes = panes,
-            CollapsedSections = sections
+            CollapsedSections = sections,
+            ShowHistogram = layout.ShowHistogram
         };
     }
 }

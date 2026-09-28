@@ -57,20 +57,8 @@ public sealed class SaveChangesDialog : Window
         var documentRow = new Grid();
         documentRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
         documentRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var documentIcon = new System.Windows.Shapes.Path
-        {
-            Data = Geometry.Parse("M 5,2 L 17,2 L 25,10 L 25,30 L 5,30 Z M 17,2 L 17,10 L 25,10 M 10,17 L 20,17 M 10,22 L 20,22"),
-            Stroke = Theme.Accent,
-            StrokeThickness = 1.5,
-            StrokeLineJoin = PenLineJoin.Round,
-            StrokeStartLineCap = PenLineCap.Round,
-            StrokeEndLineCap = PenLineCap.Round,
-            Width = 30,
-            Height = 32,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top,
-            Focusable = false
-        };
+        var documentIcon = Theme.Glyph(Theme.Glyphs.Document, 32, Theme.Accent, 1.5);
+        documentIcon.HorizontalAlignment = HorizontalAlignment.Left; documentIcon.VerticalAlignment = VerticalAlignment.Top;
         documentRow.Children.Add(documentIcon);
         var name = Theme.Label(documentName, Theme.HeadingSize);
         name.Name = "DocumentName";

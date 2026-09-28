@@ -43,7 +43,7 @@ public sealed class ParameterSlider : StackPanel
             steps.SelectedIndex = 0;
             DockPanel.SetDock(steps, Dock.Right); row.Children.Add(steps);
         }
-        var restore = Theme.IconButton("M5 12A7 7 0 1 0 8 6.5 M4 3V8H9", () => SetValue(Math.Clamp(reset, min, max), true), label + " 초기화", 22, 13);
+        var restore = Theme.IconButton(Theme.Glyphs.Revert, () => SetValue(Math.Clamp(reset, min, max), true), label + " 초기화", 22, 13);
         restore.Margin = new Thickness(0);
         DockPanel.SetDock(restore, Dock.Right); row.Children.Add(restore);
         var caption = Theme.Label(label, Theme.BodySize, Theme.Muted); caption.Margin = new Thickness(1, 2, 2, 2); row.Children.Add(caption); Children.Add(row);

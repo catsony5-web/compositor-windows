@@ -54,7 +54,8 @@ public sealed partial class MainWindow
             DesignWorkspace = designWorkspace,
             StudioPage = studioPage,
             Panes = panes,
-            CollapsedSections = SectionHeader.CollapsedKeys
+            CollapsedSections = SectionHeader.CollapsedKeys,
+            ShowHistogram = showHistogram
         };
     }
 
@@ -76,6 +77,7 @@ public sealed partial class MainWindow
         }
         ShowStudioPage(Math.Clamp(layout.StudioPage, 0, 3), false);
         SectionHeader.SetCollapsedKeys(layout.CollapsedSections);
+        SetHistogramVisible(layout.ShowHistogram);
     }
 
     void SaveWorkspace()

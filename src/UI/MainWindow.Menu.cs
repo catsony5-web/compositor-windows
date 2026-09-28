@@ -75,6 +75,9 @@ public sealed partial class MainWindow
             var item = new MenuItem { Header = label }; if (requiresDocument) DocumentControl(item);
             item.Click += (_, _) => { if (!requiresDocument || HasDocument) Guard(action); }; view.Items.Add(item);
         }
+        histogramToggle = new MenuItem { Header = "히스토그램 표시", IsCheckable = true, IsChecked = showHistogram };
+        histogramToggle.Click += (_, _) => SetHistogramVisible(histogramToggle.IsChecked);
+        view.Items.Insert(view.Items.IndexOf(view.Items.OfType<MenuItem>().First(item => Equals(item.Header, "RGB / CMYK 미리보기 전환"))), histogramToggle);
         menu.Items.Add(BuildAutomationMenu());
         return menu;
     }

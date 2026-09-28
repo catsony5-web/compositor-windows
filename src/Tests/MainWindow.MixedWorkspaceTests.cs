@@ -68,7 +68,11 @@ public sealed partial class MainWindow
             Check(w.histogramCard!.Visibility == Visibility.Collapsed && w.studioPage == 0 && (string)w.studioTabs[0].Content == "디자인", "Design shortcuts not opened");
             Check(Toolbar(w).Distinct().Count() == Enum.GetValues<Tool>().Length, "Design profile omitted or duplicated tools");
             w.SetWorkspaceMode(false);
-            Check(w.histogramCard.Visibility == Visibility.Visible && w.studioPanes[2].Location == "left", "Photo profile did not restore histogram or preserve dock");
+            Check(w.histogramCard.Visibility == Visibility.Collapsed && w.studioPanes[2].Location == "left", "The optional histogram appeared by default or the dock moved");
+            w.SetHistogramVisible(true);
+            Check(w.histogramCard.Visibility == Visibility.Visible && w.histogramToggle!.IsChecked, "The photo profile did not show the enabled histogram");
+            w.SetWorkspaceMode(true); Check(w.histogramCard.Visibility == Visibility.Collapsed, "Design mode showed the histogram");
+            w.SetWorkspaceMode(false); w.SetHistogramVisible(false);
         });
         test("design quick actions add editable text with one undo and keep shape tools available", () =>
         {

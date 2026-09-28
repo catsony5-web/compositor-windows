@@ -23,9 +23,9 @@ public sealed class MessageDialog : Window
         var heading = new DockPanel();
         var (glyph, color) = kind switch
         {
-            NoticeKind.Error => ("M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z M9 9L15 15 M15 9L9 15", Theme.Danger),
-            NoticeKind.Warning => ("M12 3L22 20H2Z M12 9V14 M12 17.2V17.3", Theme.Warning),
-            _ => ("M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z M12 11V16.5 M12 7.6V7.7", Theme.Accent)
+            NoticeKind.Error => (Theme.Glyphs.Error, Theme.Danger),
+            NoticeKind.Warning => (Theme.Glyphs.Warning, Theme.Warning),
+            _ => (Theme.Glyphs.Info, Theme.Accent)
         };
         var icon = Theme.Glyph(glyph, 22, color, 1.8); icon.Margin = new Thickness(0, 0, 12, 0); icon.VerticalAlignment = VerticalAlignment.Center;
         heading.Children.Add(icon);
