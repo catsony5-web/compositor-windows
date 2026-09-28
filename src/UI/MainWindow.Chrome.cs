@@ -24,7 +24,6 @@ public sealed partial class MainWindow
         DockPanel.SetDock(actions, Dock.Right); header.Children.Add(actions);
         var divider = new Border { Width = 1, Height = 20, Background = Theme.Line, Margin = new Thickness(6, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
         DockPanel.SetDock(divider, Dock.Right); header.Children.Add(divider);
-        var proof = DocumentControl(BuildProofSwitch()); DockPanel.SetDock(proof, Dock.Right); header.Children.Add(proof);
         var modes = BuildWorkspaceSwitch(); DockPanel.SetDock(modes, Dock.Right); header.Children.Add(modes);
         var find = BuildCommandSearchButton(header); DockPanel.SetDock(find, Dock.Right); header.Children.Add(find);
         var brand = new Image { Source = Theme.BrandIcon, Width = 22, Height = 22, Margin = new Thickness(16, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Morupixel · 모루픽셀" };
@@ -34,7 +33,7 @@ public sealed partial class MainWindow
 
     // Title bar entry to the command palette; the key chip teaches Ctrl+K. Below
     // CompactHeaderWidth only the icon remains so the menu bar stays on one line.
-    const double CompactHeaderWidth = 1340;
+    const double CompactHeaderWidth = 1180;
     Button BuildCommandSearchButton(FrameworkElement header)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
@@ -64,15 +63,7 @@ public sealed partial class MainWindow
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         foreach (var (glyph, action, tip) in new (string, Action, string)[] { (Theme.Glyphs.Undo, Undo, "실행 취소 · Ctrl+Z"), (Theme.Glyphs.Redo, Redo, "다시 실행 · Ctrl+Shift+Z") })
             panel.Children.Add(DocumentControl(Theme.IconButton(glyph, () => { if (HasDocument) action(); }, tip)));
-        panel.Children.Add(new Border { Width = 1, Height = 18, Background = Theme.Line, Margin = new Thickness(8, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
-        foreach (var (label, action, tip) in new (string, Action, string)[] {
-            ("맞춤", () => { canvas.Fit(); UpdateStatus(); canvas.Focus(); }, "화면에 맞춤 · Ctrl+0"),
-            ("100%", () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); canvas.Focus(); }, "실제 크기 · Ctrl+1") })
-        {
-            var button = DocumentControl(Theme.Styled(Theme.Button(label, () => { if (HasDocument) action(); }, tip), "GhostButton"));
-            button.MinHeight = 28; button.Height = 28; button.Padding = new Thickness(9, 2, 9, 2); button.Margin = new Thickness(1, 0, 1, 0);
-            panel.Children.Add(button);
-        }
+        // Fit, actual size and zoom steps are in the status bar zoom control.
         return panel;
     }
 

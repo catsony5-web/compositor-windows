@@ -19,7 +19,7 @@ public sealed partial class MainWindow : Window
     readonly CanvasView canvas = new();
     readonly StackPanel properties = new();
     readonly LayerList layerList = new();
-    readonly TextBlock status = Theme.Label("준비", Theme.CaptionSize), documentTitle = Theme.Label("", Theme.CaptionSize), zoomLabel = Theme.Label("", Theme.CaptionSize);
+    readonly TextBlock status = Theme.Label("준비", Theme.CaptionSize), documentTitle = Theme.Label("", Theme.CaptionSize);
     readonly Dictionary<Tool, Button> toolButtons = [];
     readonly ColorSwatches colorSwatches;
     readonly StackPanel brushOptions = new() { Orientation = Orientation.Horizontal }, opacityOptions = new() { Orientation = Orientation.Horizontal }, gradientOptions = new() { Orientation = Orientation.Horizontal };
@@ -50,11 +50,12 @@ public sealed partial class MainWindow : Window
         FontFamily = Theme.UiFont; FontSize = Theme.BodySize; UseLayoutRounding = true;
         var root = new Grid { Background = Theme.Header }; Content = root;
         // Title bar with inline menu · contextual tool options · floating workspace cards · status.
-        foreach (double h in new[] { 44.0, 44, -1, 26 }) root.RowDefinitions.Add(new RowDefinition { Height = h < 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(h) });
+        foreach (double h in new[] { 44.0, OptionRowHeight, -1, 30 }) root.RowDefinitions.Add(new RowDefinition { Height = h < 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(h) });
+        optionRow = root.RowDefinitions[1];
         root.Children.Add(BuildHeader());
 
         var optionHost = new DockPanel { LastChildFill = true, Margin = new Thickness(12, 0, 6, 0) };
-        var optionCard = new Border { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Margin = new Thickness(8, 0, 8, 4), Child = optionHost };
+        optionCard = new Border { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Margin = new Thickness(8, 0, 8, 4), Child = optionHost };
         Grid.SetRow(optionCard, 1); root.Children.Add(optionCard);
         var viewport = BuildViewportActions(); DockPanel.SetDock(viewport, Dock.Right); optionHost.Children.Add(viewport);
         var options = new StackPanel { Orientation = Orientation.Horizontal };
@@ -93,20 +94,18 @@ public sealed partial class MainWindow : Window
         workspaceTools = tools; photoToolOrder = toolButtons.Keys.ToArray();
         toolColumn.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(10, 4, 10, 0) });
         colorSwatches = new ColorSwatches(() => ChooseColor(false), () => ChooseColor(true), SwapColors, ResetColors); toolColumn.Children.Add(colorSwatches);
-        body.Children.Add(new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
+        toolRail = new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+        body.Children.Add(toolRail);
         // The document stage: tabs merge into the canvas, clipped to the card's rounded corners.
         var workspace = new Grid { Background = Theme.Panel }; workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) }); workspace.RowDefinitions.Add(new RowDefinition());
-        var stage = new ClipBorder { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Margin = new Thickness(0, 0, 0, 8), Child = workspace };
+        var stage = stageCard = new ClipBorder { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Margin = new Thickness(0, 0, 0, 8), Child = workspace };
         Grid.SetColumn(stage, 2); body.Children.Add(stage);
         workspace.Children.Add(BuildDocumentStrip());
         Grid.SetRow(canvas, 1); workspace.Children.Add(canvas);
         emptyWorkspace = BuildEmptyWorkspace(); Grid.SetRow(emptyWorkspace, 1); workspace.Children.Add(emptyWorkspace);
-        var left = new ScrollViewer { Content = leftPanels, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; Grid.SetColumn(left, 1); body.Children.Add(left);
-        var right = BuildInspectorPanel(); Grid.SetColumn(right, 3); body.Children.Add(right);
-        var bottom = new DockPanel { Background = Theme.Header }; status.Margin = new Thickness(18, 0, 8, 0); status.Foreground = Theme.Muted; zoomLabel.Foreground = Theme.Muted;
-        DockPanel.SetDock(zoomLabel, Dock.Right); zoomLabel.Margin = new Thickness(8, 0, 18, 0); bottom.Children.Add(zoomLabel);
-        DockPanel.SetDock(documentInfo, Dock.Right); documentInfo.Margin = new Thickness(8, 0, 10, 0); bottom.Children.Add(documentInfo);
-        bottom.Children.Add(status); Grid.SetRow(bottom, 3); root.Children.Add(bottom);
+        var left = leftPanelHost = new ScrollViewer { Content = leftPanels, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; Grid.SetColumn(left, 1); body.Children.Add(left);
+        var right = rightPanelHost = BuildInspectorPanel(); Grid.SetColumn(right, 3); body.Children.Add(right);
+        var bottom = BuildStatusBar(); Grid.SetRow(bottom, 3); root.Children.Add(bottom);
 
         canvas.MouseDown += OnDown; canvas.MouseMove += OnMove; canvas.MouseUp += OnUp;
         Loaded += (_, _) => LoadCustomBrushTips();
@@ -209,14 +208,15 @@ public sealed partial class MainWindow : Window
     void UpdateStatus()
     {
         UpdateDocumentInfo();
-        if (!HasDocument) { status.Text = ""; status.ToolTip = null; zoomLabel.Text = ""; return; }
+        if (!HasDocument) { status.Text = ""; status.ToolTip = null; objectCount.Text = ""; UpdateZoomBox(); return; }
         var hint = tool switch { Tool.Move => "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · Alt+좌우 드래그 / [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기 · Alt+좌우 드래그: 크기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Bucket => "클릭: 전경색으로 영역 채우기 · 허용 오차·연결 영역 조절 · Esc 취소", Tool.Gradient => gradientToBackground ? "전경색 → 배경색 그라데이션 · 드래그" : "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
         status.Text = ToolDisplayName(tool) + (maskEditing ? " · 마스크" : "");
         status.ToolTip = hint + (tool == Tool.Move ? "\n자석 정렬 · Alt: 스냅 잠시 해제 · Shift: 가로/세로 고정" : "") + "\n휠: 확대/축소 · Space+드래그: 화면 이동";
-        zoomLabel.Text = $"{(selectedLayers.Count > 1 ? $"{selectedLayers.Count:N0}개 선택" : $"{doc.Layers.Count(l => l.Kind != LayerKind.Group):N0}개 객체")}    {canvas.Zoom * 100:0.#}%";
+        objectCount.Text = selectedLayers.Count > 1 ? $"{selectedLayers.Count:N0}개 선택" : $"{doc.Layers.Count(l => l.Kind != LayerKind.Group):N0}개 객체";
+        UpdateZoomBox();
     }
     void UpdateDocumentInfo() => documentInfo.Text = HasDocument
-        ? $"{doc.Width:N0} × {doc.Height:N0} px  ·  {doc.Dpi:0.#} DPI  ·  {(cmykProof ? "CMYK 미리보기" : "RGB")}" : "";
+        ? $"{doc.Width:N0} × {doc.Height:N0} px  ·  {doc.Dpi:0.#} DPI" : "";
     void SelectLayer(Guid id)
     {
         // Row buttons are not focusable; commit the current inspector value before

@@ -1,4 +1,12 @@
-# Morupixel 0.2.0 Preview 28 — command palette, icon panels and saved workspace
+# Morupixel 0.2.0 Preview 29 — focused start screen and status-bar zoom
+
+- **A calmer start.** Without a document, the start screen uses the whole window; the tool rail, side panels and tool options appear once a document opens, in the same arrangement as before.
+- **Quick start sizes.** Square 1080×1080, portrait 4:5 1080×1350, wide 16:9 1920×1080 and A4 print (150 DPI, white background) create a document in one click.
+- **Zoom in the status bar.** Step with −/+ or Ctrl+- / Ctrl++, type `150`, `150%` or `1.5x`, pick fit or 25–800% from the list, or use the fit button. Ctrl+0 fits and Ctrl+1 shows actual size.
+- **View controls together.** The RGB / CMYK print preview moves from the title bar to the status bar beside the document size and zoom, leaving the title bar for menus, search, work mode and file actions.
+- **Validation.** 513 source checks passed and the offscreen captures were reviewed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 28 — command palette, icon panels and saved workspace
 
 - **Your workspace comes back.** Window size and position, the right panel width, photo/design mode, the last tab, docked, floating or pinned panels and folded sections are restored on the next launch. They are stored only in the user's local application data.
 - **Find any command with Ctrl+K.** Search menus, tools and panels by name, Korean initial consonants (`ㅂㄹㅅ` → 브러시 도구) or shortcut. Recent commands appear first. The palette also opens from View → 명령 찾기… and the search button in the title bar.

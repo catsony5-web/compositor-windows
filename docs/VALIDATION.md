@@ -1,4 +1,11 @@
-# Preview 28 workspace and panel validation
+# Preview 29 start screen and status bar validation
+
+- Source self-tests: **513/513 passed** on Windows x64. Three added checks cover the focused start screen and its return to the saved arrangement (including unchanged panel widths), one-click quick sizes with 150 DPI A4, zoom steps, typed percentages and factors, invalid input, limits, presets and Ctrl shortcuts, and RGB/CMYK segments following the proof state.
+- `--render-studio-previews` produced **38 offscreen captures**; the start screen, 1280×720, 1366×768 and 1920×1080 windows were compared with Preview 28, and the tracked screenshots were refreshed.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered by offscreen rendering: live drag-and-drop onto the start screen, zoom-box focus in a shown window and 150%/200% scaling. No existing editor session or user document was used.
+
+## Preview 28 workspace and panel validation
 
 - Source self-tests: **510/510 passed** on Windows x64. Eleven added checks cover the workspace layout store and restore (including the histogram choice and headless isolation from the user's layout), command-palette ranking and Korean initial consonants, registry uniqueness and Ctrl+K routing, section folding and restore, shared 30 DIP inspector rows, icon-led quick actions with complete names, locked-layer command state, responsive columns and the absence of third-party product names in user-facing text.
 - `--render-studio-previews` produced **38 offscreen captures**, adding the command palette, a folded inspector section and the photo and design action panels. Before/after renders of the same synthetic sample were compared visually, and the tracked screenshots were refreshed.

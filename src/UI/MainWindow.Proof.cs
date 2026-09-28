@@ -9,19 +9,7 @@ public sealed partial class MainWindow
 {
     bool cmykProof;
     string? proofProfile;
-    GlassSwitch? proofSwitch;
-    FrameworkElement BuildProofSwitch()
-    {
-        proofSwitch = new GlassSwitch("RGB", "CMYK 보기", 148) { Margin = new Thickness(2, 0, 2, 0) };
-        proofSwitch.Click += (_, _) => Guard(() => { try { SetProof(proofSwitch.IsChecked == true); } finally { UpdateProofButtons(); } });
-        UpdateProofButtons(); return proofSwitch;
-    }
-    void UpdateProofButtons()
-    {
-        if (proofSwitch == null) return;
-        proofSwitch.IsChecked = cmykProof;
-        proofSwitch.ToolTip = "RGB 원본을 유지하며 인쇄색 확인 · " + (proofProfile ?? "Windows 기본 CMYK 프로필") + " · Ctrl+Shift+Y\nCMYK 파일 저장: 파일 → 인쇄용 CMYK 내보내기";
-    }
+    // The RGB / CMYK toggle is in the status bar (MainWindow.StatusBar.cs).
     void SetProof(bool enabled)
     {
         if (enabled == cmykProof) return;
