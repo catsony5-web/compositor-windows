@@ -55,7 +55,8 @@ public sealed partial class MainWindow
             StudioPage = studioPage,
             Panes = panes,
             CollapsedSections = SectionHeader.CollapsedKeys,
-            ShowHistogram = showHistogram
+            ShowHistogram = showHistogram,
+            RibbonMode = ribbonMode, RibbonCollapsed = ribbonCollapsed, RibbonTab = ribbonTab, RibbonFavorites = ribbonFavorites.ToArray()
         };
     }
 
@@ -78,6 +79,36 @@ public sealed partial class MainWindow
         ShowStudioPage(Math.Clamp(layout.StudioPage, 0, 3), false);
         SectionHeader.SetCollapsedKeys(layout.CollapsedSections);
         SetHistogramVisible(layout.ShowHistogram);
+        ribbonMode = layout.RibbonMode; ribbonCollapsed = layout.RibbonCollapsed;
+        if (layout.RibbonTab != null && RibbonTabNames().Contains(layout.RibbonTab)) ribbonTab = layout.RibbonTab;
+        if (layout.RibbonFavorites != null) ribbonFavorites = [.. layout.RibbonFavorites];
+        RebuildRibbon();
+    }
+
+    // Keeps a window (and its minimum size) inside the work area of the screen it opens on,
+    // so small or scaled displays never cut off its edges.
+    internal static void FitToWorkArea(Window window)
+    {
+        var area = SystemParameters.WorkArea;
+        window.MinWidth = Math.Min(window.MinWidth, area.Width); window.MinHeight = Math.Min(window.MinHeight, area.Height);
+        if (!double.IsNaN(window.Width)) window.Width = Math.Min(window.Width, area.Width);
+        if (!double.IsNaN(window.Height)) window.Height = Math.Min(window.Height, area.Height);
+        window.MaxHeight = Math.Min(window.MaxHeight, area.Height); window.MaxWidth = Math.Min(window.MaxWidth, area.Width);
+        if (double.IsFinite(window.Left) && double.IsFinite(window.Top) && window.WindowState == WindowState.Normal)
+        {
+            double width = double.IsNaN(window.Width) ? window.ActualWidth : window.Width, height = double.IsNaN(window.Height) ? window.ActualHeight : window.Height;
+            window.Left = Math.Clamp(window.Left, area.Left, Math.Max(area.Left, area.Right - width));
+            window.Top = Math.Clamp(window.Top, area.Top, Math.Max(area.Top, area.Bottom - height));
+        }
+    }
+
+    // Every owned window (dialogs, floating panels, palette) is fitted once it has its size.
+    static MainWindow()
+    {
+        EventManager.RegisterClassHandler(typeof(Window), LoadedEvent, new RoutedEventHandler((sender, _) =>
+        {
+            if (sender is Window { Owner: not null } owned && sender is not MainWindow) FitToWorkArea(owned);
+        }));
     }
 
     void SaveWorkspace()

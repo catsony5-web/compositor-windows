@@ -90,6 +90,7 @@ public static class SelfTests
         MainWindow.RunPropertyPanelTests(Test, directory);
         MainWindow.RunQuickActionTests(Test, directory);
         MainWindow.RunStartFocusTests(Test, directory);
+        MainWindow.RunRibbonTests(Test, directory);
         MainWindow.RunDrawingCleanupTests(Test, directory);
         CompatibilityDialog.RunCleanupTests(Test);
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);

@@ -75,6 +75,10 @@ public sealed partial class MainWindow
             var item = new MenuItem { Header = label }; if (requiresDocument) DocumentControl(item);
             item.Click += (_, _) => { if (!requiresDocument || HasDocument) Guard(action); }; view.Items.Add(item);
         }
+        ribbonToggle = new MenuItem { Header = "리본 메뉴로 보기", IsCheckable = true, IsChecked = ribbonMode, ToolTip = "메뉴를 탭과 아이콘 버튼으로 표시합니다. ^로 접을 수 있습니다." };
+        ribbonToggle.Click += (_, _) => SetRibbonMode(ribbonToggle.IsChecked);
+        view.Items.Add(new Separator()); view.Items.Add(ribbonToggle);
+        var resetFavorites = new MenuItem { Header = "리본 내 탭 초기화" }; resetFavorites.Click += (_, _) => ResetFavorites(); view.Items.Add(resetFavorites);
         histogramToggle = new MenuItem { Header = "히스토그램 표시", IsCheckable = true, IsChecked = showHistogram };
         histogramToggle.Click += (_, _) => SetHistogramVisible(histogramToggle.IsChecked);
         view.Items.Insert(view.Items.IndexOf(view.Items.OfType<MenuItem>().First(item => Equals(item.Header, "RGB / CMYK 미리보기 전환"))), histogramToggle);

@@ -140,6 +140,7 @@
 | `UI/MainWindow.Studio.cs`, `.Docking.cs`, `.WorkspaceActions.cs` | 오른쪽 탭 카드, 패널 도킹, 탭별 작업 버튼 |
 | `UI/MainWindow.Inspector.cs`, `.DrawingLayers.cs`, `.TextProperties.cs`, `.ShapeProperties.cs` | 속성 패널, 레이어 카드 |
 | `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면(빠른 시작 크기, 문서가 없을 때의 집중 배치)과 최근 문서 목록 |
+| `UI/MainWindow.Ribbon.cs` | 리본(메뉴 → 탭, 구분선 → 제목 묶음, 3개 이하 큰 버튼·그 이상 3줄 작은 버튼), ^ 접기, 내 탭 |
 | `UI/MainWindow.StatusBar.cs` | 상태 표시줄: 문서 정보, RGB/CMYK 전환, 배율 조절(단계·입력·목록) |
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
 | `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
