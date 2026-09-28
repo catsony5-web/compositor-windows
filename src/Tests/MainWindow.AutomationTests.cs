@@ -44,6 +44,11 @@ public sealed partial class MainWindow
             Check(!string.IsNullOrWhiteSpace(Text(error, "code")) && !string.IsNullOrWhiteSpace(Text(error, "message")), "Failure lacks actionable error details");
             if (expectedCode != null) Check(Text(error, "code") == expectedCode, $"Expected {expectedCode}, received {response.ToJsonString()}");
         }
+        static JsonObject FailureError(JsonObject response)
+        {
+            Failure(response);
+            return response["error"]!.AsObject();
+        }
         static T Await<T>(Task<T> task)
         {
             if (!task.IsCompleted)
@@ -518,6 +523,30 @@ public sealed partial class MainWindow
             Check(SameDocument(window.doc, before), "Failed plan left a partial pattern change");
             Success(Call(window, "set_layer", Write(window, ("layerId", id), ("locked", true))));
             Failure(Call(window, "update_material", Write(window, ("layerId", id), ("tileWidth", 7))), "layer_locked");
+        });
+
+        Case("missing materials regions and source files report specific codes without editing", window =>
+        {
+            New(window, "Missing references");
+            string texture = Path.Combine(files, "missing-reference-texture.png");
+            using (var output = File.Create(texture)) Raster.Solid(4, 4, Colors.Olive).WritePng(output);
+            string materialId = Text(Success(Call(window, "register_material", Write(window, ("name", "Olive"), ("path", texture)))), "materialId");
+            JsonArray Points() => new(new JsonObject { ["x"] = 2, ["y"] = 2 }, new JsonObject { ["x"] = 30, ["y"] = 2 }, new JsonObject { ["x"] = 30, ["y"] = 30 });
+            string regionId = Text(Success(Call(window, "define_region", Write(window, ("source", "polygon"), ("name", "Tri"), ("points", Points())))), "regionId");
+            var before = window.doc.Snapshot();
+            string unknown = Guid.NewGuid().ToString();
+            Failure(Call(window, "apply_material", Write(window, ("materialId", unknown), ("regionId", regionId), ("tileWidth", 4), ("tileHeight", 4))), "material_not_found");
+            Failure(Call(window, "apply_material", Write(window, ("materialId", materialId), ("regionId", unknown), ("tileWidth", 4), ("tileHeight", 4))), "region_not_found");
+            var batch = FailureError(Call(window, "apply_batch", Batch(window, Step("apply_material", ("materialId", materialId), ("regionId", unknown), ("tileWidth", 4), ("tileHeight", 4)))));
+            Check(Text(batch, "code") == "region_not_found" && batch["details"]!["stepIndex"]!.GetValue<int>() == 0, "Batch lost the specific missing-region code: " + batch.ToJsonString());
+            Check(!string.IsNullOrWhiteSpace(Text(batch, "suggestedAction")) && Text(batch, "suggestedAction").Contains("query_regions"), "Missing region lacks a query hint");
+            string absent = Path.Combine(files, "absent-source.png");
+            foreach (var (command, args) in new[] { ("add_image", Write(window, ("path", absent))), ("register_material", Write(window, ("name", "Absent"), ("path", absent))) })
+            {
+                var error = FailureError(Call(window, command, args));
+                Check(Text(error, "code") == "file_not_found" && Text(error, "message") == "파일을 찾을 수 없습니다.", command + " exposed a raw runtime message: " + error.ToJsonString());
+            }
+            Check(SameDocument(window.doc, before), "Rejected references changed the document");
         });
 
         Case("cancelled requests cannot create documents edit history or write output files", window =>

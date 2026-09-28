@@ -174,8 +174,10 @@ public static partial class AutomationCatalog
             else if (field.Type == "string")
             {
                 string text = value!.GetValue<string>();
-                if ((!field.EmptyAllowed && string.IsNullOrWhiteSpace(text)) || field.MaxLength > 0 && text.Length > field.MaxLength)
-                    throw new ArgumentException($"Invalid length for {key} (maximum {field.MaxLength}).");
+                if (!field.EmptyAllowed && string.IsNullOrWhiteSpace(text))
+                    throw new ArgumentException($"{key} must not be empty or whitespace.");
+                if (field.MaxLength > 0 && text.Length > field.MaxLength)
+                    throw new ArgumentException($"{key} exceeds the maximum length of {field.MaxLength} characters.");
                 if (field.Choices != null && !field.Choices.Contains(text, StringComparer.Ordinal)) throw new ArgumentException($"Invalid {key}: choose {string.Join(", ", field.Choices)}.");
                 if (field.GuidValue && (!Guid.TryParseExact(text, "D", out var id) || id == Guid.Empty)) throw new ArgumentException($"{key} must be a nonempty GUID returned by Morupixel.");
                 if (field.Color && !Regex.IsMatch(text, "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|transparent)$", RegexOptions.CultureInvariant))

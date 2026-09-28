@@ -38,4 +38,10 @@ dotnet run --project tools/qa/io/IoHarness.csproj -c Release
 dotnet run --project tools/qa/retouch/Benchmark.csproj -c Release
 ```
 
+`automation-smoke.cjs` is a Node.js end-to-end check of the AI connection. It starts its own hidden `--automation-headless` session and `--mcp` server from the given executable, exercises the MCP tool catalog with synthetic documents, and stops only those two processes:
+
+```powershell
+node tools/qa/automation-smoke.cjs src/bin/Release/net8.0-windows10.0.19041.0/win-x64/Morupixel.exe artifacts/qa/automation
+```
+
 `bin/`, `obj/`, and `artifacts/` are already ignored by Git. Keep source files in this directory and generated files in those output locations. Historical outputs remain in their original directories until explicitly cleaned; the source move does not regenerate or replace them.

@@ -61,6 +61,23 @@ public static class AutomationProtocolTests
             Check(args.ToJsonString() == before, "Validation must not rewrite or clamp arguments.");
         });
 
+        test("automation catalog distinguishes blank strings from overlong strings in validation messages", () =>
+        {
+            string Message(string command, JsonObject args)
+            {
+                try { AutomationCatalog.Validate(command, args); }
+                catch (ArgumentException e) { return e.Message; }
+                throw new Exception("Expected argument rejection: " + command + " " + args.ToJsonString());
+            }
+            var shape = Mutation(); shape["shape"] = " "; shape["width"] = 4; shape["height"] = 4;
+            string blank = Message("add_shape", shape);
+            Check(blank.Contains("shape") && blank.Contains("empty") && !blank.Contains("maximum 0"), "Blank choice reported a meaningless length limit: " + blank);
+            blank = Message("new_document", new JsonObject { ["name"] = "", ["width"] = 4, ["height"] = 4 });
+            Check(blank.Contains("name") && blank.Contains("empty") && !blank.Contains("4096"), "Blank name was reported as too long: " + blank);
+            string overlong = Message("new_document", new JsonObject { ["name"] = new string('x', 4097), ["width"] = 4, ["height"] = 4 });
+            Check(overlong.Contains("name") && overlong.Contains("4096"), "Overlong name did not report its limit: " + overlong);
+        });
+
         test("MCP legacy initialization negotiates supported version and notifications do not produce replies", () =>
         {
             var initialize = new JsonObject
