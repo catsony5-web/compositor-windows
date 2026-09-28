@@ -44,7 +44,7 @@ public sealed partial class MainWindow
             if (action != null) { Guard(action); return true; }
             // Consume document commands without touching the placeholder model. Leave Tab,
             // menu navigation and unrecognized keys available to the empty workspace's UI.
-            return ctrl ? key is Key.S or Key.W or Key.E or Key.Z or Key.Y or Key.J or Key.T or Key.L or Key.U or Key.G or Key.I or Key.D or Key.A or Key.C or Key.Back or Key.Delete or Key.D0 or Key.NumPad0 or Key.D1 or Key.NumPad1 or Key.Tab
+            return ctrl ? key is Key.S or Key.W or Key.E or Key.Z or Key.Y or Key.J or Key.T or Key.L or Key.U or Key.G or Key.I or Key.D or Key.A or Key.C or Key.Back or Key.Delete or Key.D0 or Key.NumPad0 or Key.D1 or Key.NumPad1 or Key.OemPlus or Key.Add or Key.OemMinus or Key.Subtract or Key.Tab
                 : (alt && (key is Key.Back or Key.Delete)) || key is Key.Delete or Key.Escape or Key.Left or Key.Right or Key.Up or Key.Down || (shift && key == Key.F5);
         }
         if (!ctrl && !alt && tool == Tool.Artboard)
@@ -69,8 +69,10 @@ public sealed partial class MainWindow
             Key.A when designWorkspace && tool == Tool.Move => SelectAllObjects,
             Key.A => () => { selection = new Selection(new Rect(0, 0, doc.Width, doc.Height)); Refresh(false); },
             Key.C => CopyMerged, Key.V => Paste, Key.Back or Key.Delete when !alt => FillBackground,
-            Key.D0 or Key.NumPad0 => () => { canvas.Fit(); UpdateStatus(); },
-            Key.D1 or Key.NumPad1 => () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); },
+            Key.D0 or Key.NumPad0 => FitView,
+            Key.D1 or Key.NumPad1 => ActualSize,
+            Key.OemPlus or Key.Add => () => StepZoom(1),
+            Key.OemMinus or Key.Subtract => () => StepZoom(-1),
             Key.Tab when tabs.Count > 0 => () => SwitchTab((activeTab + (shift ? tabs.Count - 1 : 1)) % tabs.Count), _ => null
         };
         else if (alt && key is Key.Back or Key.Delete) action = Fill;

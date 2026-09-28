@@ -52,7 +52,9 @@
 - 간격: 4 · 8 · 12 · 16. 카드 사이와 창 가장자리는 8.
 - 모서리: 카드 10, 입력칸·버튼 6, 작은 칩 4–5.
 - 높이: 기본 버튼·입력칸 30(`ControlHeight`), 옵션 바·밀집 행 28(`CompactHeight`), 레이어 행 40, 인스펙터 동작 행 최소 34, 슬라이더 값 입력 26.
-- 창 구조: 제목 표시줄(메뉴 포함) 44 · 도구 옵션 카드 44 · 본문 · 상태 표시줄 26. 도구막대 84, 오른쪽 패널 기본 396(324–520).
+- 창 구조: 제목 표시줄(메뉴 포함) 44 · 도구 옵션 카드 44 · 본문 · 상태 표시줄 30. 도구막대 84, 오른쪽 패널 기본 396(324–520).
+- 역할 나누기: 제목 표시줄은 메뉴·명령 검색·작업 모드·파일 동작, 도구 옵션 카드는 현재 도구 설정과 실행 취소, 상태 표시줄은 보기(문서 정보·RGB/CMYK·배율)를 맡는다. 보기 조절을 편집 영역에 섞지 않는다.
+- 문서가 없을 때(시작 화면): 작업 카드가 본문 전체를 쓰고 도구막대·옆 패널·도구 옵션·상태 표시줄의 보기 조절을 숨긴다. 열 너비는 바꾸지 않으므로 저장된 배치가 그대로 유지된다.
 
 ## 컴포넌트
 
@@ -137,7 +139,8 @@
 | `UI/MainWindow.Commands.cs`, `UI/Dialogs/CommandPalette.cs` | 명령 레지스트리와 명령 팔레트(Ctrl+K), 검색 순위·초성 |
 | `UI/MainWindow.Studio.cs`, `.Docking.cs`, `.WorkspaceActions.cs` | 오른쪽 탭 카드, 패널 도킹, 탭별 작업 버튼 |
 | `UI/MainWindow.Inspector.cs`, `.DrawingLayers.cs`, `.TextProperties.cs`, `.ShapeProperties.cs` | 속성 패널, 레이어 카드 |
-| `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면과 최근 문서 목록 |
+| `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면(빠른 시작 크기, 문서가 없을 때의 집중 배치)과 최근 문서 목록 |
+| `UI/MainWindow.StatusBar.cs` | 상태 표시줄: 문서 정보, RGB/CMYK 전환, 배율 조절(단계·입력·목록) |
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |
 | `UI/Controls/` | 캔버스(눈금자 포함), 레이어 행, 슬라이더, 스위치, 카드(`GlassPanel`, `ClipBorder`), 패널(`StudioPane`) |
 | `UI/Controls/PropertyRows.cs`, `SectionHeader.cs` | 속성 패널 공통 행(캡션 · 입력 · 두 열 · 색 칩)과 접이식 섹션 제목 |

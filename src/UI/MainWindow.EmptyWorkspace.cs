@@ -10,6 +10,18 @@ public sealed partial class MainWindow
     readonly StackPanel recentPanel = new() { Margin = new Thickness(5, 22, 5, 0) };
     IReadOnlyList<string> recentDocuments = [];
     FrameworkElement? emptyWorkspace;
+    // Start focus: without a document the stage spans the whole body and the tool rail,
+    // side panels and tool options step aside; column widths are left untouched.
+    const double OptionRowHeight = 44;
+    FrameworkElement? toolRail, optionCard, leftPanelHost, rightPanelHost, stageCard;
+    RowDefinition? optionRow;
+    internal static readonly (string Label, string Caption, string Width, string Height, bool Millimeters, string Dpi, int Background)[] QuickSizes =
+    [
+        ("정사각형", "1080 × 1080", "1080", "1080", false, "96", 0),
+        ("세로 4:5", "1080 × 1350", "1080", "1350", false, "96", 0),
+        ("와이드 16:9", "1920 × 1080", "1920", "1080", false, "96", 0),
+        ("A4 인쇄", "210 × 297 mm", "210", "297", true, "150", 1)
+    ];
     bool startupInitialized;
     bool HasDocument => tabs.Count > 0;
 
@@ -40,6 +52,26 @@ public sealed partial class MainWindow
             actions.Children.Add(button);
         }
         card.Children.Add(actions);
+        var quickTitle = Theme.Label("빠른 시작", Theme.BodySize, Theme.Muted); quickTitle.FontWeight = FontWeights.SemiBold; quickTitle.Margin = new Thickness(7, 18, 5, 6);
+        card.Children.Add(quickTitle);
+        var quick = new System.Windows.Controls.Primitives.UniformGrid { Columns = 4, Margin = new Thickness(2, 0, 2, 0) };
+        foreach (var size in QuickSizes)
+        {
+            var preset = size;
+            var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+            // The outline shows the page proportion at a glance.
+            double w = double.Parse(preset.Width), h = double.Parse(preset.Height), scale = 18 / Math.Max(w, h);
+            var outline = new Border { Width = Math.Max(8, w * scale), Height = Math.Max(8, h * scale), BorderBrush = Theme.Muted, BorderThickness = new Thickness(1.4), CornerRadius = new CornerRadius(2.5), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            content.Children.Add(new Grid { Height = 20, Margin = new Thickness(0, 0, 0, 8), Children = { outline } });
+            content.Children.Add(new TextBlock { Text = preset.Label, FontSize = Theme.CaptionSize, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center });
+            content.Children.Add(new TextBlock { Text = preset.Caption, FontSize = 11, Foreground = Theme.Subtle, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap });
+            var button = Theme.Button("", () => Guard(() => AddTab(NewDocumentDialog.CreateDocument("제목 없음", preset.Width, preset.Height, preset.Background, preset.Millimeters, preset.Dpi), null)), $"{preset.Label} · {preset.Caption}{(preset.Millimeters ? $" · {preset.Dpi} DPI" : " px")} · {(preset.Background == 1 ? "흰 배경" : "투명 배경")}으로 새 문서 만들기");
+            button.Content = content; button.Width = 108; button.MinHeight = 84; button.Margin = new Thickness(4); button.Padding = new Thickness(6, 10, 6, 8);
+            button.HorizontalContentAlignment = HorizontalAlignment.Center;
+            System.Windows.Automation.AutomationProperties.SetName(button, $"빠른 시작: {preset.Label} {preset.Caption}");
+            quick.Children.Add(button);
+        }
+        card.Children.Add(quick);
         var drop = new Grid { Margin = new Thickness(5, 14, 5, 0), Height = 44 };
         drop.Children.Add(new System.Windows.Shapes.Rectangle { Stroke = Theme.Stroke, StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = 8, RadiusY = 8 });
         drop.Children.Add(new TextBlock { Text = "이미지나 작업 파일을 여기로 끌어다 놓아도 열립니다", Foreground = Theme.Muted, FontSize = Theme.CaptionSize, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
@@ -105,6 +137,17 @@ public sealed partial class MainWindow
         properties.IsEnabled = opened;
         UpdateHistogramVisibility();
         if (!opened) histogramInfo.Text = "";
+        ApplyStartFocus(!opened);
+    }
+
+    void ApplyStartFocus(bool empty)
+    {
+        if (stageCard == null) return;
+        Grid.SetColumn(stageCard, empty ? 0 : 2); Grid.SetColumnSpan(stageCard, empty ? 4 : 1);
+        foreach (var element in new[] { toolRail, leftPanelHost, rightPanelHost, optionCard })
+            if (element != null) element.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
+        if (optionRow != null) optionRow.Height = new GridLength(empty ? 8 : OptionRowHeight);
+        if (viewControls != null) viewControls.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
     }
 
     void InitializeStartup()
