@@ -84,9 +84,12 @@ public sealed class SectionHeader : ToggleButton
 
     public static string[] CollapsedKeys => collapsed.Order(StringComparer.Ordinal).ToArray();
 
-    public static void SetCollapsedKeys(IEnumerable<string> keys)
+    public static string[] OpenedDefaultKeys => openedDefaults.Order(StringComparer.Ordinal).ToArray();
+
+    public static void SetCollapsedKeys(IEnumerable<string> keys, IEnumerable<string>? openedByUser = null)
     {
         collapsed.Clear(); collapsed.UnionWith(keys);
+        if (openedByUser != null) { openedDefaults.Clear(); openedDefaults.UnionWith(openedByUser); }
         SectionHeader[] headers;
         lock (live) headers = live.Select(reference => reference.TryGetTarget(out var header) ? header : null).OfType<SectionHeader>().ToArray();
         foreach (var header in headers) header.IsChecked = StartsFolded(header.Key, header.foldedByDefault);

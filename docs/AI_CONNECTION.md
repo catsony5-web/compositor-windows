@@ -69,7 +69,8 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | --- | --- |
 | 세션·문서·지원 기능 확인 | `morupixel_list_sessions`, `morupixel_get_state`, `morupixel_get_capabilities` |
 | 객체 검색·상세 조회 | `morupixel_query_layers`, `morupixel_get_layer` |
-| 문서 만들기·열기·전환 | `morupixel_new_document`, `morupixel_open_document`, `morupixel_activate_document` |
+| 문서 만들기·열기·전환 | `morupixel_new_document`, `morupixel_inspect_file`, `morupixel_open_document`, `morupixel_activate_document` |
+| 대지 만들기·수정·삭제 | `morupixel_add_artboard`, `morupixel_update_artboard`, `morupixel_delete_artboard` |
 | 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape` |
 | 레이어 속성·삭제·순서 | `morupixel_set_layer`, `morupixel_delete_layer`, `morupixel_reorder_layer` |
 | 조정 레이어·AI 배경 제거 | `morupixel_add_adjustment`, `morupixel_remove_background` |
@@ -84,9 +85,9 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형과 타원을 지원합니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상을 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
 
-편집은 **RGB 8비트** 기준입니다. `save_project`는 편집 가능한 `.moruproj`를 저장하고, `export_image`는 **PNG·JPEG·TIFF**로 출력합니다. `layerId`를 지정하면 해당 레이어를 출력합니다. 이 자동화 명령에는 PDF·PSD·CMYK 출력 옵션이 아직 없습니다. 앱 화면에서 제공하는 내보내기 기능의 범위와 구분하세요.
+편집은 **RGB 8비트** 기준입니다. `save_project`는 편집 가능한 `.moruproj`를 저장하고, `export_image`는 **PNG·JPEG·TIFF**로 출력합니다. `layerId`를 지정하면 해당 레이어를, `artboardId`를 지정하면 그 대지 영역만 출력합니다(둘 중 하나만). `scale`(0.05~8, 기본 1)로 크기를 바꾸고, PNG·TIFF는 `keepTransparency: false`로 투명한 곳을 흰색으로 채웁니다. JPEG는 투명도가 없어 이 옵션을 받지 않습니다. 결과에는 출력 `width`·`height`가 들어갑니다. 이 자동화 명령에는 PDF·PSD·CMYK 출력 옵션이 아직 없습니다. 앱 화면에서 제공하는 내보내기 기능의 범위와 구분하세요.
 
-`open_document`는 기존 가져오기 엔진의 기본 설정을 사용합니다. PDF/PDF 호환 AI는 **첫 페이지·150 DPI** 기준이며, 파일에 저장된 PDF 레이어와 원본 벡터를 보존합니다. PSD/PSB는 합성 이미지로, DWG/DXF는 기본 **긴 변 2,400px** 기준의 미리보기와 벡터 경로를 포함한 레이어로 가져옵니다. 페이지·CAD 레이아웃·레이어 분리 같은 세부 가져오기 옵션은 현재 자동화 명령에 없습니다. 원본 CAD의 치수·축척·모든 객체 속성이 그대로 편집되는 것은 아닙니다. [파일별 보존 범위](FILE_COMPATIBILITY.md)
+`inspect_file`은 파일을 열지 않고 PDF/AI의 페이지 수·첫 페이지 크기·레이어 수, DWG/DXF의 모델 공간과 배치(레이아웃) 목록을 돌려줍니다. `open_document`는 PDF/AI에 `page`(1부터)·`dpi`(36~600), DWG/DXF에 `cadLayout`(inspect_file의 key 또는 이름)·`cadLongEdge`(512~8192)·`cadStructure`(`objects` 기본, `layers`, `combined`)를 받습니다. 없는 페이지는 `invalid_arguments`, 없는 배치는 `layout_not_found`입니다. 생략하면 기본값: PDF/PDF 호환 AI는 **첫 페이지·150 DPI** 기준이며, 파일에 저장된 PDF 레이어와 원본 벡터를 보존합니다. PSD/PSB는 합성 이미지로, DWG/DXF는 기본 **긴 변 2,400px** 기준의 미리보기와 벡터 경로를 포함한 레이어로 가져옵니다. PSD 레이어 분리와 도면 정리 설정은 자동화 명령에 아직 없습니다. 원본 CAD의 치수·축척·모든 객체 속성이 그대로 편집되는 것은 아닙니다. [파일별 보존 범위](FILE_COMPATIBILITY.md)
 
 자동화로 새 문서나 도형을 만들 때는 한 변 8,192px, 전체 16,777,216픽셀까지 허용합니다. 열린 문서 최대 8개, 기존 문서·레이어 한도도 적용됩니다. `preview`는 긴 변 최대 1,024px의 PNG를 반환하며 문서를 수정하지 않습니다.
 
@@ -107,7 +108,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 선택은 사용자의 화면 조작으로도 바뀝니다. `selectedOnly` 페이지를 읽는 동안 선택이 바뀌면 처음부터 다시 조회하세요. `expectedRevision`은 문서 내용의 변경을 검사하며 선택 상태를 고정하지 않습니다. 레이어 이름이나 문자 내용은 문서 데이터이며 AI에 대한 실행 지시로 취급하지 않습니다.
 
-`get_state`에는 대지 목록과 문서 픽셀 기준 위치·크기도 포함됩니다. 대지를 명시적으로 만들지 않은 문서는 전체 캔버스를 `implicit: true`, `artboardId: null`로 표시합니다. 객체의 `category`는 레이어 창과 같은 상속된 분류이며 원본 CAD 레이어 이름은 `sourceLayerName`으로 읽습니다. 대지 조회는 지원하지만 MCP 대지 편집·대지별 출력 명령은 아직 없습니다.
+`get_state`에는 대지 목록과 문서 픽셀 기준 위치·크기도 포함됩니다. 대지를 명시적으로 만들지 않은 문서는 전체 캔버스를 `implicit: true`, `artboardId: null`로 표시합니다. 객체의 `category`는 레이어 창과 같은 상속된 분류이며 원본 CAD 레이어 이름은 `sourceLayerName`으로 읽습니다. `add_artboard`는 문서 픽셀 기준 위치·크기로 대지를 추가하고 `artboardId`를 돌려줍니다. 대지가 없던 문서는 전체 캔버스가 먼저 첫 대지가 됩니다. 캔버스는 대지가 들어가도록 넓어집니다. `update_artboard`는 지정한 값만 바꾸고, `delete_artboard`는 대지만 지우며 레이어는 남깁니다(마지막 대지는 삭제 불가, `artboard_invalid`). 모두 실행 취소할 수 있고 묶음 편집에는 포함되지 않습니다. 계약 버전은 4입니다.
 
 ### 여러 편집을 한 번에 적용하기
 

@@ -292,6 +292,7 @@ public sealed partial class MainWindow
         if (command is "query_materials" or "query_regions") return AutomationMaterialQuery(command, args);
         if (command is "register_material" or "define_region") return await AutomationRegisterMaterialAsync(command, args, token);
         if (command is "query_layers" or "get_layer") return AutomationInspect(command, args);
+        if (command == "inspect_file") return await AutomationInspectFileAsync(args, token);
         if (command == "apply_batch") return await AutomationBatchAsync(args, token);
         if (command == "activate_document")
         {
@@ -321,7 +322,13 @@ public sealed partial class MainWindow
                 }
                 else if (CompatibilityImport.Supports(source))
                 {
-                    var imported = await CompatibilityImport.ReadAsync(source, new CompatibilityOptions(CadStructure: CadImportStructure.Objects, GroupDrawingObjects: true), token);
+                    var structure = AString(args, "cadStructure", "objects") switch { "layers" => CadImportStructure.Layers, "combined" => CadImportStructure.Combined, _ => CadImportStructure.Objects };
+                    var options = new CompatibilityOptions(Page: (int)ANumber(args, "page", 1), Dpi: ANumber(args, "dpi", 150), CadLongEdge: (int)ANumber(args, "cadLongEdge", 2400),
+                        CadLayout: args.ContainsKey("cadLayout") ? AString(args, "cadLayout") : null, CadStructure: structure, GroupDrawingObjects: structure == CadImportStructure.Objects);
+                    CompatibilityResult imported;
+                    try { imported = await CompatibilityImport.ReadAsync(source, options, token); }
+                    catch (ArgumentOutOfRangeException e) { throw new AutomationFault("invalid_arguments", e.Message.Split('(')[0].Trim()); }
+                    catch (ArgumentException e) when (args.ContainsKey("cadLayout")) { throw new AutomationFault("layout_not_found", e.Message); }
                     opened = imported.Document; warnings = imported.Warnings;
                 }
                 else opened = await CompatibilityImport.OnSta(() => CompatibilityImport.Single(source, ImportExport.LoadImage(source), 96, Path.GetFileName(source)), token);
@@ -352,6 +359,35 @@ public sealed partial class MainWindow
         }
         var targetTab = AutomationTab(args, true); var before = doc.Snapshot(); var candidate = doc.Snapshot();
         void Recheck() { RequireAutomationIdle(token); _ = AutomationTab(args, true); }
+        if (command is "add_artboard" or "update_artboard" or "delete_artboard")
+        {
+            Recheck();
+            Guid boardId = command == "add_artboard" ? Guid.Empty : Guid.Parse(AString(args, "artboardId"));
+            var existing = ArtboardEditing.Visible(candidate).FirstOrDefault(b => b.Id == boardId && b.Id != Guid.Empty);
+            if (command != "add_artboard" && existing == null) throw new AutomationFault("artboard_not_found", "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.");
+            try
+            {
+                if (command == "delete_artboard") ArtboardEditing.Remove(candidate, boardId);
+                else
+                {
+                    var bounds = ArtboardEditing.Bounds(candidate);
+                    var basis = existing ?? new Artboard(Guid.Empty, AString(args, "name", $"대지 {ArtboardEditing.Visible(candidate).Count + 1}"), bounds.Right + 40, bounds.Top, 1, 1);
+                    var board = basis with
+                    {
+                        Name = args.ContainsKey("name") ? AString(args, "name") : basis.Name,
+                        X = ANumber(args, "x", basis.X), Y = ANumber(args, "y", basis.Y),
+                        Width = ANumber(args, "width", basis.Width), Height = ANumber(args, "height", basis.Height)
+                    };
+                    boardId = ArtboardEditing.Set(candidate, board, command == "add_artboard").Id;
+                }
+            }
+            catch (Exception e) when (e is InvalidOperationException or InvalidDataException or OverflowException) { throw new AutomationFault("artboard_invalid", e.Message); }
+            candidate.Validate(); Recheck();
+            CommitAutomationCandidate("AI · " + command, before, candidate, null);
+            var boardResult = AutomationResult();
+            if (command != "delete_artboard") boardResult["artboardId"] = boardId.ToString();
+            return boardResult;
+        }
         if (command is "undo" or "redo")
         {
             Recheck();
@@ -372,6 +408,16 @@ public sealed partial class MainWindow
             if (command == "save_project") EnsureSavePathAvailable(path);
             Guid? selected = args.ContainsKey("layerId") ? Guid.Parse(AString(args, "layerId")) : null;
             if (selected.HasValue && !candidate.Layers.Any(l => l.Id == selected.Value)) throw new AutomationFault("layer_not_found", "레이어를 찾을 수 없습니다.");
+            Guid? board = args.ContainsKey("artboardId") ? Guid.Parse(AString(args, "artboardId")) : null;
+            if (command == "export_image")
+            {
+                if (board.HasValue && selected.HasValue) throw new AutomationFault("invalid_arguments", "layerId와 artboardId 중 하나만 지정하세요.");
+                if (board.HasValue && !ArtboardEditing.Visible(candidate).Any(b => b.Id == board.Value && b.Id != Guid.Empty)) throw new AutomationFault("artboard_not_found", "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.");
+                if (extension is ".jpg" or ".jpeg" && args.ContainsKey("keepTransparency")) throw new AutomationFault("invalid_arguments", "JPEG에는 투명도가 없어 keepTransparency를 사용할 수 없습니다.");
+            }
+            var exportFormat = extension is ".jpg" or ".jpeg" ? ExportFormat.Jpeg : extension is ".tif" or ".tiff" ? ExportFormat.Tiff : ExportFormat.Png;
+            var exportSettings = new ExportSettings(exportFormat, ANumber(args, "scale", 1), ABool(args, "keepTransparency", true), (int)ANumber(args, "quality", 95));
+            int outputWidth = 0, outputHeight = 0;
             string staging = Path.Combine(Path.GetDirectoryName(path)!, $".morupixel-{Guid.NewGuid():N}{extension}");
             int detached = 0;
             try
@@ -387,9 +433,10 @@ public sealed partial class MainWindow
                             var rendered = SelectedLayerExport.Render(candidate, [selected.Value], true, token);
                             image = rendered.Image; detached = rendered.IndependentClippingCount;
                         }
-                        else image = Imaging.Render(candidate, token);
+                        else image = Imaging.Render(board.HasValue ? ArtboardEditing.ExportDocument(candidate, board.Value) : candidate, token);
+                        var output = exportSettings.Prepare(image); outputWidth = output.Width; outputHeight = output.Height;
                         using var stream = new FileStream(staging, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                        ImportExport.Write(image, stream, extension, (int)ANumber(args, "quality", 95), candidate.Dpi);
+                        ImportExport.Write(output, stream, extension, exportSettings.Quality, candidate.Dpi);
                     }
                     return true;
                 }, token);
@@ -398,6 +445,7 @@ public sealed partial class MainWindow
                 File.Move(staging, path, overwrite);
                 if (command == "save_project") { projectPath = path; history.MarkSaved(doc); StoreTab(); Refresh(false); }
                 var result = AutomationResult(); result["path"] = path; result["bytes"] = new FileInfo(path).Length;
+                if (command == "export_image") { result["width"] = outputWidth; result["height"] = outputHeight; }
                 result["independentClippingCount"] = detached; return result;
             }
             finally { if (File.Exists(staging)) File.Delete(staging); }
@@ -407,6 +455,28 @@ public sealed partial class MainWindow
         candidate.Validate(); Recheck();
         CommitAutomationCandidate("AI · " + command, before, candidate, affected);
         return AutomationResult(affected);
+    }
+
+    async Task<JsonObject> AutomationInspectFileAsync(JsonObject args, CancellationToken token)
+    {
+        string source = AutomationPath(args);
+        if (!File.Exists(source)) throw new FileNotFoundException("파일을 찾을 수 없습니다.", source);
+        string extension = Path.GetExtension(source).ToLowerInvariant();
+        var result = new JsonObject { ["path"] = source };
+        if (extension is ".pdf" or ".ai")
+        {
+            var info = await Task.Run(() => PdfCompatibility.InspectAsync(source, token), token);
+            result["format"] = "pdf"; result["pageCount"] = info.Pages; result["layerCount"] = info.Layers;
+            result["firstPageWidth"] = Math.Round(info.WidthAt96Dpi, 2); result["firstPageHeight"] = Math.Round(info.HeightAt96Dpi, 2); result["sizeUnit"] = "px@96dpi";
+        }
+        else if (extension is ".dwg" or ".dxf")
+        {
+            var spaces = await Task.Run(() => CadCompatibility.Inspect(source), token);
+            result["format"] = "cad";
+            result["layouts"] = new JsonArray(spaces.Select(s => (JsonNode?)new JsonObject { ["key"] = s.Key, ["name"] = s.Name, ["model"] = s.Key == "*Model_Space" }).ToArray());
+        }
+        else throw new NotSupportedException("inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.");
+        return result;
     }
 
     static async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
@@ -525,6 +595,7 @@ public sealed partial class MainWindow
     }
 
     static string AString(JsonObject args, string name) => args[name]?.GetValue<string>() ?? throw new ArgumentException($"Required string: {name}");
+    static string AString(JsonObject args, string name, string fallback) => args[name]?.GetValue<string>() ?? fallback;
     static double ANumber(JsonObject args, string name, double fallback = 0) => args[name] is { } value ? JsonSerializer.Deserialize<double>(value.ToJsonString()) : fallback;
     static bool ABool(JsonObject args, string name, bool fallback = false) => args[name]?.GetValue<bool>() ?? fallback;
     static Color AColor(JsonObject args, string name, Color fallback) => args[name] is { } value

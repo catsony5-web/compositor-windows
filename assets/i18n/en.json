@@ -1598,6 +1598,10 @@
     "선택 영역 축소": "Contract selection",
     "선택 영역 페더": "Feather selection",
     "선택 영역 확장": "Expand selection",
-    "텍스트 레이어 {0}": "Text layer {0}"
+    "텍스트 레이어 {0}": "Text layer {0}",
+    "JPEG에는 투명도가 없어 keepTransparency를 사용할 수 없습니다.": "JPEG has no transparency, so keepTransparency cannot be used.",
+    "inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.": "inspect_file reads PDF/AI and DWG/DXF files.",
+    "layerId와 artboardId 중 하나만 지정하세요.": "Specify only one of layerId and artboardId.",
+    "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "Artboard not found. Use an artboardId from get_state."
   }
 }

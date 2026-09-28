@@ -1,3 +1,11 @@
+# Preview 34 AI artboards, export options and import options validation
+
+- Source self-tests: **545/545 passed** on Windows x64. Added checks cover artboard add/update/delete with undo, the last-artboard and unknown-id errors, artboard export with 2× scale and flattening, rejected layerId+artboardId and JPEG keepTransparency, `inspect_file` for a two-page PDF and a DXF, `open_document` page 2 at 72 DPI, an out-of-range page, CAD structure/long edge/layout and an unknown layout, saving and restoring recent colors and opened default-folded sections, the export preview filling offscreen, one undo step per opacity drag, and the connection-test button over the real local pipe.
+- Tool and contract counts updated to 33 commands, contract 4, in the self-tests and `tools/qa/automation-smoke.cjs`.
+- `tools/i18n/extract.py` reports 0 missing keys. Offscreen captures in Korean, English, Japanese and Chinese were reviewed; the export capture now shows its preview and size estimate.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: real office DWG files with many paper-space layouts, PSD layer separation and cleanup settings through automation (not exposed).
+
 # Preview 33 panels and dialogs validation
 
 - Source self-tests: **541/541 passed** on Windows x64. Sixteen added checks cover export settings (scale, flattening, file names, format-specific options, artboard list), the color panel order, folded tone grid, HEX parsing and recent colors, new-document purpose groups, ratios and the per-user preset store, real-engine brush stroke previews and their refresh, layer quick blend/opacity with undo and lock state, empty-layer hints and footer buttons, tool-option toggles, the mode-specific zoom hint, compact AI edit responses, `changed` on undo/redo, `alreadyOpen` on reopening, the local-pipe connection test and the MCP server version.

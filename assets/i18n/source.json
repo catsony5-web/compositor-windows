@@ -3940,6 +3940,10 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
   "ko": "프로젝트는 .moruproj로 저장하세요.",
   "file": "UI/MainWindow.Automation.cs"
  },
@@ -3953,6 +3957,18 @@
  },
  {
   "ko": "레이어를 찾을 수 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "layerId와 artboardId 중 하나만 지정하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "JPEG에는 투명도가 없어 keepTransparency를 사용할 수 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.",
   "file": "UI/MainWindow.Automation.cs"
  },
  {

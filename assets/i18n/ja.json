@@ -1598,6 +1598,10 @@
     "선택 영역 축소": "選択範囲を縮小",
     "선택 영역 페더": "選択範囲をぼかす",
     "선택 영역 확장": "選択範囲を拡張",
-    "텍스트 레이어 {0}": "テキストレイヤー {0}"
+    "텍스트 레이어 {0}": "テキストレイヤー {0}",
+    "JPEG에는 투명도가 없어 keepTransparency를 사용할 수 없습니다.": "JPEG には透明度がないため keepTransparency は使えません。",
+    "inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.": "inspect_file は PDF/AI と DWG/DXF ファイルを読み取ります。",
+    "layerId와 artboardId 중 하나만 지정하세요.": "layerId と artboardId のどちらか一方だけを指定してください。",
+    "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "アートボードが見つかりません。get_state の artboardId を使用してください。"
   }
 }

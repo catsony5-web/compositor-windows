@@ -1598,6 +1598,10 @@
     "선택 영역 축소": "收缩选区",
     "선택 영역 페더": "羽化选区",
     "선택 영역 확장": "扩展选区",
-    "텍스트 레이어 {0}": "文字图层 {0}"
+    "텍스트 레이어 {0}": "文字图层 {0}",
+    "JPEG에는 투명도가 없어 keepTransparency를 사용할 수 없습니다.": "JPEG 不支持透明度，无法使用 keepTransparency。",
+    "inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.": "inspect_file 读取 PDF/AI 和 DWG/DXF 文件。",
+    "layerId와 artboardId 중 하나만 지정하세요.": "layerId 和 artboardId 只能指定其一。",
+    "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "找不到画板。请使用 get_state 返回的 artboardId。"
   }
 }

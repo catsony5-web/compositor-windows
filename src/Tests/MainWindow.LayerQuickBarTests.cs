@@ -25,6 +25,16 @@ public sealed partial class MainWindow
                 window.layerQuickOpacity!.Value = 40;
                 Check(Math.Abs(window.doc.Active!.Opacity - .4) < 1e-9 && window.layerQuickOpacityValue!.Text == "40%", "Opacity change not applied");
                 window.Undo();
+                // A thumb drag previews the number only and records one history step on release.
+                var slider = window.layerQuickOpacity!;
+                slider.RaiseEvent(new System.Windows.Controls.Primitives.DragStartedEventArgs(0, 0) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragStartedEvent });
+                foreach (var v in new[] { 90d, 70d, 55d }) slider.Value = v;
+                Check(Math.Abs(window.doc.Active!.Opacity - 1) < 1e-9 && window.layerQuickOpacityValue!.Text == "55%", "Dragging must not edit the layer before release");
+                slider.RaiseEvent(new System.Windows.Controls.Primitives.DragCompletedEventArgs(0, 0, false) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragCompletedEvent });
+                Check(Math.Abs(window.doc.Active!.Opacity - .55) < 1e-9, "Release must apply the dragged opacity");
+                window.Undo();
+                Check(Math.Abs(window.doc.Active!.Opacity - 1) < 1e-9 && window.history.CanUndo, "One undo must revert the whole drag");
+                window.Undo();
                 Check(Math.Abs(window.doc.Active!.Opacity - 1) < 1e-9 && window.layerQuickOpacity.Value == 100, "Undo must restore and resync opacity");
                 window.doc.Active!.Locked = true; window.BuildLayers();
                 Check(!window.layerQuickBlend.IsEnabled && !window.layerQuickOpacity.IsEnabled, "Locked layer must disable quick edits");
