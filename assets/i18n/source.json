@@ -1,0 +1,6050 @@
+[
+ {
+  "ko": "샘플 이미지 리소스를 찾을 수 없습니다: {0}",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "바다를 향한 창 · 샘플",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "01 · 바다를 향한 창 · 원본 이미지",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "02 · 선택형 타이포그래피 (표시 전환)",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "바다를 향한 창",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "제목 · 편집 가능한 텍스트",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "작은 문구 · 편집 가능한 텍스트",
+  "file": "App/Demo.cs"
+ },
+ {
+  "ko": "Morupixel · 오류",
+  "file": "App/Program.cs"
+ },
+ {
+  "ko": "대지 1",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "대지 이름과 위치·크기를 확인해 주세요. 크기는 1px 이상이어야 합니다.",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "대지는 {0}개까지 만들 수 있습니다.",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "대지 범위 또는 ID가 올바르지 않습니다.",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "수정할 대지가 없습니다.",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "마지막 대지는 삭제할 수 없습니다.",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "삭제할 대지가 없습니다.",
+  "file": "Core/Artboard.cs"
+ },
+ {
+  "ko": "원형",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "사각형",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "마름모",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "별",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "브러시 모양은 한 변 256px 이하의 유효한 이미지여야 합니다.",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "브러시로 사용할 모양이 없습니다. 투명 이미지 또는 흰 배경에 어두운 모양을 사용하세요.",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "사용자 브러시",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "브러시 이미지를 먼저 256px 이하로 줄여 주세요.",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "기본 브러시는 별도로 저장하지 않습니다.",
+  "file": "Core/BrushTip.cs"
+ },
+ {
+  "ko": "텍스트",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "텍스트 속성이 올바르지 않습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "채널 레벨 속성이 올바르지 않습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "조정 레이어 속성이 올바르지 않습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "그레인 속성이 올바르지 않습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "사진 현상 설정이 없습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "채널 레벨 정보가 없습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "곡선 점 개수가 올바르지 않습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "곡선 점은 X 좌표 순서대로 지정하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "왜곡 좌표가 올바르지 않습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "왜곡 사각형은 교차하지 않는 볼록한 모양이어야 합니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "왜곡 변환을 역산할 수 없습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "텍스트 레이어를 선택하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "그룹 또는 조정은 병합하여 래스터화하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "그룹",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "사진 현상",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "그룹에 넣을 레이어를 선택하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "같은 그룹 안의 레이어를 선택하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "연속된 레이어를 선택하세요. 그룹 생성은 쌓임 순서를 보존합니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "클리핑의 기준 레이어도 함께 선택하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "기준 레이어에 연결된 클리핑 레이어를 모두 함께 선택하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "부모 그룹이 없습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "그룹이 없습니다.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "그룹을 선택하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "효과 또는 변형이 있는 그룹은 먼저 병합하세요.",
+  "file": "Core/DocumentFeatures.cs"
+ },
+ {
+  "ko": "구조·벽 (진하게)",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "창호·문",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "가구·집기 (연하게)",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "치수·문자",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "해치·마감",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "기타",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "콘크리트",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "벽돌",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "목재 마루",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "타일",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "석재",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "단열재",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "자갈·토사",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "사선 패턴",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "단색 채움",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "해치",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "마감",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "치수",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "문자",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "주석",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "기호",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "그리드",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "통심",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "가구",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "집기",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "위생",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "설비",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "기구",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "조경",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "창호",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "창문",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "창",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "문",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "개구",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "벽",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "기둥",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "구조",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "옹벽",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "슬래브",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "조적",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "몰탈",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "목재",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "마루",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "원목",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "합판",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "대리석",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "화강",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "단열",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "자갈",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "토사",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "모래",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "흙",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "영역 경로 또는 변환이 올바르지 않습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "영역은 닫힌 경로여야 합니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "면적이 있는 닫힌 영역을 지정하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 이미지와 적용 영역은 한 변 8,192px, 전체 16,777,216픽셀까지 지원합니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료와 영역 이름을 확인하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 원본 정보가 올바르지 않습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "영역 정보가 올바르지 않습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 맵핑 정보가 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료의 반복 크기·방향·위치를 확인하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 경계와 미리보기 크기가 다릅니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 라이브러리가 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "같은 재료 ID에 다른 원본이 있습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "문서의 재료 원본은 최대 64개, 합계 256MiB까지 지원합니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 또는 영역의 수와 ID를 확인하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "각 윤곽은 3개 이상, 전체 2,048개 이하의 점으로 지정하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "영역이 캔버스를 벗어납니다. 문서 픽셀 좌표를 확인하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "영역으로 사용할 객체가 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "열린 선은 면으로 추측하지 않습니다. 닫힌 객체나 선택 영역을 사용하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "이 객체의 경계를 가져올 수 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "닫힌 도형·CAD 경로를 선택하거나 선택 영역/다각형으로 지정하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "마스크·원근·클리핑이 있는 객체는 선택 영역으로 지정하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "잘릴 수 있는 그룹 안의 객체는 선택 영역으로 지정하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "등록된 재료 ID가 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "등록된 영역 ID가 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "저장된 영역이 현재 캔버스를 벗어납니다. 영역을 다시 지정하세요.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "재료 · ",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "픽셀 데이터 크기가 잘못되었습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "이미지는 한 변 {0}px, 전체 {1}픽셀 이하로 사용하세요. 실제로 열 수 있는 크기는 사용 가능한 메모리에 따라 달라집니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "이미지 프레임이 없습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "제목 없음",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "최대 {0}개 객체와 그룹을 지원합니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "이미지와 조정 레이어는 최대 {0}개를 지원합니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 ID가 중복되었습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 메모리 한도({0} MiB)를 초과합니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "문서의 벡터 원본이 512MiB를 초과합니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "해상도는 1~9600 DPI로 입력하세요.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "작업 이름이 비어 있습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "작업 이름이 너무 깁니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "객체와 그룹 수가 지원 한도를 초과합니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 정보가 없습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "활성 레이어가 존재하지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "그룹 계층에 순환 또는 잘못된 부모가 있습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "그룹은 16단계까지 중첩할 수 있습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 ID가 비어 있습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 이름이 비어 있습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 이름이 너무 깁니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 이미지가 없습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "마스크 크기가 레이어 이미지와 다릅니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 속성이 올바르지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "레이어 종류가 올바르지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "재료 레이어 종류가 일치하지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "도면 레이어 정보가 올바르지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "벡터 원본과 미리보기의 크기가 다릅니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "벡터 레이어 종류가 일치하지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "도형 정보가 없습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "도형의 크기와 레이어 이미지 크기가 다릅니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "도형 레이어 종류가 일치하지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "텍스트 정보가 없습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "텍스트 레이어 종류가 일치하지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "조정 정보가 없습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "조정 레이어 종류가 일치하지 않습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
+  "ko": "사진 현상은 노출 -5~5 EV, 나머지 값 -100~100 범위로 입력하세요.",
+  "file": "Core/PhotoDevelopSpec.cs"
+ },
+ {
+  "ko": "PDF 소스에는 경로 도형이 없습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 원본 정보 또는 크기가 올바르지 않습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 PDF 원본이 올바르지 않습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 원본이 너무 큽니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 경로 정보가 없습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 경로 수가 지원 범위를 초과합니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 경로 좌표가 올바르지 않습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 경로 범위가 올바르지 않습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "벡터 경로 스타일이 올바르지 않습니다.",
+  "file": "Core/VectorContent.cs"
+ },
+ {
+  "ko": "도형의 크기·선·모서리 값을 확인하세요.",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "타원",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "곡선은 0~255 범위의 두 개 이상 점이 필요합니다.",
+  "file": "Engine/AdvancedFilters.cs"
+ },
+ {
+  "ko": "곡선 입력 좌표는 중복될 수 없습니다.",
+  "file": "Engine/AdvancedFilters.cs"
+ },
+ {
+  "ko": "필터 결과 크기가 다릅니다.",
+  "file": "Engine/AdvancedFilters.cs"
+ },
+ {
+  "ko": "AI 엔진을 불러오지 못했습니다. ZIP 전체를 압축 해제했는지 확인하고 Microsoft Visual C++ x64 재배포 패키지(2019 이후 최신 버전)를 설치한 뒤 Morupixel을 다시 실행하세요.\n공식 설치 안내: https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "AI 모델이 없습니다. U²-NetP 호환 u2netp.onnx 모델을 선택하세요. 모델의 배포 출처와 사용 조건은 docs/BACKGROUND_REMOVAL.md를 참고하세요.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "AI 모델 파일 크기는 16바이트 이상 512MB 이하로 제한됩니다.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "RGB 입력 하나를 사용하는 U²-Net 호환 모델이 필요합니다.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "지원 모델 입력은 float32 [1, 3, 320, 320]입니다. U²-Net/U²-NetP ONNX 모델을 사용하세요.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "모델의 첫 출력이 float32 [1, 1, 320, 320] 마스크가 아닙니다.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "모델이 유효하지 않은 마스크 값을 반환했습니다.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "마스크 크기가 다릅니다.",
+  "file": "Engine/BackgroundRemoval.cs"
+ },
+ {
+  "ko": "표시 영역이 올바르지 않습니다.",
+  "file": "Engine/DesignRenderer.cs"
+ },
+ {
+  "ko": "한 번에 그릴 화면 영역이 너무 큽니다.",
+  "file": "Engine/DesignRenderer.cs"
+ },
+ {
+  "ko": "그룹 계층이 너무 깊습니다.",
+  "file": "Engine/DesignRenderer.cs"
+ },
+ {
+  "ko": "레이어가 없습니다.",
+  "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "그룹 계층에 순환이 있습니다.",
+  "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "샘플 이미지는 문서 크기여야 합니다.",
+  "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "픽셀 레이어를 선택하세요.",
+  "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "잠겼거나 숨겨진 레이어는 채울 수 없습니다.",
+  "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "잠겼거나 숨겨진 그룹의 레이어는 채울 수 없습니다.",
+  "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "추천 · ",
+  "file": "Engine/MaterialPresets.cs"
+ },
+ {
+  "ko": "선택 영역 계산이 너무 복잡합니다. 허용 오차를 줄여 다시 선택하세요.",
+  "file": "Engine/PrecisionWand.cs"
+ },
+ {
+  "ko": "복제 원본과 레이어 크기가 다릅니다.",
+  "file": "Engine/RetouchTools.cs"
+ },
+ {
+  "ko": "복제 참조 위치가 필요합니다.",
+  "file": "Engine/RetouchTools.cs"
+ },
+ {
+  "ko": "선택 영역 밖에 채우기에 사용할 불투명 픽셀이 필요합니다.",
+  "file": "Engine/RetouchTools.cs"
+ },
+ {
+  "ko": "이 선택 영역은 주변에 채우기 참조 픽셀이 없습니다.",
+  "file": "Engine/RetouchTools.cs"
+ },
+ {
+  "ko": "브러시 크기와 강도를 확인하세요.",
+  "file": "Engine/RetouchTools.cs"
+ },
+ {
+  "ko": "선택 경계를 연결하지 못했습니다.",
+  "file": "Engine/SelectionContours.cs"
+ },
+ {
+  "ko": "선택 영역 좌표가 올바르지 않습니다.",
+  "file": "Engine/SelectionTools.cs"
+ },
+ {
+  "ko": "선택 마스크 크기가 다릅니다.",
+  "file": "Engine/SelectionTools.cs"
+ },
+ {
+  "ko": "선택 좌표가 올바르지 않습니다.",
+  "file": "Engine/SelectionTools.cs"
+ },
+ {
+  "ko": "PNG, JPEG, BMP, TIFF 이미지를 선택하세요.",
+  "file": "Formats/BrushTipStore.cs"
+ },
+ {
+  "ko": "브러시 이미지는 32MB 이하로 사용하세요.",
+  "file": "Formats/BrushTipStore.cs"
+ },
+ {
+  "ko": "브러시 이미지가 비어 있습니다.",
+  "file": "Formats/BrushTipStore.cs"
+ },
+ {
+  "ko": "브러시 이미지를 축소하지 못했습니다.",
+  "file": "Formats/BrushTipStore.cs"
+ },
+ {
+  "ko": "사용자 브러시만 저장할 수 있습니다.",
+  "file": "Formats/BrushTipStore.cs"
+ },
+ {
+  "ko": "모델 공간",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면의 긴 변은 256~4096px입니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면 가져오기 구조가 올바르지 않습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "Z 좌표가 있는 객체는 XY 평면으로 투영했습니다. 3D 모델·입면의 정확한 표현은 지원하지 않습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면에 유효하지 않거나 지나치게 큰 좌표가 있습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면 객체 수가 가져오기 한도({0}개, 그룹 포함)를 초과합니다. ‘레이어별’ 또는 ‘하나로’를 선택하거나 필요한 객체만 별도 도면으로 저장해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면의 변환 점이 800만 개를 초과합니다. 필요한 배치나 영역을 선택해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "유효하지 않은 도면 곡선입니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "유효하지 않은 도면 원호입니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면의 문자 크기 또는 길이가 지원 범위를 벗어났습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "CAD 문자는 설치된 글꼴로 그립니다. SHX 글꼴·문자 정렬·복잡한 MTEXT 서식은 원본과 다를 수 있습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면 객체 또는 중첩 블록 한도를 초과합니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "블록 정의 없음",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "외부참조 경로 없음: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "네트워크 외부참조: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "외부참조 파일 없음: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "순환 외부참조: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "외부참조의 개수 또는 파일 크기 한도를 초과합니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "기울어진 블록 좌표계는 XY 평면에 투영했습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "블록 배열이 너무 큽니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "치수 블록 없음",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "스플라인",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치는 경계선으로 가져왔습니다. 솔리드/패턴 채움은 재현하지 않습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "선택한 CAD 배치를 찾을 수 없습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "기울어진 3D 뷰포트",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "일부 비정형 뷰포트는 사각 경계로 표시했습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "‘{0}’에서 표시할 도형을 찾지 못했습니다. ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "다른 배치나 모델 공간을 선택해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면 범위가 올바르지 않습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "겹침 순서를 유지하기 위해 같은 CAD 레이어가 여러 그룹으로 나뉠 수 있습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "픽셀 객체는 {0}개까지 가져올 수 있습니다. 벡터 보존을 사용하거나 ‘레이어별’ 또는 ‘하나로’를 선택해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "객체 {0}개와 그룹을 포함한 항목 {1}개가 가져오기 한도({2}개)를 초과합니다. ‘레이어별’ 또는 ‘하나로’를 선택하거나 필요한 객체만 별도 도면으로 저장해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "분리할 도면 레이어가 너무 많습니다. ‘하나로’를 선택하거나 필요한 레이어만 별도 도면으로 저장해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면 객체의 미리보기가 메모리 한도를 초과합니다. 긴 변 크기를 줄이거나 ‘레이어별’ 또는 ‘하나로’를 선택해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면 배경",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면의 벡터 원본이 512MiB를 초과합니다. 필요한 객체만 별도 도면으로 저장해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "도면을 읽는 과정에서 {0}건의 호환성 안내가 발생했습니다. 일부 객체나 부가 정보가 생략될 수 있으니 미리보기를 원본과 비교해 주세요.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "표시하지 못한 객체: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "{0} {1}개",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "‘{0}’을 가져왔습니다",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": " · 외부참조 {0}개 읽음.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": " 벡터 경로를 보존하며 디자인 모드에서 확대 배율에 맞춰 그립니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "픽셀 이미지로 가져왔습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": " 도면 단위·실측 축척·CTB 선종류/선굵기는 보존하지 않습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "레이어 역할에 맞춰 선 굵기와 농도를 정리했습니다: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": " (레이어 수).",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치에 적용할 재질 이미지를 찾을 수 없습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치 · ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치 · {0} {1}",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "재질 · ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치에 선택한 재질 이미지를 적용했습니다: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치 재질을 추천해 채웠습니다: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": ". 재질 레이어는 선 아래에 곱하기로 놓이며, 숨기거나 삭제해 원래 해치로 돌아갈 수 있습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "복잡하거나 너무 많은 해치 {0}개는 경계선만 가져왔습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "선",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "닫힌 폴리라인",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "폴리라인",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "3D 폴리라인",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "호",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "원",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "면",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "점",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "출력 스트림에 쓸 수 없습니다.",
+  "file": "Formats/CmykExport.cs"
+ },
+ {
+  "ko": "ICC 프로필 크기가 올바르지 않습니다.",
+  "file": "Formats/CmykExport.cs"
+ },
+ {
+  "ko": "ICC 프로필을 불러올 수 없습니다.",
+  "file": "Formats/CmykExport.cs"
+ },
+ {
+  "ko": "CMYK ICC 프로필이 아닙니다.",
+  "file": "Formats/CmykExport.cs"
+ },
+ {
+  "ko": "DPI는 1에서 9,600 사이여야 합니다.",
+  "file": "Formats/CmykExport.cs"
+ },
+ {
+  "ko": "지원 파일|*.moruproj;*.cwproj;*.pdf;*.ai;*.psd;*.psb;*.dwg;*.dxf;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.gif;*.heic;*.heif|PDF / AI (PDF 호환)|*.pdf;*.ai|PSD / PSB 이미지|*.psd;*.psb|CAD 도면 (DWG / DXF)|*.dwg;*.dxf|모든 파일|*.*",
+  "file": "Formats/CompatibilityImport.cs"
+ },
+ {
+  "ko": "파일을 찾을 수 없습니다.",
+  "file": "Formats/CompatibilityImport.cs"
+ },
+ {
+  "ko": "호환 파일은 0바이트보다 크고 {0}GB 이하여야 합니다.",
+  "file": "Formats/CompatibilityImport.cs"
+ },
+ {
+  "ko": "지원하지 않는 호환 파일 형식입니다.",
+  "file": "Formats/CompatibilityImport.cs"
+ },
+ {
+  "ko": "Compositor .comp는 폴더 패키지입니다. 압축을 푼 .comp 폴더의 manifest.json을 선택하세요.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "지원 범위는 sRGB Compositor 프로젝트 버전 1–7입니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "레이어 수가 지원 한도를 초과합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "인쇄 해상도(PPI) 메타데이터는 변환하지 않습니다. 캔버스 픽셀 크기는 유지합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "레이어 효과",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "연결 해제/비활성 마스크",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "그룹에 조정 속성이 포함되어 있습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "그룹/조정 레이어에 이미지 파일이 있습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "레이어 이미지 경로가 올바르지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "레이어 변형 크기가 올바르지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "{0}: 원본 샘플링 설정 대신 Morupixel의 보간을 사용합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "그룹 불투명도/혼합",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "텍스트 레이어 형식이 올바르지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "자간/행간/문단 텍스트 상자",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "텍스트 정렬",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "{0}: 원본 텍스트 픽셀을 유지했습니다. 글자를 수정하면 Windows 글꼴/텍스트 엔진에 따라 모양과 줄바꿈이 달라질 수 있습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "마스크 경로가 올바르지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "Compositor 마스크는 8비트 회색조 PNG여야 합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "{0}: 원본 마스크를 레이어 픽셀 크기로 재샘플링했습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": ".comp는 지원 부분만 변환합니다. 저장 전 화면을 확인하세요. 지원하지 않는 기능을 포함한 파일은 가져오기를 중단합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": ".comp 호환 내보내기는 그룹을 포함해 {0}개 항목까지 지원합니다. 객체 구조는 .moruproj로 저장해 주세요.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "대상 .comp 폴더가 이미 있습니다. 새 이름을 사용하세요.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "원본 범위를 벗어난 변형 크기",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "원근 왜곡/클리핑 마스크",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "{0}: 도형은 .comp에서 픽셀 이미지로 저장됩니다. 벡터 속성은 .moruproj로 보존하세요.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "{0}: 원본 형식에 잠금 속성이 없어 잠금 상태는 저장하지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "{0}: 자간·줄 간격이 있는 텍스트는 .comp에서 모양을 유지하는 픽셀 이미지로 저장됩니다. 편집 가능한 문자 속성은 .moruproj로 보존하세요.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "굵게/기울임/반투명 텍스트 스타일",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "텍스트의 현재 픽셀은 보존되지만 Mac에서 수정 시 글꼴/줄바꿈이 달라질 수 있습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "패키지 메타데이터가 너무 큽니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "레벨 채널은 RGB/빨강/초록/파랑 네 개여야 합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "곡선 채널은 RGB/빨강/초록/파랑 네 개여야 합니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "원본 곡선 끝점/점 수가 유효하지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "그레인 시드가 유효하지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "조정 레이어 ",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "곡선은 0/255 끝점과 최대 32개 점 필요",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "반투명 그라디언트 색",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "패스스루 그룹 마스크",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "패스스루 그룹 내부 혼합/조정",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "패키지 밖의 파일 경로입니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "링크가 포함된 패키지는 지원하지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "패키지 파일이 없거나 너무 큽니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "필수 속성이 없습니다: ",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "유효하지 않은 수: ",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "정수가 필요합니다: ",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "좌표 형식이 올바르지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "좌표가 유효하지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "색상이 유효하지 않습니다.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "지원하지 않는 혼합 모드: ",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "'{0}'의 {1} 기능은 .comp 상호 변환에서 지원하지 않습니다. 원본 파일은 변경하지 않았습니다. 해당 기능을 원본에서 래스터화하거나 PNG로 내보내세요.",
+  "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "HEIC/HEIF 이미지를 읽을 수 없습니다. Windows HEIF 이미지 확장과 해당 HEVC 코덱이 필요합니다. 설치되어 있다면 파일 손상 여부를 확인하거나 PNG/JPEG로 변환해 주세요.",
+  "file": "Formats/ImportExport.cs"
+ },
+ {
+  "ko": "JPEG 품질은 1–100 범위입니다.",
+  "file": "Formats/ImportExport.cs"
+ },
+ {
+  "ko": "내보내기는 PNG, JPEG, TIFF 형식을 지원합니다.",
+  "file": "Formats/ImportExport.cs"
+ },
+ {
+  "ko": "재료 원본 파일이 96MiB를 초과합니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 이미지 프레임이 없습니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 원본 크기가 작업 정보와 다릅니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 원본 참조가 없습니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 정보가 작업 파일 버전 또는 지원 범위와 맞지 않습니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 ID가 올바르지 않습니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 원본 메모리 한도를 초과합니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "프로젝트 안에 재료 원본이 없습니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "재료 원본 파일이 너무 큽니다.",
+  "file": "Formats/MaterialStore.cs"
+ },
+ {
+  "ko": "PDF 데이터가 없는 AI 파일입니다. 파일을 만든 프로그램에서 ‘PDF 호환 파일’ 저장 옵션을 켜고 다시 저장하거나 PDF로 내보내 주세요. EPS / 이전 PostScript AI는 지원하지 않습니다.",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "PDF 페이지가 없습니다.",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "PDF 해상도는 36~600 DPI입니다.",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "페이지는 1~{0} 범위입니다.",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "선택한 해상도는 {0} × {1}px입니다. DPI를 낮춰 주세요. ",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "페이지 {0}",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "{0}페이지 중 {1}페이지를 가져왔습니다. ",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "이 파일에는 분리할 PDF 레이어가 없습니다. ",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "레이어 유지를 끈 상태입니다. ",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "원본 PDF 벡터를 보존합니다.",
+  "file": "Formats/PdfCompatibility.cs"
+ },
+ {
+  "ko": "PDF 레이어 식별자가 없습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어가 너무 많습니다. 필요한 레이어만 남기거나 레이어 유지를 꺼 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어 정보가 잘못되었습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어 {0}",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어 목록의 중첩 한도를 초과합니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "레이어 PDF는 512MB 이하로 가져와 주세요. 레이어 유지를 끄면 합성 이미지를 사용할 수 있습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF의 그리기 순서를 보존하는 데 필요한 레이어가 128개를 초과합니다. 레이어 유지를 꺼 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어 이미지의 메모리 한도를 초과합니다. DPI를 낮춰 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 용지",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "페이지 공통 내용",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "서로 교차해 그려진 레이어는 원래 겹침 순서를 유지하도록 여러 이미지 레이어로 나눴습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "{0}페이지 중 {1}페이지 · PDF/AI 레이어 {2}개의 이름과 표시 상태를 유지했습니다. ",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "원본 PDF 벡터를 포함하여 디자인 모드에서 확대 배율에 맞춰 그립니다. 포함된 사진은 원래 해상도를 유지합니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "각 레이어를 픽셀 이미지로 가져왔습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "정의되지 않은 PDF 레이어입니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "중첩 가시성 조건을 가진 PDF 레이어입니다. 레이어 유지를 끄면 원본 합성 이미지를 가져올 수 있습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "조건식으로 연결된 PDF 레이어는 합성 이미지로 가져와 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "여러 가시성 조건이 연결된 PDF 레이어는 합성 이미지로 가져와 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF의 중첩 그리기 깊이 한도를 초과합니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF의 그리기 명령 한도를 초과합니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 그리기 명령을 해석하지 못했습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "인라인 PDF 레이어 조건은 합성 이미지로 가져와 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어 속성을 찾을 수 없습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 레이어 경계가 잘못되었습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 이미지/폼 리소스를 찾을 수 없습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF 폼이 순환 참조합니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "인라인 이미지가 있는 PDF는 레이어 유지를 끄고 가져와 주세요.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "PDF의 레이어 사이 혼합 효과는 픽셀 분리 후 원본과 다를 수 있습니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "닫히지 않은 PDF 레이어 경계입니다.",
+  "file": "Formats/PdfLayerImport.cs"
+ },
+ {
+  "ko": "작업 정보가 32MiB를 초과합니다. 객체 이름과 텍스트 길이를 줄여 주세요.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "작업 파일 형식이 올바르지 않습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "작업 정보가 너무 큽니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "작업 정보를 읽을 수 없습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "레이어 이미지가 너무 큽니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "레이어 이미지 프레임이 없습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "레이어 메모리 한도를 초과합니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "마스크가 없습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "벡터 원본이 없습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "지원하지 않는 작업 파일 버전입니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "대지와 도면 레이어 정보가 작업 파일 버전과 맞지 않습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "작업 이름이 올바르지 않습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "레이어 수가 올바르지 않습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "공유 그룹 이미지 참조가 올바르지 않습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "벡터 원본 정보가 올바르지 않습니다.",
+  "file": "Formats/ProjectStore.cs"
+ },
+ {
+  "ko": "PSD 픽셀 레이어는 {0}개까지 내보낼 수 있습니다. 합성 PSD를 선택하고 객체 구조는 .moruproj로 저장해 주세요.",
+  "file": "Formats/PsdCompatibility.cs"
+ },
+ {
+  "ko": "그룹·조정·클리핑이 있는 문서는 합성 PSD로 내보내 주세요.",
+  "file": "Formats/PsdCompatibility.cs"
+ },
+ {
+  "ko": "PSD 내보내기는 한 변 30,000px까지 지원합니다. 더 큰 이미지는 PNG 또는 TIFF로 저장해 주세요.",
+  "file": "Formats/PsdCompatibility.cs"
+ },
+ {
+  "ko": "PSD 레이어 출력이 {0}GB를 초과합니다. 합성 이미지로 출력해 주세요.",
+  "file": "Formats/PsdCompatibility.cs"
+ },
+ {
+  "ko": "PSD 레이어 섹션이 2GB를 초과합니다. 합성 PSD 또는 PNG·TIFF로 저장해 주세요.",
+  "file": "Formats/PsdCompatibility.cs"
+ },
+ {
+  "ko": "PSD 레이어",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 데이터 길이가 파일 범위를 벗어납니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 데이터가 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSB 섹션 길이가 파일보다 큽니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 섹션 길이가 올바르지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 섹션이 중첩되거나 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD/PSB 파일 서명이 아닙니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "지원하지 않는 PSD 버전입니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "현재 PSD/PSB 가져오기는 RGB 또는 회색조 / 8비트를 지원합니다. 파일을 만든 프로그램에서 RGB / 8비트 사본으로 저장하거나 PDF·TIFF로 내보내 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 채널 구성이 지원 범위를 벗어났습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 레이어 수가 한도를 초과합니다. 레이어 수를 줄이거나 합성 이미지로 열어 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "파일에 저장된 합성 이미지를 가져왔습니다. 레이어·효과·문자는 하나의 이미지에 합쳐져 있습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 합성 이미지",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "그룹·조정 레이어 또는 지원하지 않는 혼합 모드가 있습니다. ‘합성 이미지’로 가져와 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 레이어 메모리가 {0}GB를 초과합니다. 합성 이미지로 가져와 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD에 중복 채널이 있습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 레이어에 필요한 색상 채널이 없습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "가져올 픽셀 레이어가 없습니다. 합성 이미지로 열어 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "기본 픽셀 레이어·위치·표시·불투명도·마스크·지원 혼합 모드를 가져왔습니다. 문자·내장 개체는 저장된 픽셀로 읽으며 편집 속성은 유지되지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "잘린 PSD 이미지 리소스입니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 이미지 리소스 서명이 올바르지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD의 내장 ICC는 색상 변환에 적용하지 않습니다. 정확한 색상이 필요하면 파일을 만든 프로그램에서 sRGB로 변환해 저장한 파일을 사용하세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 리소스 패딩 오류입니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 레이어 경계가 올바르지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "레이어당 16개 이상의 PSD 채널은 지원하지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 레이어 서명이 올바르지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 마스크 데이터가 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 마스크 경계 오류입니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 마스크의 추가 농도·페더 속성은 보존하지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 추가 레이어 정보가 올바르지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 레이어 이름이 너무 깁니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "레이어 효과·벡터 마스크는 개별 레이어 모드에서 재현하지 않습니다. 외형이 중요하면 합성 이미지로 가져오세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 채널 크기가 맞지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "빈 PSD 채널입니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 픽셀이 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "지원하지 않는 PSD 압축입니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 채널이 선언된 길이를 초과했습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD RLE 행 목록이 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD RLE 데이터가 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD RLE가 행 길이를 초과합니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD RLE 리터럴이 잘렸습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD RLE 반복 값이 없습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD RLE 행이 완성되지 않았습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 압축 채널이 너무 큽니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD ZIP 데이터가 픽셀 크기를 초과합니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "내보낼 레이어를 먼저 선택하세요.",
+  "file": "Formats/SelectedLayerExport.cs"
+ },
+ {
+  "ko": "선택한 레이어가 현재 문서에 없습니다.",
+  "file": "Formats/SelectedLayerExport.cs"
+ },
+ {
+  "ko": "선택한 레이어에 내보낼 픽셀이 없습니다. 조정 레이어는 이미지 레이어와 함께 선택하거나, 전체 캔버스 크기를 선택하세요.",
+  "file": "Formats/SelectedLayerExport.cs"
+ },
+ {
+  "ko": "마스크·클리핑 레이어·원근·조정·혼합·불투명도 효과가 있는 문서는 합성 PDF로 내보내거나 효과를 먼저 병합해 주세요.",
+  "file": "Formats/VectorPdfExport.cs"
+ },
+ {
+  "ko": "이 벡터 그리기 종류는 PDF 내보내기를 지원하지 않습니다.",
+  "file": "Formats/VectorPdfExport.cs"
+ },
+ {
+  "ko": "지원하지 않는 벡터 경로입니다.",
+  "file": "Formats/VectorPdfExport.cs"
+ },
+ {
+  "ko": "벡터 미리보기 실패: ",
+  "file": "UI/Controls/CanvasView.Design.cs"
+ },
+ {
+  "ko": "채도 · 명도",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "색조 · 좌우 방향키로 1°씩 조절",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "팔레트 색조",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "추천 색상",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "보색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "반대 색조와 부드러운 톤으로 대비를 만듭니다",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "유사색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "색상환에서 가까운 세 색을 조합합니다",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "삼각색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "120° 간격의 세 색을 조합합니다",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "추천색을 누르면 전경색으로 사용합니다",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "선택 색상 톤",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "선택 색상 톤 그리드",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "현재 색을 기준으로",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "현재 전경색으로 톤 팔레트의 기준색을 다시 설정합니다",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "기준 #{0}{1}{2}",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "위: 밝게 · 가운데: 기준색 · 아래: 어둡게\n",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "무채색 단계",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "좌우로 인접 색조",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "밝은 톤",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "어두운 톤",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "기준 톤",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "#{0}{1}{2} · {3} · {4}행 {5}열",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": " · 원래 기준색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "선택된 전경색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": " · 추천 전경색",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "추천색 ",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "좌우: 채도 · 위아래: 명도\n드래그 또는 방향키 · Shift: 10%씩 조절",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "채도와 명도 팔레트",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "좌우 방향키로 채도, 위아래 방향키로 명도를 조절합니다. Shift를 누르면 10%씩 조절합니다.",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "채도 {0}%, 명도 {1}%",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "배경색 선택",
+  "file": "UI/Controls/ColorSwatches.cs"
+ },
+ {
+  "ko": "전경색 선택",
+  "file": "UI/Controls/ColorSwatches.cs"
+ },
+ {
+  "ko": "전경색 / 배경색 교환 · X",
+  "file": "UI/Controls/ColorSwatches.cs"
+ },
+ {
+  "ko": "기본색: 검정 / 흰색 · D",
+  "file": "UI/Controls/ColorSwatches.cs"
+ },
+ {
+  "ko": "전경색 #{0}{1}{2} · 클릭하여 선택",
+  "file": "UI/Controls/ColorSwatches.cs"
+ },
+ {
+  "ko": "배경색 #{0}{1}{2} · 클릭하여 선택",
+  "file": "UI/Controls/ColorSwatches.cs"
+ },
+ {
+  "ko": "현재 합성 이미지의 RGB 분포 · 투명 픽셀 제외",
+  "file": "UI/Controls/HistogramView.cs"
+ },
+ {
+  "ko": "재료 맵핑",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "벡터 원본",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "벡터 도형",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "조정",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "이미지",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": " · 클리핑",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": " · 마스크",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "{0} 선택 · Shift+클릭: 범위 선택 · Ctrl+클릭: 추가/빼기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 선택: {0}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 숨기기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 표시",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": " · Alt+클릭: 이 레이어만 보기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "그룹 접기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "그룹 펼치기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 잠금 해제",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 잠금",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "이동 간격 · 슬라이더와 방향키가 움직이는 단위",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": " 이동 간격",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "기본",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "연속",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": " 초기화",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "색조",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "채도",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "명도",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "노출",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "검정",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "흰색",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "방향키: 미세 조절 · 연속 이동에서 Shift+드래그/방향키: 1/10 속도",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "{0} ~ {1} 사이의 숫자를 입력하세요.",
+  "file": "UI/Controls/ParameterSlider.cs"
+ },
+ {
+  "ko": "글자 색상",
+  "file": "UI/Controls/PropertyRows.cs"
+ },
+ {
+  "ko": "섹션 접기 또는 펼치기",
+  "file": "UI/Controls/SectionHeader.cs"
+ },
+ {
+  "ko": "패널을 현재 위치에 고정 / 이동 허용",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "패널 고정",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "패널 이동과 도킹",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "분리하여 이동",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "왼쪽에 도킹",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "오른쪽에 도킹",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "제목을 끌어서 패널 이동 · ⋯ 도킹 위치 선택",
+  "file": "UI/Controls/StudioPane.cs"
+ },
+ {
+  "ko": "문자 · 단락",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "텍스트 내용",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "Enter 줄바꿈 · Ctrl+Enter 적용",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "글꼴",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "텍스트 글꼴",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "보통",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "굵게",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "기울임",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "굵게 기울임",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "글꼴 스타일",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "글자 크기 px",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "줄 간격 px · 0은 자동",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "자간 · 1/1000 em",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "줄 간격 px · 0 = 자동 · Enter 적용",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "자간 · 1/1000 em · 0 = 기본 · Enter 적용",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "크기 · px",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "줄 간격 · px",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "색상",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "단락 정렬",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "왼쪽",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "가운데",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "오른쪽",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "단락 ",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": " 정렬",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "텍스트 적용",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "내용과 문자 서식을 한 번에 적용 · Ctrl+Enter",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "캔버스에 정렬",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "텍스트 레이어 ",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "글자 크기",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "줄 간격",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "자간",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "{0}: {1}~{2} 사이의 숫자를 입력하세요.",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": " · Enter 적용",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "Morupixel · CMYK 인쇄용 내보내기",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "CMYK 인쇄용 내보내기",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "ICC 프로필 선택…",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "Windows 기본값",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "해상도 (DPI)",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "sRGB 원본",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "CMYK 프로필 변환 미리보기",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "투명 영역은 흰색으로 합칩니다. ICC 포함 CMYK TIFF로 저장합니다.\n실제 인쇄색은 프로필·용지·모니터에 따라 달라질 수 있습니다.",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "닫기",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "CMYK TIFF 저장…",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "인쇄소에서 제공한 CMYK ICC 프로필 선택",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "ICC 색상 프로필|*.icc;*.icm",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "색상 프로필과 인쇄 미리보기를 준비하고 있습니다…",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "CMYK 미리보기 준비 완료",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "Windows 기본 CMYK 프로필",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "ICC 프로필을 포함한 CMYK TIFF 저장",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "CMYK TIFF를 저장하고 있습니다…",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "저장 완료: {0}",
+  "file": "UI/Dialogs/CmykExportDialog.cs"
+ },
+ {
+  "ko": "전경색",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": " 선택",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "새 색상 / 이전 색상",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "이전 색상으로 복원",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "색상 적용",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "취소",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "드래그하여 채도·명도 조절",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "드래그하여 색조 조절",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "HEX: 여섯 자리",
+  "file": "UI/Dialogs/ColorPickerDialog.cs"
+ },
+ {
+  "ko": "명령 찾기",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "명령 검색",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "명령·도구·패널 검색  (예: 레이어 복제, ㅂㄹㅅ, ctrl+j)",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "↑↓ 이동   Enter 실행   Esc 닫기",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "검색 결과",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "일치하는 명령이 없습니다",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "문서를 연 뒤 사용할 수 있는 명령입니다",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "최근 사용  ·  ",
+  "file": "UI/Dialogs/CommandPalette.cs"
+ },
+ {
+  "ko": "레이어별 선 굵기·농도 맞추기",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "벽·구조는 굵고 진하게, 창호는 중간, 가구·치수는 가늘고 연하게 정리합니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "재질 추천으로 채우기 (추천)",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "그대로 두기 (경계선만)",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "내 재질 이미지로 채우기…",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "레이어 역할",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 처리",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치에 채울 재질 이미지",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "이미지|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.webp",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "{0} · 객체 {1}개",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": " · 해치 {0}개",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "레이어 역할: ",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "레이어 역할 ({0}) · ",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "처음 {0}개 레이어만 표시합니다. 나머지는 이름으로 자동 분류합니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "도면 정리 · ",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "선 굵기 정리",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "선 원본 유지",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 재질 추천",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 내 재질",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 그대로",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "도면을 확인하면 해치 재질을 추천해요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "이 도면에는 해치가 없어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 {0}개 추천: ",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 {0}개를 ‘{1}’ 이미지로 채워요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 {0}개를 경계선으로만 가져와요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "미리보기를 확인하고 가져오세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "평면.dxf",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "콘크리트 4",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "확대해도 선명하게 (벡터)",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "선과 도형은 벡터로, 사진은 원본 해상도로 유지합니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "부분별로 편집 (추천)",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "레이어별로 편집",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "한 장으로 가져오기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "세부 설정",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "변환 안내",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "Morupixel · 호환 파일 가져오기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "미리보기 새로고침",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "가져오기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "파일 정보를 확인하고 있어요…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "아트보드",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "페이지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "원본 레이어 유지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "이미지 해상도 (DPI)",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "36~600 DPI · 높을수록 작업 이미지가 커져요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "도면 정보를 확인하고 있어요…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "편집 방식",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "가져올 도면",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "자동 선택으로 시작하세요. 다른 도면이 보이면 모델 공간이나 배치를 직접 선택할 수 있어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "작업 크기 (px)",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "가로·세로 중 긴 쪽 기준 · 256~4,096 px",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PSD 이미지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "RGB / 회색조 · 8비트 픽셀 레이어를 가져옵니다. 그룹이나 조정 레이어가 있으면 이 옵션을 꺼 주세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "현재 문서에 그룹으로 추가해요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "미리보기를 준비하고 있어요…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "아트보드 {0}개",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "총 {0}페이지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "저장된 레이어 {0}개를 유지합니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "이 파일에는 따로 저장된 레이어가 없어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "자동 선택",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "CAD 도면",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "선과 도형을 각각 선택할 수 있어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "같은 레이어의 내용을 함께 선택해요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "도면 전체를 한 번에 이동하고 조절해요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "설정을 바꿨어요. 미리보기를 새로고침해 주세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "{0}개 요소 · {1}개 그룹",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "레이어 {0}개",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "변환 안내 ({0})",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "가져오기 정보",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "미리보기를 만들고 있어요…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "가져오기를 취소했습니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "정수로 입력하세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "암호가 필요한 PDF입니다. 암호를 해제한 사본을 저장한 뒤 다시 가져와 주세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PDF · 합성 이미지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PSD · 합성 이미지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PSD · 픽셀 레이어",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PDF · 벡터 원본 유지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "Morupixel · PDF / PSD 내보내기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "호환 형식 내보내기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "파일 형식",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "파일로 저장…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "문서 DPI에 맞춘 한 페이지 RGB PDF입니다. 현재 합성 결과를 이미지로 담습니다. PDF를 여는 다른 프로그램에서도 열 수 있지만 문자·벡터·레이어를 개별 편집할 수 있는 원본 파일은 아닙니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "현재 합성 결과를 RGB / 8비트 PSD로 저장합니다. 원본 문서의 레이어·문자·벡터를 개별 편집하려면 .moruproj도 함께 보관하세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "CAD 경로·문자·도형과 원본 PDF/AI의 벡터를 유지합니다. 사진은 원본 픽셀로 포함됩니다. 편집 레이어는 .moruproj에도 저장하세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "레이어 이름·표시·불투명도·혼합 모드를 저장합니다. 문자·도형·변형·마스크는 각 레이어의 픽셀에 적용됩니다. 그룹·조정·클리핑 문서는 합성 PSD로 출력하세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "픽셀 레이어 PSD는 최대 {0}개 레이어를 지원합니다. ‘PSD · 합성 이미지’를 선택하고 객체 구조는 .moruproj로 보관하세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "현재 문서에 그룹·조정·클리핑 레이어가 있습니다. 외형 보존을 위해 ‘PSD · 합성 이미지’를 선택해 주세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PDF 문서|*.pdf",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "PSD 이미지|*.psd",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "파일을 저장하고 있습니다…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "저장 실패: ",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "적용",
+  "file": "UI/Dialogs/Dialogs.cs"
+ },
+ {
+  "ko": "{0} ~ {1} 사이의 숫자를 입력하세요. 소수점은 . 을 사용합니다.",
+  "file": "UI/Dialogs/Dialogs.cs"
+ },
+ {
+  "ko": "미리보기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "곡선",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "레벨",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "색조 / 채도",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "그레인",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "그라데이션 맵",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "원본 픽셀을 보존하는 조정 레이어",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "현상 설정 모두 초기화",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "RGB 전체",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "빨강",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "초록",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "파랑",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "빛",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "노출 EV",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "대비",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "밝은 영역",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "어두운 영역",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "흰색 계열",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "검정 계열",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "색온도 · 상대값",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "색조 · 녹색 / 자홍",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "생동감",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "디테일",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "텍스처",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "부분 대비",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "안개 제거",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "입력 검정",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "입력 흰색",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "감마",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "출력 검정",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "출력 흰색",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "자동 레벨",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "클릭: 점 추가 · 드래그: 조절\n우클릭: 중간 점 삭제",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "선형으로 초기화",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "오프셋",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "양",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "크기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "거칠기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "어두운 영역 색상",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "밝은 영역 색상",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "보정 결과 보기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "해제하면 현재 사진 현상을 끈 보정 전 모습을 표시합니다.",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "조정 적용",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "표시된 범위 안의 숫자를 입력해 주세요.",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "미리보기 계산 중…",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "조정 미리보기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "이 조정 없이 보기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "조정 전 이미지의 자동 레벨 계산 중…",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "Morupixel · 내보내기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "내보내기",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "대지",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "JPEG 품질 95",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "미리보기 준비…",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "JPEG 품질 ",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "예상 파일 크기 {0} KB",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": " 이미지|*",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "내보내지 못했습니다",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "작업을 완료하지 못했습니다",
+  "file": "UI/Dialogs/MessageDialog.cs"
+ },
+ {
+  "ko": "확인해 주세요",
+  "file": "UI/Dialogs/MessageDialog.cs"
+ },
+ {
+  "ko": "알림 내용",
+  "file": "UI/Dialogs/MessageDialog.cs"
+ },
+ {
+  "ko": "확인",
+  "file": "UI/Dialogs/MessageDialog.cs"
+ },
+ {
+  "ko": "내용 복사",
+  "file": "UI/Dialogs/MessageDialog.cs"
+ },
+ {
+  "ko": "픽셀 (px)",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "밀리미터 (mm)",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "투명",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "현재 Windows 화면",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "Morupixel · 새 문서",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "새 문서",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "프리셋을 고르거나 오른쪽에서 크기를 직접 입력하세요.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "문서 설정",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "이름",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "크기 단위",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "너비",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "높이",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "가로 / 세로 바꾸기",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "해상도 · DPI",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "배경",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "CMYK 미리보기는 상단에서 전환",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "문서 만들기  →",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "크기 또는 DPI를 확인하세요",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "픽셀 크기는 정수로 입력하세요.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "레이어 1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "조절할 항목을 1~32개 지정하세요.",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": "조절 항목의 이름·범위·초깃값이 올바르지 않습니다.",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": "슬라이더를 움직이거나 숫자를 직접 입력하세요.\n방향키: 한 단계 · 연속 이동에서 Shift: 미세 조절",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": "범위 ",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": " 범위",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": "입력 확인",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": ": 표시된 범위 안의 숫자를 입력하세요.",
+  "file": "UI/Dialogs/ParameterDialog.cs"
+ },
+ {
+  "ko": "Morupixel · 문서 닫기",
+  "file": "UI/Dialogs/SaveChangesDialog.cs"
+ },
+ {
+  "ko": "변경 내용을 저장할까요?",
+  "file": "UI/Dialogs/SaveChangesDialog.cs"
+ },
+ {
+  "ko": "문서 이름",
+  "file": "UI/Dialogs/SaveChangesDialog.cs"
+ },
+ {
+  "ko": "저장하지 않은 변경 내용은 사라집니다.",
+  "file": "UI/Dialogs/SaveChangesDialog.cs"
+ },
+ {
+  "ko": "저장하지 않고 닫기",
+  "file": "UI/Dialogs/SaveChangesDialog.cs"
+ },
+ {
+  "ko": "저장 후 닫기",
+  "file": "UI/Dialogs/SaveChangesDialog.cs"
+ },
+ {
+  "ko": "Morupixel · 텍스트",
+  "file": "UI/Dialogs/TextEditorDialog.cs"
+ },
+ {
+  "ko": "Enter 적용 · Shift+Enter 줄바꿈 · Esc 취소",
+  "file": "UI/Dialogs/TextEditorDialog.cs"
+ },
+ {
+  "ko": "레벨 보정",
+  "file": "UI/MainWindow.AdjustmentControls.cs"
+ },
+ {
+  "ko": "입력 흰색은 입력 검정보다 1 이상 커야 합니다.",
+  "file": "UI/MainWindow.AdjustmentControls.cs"
+ },
+ {
+  "ko": "노출 보정",
+  "file": "UI/MainWindow.AdjustmentControls.cs"
+ },
+ {
+  "ko": "채도 보정",
+  "file": "UI/MainWindow.AdjustmentControls.cs"
+ },
+ {
+  "ko": "가우시안 흐림",
+  "file": "UI/MainWindow.AdjustmentControls.cs"
+ },
+ {
+  "ko": "반경 px",
+  "file": "UI/MainWindow.AdjustmentControls.cs"
+ },
+ {
+  "ko": "올가미",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "다각형 올가미",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "마술봉",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "복제 도장 / Alt+클릭으로 원본 지정",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "복구 브러시",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "스머지",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "액화",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "흐림 브러시",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "대지 편집",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "열린 문서는 최대 8개입니다. 다른 문서를 저장하고 닫아주세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "Compositor .comp 패키지 폴더 선택",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "가져오기 안내",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "새 .comp 패키지를 만들 상위 폴더 선택",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "Compositor 패키지 저장 완료 · ",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "픽셀 또는 텍스트 레이어를 선택하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "변형된 그룹의 부분 보정은 먼저 그룹 변형을 초기화하거나 병합하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": " 처리 중…  Esc: 취소",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "작업을 취소했습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "텍스트 편집",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "텍스트 내용과 서식 편집",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "문자·단락 속성에서 내용과 서식을 편집합니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "효과 편집",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "조정 레이어 효과 편집",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택한 조정 레이어의 효과와 값을 변경합니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "클리핑 해제",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "클리핑 만들기",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "클리핑 마스크 해제",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "클리핑 마스크 만들기",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "아래 레이어에 적용된 클리핑을 해제합니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "아래 레이어의 불투명 영역 안에 표시합니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹 만들기",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 레이어 그룹 만들기",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택한 연속 레이어를 하나의 그룹으로 묶습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "새 그룹",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹 해제",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹으로 이동",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹 번호: 0 = 최상위\n",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹 이동",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "레이어 위치를 보존하기 위해, 변형된 그룹 사이 이동은 먼저 그룹 변형을 초기화하거나 병합하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "잠긴 레이어나 그룹으로는 이동할 수 없습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹을 자신의 하위 레이어로 이동할 수 없습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "레이어 순서 변경",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "클리핑 마스크",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "픽셀 레이어로 변환",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "같은 그룹의 아래쪽에 병합 가능한 레이어가 필요합니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "합성 결과 보존을 위해 Normal 모드의 일반 레이어끼리 병합하세요. 전체 병합도 가능합니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "이 레이어를 참조하는 클리핑 레이어를 먼저 병합하거나 해제하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "아래 레이어와 병합",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "먼저 다른 문서를 여세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "그룹은 개별 레이어를 선택해 복사하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "변형된 그룹의 레이어는 먼저 선택 픽셀을 새 레이어로 추출한 뒤 복사하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "다른 문서에 레이어 복사",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "다른 문서의 레이어 추가",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "조정 레이어 추가",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "조정 레이어 편집",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 영역 ",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "반경 (px)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 영역 계산 중…  Esc: 취소",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 윤곽 이동",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "가로 이동 (px)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "세로 이동 (px)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "조정 레이어는 독립 픽셀을 포함하지 않습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "선택 픽셀 복제",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "제거할 부분을 먼저 선택하세요.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "주변으로 채우기",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "모션 블러",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "각도 (°)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "거리 (px)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "노이즈",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "양 (0~100%)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "단색 (1) / 컬러 (0)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "렌즈 왜곡 보정",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "왜곡 (-1~1)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "확대 배율 (0.5~2)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "렌즈 보정",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "배경색 제거 · 가장자리와 비슷한 색",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "색상 허용 오차 (0~255)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "페더 (px)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "배경색 제거",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "AI 배경 제거 중…  U²-NetP · 이 컴퓨터에서 처리 · Esc: 취소",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "AI 배경 제거",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "AI 배경 제거 완료 · 마스크 브러시로 가장자리를 다듬을 수 있습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "AI 배경 제거를 취소했습니다.",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "마스크 페더",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "가이드 추가",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "방향 (가로 / 세로)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "세로",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "위치 (px)",
+  "file": "UI/MainWindow.Advanced.cs"
+ },
+ {
+  "ko": "빈 곳 드래그: 만들기 · 모서리: 크기",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "새 대지",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "완료",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 {0}",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 {0} × {1} px",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 만들기",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 수정",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "마지막 대지는 유지됩니다.",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 삭제",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "편집할 대지",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 ",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지 이름",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "너비 (px)",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "높이 (px)",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "변경 적용",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "이 대지 내보내기…",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "대지의 위치와 크기를 바꿉니다.\n안의 객체 위치는 유지됩니다.",
+  "file": "UI/MainWindow.Artboards.cs"
+ },
+ {
+  "ko": "AI 연결",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "로컬 연결 켜기",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 설정…",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "AI로 편집하기",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 켜짐",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 꺼짐",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "같은 Windows 계정의 로컬 도구가 문서와 파일을 편집합니다. 연결을 끄면 새 명령을 받지 않습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결할 AI 프로그램",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "공통 MCP 설정",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "Codex · PowerShell 명령",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "Claude Code · PowerShell 명령",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "MCP 서버 설정",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "설정 복사",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "선택한 AI 연결 설정을 복사했습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 끄기",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "연결 켜기",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "현재 편집 또는 대화상자를 마친 다음 다시 시도하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "열린 문서에서 documentId를 찾을 수 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "activate_document로 대상 문서를 먼저 활성화하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "문서가 변경되었습니다. get_state로 최신 상태를 확인한 다음 다시 요청하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "문서는 최대 8개까지 열 수 있습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "작업 중인 문서가 변경되었습니다. 상태를 확인하고 다시 시도하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "프로젝트는 .moruproj로 저장하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "PNG, JPEG, TIFF 내보내기를 지원합니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "파일이 이미 있습니다. 새 경로를 사용하거나 overwrite=true를 지정하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "레이어를 찾을 수 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "레이어 또는 부모 그룹의 잠금을 먼저 해제하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "재료 맵핑 레이어를 선택하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "등록된 재료가 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "편집 가능한 텍스트 레이어가 아닙니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "그룹 안에 잠긴 레이어가 있습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "이미지·텍스트·도형 레이어를 선택하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "절대 파일 경로를 지정하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "대상 폴더가 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "조회 중 문서가 변경되었습니다. 첫 페이지부터 다시 확인하세요.",
+  "file": "UI/MainWindow.AutomationFoundation.cs"
+ },
+ {
+  "ko": "조회할 부모 레이어가 없습니다.",
+  "file": "UI/MainWindow.AutomationFoundation.cs"
+ },
+ {
+  "ko": "같은 operationId로 다른 작업을 실행할 수 없습니다.",
+  "file": "UI/MainWindow.AutomationFoundation.cs"
+ },
+ {
+  "ko": "묶음 편집",
+  "file": "UI/MainWindow.AutomationFoundation.cs"
+ },
+ {
+  "ko": "문서가 변경되었습니다. 목록을 다시 조회하세요.",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "재료 라이브러리가 가득 찼습니다.",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "영역은 최대 128개를 보관합니다.",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "먼저 적용할 영역을 선택하세요.",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "영역을 가져오는 동안 선택이 변경되었습니다.",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "AI · 재료 등록",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "AI · 적용 영역 등록",
+  "file": "UI/MainWindow.AutomationMaterials.cs"
+ },
+ {
+  "ko": "배경색",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
+  "ko": "Alt + 좌우 드래그: 크기",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
+  "ko": "클릭: 전경색 · Alt+클릭: 배경색",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
+  "ko": "선택한 레이어의 이미지 안에서 원본 위치를 지정하세요.",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
+  "ko": "참조 위치 지정됨 ({0}, {1}) · 드래그하여 적용",
+  "file": "UI/MainWindow.BrushOptions.cs"
+ },
+ {
+  "ko": "브러시 모양",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": " 브러시",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "사용자 이미지 브러시",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "저장한 사용자 브러시",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "이미지로 브러시 추가",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "PNG · JPEG · BMP · TIFF\n투명 이미지는 불투명한 부분, 흰 배경 이미지는 어두운 부분을 모양으로 사용합니다.",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "사용자 브러시를 읽지 못했습니다: ",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "브러시 모양으로 사용할 이미지",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "이미지 파일|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff|모든 파일|*.*",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "사용자 브러시 저장 · ",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "저장한 이미지 모양 선택",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "이미지로 브러시를 추가하면 여기에 표시됩니다",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "이미지를 레이어로 가져오기 · Ctrl+Shift+O",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "저장",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "레이어를 보존하는 작업 저장 · Ctrl+S",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "이미지 내보내기 · Ctrl+Shift+E",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "Morupixel · 모루픽셀",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "명령·도구·패널 찾기 · Ctrl+K",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "실행 취소 · Ctrl+Z",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "다시 실행 · Ctrl+Shift+Z",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "새 문서 · Ctrl+N",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "저장하지 않은 변경 사항",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": " · 저장하지 않음",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "문서 선택: ",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "문서 닫기 · ",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "문서 닫기: ",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "이동",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "브러시",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "지우개",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "버킷 채우기",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "사각 선택",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "타원 선택",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "자르기",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "그라데이션",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "색상 추출",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "화면 이동",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "다각형 선택",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "복제 도장",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": "도구",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
+  "ko": " 도구",
+  "file": "UI/MainWindow.Commands.cs"
+ },
+ {
+  "ko": "도구 · ",
+  "file": "UI/MainWindow.Commands.cs"
+ },
+ {
+  "ko": " 패널 열기",
+  "file": "UI/MainWindow.Commands.cs"
+ },
+ {
+  "ko": "패널",
+  "file": "UI/MainWindow.Commands.cs"
+ },
+ {
+  "ko": "호환 파일 가져오기 완료 · 원본은 변경하지 않았습니다.",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "준비",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "경도",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "농도",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "전경색 → 투명",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "전경색 → 배경색",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "이동 도구(V): 클릭한 대상의 레이어 선택. 끄면 목록에서 선택한 레이어만 이동합니다.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "캔버스 레이어 자동 선택",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "→ 안에 든 객체  ·  ← 닿는 객체",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "손 도구",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "드래그하여 조절",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "잠긴 레이어입니다. 레이어와 부모 그룹의 잠금을 먼저 해제하세요.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "드래그하여 그리기 · Alt+좌우 드래그 / [ ] 크기 조절",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "드래그하여 지우기 · Alt+좌우 드래그: 크기",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "드래그한 영역으로 캔버스 자르기",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "캔버스를 클릭하여 텍스트 추가",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "클릭: 전경색으로 영역 채우기 · 허용 오차·연결 영역 조절 · Esc 취소",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "전경색 → 배경색 그라데이션 · 드래그",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "전경색 → 투명 그라데이션 · 드래그",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "드래그하여 화면 이동",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "캔버스에서 드래그 · Esc 취소",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "\n자석 정렬 · Alt: 스냅 잠시 해제 · Shift: 가로/세로 고정",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "\n휠: 확대/축소 · Space+드래그: 화면 이동",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "{0}개 선택",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "{0}개 객체",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "이미지|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.gif;*.heic;*.heif|모든 파일|*.*",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "이미 열려 있는 작업으로 이동했습니다.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "원본",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "이미지 가져오기",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "Morupixel 작업|*.moruproj",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "작업 저장 완료 · ",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "저장하지 못했습니다",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 복제",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": " 복사",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 삭제",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 순서",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 이름",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 변형",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "X 위치 (px)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "Y 위치 (px)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "공통 크기 (%)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "시계방향 회전 (°)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "가로 배율 (%)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "세로 배율 (%)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "마스크 추가",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "마스크 반전",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "모든 레이어 병합",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "합성 이미지",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "색상 보정",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "캔버스 크기 · 좌측 상단 기준",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "캔버스 크기",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "이미지 크기 · 비율 유지",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "새 너비 (px)",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "변경 후 레이어 배율이 지원 범위를 벗어납니다.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "이미지 크기",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "먼저 선택 도구로 자를 영역을 지정하세요.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "합성 이미지를 클립보드에 복사했습니다.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "클립보드에 이미지가 없습니다.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "붙여넣은 이미지",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "붙여넣기",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "Morupixel · 모루픽셀 {0}\n독립적인 Windows 이미지 편집기\n\n",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 그룹·클리핑·14 혼합 모드·마스크·6종 조정 레이어·편집 가능한 텍스트\n올가미·마술봉·페더·복제·복구·스머지·액화·주변으로 채우기·AI 배경 제거\n\n",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "Ctrl+S: .moruproj 저장 / Ctrl+Shift+E: 내보내기 미리보기\nCtrl+T: 변형 값 입력 / 모서리: 크기 / Ctrl+모서리: 원근 / 원형 핸들: 회전\nShift+레이어 클릭: 다중 선택 / Ctrl+G: 그룹\nAlt+클릭: 복제·복구 원본 지정 / Shift·Alt: 선택 추가·빼기\n마스크: 흰색 표시·검정 숨김 / D: 검정·흰색 초기화 / X: 전경·배경 교환\nAlt+좌우 드래그: 브러시 크기 (1~1000px) / Esc: 크기 변경 취소\nAlt+Delete: 전경색 채우기 / Ctrl+Delete: 배경색 채우기 (Backspace도 가능)\nG: 버킷 채우기 / Shift+G: 그라데이션\n텍스트 속성: Enter 줄바꿈 / Ctrl+Enter 적용 / 숫자·글꼴 입력 Enter 적용\n\n",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "8개 문서 탭 · 최대 {0}개 객체·그룹 (이미지·조정 {1}개) · 한 변 {2}px · {3}MP · 레이어 메모리 {4}GiB\n실제 작업 가능 크기는 사용 가능한 메모리와 편집 작업에 따라 달라집니다.\nICC 입력은 sRGB로 변환합니다. HEIC는 Windows 코덱이 필요합니다.\nCompositor .comp 파일은 지원하는 속성만 호환됩니다. 자세한 범위는 배포본 docs/PORTING.md를 확인하세요.\n\n",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "Compositor 참고: github.com/robbietilton/Compositor\nCopyright © 2026 Wonder Assembly LLC · MIT License\nAI 모델: U²-NetP · Apache-2.0 · 모든 편집은 로컬에서 처리됩니다.",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "Morupixel 도움말",
+  "file": "UI/MainWindow.cs"
+ },
+ {
+  "ko": "레이어 패널을 오른쪽으로",
+  "file": "UI/MainWindow.Docking.cs"
+ },
+ {
+  "ko": "도면 레이어",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "사진 레이어",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 그룹 · 객체 {0}개",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 레이어 · 객체 {0}개",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 그룹 잠금",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 그룹 표시",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 그룹 순서",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "정사각형",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "세로 4:5",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "와이드 16:9",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "A4 인쇄",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "모루픽셀에서 시작하기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "새 문서를 만들거나 이미지를 열어 편집을 시작하세요.",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "열기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "배우기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "샘플 작업 열기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "빠른 시작",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "빠른 시작: {0} {1}",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "이미지나 작업 파일을 여기로 끌어다 놓아도 열립니다",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "최근 문서",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "최근 문서 열기: ",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "파일을 찾을 수 없어 최근 문서 목록에서 뺐습니다.\n",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "배우기 · ",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "이미지 편집으로 전환한 뒤 채우기 도구를 사용하세요.",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "레이어와 부모 그룹의 잠금을 먼저 해제하세요.",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "숨겨진 레이어입니다. 레이어와 부모 그룹을 표시한 뒤 편집하세요.",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "채우는 중… Esc: 취소",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "채울 픽셀이 없습니다.",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "페인트 통",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "채우기를 취소했습니다.",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "채우기 실패: ",
+  "file": "UI/MainWindow.Fill.cs"
+ },
+ {
+  "ko": "패널 너비 조절 · 두 번 클릭하면 기본 너비",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "오른쪽 패널 너비 조절",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "패널 높이 조절",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어를 드래그하여 순서 변경",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택 레이어 삭제",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "새 투명 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "새 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 {0}",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택 레이어 복제 · Ctrl+J",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택 레이어를 위로",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택 레이어를 아래로",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어를 선택하세요",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "텍스트 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "조정 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "이미지 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "외형",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "혼합 모드",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "불투명도",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "0~100% · Enter 또는 포커스를 벗어나면 적용",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "불투명도 · %",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택한 이미지 레이어의 검정·흰색·감마 값을 보정합니다.",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "위치와 변형",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "X 위치",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "Y 위치",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "크기 %",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "회전 °",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "회전",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "상세 변형 설정",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "위치·회전과 가로·세로 배율을 조절합니다.",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 작업",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "이름 변경",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 이름 변경",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택한 레이어의 이름을 변경합니다.",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 마스크 추가",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 이미지 편집",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "레이어 마스크 편집",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "선택 영역으로 마스크를 추가합니다. 선택 영역이 없으면 레이어 전체를 표시합니다.",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "이미지와 마스크 사이에서 편집 대상을 전환합니다.",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "곱하기",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "스크린",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "오버레이",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "소프트 라이트",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "어둡게",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "밝게",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "차이",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "색상 닷지",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "색상 번",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "{0}~{1} · Enter 또는 포커스를 벗어나면 적용",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "{0}개 레이어 · {1}개 객체",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "{0}개 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "잠금",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "드래그: 올가미 · Shift: 선택 추가 · Alt: 빼기 · Shift+Alt: 교차",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "클릭: 꼭짓점 · 더블클릭 / Enter: 완성 · Backspace: 마지막 점 삭제 · Esc: 취소",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "마술봉 오차 {0} · 표시된 레이어의 색 참조 · Ctrl+클릭: 전체 같은 색 · Shift/Alt: 추가/빼기 · 디자인: 벡터 경계 정밀 선택",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "Alt+클릭: 복제할 원본 위치 · 드래그: 복제 도장 · Alt+좌우 드래그 / [ ]: 크기",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "Alt+클릭: 참조 위치 · 드래그: 주변 색에 맞춰 질감 복구 · Alt+좌우 드래그 / [ ]: 크기",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "드래그: 픽셀을 문질러 이동 · 농도: 강도 · Alt+좌우 드래그 / [ ]: 크기",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "드래그: 국소 변형 · 농도: 강도 · Alt+좌우 드래그 / [ ]: 크기",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "드래그: 선택 영역 안에서 국소 흐림 · Alt+좌우 드래그 / [ ]: 크기",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "텍스트 클릭: 내용·서식 편집 · 빈 곳 클릭: 새 텍스트 · Alt+클릭: 항상 새 텍스트",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "버킷: 클릭한 영역을 전경색으로 채우기 · 오차 {0} · G 버킷 / Shift+G 그라데이션",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "\nSpace+드래그: 화면 이동",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "잠긴 텍스트 레이어입니다.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "처리 중입니다. Esc로 취소한 뒤 편집하세요.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "편집할 레이어를 선택하거나 레이어·그룹 잠금을 해제하세요.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "먼저 선택한 레이어 위에서 Alt+클릭으로 참조 위치를 지정하세요.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "도구를 시작하지 못했습니다: ",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "편집을 취소했습니다: ",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "레이어 이동",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "변형된 그룹 안에서는 직접 픽셀 편집이 제한됩니다. 레이어를 최상위로 옮긴 뒤 편집하세요.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "복구 도구는 이미지에서 사용합니다. 먼저 이미지 편집으로 전환하세요.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "픽셀 또는 텍스트 레이어를 선택하세요. 그룹·조정 레이어는 마스크 브러시만 지원합니다.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "마술봉 허용 오차",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "색상 차이 (0~255)",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "벡터 경계 선택 중… Esc: 취소",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "마술봉 계산 중… Esc: 취소",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "선택 계산을 취소했습니다.",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "마술봉 선택 실패: ",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "벡터 도형 추가",
+  "file": "UI/MainWindow.Interaction.cs"
+ },
+ {
+  "ko": "잠긴 레이어는 이동할 수 없습니다.",
+  "file": "UI/MainWindow.LayerDrag.cs"
+ },
+ {
+  "ko": "PNG · 투명 배경",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "JPEG · 흰색 배경",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "TIFF · 투명 배경",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "내용에 맞게 자르기",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "전체 캔버스 크기",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "Morupixel · 선택 레이어 내보내기",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어 내보내기",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택한 {0}개 레이어를 하나의 이미지로",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "내보낼 영역",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어만 합성합니다. 배경·조정 레이어 제외로 색이 달라질 수 있으며, 캔버스 밖은 제외됩니다.",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어는 표시하여 합칩니다. 그룹의 표시된 하위 레이어와 마스크·변형·부모 그룹 속성을 포함합니다.",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "JPEG 품질 {0}",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어 미리보기를 준비하고 있습니다…",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "\n클리핑 {0}개: 기준 레이어가 선택되지 않아 독립 이미지로 내보냅니다.",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "-선택 레이어",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "선택 레이어 이미지 저장",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "이미지를 저장하고 있습니다…",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "레이어 {0}개 범위 선택",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "레이어 단독 표시",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "선택 레이어만 숨기기",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "레이어 표시 복원",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "선택한 레이어만 표시 · Alt+클릭: 선택 레이어만 숨기기",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "선택한 레이어만 숨김 · Alt+클릭: 원래대로",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "레이어 표시를 원래대로 돌렸습니다",
+  "file": "UI/MainWindow.LayerSelection.cs"
+ },
+ {
+  "ko": "파일",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "새 캔버스…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "열기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "레이어로 가져오기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "Compositor .comp 가져오기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "편집",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "이미지 붙여넣기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "버킷 채우기 도구",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "보기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "스냅 전환",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "픽셀 격자 전환",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "명령 찾기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "도움말 / 지원 범위",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "다른 이름으로 저장…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "내보내기 미리보기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "Compositor .comp 내보내기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "현재 문서 닫기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "실행 취소",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "다시 실행",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "합성 이미지 복사",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 픽셀 지우기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "전경색으로 채우기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "배경색으로 채우기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "캔버스 크기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "이미지 크기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 영역으로 자르기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "이름 변경…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "변형 값 입력…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "가로 뒤집기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "세로 뒤집기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "마스크 제거",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "전체 선택",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 해제",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 반전",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "페더…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "확장…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "축소…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "레이어의 불투명 픽셀 선택",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 픽셀을 새 레이어로",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 윤곽 이동…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "보정",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "레벨…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "노출…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "채도…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "흑백",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "색상 반전",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "가우시안 흐림…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "합성",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 레이어 그룹화",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "그룹으로 이동…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "클리핑 마스크 전환",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "텍스트 내용·서식 편집…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "다른 문서로 레이어 복사…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "곡선…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "색조 / 채도…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "그라데이션 맵…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "그레인…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 조정 레이어 편집…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "필터",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "사진 현상…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "모션 블러…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "노이즈…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "렌즈 왜곡 보정…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "배경색 제거…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "AI 피사체 배경 제거…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "마스크 페더…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "인쇄",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "ICC / CMYK 내보내기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "화면에 맞춤",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "실제 크기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "확대",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "축소",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "가이드 추가…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "가이드 지우기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "스냅 켜짐",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "스냅 꺼짐",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "PDF / PSD 파일로 내보내기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "선택 레이어 이미지로 내보내기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "새 조정 레이어",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "인쇄용 CMYK 내보내기…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "사진 편집 작업 공간",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "디자인 작업 공간",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "RGB / CMYK 미리보기 전환",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "CMYK ICC 프로필 선택…",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "패널 배치 초기화",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "리본 메뉴로 보기",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "메뉴를 탭과 아이콘 버튼으로 표시합니다. ^로 접을 수 있습니다.",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "리본 내 탭 초기화",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "히스토그램 표시",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "만들기",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "사진",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "리터치",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "사진 편집",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "디자인",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "사진 편집: 선택·리터치·보정 / 디자인: 도형·문자·배치 · 같은 문서에서 전환합니다",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "디자인 · 벡터 원본을 확대 배율에 맞춰 표시합니다",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "사진 편집 · 원본 해상도의 픽셀을 편집합니다",
+  "file": "UI/MainWindow.Modes.cs"
+ },
+ {
+  "ko": "닿는 객체 선택 ←",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "완전히 포함된 객체 선택 →",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "객체 선택 중… Esc: 취소",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "객체를 선택하지 못했습니다: ",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "선택된 객체 없음",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "객체 {0}개 선택",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "객체 삭제",
+  "file": "UI/MainWindow.ObjectSelection.cs"
+ },
+ {
+  "ko": "픽셀 지우기",
+  "file": "UI/MainWindow.PixelCommands.cs"
+ },
+ {
+  "ko": "전경색 채우기",
+  "file": "UI/MainWindow.PixelCommands.cs"
+ },
+ {
+  "ko": "배경색 채우기",
+  "file": "UI/MainWindow.PixelCommands.cs"
+ },
+ {
+  "ko": "픽셀 레이어 또는 편집할 마스크를 선택하세요.",
+  "file": "UI/MainWindow.PixelCommands.cs"
+ },
+ {
+  "ko": "평면 예시.dxf",
+  "file": "UI/MainWindow.Preview.cs"
+ },
+ {
+  "ko": "CMYK 인쇄색을 준비합니다 · RGB 원본과 레이어는 유지됩니다",
+  "file": "UI/MainWindow.Proof.cs"
+ },
+ {
+  "ko": "RGB 편집 화면",
+  "file": "UI/MainWindow.Proof.cs"
+ },
+ {
+  "ko": "CMYK 인쇄색 미리보기 프로필",
+  "file": "UI/MainWindow.Proof.cs"
+ },
+ {
+  "ko": "ICC 프로필|*.icc;*.icm",
+  "file": "UI/MainWindow.Proof.cs"
+ },
+ {
+  "ko": "CMYK 인쇄색을 준비합니다",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "CMYK 인쇄색 미리보기 · RGB 원본 유지 · 상단 RGB 버튼으로 복귀",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "CMYK 미리보기 실패 · RGB 화면으로 복귀: ",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "화면 렌더링 실패: ",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "그룹 변형에는 전체 합성 미리보기가 필요합니다.",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "이동할 레이어를 찾을 수 없습니다.",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "이동 미리보기 실패: ",
+  "file": "UI/MainWindow.Rendering.cs"
+ },
+ {
+  "ko": "내 탭",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "리본 접기 · 탭만 보기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": " 탭",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "다른 탭의 버튼을 오른쪽 클릭해 ‘내 탭에 추가’를 고르세요.",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "리본 펼치기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "자주 쓰는 명령",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "새 캔버스",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "문서",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "내보내기 미리보기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "호환 파일",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "기록",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "클립보드",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "채우기·지우기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "캔버스",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "마스크",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "그룹·합성",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "화면",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "가이드·격자",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "도움·작업 공간",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "샘플 작업",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "로컬 연결",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "선택 레이어 이미지로",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "내 탭에서 빼기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "내 탭에 추가",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "앞으로 이동",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "뒤로 이동",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "레이어로 가져오기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "Compositor .comp 가져오기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "다른 이름으로 저장",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "인쇄용 CMYK",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "Compositor .comp 내보내기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "전경색으로",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "배경색으로",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "버킷",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "변형",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "클리핑",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "픽셀 레이어로",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "다른 문서로",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "페더",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "확장",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "레이어의 불투명",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "선택 윤곽",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "가우시안",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "선택 조정 레이어",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "렌즈",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "가이드",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "스냅",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "픽셀 격자",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "도움말",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "Windows 기본 CMYK",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "패널 배치",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "히스토그램",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "리본",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "샘플",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "연결 설정",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "도형 크기 · px",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "도형 너비",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "도형 높이",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": " 색상",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": " 색상 변경",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "채우기",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "선 두께 · px",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "선 두께",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "모서리 · px",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "둥근 모서리",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "타원에는 모서리 값이 적용되지 않습니다.",
+  "file": "UI/MainWindow.ShapeProperties.cs"
+ },
+ {
+  "ko": "RGB 편집 화면 보기",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "CMYK 인쇄색 미리보기",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "축소 · Ctrl+-",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "배율 · 숫자를 입력하고 Enter",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "화면 배율",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "확대 · Ctrl++",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "화면에 맞춤 · Ctrl+0",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "배율은 1~6400% 사이 숫자로 입력하세요.",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "RGB 원본을 유지하며 인쇄색 확인 · ",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": " · Ctrl+Shift+Y\nCMYK 파일 저장: 파일 → 인쇄용 CMYK 내보내기",
+  "file": "UI/MainWindow.StatusBar.cs"
+ },
+ {
+  "ko": "RGB · 합성 이미지",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "히스토그램 숨기기 · 보기 메뉴에서 다시 표시",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "현재 패널 이동과 도킹",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "작업",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "속성",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": " 패널 · 오른쪽으로 가져오기",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "사진 보정",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "색 교환 · X",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "색상 견본",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": " · 전경색 지정",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "전경 #{0}{1}{2}   /   배경 #{3}{4}{5}",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "크기와 획",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "세밀하게",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "부드럽게",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "넓게",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": " 브러시 프리셋",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "크기 px",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "경도 %",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "모양 회전 °",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "찍는 간격 %",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "간격을 늘리면 모양을 띄워 그립니다. 브러시·지우개·마스크에 적용됩니다.",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "Alt + 좌우 드래그로 크기 조절",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "텍스트 추가",
+  "file": "UI/MainWindow.TextProperties.cs"
+ },
+ {
+  "ko": "새 텍스트",
+  "file": "UI/MainWindow.TextProperties.cs"
+ },
+ {
+  "ko": "선택한 레이어가 바뀌었습니다. 현재 속성에서 편집하세요.",
+  "file": "UI/MainWindow.TextProperties.cs"
+ },
+ {
+  "ko": "문자와 단락 속성",
+  "file": "UI/MainWindow.TextProperties.cs"
+ },
+ {
+  "ko": "왜곡된 그룹의 텍스트는 그룹 밖으로 이동한 후 캔버스에 정렬하세요.",
+  "file": "UI/MainWindow.TextProperties.cs"
+ },
+ {
+  "ko": "텍스트 캔버스 정렬",
+  "file": "UI/MainWindow.TextProperties.cs"
+ },
+ {
+  "ko": "허용 오차",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "작게 설정하면 더 비슷한 색만 선택합니다. 0~255 · 방향키로 1씩 조절",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "연결 영역",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "끄면 문서 전체의 비슷한 색을 선택합니다. Ctrl+클릭으로도 전체 색을 선택할 수 있습니다.",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "가장자리 보정",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "선과 색이 섞인 경계 픽셀을 부드럽게 선택합니다. 경계 너머로 선택을 확장하지 않습니다.",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "색상 차이 허용 범위 (0~255)",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "끄면 문서 전체에서 같은 색 영역을 채웁니다.",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "표시된 레이어 참조",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "화면의 경계를 읽고 선택한 레이어에 채웁니다. 끄면 현재 레이어만 참조합니다.",
+  "file": "UI/MainWindow.ToolOptions.cs"
+ },
+ {
+  "ko": "회전 · Shift: 15° 단위",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "원근 왜곡 · 볼록 사각형 범위 · Esc: 취소",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "크기 조절 · Shift: 비율 고정 · Ctrl+꼭짓점: 원근 왜곡",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "꼭짓점이 교차하는 왜곡은 적용할 수 없습니다.",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "원근 왜곡",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "레이어 회전",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "레이어 크기",
+  "file": "UI/MainWindow.Transform.cs"
+ },
+ {
+  "ko": "화이트 밸런스 · 명암 · 질감을 한 번에 조절",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "화이트 밸런스·톤·질감을 한 번에 보정 · 수정 가능한 조정 레이어로 적용",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "원본을 유지하며 빛과 색을 보정합니다. 미리보기 후 조정 레이어로 추가됩니다.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "노출 · 미리보기 후 조정 레이어 추가",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "입력·출력 레벨과 감마 조절",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "RGB와 각 채널의 톤 곡선 조절",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "색조·채도·명도 조절",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "명암에 따라 색상 매핑",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "필름 입자 추가",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 조정 레이어 편집",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 조정 레이어의 값을 다시 편집",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택과 마스크",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택 영역을 만들고 마스크나 새 레이어로 바꿉니다.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "불투명 픽셀 선택",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "활성 레이어의 불투명도를 선택 영역으로 불러오기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택 영역 마스크",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "현재 선택 영역으로 마스크 만들기 · 선택이 없으면 전체 표시",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 픽셀을 새 레이어에 복사",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "이 컴퓨터에서 배경을 분석해 레이어 마스크 만들기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "잡티를 지우고 빈 곳을 주변 픽셀로 채웁니다.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "Alt+클릭으로 참조 위치 지정 후 드래그",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "Alt+클릭으로 참조 위치 지정 후 복제",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "제거할 부분을 선택한 뒤 주변 픽셀로 채우기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "브러시 설정",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "크기와 경도, 브러시 프리셋",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "도형·텍스트를 이미지와 함께 배치합니다.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "편집 가능한 텍스트 추가 후 문자·단락 속성 열기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스에서 드래그하여 편집 가능한 사각형 만들기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스에서 드래그하여 편집 가능한 타원 만들기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "채우기 · 선",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 도형의 채우기·선 색상과 두께 조절",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 이미지·도형·텍스트 각각을 캔버스 기준으로 정렬합니다.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "배치와 그룹",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "앞으로 한 단계",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "활성 레이어를 같은 그룹 안에서 한 단계 앞으로 이동",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "뒤로 한 단계",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "활성 레이어를 같은 그룹 안에서 한 단계 뒤로 이동",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 연속 레이어를 그룹으로 묶기 · Ctrl+G",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "효과나 변형이 없는 선택 그룹 해제 · Ctrl+Shift+G",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "색상과 내보내기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "견본 · 추천 색상",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "색상 견본·채도와 명도 팔레트·추천 색상",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "레이어 내보내기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 레이어만 PNG·JPEG·TIFF로 내보내기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스 왼쪽 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스 가로 중앙 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스 오른쪽 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스 위쪽 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스 세로 중앙 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "캔버스 아래쪽 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "이미지·도형·텍스트 레이어를 먼저 선택하세요.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "배치할 레이어를 먼저 선택하세요.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택한 레이어와 부모 그룹의 잠금을 먼저 해제하세요.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "정렬할 레이어를 먼저 선택하세요.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "정렬할 이미지·도형·텍스트를 선택하세요. 그룹은 안의 레이어를 선택하세요.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "왜곡된 그룹 안의 레이어는 그룹 밖으로 이동한 뒤 정렬하세요.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "선택 레이어 캔버스 정렬",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "표시됨",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "숨김",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 표시: {0}, {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "접기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "펼치기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "그룹 {0}: {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "잠김",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "잠금 해제",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 잠금: {0}, {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "흰 배경",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "투명 배경",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "{0} · {1}{2} · {3}으로 새 문서 만들기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "언어 · Language",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "언어",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "CMYK 미리보기",
+  "file": "UI/MainWindow.Rendering.cs"
+ }
+]

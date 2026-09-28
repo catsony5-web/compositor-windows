@@ -35,7 +35,7 @@ public sealed class MessageDialog : Window
 
         var body = new TextBox
         {
-            Text = message, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Background = System.Windows.Media.Brushes.Transparent,
+            Text = Loc.T(message), IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Background = System.Windows.Media.Brushes.Transparent,
             BorderThickness = new Thickness(0), Padding = new Thickness(0), Margin = new Thickness(34, 10, 0, 0), MinHeight = 0,
             MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Foreground = Theme.Muted, Cursor = Cursors.IBeam
         };

@@ -36,6 +36,7 @@ public sealed partial class MainWindow
     // Title bar entry to the command palette; the key chip teaches Ctrl+K. Below
     // CompactHeaderWidth only the icon remains so the menu bar stays on one line.
     const double CompactHeaderWidth = 1180;
+    Action? updateSearchCompact;
     Button BuildCommandSearchButton(FrameworkElement header)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
@@ -50,12 +51,15 @@ public sealed partial class MainWindow
         var button = Theme.Styled(Theme.Button("", () => Guard(ShowCommandPalette), "명령·도구·패널 찾기 · Ctrl+K"), "GhostButton");
         button.Content = content; button.Background = Theme.Input; button.BorderBrush = Theme.Line;
         button.MinHeight = 28; button.Height = 28; button.Padding = new Thickness(10, 0, 6, 0); button.Margin = new Thickness(8, 0, 6, 0); button.VerticalAlignment = VerticalAlignment.Center;
-        header.SizeChanged += (_, e) =>
+        // Ribbon tabs need more room than the menu bar, so the search shrinks earlier there.
+        updateSearchCompact = () =>
         {
-            bool compact = e.NewSize.Width < CompactHeaderWidth;
+            double width = header.ActualWidth;
+            bool compact = width > 0 && width < (ribbonMode ? CompactHeaderWidth + 220 : CompactHeaderWidth);
             label.Visibility = chip.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
             button.Padding = compact ? new Thickness(7, 0, 7, 0) : new Thickness(10, 0, 6, 0);
         };
+        header.SizeChanged += (_, _) => updateSearchCompact();
         AutomationProperties.SetName(button, "명령 찾기");
         return button;
     }
@@ -89,7 +93,7 @@ public sealed partial class MainWindow
             int index = i; var tab = tabs[i]; bool active = index == activeTab;
             var card = new Border { Background = active ? Theme.Stage : Brushes.Transparent, CornerRadius = new CornerRadius(7, 7, 0, 0), Margin = new Thickness(i == 0 ? 6 : 0, 5, 2, 0) };
             var content = new Grid(); content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); card.Child = content;
-            var title = new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center };
+            var title = Loc.Keep(new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center });
             var labels = new StackPanel { Orientation = Orientation.Horizontal };
             if (tab.History.Dirty(tab.Document)) labels.Children.Add(new TextBlock { Text = "●", FontSize = 7, Foreground = Theme.Accent, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 7, 0), ToolTip = "저장하지 않은 변경 사항" });
             labels.Children.Add(title);

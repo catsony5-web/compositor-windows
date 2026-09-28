@@ -1,4 +1,11 @@
-# Preview 31 ribbon and screen fit validation
+# Preview 32 display language validation
+
+- Source self-tests: **525/525 passed** on Windows x64, including two AI-automation error regressions. Two added localization checks cover exact, template, fragment and multi-line translation, bindings and formatted runs, `Loc.Keep` for user data, Korean pass-through, and the embedded English, Japanese and Chinese tables: 1,512 entries each, the same placeholders and line breaks, no third-party product names.
+- `tools/i18n/extract.py` reports 0 missing keys for all three languages against a fresh scan of the sources (including literals nested in interpolation holes).
+- `--render-studio-previews` with `MORUPIXEL_LANGUAGE=en`, `ja` and `zh` produced 44 captures each; editor, ribbon, panels, dialogs and the start screen were reviewed.
+- Not covered: native-speaker review of every string, right-to-left layouts (none supported), and strings composed at runtime from untranslated fragments, which may read stiffly.
+
+## Preview 31 ribbon and screen fit validation
 
 - Source self-tests: **521/521 passed** on Windows x64. Three added checks cover the ribbon mirroring the menu (tabs, separator groups, submenu groups, an icon for every command, buttons running their menu items, fold and unfold), 내 탭 add/move/remove, unknown-command rejection, layout persistence and reset, and fitting oversized or off-screen windows and the main window into the work area.
 - `--render-studio-previews` adds ribbon captures at 1480×920 and 1280×720 (41 captures); reviewed visually.

@@ -133,6 +133,7 @@ public static class AutomationErrors
                 "inactive_document" => "Confirm the target document, activate_document, then read its current revision.",
                 "layer_not_found" or "document_not_found" => "Query the current document inventory; use returned identifiers only.",
                 "material_not_found" => "Use query_materials to find a registered materialId.",
+                "region_not_found" => "Use query_regions to find a captured regionId, or define_region first.",
                 "selection_required" => "Ask the user to select the intended area or define an explicit polygon/closed layer boundary.",
                 "layer_locked" => "Inspect get_layer and its lockedAncestorIds. Change locks only when the user intended that change.",
                 "editor_busy" => "Let the current user interaction finish, then inspect state before retrying.",

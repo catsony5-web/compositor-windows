@@ -56,7 +56,7 @@ public sealed class GlassSwitch : ToggleButton
         if (IsKeyboardFocusWithin) dc.DrawRoundedRectangle(null, new Pen(Theme.Accent, 1.5), new Rect(1, 1, w - 2, h - 2), 7, 7);
         void DrawLabel(string text, double center, bool selected)
         {
-            var label = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+            var label = new FormattedText(Loc.T(text), CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
                 new Typeface(Theme.UiFont, FontStyles.Normal, selected ? FontWeights.SemiBold : FontWeights.Normal, FontStretches.Normal),
                 Theme.BodySize, selected ? Theme.Text : Theme.Muted, VisualTreeHelper.GetDpi(this).PixelsPerDip);
             dc.DrawText(label, new Point(center - label.Width / 2, (h - label.Height) / 2));

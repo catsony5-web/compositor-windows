@@ -91,6 +91,7 @@ public static class SelfTests
         MainWindow.RunQuickActionTests(Test, directory);
         MainWindow.RunStartFocusTests(Test, directory);
         MainWindow.RunRibbonTests(Test, directory);
+        LocalizationTests.Run(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);
         CompatibilityDialog.RunCleanupTests(Test);
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);

@@ -37,7 +37,7 @@ public sealed class LayerRow : Grid
         content.Children.Add(thumb);
 
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 4, 4, 4) };
-        labels.Children.Add(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = layer.Name });
+        labels.Children.Add(Loc.Keep(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = layer.Name }));
         var kind = layer.Kind switch { LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group => "그룹", _ => "이미지" };
         var detail = description ?? $"{kind} · {layer.Opacity * 100:0}%";
         if (layer.Clipped) detail += " · 클리핑";

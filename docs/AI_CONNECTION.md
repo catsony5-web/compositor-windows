@@ -195,6 +195,8 @@ UTF-8 JSON 파일을 보내거나 응답을 파일로 보관할 수도 있습니
 | `layer_locked` | 레이어 또는 상위 그룹의 잠금을 확인 |
 | `file_exists` | 새 파일 이름을 선택하거나 의도한 교체일 때만 `overwrite: true` 지정 |
 | `operation_id_conflict` | 이미 사용한 묶음 ID에 다른 내용이 지정됨. 새 작업에는 새 UUID 사용 |
+| `material_not_found`, `region_not_found` | `query_materials`·`query_regions`로 등록된 ID를 확인하거나 먼저 등록 |
+| `file_not_found` | Morupixel이 실행 중인 PC의 절대 경로와 파일 존재 여부를 확인 |
 
 오류에는 다음 행동을 설명하는 `suggestedAction`이 포함됩니다. 묶음 실행 중 실패한 단계는 `details.stepIndex`와 `details.command`로 확인합니다. 인자 형식 오류는 실행 전 거부됩니다.
 

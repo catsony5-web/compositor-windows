@@ -13,12 +13,12 @@ public static class Demo
         using var artwork = typeof(Demo).Assembly.GetManifestResourceStream(ArtworkResource)
             ?? throw new InvalidDataException($"샘플 이미지 리소스를 찾을 수 없습니다: {ArtworkResource}");
         var background = Raster.Load(artwork);
-        var doc = new Document { Name = "바다를 향한 창 · 샘플", Width = background.Width, Height = background.Height };
-        doc.Add(new Layer { Name = "01 · 바다를 향한 창 · 원본 이미지", Pixels = background });
+        var doc = new Document { Name = Loc.T("바다를 향한 창 · 샘플"), Width = background.Width, Height = background.Height };
+        doc.Add(new Layer { Name = Loc.T("01 · 바다를 향한 창 · 원본 이미지"), Pixels = background });
 
         // Text remains truly editable. The optional group starts hidden so the
         // document opens with the original artwork, free of overlaid copy.
-        var typography = DocumentFeatures.CreateGroup(doc, "02 · 선택형 타이포그래피 (표시 전환)");
+        var typography = DocumentFeatures.CreateGroup(doc, Loc.T("02 · 선택형 타이포그래피 (표시 전환)"));
         typography.Visible = false;
         doc.Add(typography);
 
@@ -37,8 +37,8 @@ public static class Demo
             doc.Add(layer);
         }
 
-        AddText("바다를 향한 창", "제목 · 편집 가능한 텍스트", 667, 92, 55, 0xFFF9F7ED, true);
-        AddText("SEA WINDOW  /  MORUPIXEL", "작은 문구 · 편집 가능한 텍스트", 673, 162, 18, 0xFFF5F5EE, false);
+        AddText(Loc.T("바다를 향한 창"), Loc.T("제목 · 편집 가능한 텍스트"), 667, 92, 55, 0xFFF9F7ED, true);
+        AddText("SEA WINDOW  /  MORUPIXEL", Loc.T("작은 문구 · 편집 가능한 텍스트"), 673, 162, 18, 0xFFF5F5EE, false);
 
         doc.ActiveId = doc.Layers[0].Id;
         return doc;

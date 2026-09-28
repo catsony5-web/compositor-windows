@@ -74,8 +74,8 @@ internal sealed partial class CompatibilityDialog
         {
             var row = new Grid { Margin = new Thickness(3, 2, 3, 2) };
             row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            var name = new TextBlock { Text = layer.Name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, FontSize = Theme.CaptionSize,
-                ToolTip = $"{layer.Name} · 객체 {layer.Objects:N0}개" + (layer.Hatches > 0 ? $" · 해치 {layer.Hatches:N0}개" : "") };
+            var name = Loc.Keep(new TextBlock { Text = layer.Name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, FontSize = Theme.CaptionSize,
+                ToolTip = $"{layer.Name} · 객체 {layer.Objects:N0}개" + (layer.Hatches > 0 ? $" · 해치 {layer.Hatches:N0}개" : "") });
             row.Children.Add(name);
             var picker = new ComboBox { ItemsSource = Enum.GetValues<DrawingRole>().Select(r => new RoleChoice(r)).ToArray(), MinHeight = 26, FontSize = Theme.CaptionSize };
             picker.SelectedIndex = (int)layer.Role;

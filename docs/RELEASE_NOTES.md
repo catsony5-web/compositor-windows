@@ -1,4 +1,11 @@
-# Morupixel 0.2.0 Preview 31 — ribbon and screen fit
+# Morupixel 0.2.0 Preview 32 — English, Japanese and Chinese
+
+- **Four display languages.** View → 언어 · Language switches between 한국어, English, 日本語 and 简体中文 after a restart. Menus, the ribbon, panels, dialogs, notices, tooltips and the command palette follow the language, and the UI font matches the script. The first launch follows the Windows display language.
+- **Your content stays yours.** Layer, document and file names are never translated. New documents and the learning sample use the selected language.
+- **Clearer AI connection errors.** Blank text arguments, unknown material or region ids and missing files now return specific error codes and messages instead of misleading limits or raw system text.
+- **Validation.** 525 source checks passed, including complete tables for every UI string with matching placeholders. Offscreen captures in all three languages were reviewed.
+
+## Preview 31 — ribbon and screen fit
 
 - **Ribbon view.** View → 리본 메뉴로 보기 turns the menus into tabs of titled icon groups. ^ folds the ribbon to its tabs. 내 탭 collects favorite commands: right-click any button to add or remove it, or to move it. The choice is remembered.
 - **Fits small screens.** The main window, dialogs, floating panels and the command palette never open larger than the screen's work area or partly off screen. The minimum window size adapts to small or highly scaled displays.

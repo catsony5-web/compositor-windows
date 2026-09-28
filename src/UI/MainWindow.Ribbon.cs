@@ -69,7 +69,7 @@ public sealed partial class MainWindow
         {
             string tab = name;
             var button = Theme.Styled(Theme.Button(tab, () => SelectRibbonTab(tab), tab + " 탭"), "PanelTab");
-            button.FontSize = Theme.BodySize; button.MinHeight = 30; button.Padding = new Thickness(10, 2, 10, 2); button.Margin = new Thickness(0);
+            button.FontSize = Theme.BodySize; button.MinHeight = 30; button.Padding = new Thickness(8, 2, 8, 2); button.Margin = new Thickness(0);
             bool on = tab == ribbonTab && !ribbonCollapsed;
             button.BorderBrush = on ? Theme.Accent : Brushes.Transparent; button.Foreground = on || tab == ribbonTab ? Theme.Text : Theme.Muted; button.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
             AutomationProperties.SetName(button, tab + " 탭");
@@ -90,6 +90,7 @@ public sealed partial class MainWindow
             AutomationProperties.SetName(collapse, collapse.ToolTip.ToString());
         }
         if (ribbonToggle != null) ribbonToggle.IsChecked = ribbonMode;
+        updateSearchCompact?.Invoke();
     }
 
     // Groups follow the menu's separators; a submenu becomes its own group.
@@ -167,14 +168,14 @@ public sealed partial class MainWindow
         {
             var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
             var icon = Theme.Glyph(glyph, 22, Theme.Text); icon.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(icon);
-            content.Children.Add(new TextBlock { Text = label.TrimEnd('…'), FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 76, Margin = new Thickness(0, 4, 0, 0) });
+            content.Children.Add(new TextBlock { Text = Loc.T(label).TrimEnd('…'), FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 76, Margin = new Thickness(0, 4, 0, 0) });
             button.Content = content; button.MinWidth = 58; button.MinHeight = 66; button.Padding = new Thickness(6, 6, 6, 4);
         }
         else
         {
             var content = new StackPanel { Orientation = Orientation.Horizontal };
             var icon = Theme.Glyph(glyph, 15, Theme.Muted); icon.VerticalAlignment = VerticalAlignment.Center; content.Children.Add(icon);
-            content.Children.Add(new TextBlock { Text = label.TrimEnd('…'), FontSize = Theme.CaptionSize, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) });
+            content.Children.Add(new TextBlock { Text = Loc.T(label).TrimEnd('…'), FontSize = Theme.CaptionSize, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) });
             button.Content = content; button.MinHeight = 22; button.Height = 22; button.Padding = new Thickness(6, 0, 8, 0); button.HorizontalContentAlignment = HorizontalAlignment.Left;
         }
         button.Margin = new Thickness(1);
@@ -224,6 +225,7 @@ public sealed partial class MainWindow
             ("RGB / CMYK", Theme.Glyphs.Palette), ("CMYK ICC", Theme.Glyphs.Palette), ("Windows 기본 CMYK", Theme.Glyphs.Palette), ("패널 배치", Theme.Glyphs.Reset), ("히스토그램", Theme.Glyphs.Levels),
             ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders)
         ];
+        if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
         foreach (var (key, glyph) in map) if (label.StartsWith(key, StringComparison.Ordinal)) return glyph;
         return Theme.Glyphs.More;
     }
