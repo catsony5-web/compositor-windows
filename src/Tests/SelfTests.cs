@@ -97,6 +97,7 @@ public static class SelfTests
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);
+        ExportDialogTests.Run(Test);
         ParameterSliderTests.Run(Test);
         ParameterDialogTests.Run(Test);
         TextEditorDialogTests.Run(Test);

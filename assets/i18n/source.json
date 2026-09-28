@@ -2020,6 +2020,18 @@
   "file": "UI/Controls/LayerRow.cs"
  },
  {
+  "ko": "표시됨",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "숨김",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 표시: {0}, {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
   "ko": "그룹 접기",
   "file": "UI/Controls/LayerRow.cs"
  },
@@ -2028,11 +2040,35 @@
   "file": "UI/Controls/LayerRow.cs"
  },
  {
+  "ko": "접기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "펼치기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "그룹 {0}: {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
   "ko": "레이어 잠금 해제",
   "file": "UI/Controls/LayerRow.cs"
  },
  {
   "ko": "레이어 잠금",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "잠김",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "잠금 해제",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 잠금: {0}, {1}",
   "file": "UI/Controls/LayerRow.cs"
  },
  {
@@ -2086,10 +2122,6 @@
  {
   "ko": "{0} ~ {1} 사이의 숫자를 입력하세요.",
   "file": "UI/Controls/ParameterSlider.cs"
- },
- {
-  "ko": "글자 색상",
-  "file": "UI/Controls/PropertyRows.cs"
  },
  {
   "ko": "섹션 접기 또는 펼치기",
@@ -2189,6 +2221,10 @@
  },
  {
   "ko": "줄 간격 · px",
+  "file": "UI/Controls/TextPropertiesPanel.cs"
+ },
+ {
+  "ko": "글자 색상",
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
@@ -2968,7 +3004,31 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
-  "ko": "JPEG 품질 95",
+  "ko": "파일 이름",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "JPEG 품질",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "투명 배경 유지",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "배율",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "사용자 지정",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "사용자 지정 배율 (%)",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "5–800% 사이 백분율",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -2976,11 +3036,19 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
-  "ko": "JPEG 품질 ",
+  "ko": "작은 파일, 투명한 곳은 흰색으로 채워집니다.",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
-  "ko": "예상 파일 크기 {0} KB",
+  "ko": "무손실 압축, 인쇄·보관용.",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "무손실, 투명도를 지원합니다.",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "예상 파일 크기 {0}",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -4312,6 +4380,18 @@
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
+  "ko": "흰 배경",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "투명 배경",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "{0} · {1}{2} · {3}으로 새 문서 만들기",
+  "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
   "ko": "빠른 시작: {0} {1}",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
@@ -4329,10 +4409,6 @@
  },
  {
   "ko": "파일을 찾을 수 없어 최근 문서 목록에서 뺐습니다.\n",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "배우기 · ",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
@@ -4708,6 +4784,10 @@
   "file": "UI/MainWindow.LayerExport.cs"
  },
  {
+  "ko": "JPEG 품질 95",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
   "ko": "Morupixel · 선택 레이어 내보내기",
   "file": "UI/MainWindow.LayerExport.cs"
  },
@@ -4737,6 +4817,10 @@
  },
  {
   "ko": "선택 레이어 미리보기를 준비하고 있습니다…",
+  "file": "UI/MainWindow.LayerExport.cs"
+ },
+ {
+  "ko": "예상 파일 크기 {0} KB",
   "file": "UI/MainWindow.LayerExport.cs"
  },
  {
@@ -5132,6 +5216,18 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
+  "ko": "언어 · Language",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
+  "ko": "언어",
+  "file": "UI/MainWindow.Menu.cs"
+ },
+ {
   "ko": "리본 메뉴로 보기",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -5242,6 +5338,10 @@
  {
   "ko": "ICC 프로필|*.icc;*.icm",
   "file": "UI/MainWindow.Proof.cs"
+ },
+ {
+  "ko": "CMYK 미리보기",
+  "file": "UI/MainWindow.Rendering.cs"
  },
  {
   "ko": "CMYK 인쇄색을 준비합니다",
@@ -5982,69 +6082,5 @@
  {
   "ko": "선택 레이어 캔버스 정렬",
   "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "표시됨",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "숨김",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "레이어 표시: {0}, {1}",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "접기",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "펼치기",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "그룹 {0}: {1}",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "잠김",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "잠금 해제",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "레이어 잠금: {0}, {1}",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "흰 배경",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "투명 배경",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "{0} · {1}{2} · {3}으로 새 문서 만들기",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
-  "ko": "언어 · Language",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "언어",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "CMYK 미리보기",
-  "file": "UI/MainWindow.Rendering.cs"
  }
 ]

@@ -276,40 +276,96 @@ public static class ExportDialog
 {
     public static void Show(Window owner, Document doc, Guid? selectedArtboard = null) => Create(owner, doc, selectedArtboard).ShowDialog();
 
+    /// <summary>Named parts of the dialog so self-tests can drive it without a visible window.</summary>
+    internal sealed record Parts(SegmentedChoice<ExportFormat> Format, SegmentedChoice<double> Scale, TextBox CustomScale, CheckBox Transparency, FrameworkElement QualityRow, Slider Quality, TextBox FileName, TextBlock Dimensions, TextBlock Size, Image Preview, ListBox? Boards, Func<ExportSettings> Settings);
+
+    internal static Parts? PartsOf(Window window) => window.Tag as Parts;
+
     internal static Window Create(Window? owner, Document doc, Guid? selectedArtboard = null)
     {
-        var window = new Window { Owner = owner, Title = "Morupixel · 내보내기", Width = 920, Height = 630, MinWidth = 760, MinHeight = 500, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Theme.Panel, Foreground = Theme.Text };
-        var grid = new Grid { Margin = new Thickness(20) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(230) }); window.Content = grid;
-        var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(8) }; grid.Children.Add(DialogShell.Card(image));
-        var side = new StackPanel { Margin = new Thickness(18, 0, 0, 0) }; Grid.SetColumn(side,1); grid.Children.Add(side);
+        var window = new Window { Owner = owner, Title = "Morupixel · 내보내기", Width = 1040, Height = 680, MinWidth = 780, MinHeight = 520, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Theme.Panel, Foreground = Theme.Text };
+        var grid = new Grid { Margin = new Thickness(20) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(300) }); window.Content = grid;
+        var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(10) };
+        grid.Children.Add(DialogShell.Card(image, Theme.Canvas));
+        var sideGrid = new Grid { Margin = new Thickness(18, 0, 0, 0) }; sideGrid.RowDefinitions.Add(new RowDefinition()); sideGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Grid.SetColumn(sideGrid, 1); grid.Children.Add(sideGrid);
+        var side = new StackPanel();
+        sideGrid.Children.Add(new ScrollViewer { Content = side, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
         side.Children.Add(DialogShell.Title("내보내기"));
-        var dimensions = Theme.Label("", Theme.BodySize, Theme.Muted); dimensions.Margin = new Thickness(0, 4, 0, 4); side.Children.Add(dimensions);
-        ComboBox? boards = null;
+        var dimensions = Theme.Label("", Theme.BodySize, Theme.Muted); dimensions.Margin = new Thickness(0, 4, 0, 4); dimensions.TextWrapping = TextWrapping.Wrap; side.Children.Add(dimensions);
+
+        ListBox? boards = null;
         if (doc.Artboards.Count > 0)
         {
-            side.Children.Add(Theme.Label("대지", Theme.CaptionSize, Theme.Muted));
-            boards = new ComboBox { ItemsSource = doc.Artboards, DisplayMemberPath = "Name", SelectedItem = doc.Artboards.FirstOrDefault(b => b.Id == selectedArtboard) ?? doc.Artboards[0], MinHeight = 34, Margin = new Thickness(3, 6, 3, 4) };
+            side.Children.Add(DialogShell.FieldLabel("대지"));
+            boards = new ListBox { ItemsSource = doc.Artboards, DisplayMemberPath = "Name", SelectedItem = doc.Artboards.FirstOrDefault(b => b.Id == selectedArtboard) ?? doc.Artboards[0], MaxHeight = 150, Margin = new Thickness(0, 0, 0, 6), Background = Theme.Input, BorderBrush = Theme.Line, Foreground = Theme.Text };
+            System.Windows.Automation.AutomationProperties.SetName(boards, "대지");
             side.Children.Add(boards);
         }
+
+        side.Children.Add(DialogShell.FieldLabel("파일 이름"));
+        var fileName = Loc.Keep(new TextBox { Text = doc.Name, MinHeight = 32, Margin = new Thickness(0, 0, 0, 6) });
+        System.Windows.Automation.AutomationProperties.SetName(fileName, "파일 이름"); side.Children.Add(fileName);
+
         side.Children.Add(DialogShell.FieldLabel("파일 형식"));
-        var format = new ComboBox { ItemsSource = new[] { ".png", ".jpg", ".tiff" }, SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 6) }; side.Children.Add(format);
-        var qualityLabel = DialogShell.FieldLabel("JPEG 품질 95"); side.Children.Add(qualityLabel);
-        var quality = new Slider { Minimum = 1, Maximum = 100, Value = 95, TickFrequency = 1, IsSnapToTickEnabled = true, Margin = new Thickness(5) }; side.Children.Add(quality);
-        var size = DialogShell.Note("미리보기 준비…"); side.Children.Add(size);
+        var format = new SegmentedChoice<ExportFormat>([(ExportFormat.Png, "PNG"), (ExportFormat.Jpeg, "JPEG"), (ExportFormat.Tiff, "TIFF")], ExportFormat.Png) { Margin = new Thickness(0, 0, 0, 6) };
+        side.Children.Add(format);
+        var formatNote = DialogShell.Note(""); side.Children.Add(formatNote);
+
+        var qualityRow = new StackPanel();
+        var qualityLabel = DialogShell.FieldLabel("JPEG 품질"); var qualityValue = Theme.Label("95", Theme.CaptionSize, Theme.Text);
+        var qualityHead = new DockPanel(); DockPanel.SetDock(qualityValue, Dock.Right); qualityValue.VerticalAlignment = VerticalAlignment.Bottom; qualityValue.Margin = new Thickness(0, 0, 0, 6); qualityHead.Children.Add(qualityValue); qualityHead.Children.Add(qualityLabel);
+        var quality = new Slider { Minimum = 1, Maximum = 100, Value = 95, TickFrequency = 1, IsSnapToTickEnabled = true, Margin = new Thickness(0, 0, 0, 6) };
+        System.Windows.Automation.AutomationProperties.SetName(quality, "JPEG 품질");
+        qualityRow.Children.Add(qualityHead); qualityRow.Children.Add(quality); side.Children.Add(qualityRow);
+
+        var transparency = new CheckBox { Content = "투명 배경 유지", IsChecked = true, Foreground = Theme.Text, Margin = new Thickness(0, 6, 0, 6) };
+        side.Children.Add(transparency);
+
+        side.Children.Add(DialogShell.FieldLabel("배율"));
+        var scale = new SegmentedChoice<double>([(1d, "1x"), (2d, "2x"), (0d, "사용자 지정")], 1d) { Margin = new Thickness(0, 0, 0, 6) };
+        side.Children.Add(scale);
+        var customScale = new TextBox { Text = "150", MinHeight = 32, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 2) };
+        System.Windows.Automation.AutomationProperties.SetName(customScale, "사용자 지정 배율 (%)");
+        var customNote = DialogShell.Note("5–800% 사이 백분율"); customNote.Visibility = Visibility.Collapsed;
+        side.Children.Add(customScale); side.Children.Add(customNote);
+
+        var size = DialogShell.Note("미리보기 준비…"); size.Margin = new Thickness(0, 10, 0, 0); side.Children.Add(size);
+
+        double ScaleValue()
+        {
+            if (scale.Selected > 0) return scale.Selected;
+            return double.TryParse(customScale.Text.Trim().TrimEnd('%'), NumberStyles.Float, CultureInfo.CurrentCulture, out var p) && double.IsFinite(p)
+                ? Math.Clamp(p / 100, ExportSettings.MinScale, ExportSettings.MaxScale) : 1;
+        }
+        ExportSettings Settings() => new(format.Selected, ScaleValue(), transparency.IsChecked == true, (int)quality.Value);
+
         int generation = 0; bool closed = false, saving = false;
         Document Snapshot() => boards?.SelectedItem is Artboard board ? ArtboardEditing.ExportDocument(doc, board.Id) : doc.Snapshot();
-        var snapshot = Snapshot(); dimensions.Text = $"{snapshot.Width} × {snapshot.Height} px";
+        var snapshot = Snapshot();
         var lifetime = new CancellationTokenSource();
         var renderCts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         var firstSnapshot = snapshot; var firstToken = renderCts.Token;
         var render = CompatibilityImport.OnSta(() => DesignRenderer.RenderOutput(firstSnapshot, firstToken), firstToken);
         var encodeGate = new SemaphoreSlim(1, 1);
         CancellationTokenSource? pending = null;
+
+        void SyncOptions()
+        {
+            var s = Settings();
+            qualityRow.Visibility = s.UsesQuality ? Visibility.Visible : Visibility.Collapsed;
+            transparency.Visibility = s.SupportsTransparency ? Visibility.Visible : Visibility.Collapsed;
+            formatNote.Text = s.Format switch { ExportFormat.Jpeg => "작은 파일, 투명한 곳은 흰색으로 채워집니다.", ExportFormat.Tiff => "무손실 압축, 인쇄·보관용.", _ => "무손실, 투명도를 지원합니다." };
+            bool custom = scale.Selected <= 0; customScale.Visibility = customNote.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
+            qualityValue.Text = ((int)quality.Value).ToString(CultureInfo.CurrentCulture);
+            var (w, h) = s.OutputSize(snapshot.Width, snapshot.Height);
+            dimensions.Text = s.Scale == 1 ? $"{snapshot.Width} × {snapshot.Height} px" : $"{snapshot.Width} × {snapshot.Height} px → {w} × {h} px";
+        }
+
         async void Update()
         {
             if (closed || saving) return;
-            int id = ++generation; string ext = format.SelectedItem?.ToString() ?? ".png"; int q = (int)quality.Value;
-            qualityLabel.Text = "JPEG 품질 " + q; quality.IsEnabled = ext == ".jpg";
+            SyncOptions();
+            int id = ++generation; var settings = Settings();
             pending?.Cancel(); var cts = pending = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
             try
             {
@@ -322,41 +378,43 @@ public static class ExportDialog
                     result = await Task.Run(() =>
                     {
                         cts.Token.ThrowIfCancellationRequested();
-                        using var stream = new MemoryStream(); ImportExport.Write(raster, stream, ext, q, doc.Dpi);
+                        using var stream = new MemoryStream(); settings.Write(raster, stream, doc.Dpi);
                         cts.Token.ThrowIfCancellationRequested(); long bytes = stream.Length; stream.Position = 0;
-                        var decoded = Raster.Load(stream); double scale = Math.Min(1, 720d / Math.Max(decoded.Width, decoded.Height));
-                        var previewRaster = scale == 1 ? decoded : ImportExport.Resize(decoded, Math.Max(1, (int)Math.Round(decoded.Width * scale)), Math.Max(1, (int)Math.Round(decoded.Height * scale)));
+                        var decoded = Raster.Load(stream); double fit = Math.Min(1, 1200d / Math.Max(decoded.Width, decoded.Height));
+                        var previewRaster = fit == 1 ? decoded : ImportExport.Resize(decoded, Math.Max(1, (int)Math.Round(decoded.Width * fit)), Math.Max(1, (int)Math.Round(decoded.Height * fit)));
                         cts.Token.ThrowIfCancellationRequested(); return new ExportPreview(previewRaster, bytes);
                     }, cts.Token);
                 }
                 finally { encodeGate.Release(); }
-                if (id == generation && !closed) { image.Source = result.Image.Bitmap(); size.Text = $"예상 파일 크기 {result.ByteCount / 1024.0:0.#} KB"; }
+                if (id == generation && !closed) { image.Source = result.Image.Bitmap(); size.Text = $"예상 파일 크기 {FormatBytes(result.ByteCount)}"; }
             }
             catch (OperationCanceledException) { }
             catch (Exception e) { if (id == generation && !closed) size.Text = e.Message; }
             finally { if (ReferenceEquals(pending, cts)) pending = null; cts.Dispose(); }
         }
-        quality.ValueChanged += (_,_) => Update(); format.SelectionChanged += (_,_) => Update();
+        quality.ValueChanged += (_, _) => Update(); format.Changed += _ => Update(); scale.Changed += _ => Update();
+        customScale.TextChanged += (_, _) => { if (scale.Selected <= 0) Update(); };
+        transparency.Checked += (_, _) => Update(); transparency.Unchecked += (_, _) => Update();
         if (boards != null) boards.SelectionChanged += (_, _) =>
         {
-            if (closed || saving) return;
+            if (closed || saving || boards.SelectedItem is not Artboard board) return;
             renderCts.Cancel(); renderCts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
             snapshot = Snapshot(); var selected = snapshot; var token = renderCts.Token;
-            dimensions.Text = $"{selected.Width} × {selected.Height} px";
+            fileName.Text = doc.Name + "-" + board.Name;
             render = CompatibilityImport.OnSta(() => DesignRenderer.RenderOutput(selected, token), token); Update();
         };
         async void Save()
         {
             if (saving || closed) return;
-            string ext = format.SelectedItem?.ToString() ?? ".png";
-            var picker = new SaveFileDialog { FileName = snapshot.Name + ext, DefaultExt = ext, Filter = ext.TrimStart('.').ToUpperInvariant() + " 이미지|*" + ext };
+            var settings = Settings(); string ext = settings.Extension;
+            var picker = new SaveFileDialog { FileName = settings.FileName(fileName.Text, snapshot.Name), DefaultExt = ext, Filter = ext.TrimStart('.').ToUpperInvariant() + " 이미지|*" + ext };
             if (picker.ShowDialog(window) != true) return;
-            int q = (int)quality.Value; saving = true; pending?.Cancel(); generation++; window.IsEnabled = false;
+            saving = true; pending?.Cancel(); generation++; window.IsEnabled = false;
             try
             {
                 var raster = await render;
                 await encodeGate.WaitAsync(lifetime.Token);
-                try { await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => ImportExport.Write(raster, stream, ext, q, doc.Dpi)), lifetime.Token); }
+                try { await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => settings.Write(raster, stream, doc.Dpi)), lifetime.Token); }
                 finally { encodeGate.Release(); }
                 window.Close();
             }
@@ -364,8 +422,13 @@ public static class ExportDialog
             catch (Exception e) { if (!closed) MessageDialog.Show(window, e.Message, "내보내지 못했습니다", NoticeKind.Error); }
             finally { saving = false; if (!closed) { window.IsEnabled = true; Update(); } }
         }
-        var saveButton = DialogShell.Primary("파일로 저장…", Save); saveButton.IsDefault = true; saveButton.Margin = new Thickness(0, 16, 0, 0); side.Children.Add(saveButton);
-        var cancel = DialogShell.Secondary("닫기", window.Close); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0); side.Children.Add(cancel);
+        var saveButton = DialogShell.Primary("파일로 저장…", Save); saveButton.IsDefault = true; saveButton.Margin = new Thickness(0, 12, 0, 0);
+        var cancel = DialogShell.Secondary("닫기", window.Close); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0);
+        var footer = new StackPanel(); footer.Children.Add(saveButton); footer.Children.Add(cancel); Grid.SetRow(footer, 1); sideGrid.Children.Add(footer);
+        window.Tag = new Parts(format, scale, customScale, transparency, qualityRow, quality, fileName, dimensions, size, image, boards, Settings);
+        SyncOptions();
         window.Closed += (_, _) => { closed = true; generation++; lifetime.Cancel(); pending?.Cancel(); }; window.Loaded += (_, _) => Update(); return window;
     }
+
+    internal static string FormatBytes(long bytes) => bytes >= 1024 * 1024 ? $"{bytes / 1048576.0:0.0} MB" : $"{bytes / 1024.0:0.#} KB";
 }

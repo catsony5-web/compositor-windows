@@ -56,7 +56,7 @@ public sealed partial class MainWindow
         CaptureFit(paletteSearch, "command-palette-search", 600);
         recentCommands.Clear();
         CaptureFit(new CompatibilityExportDialog(null!, doc), "compat-export", 510);
-        Capture(ExportDialog.Create(null, doc), "export", 920, 630);
+        Capture(ExportDialog.Create(null, doc), "export", 1040, 680);
         Capture(new ColorPickerDialog(null!, foreground), "color-picker", 560, 470);
         Capture(new CmykExportDialog(null!, doc), "cmyk-export", 990, 710);
         Capture(new SelectedLayerExportDialog(null!, doc, [doc.Layers[0].Id]), "layer-export", 960, 720);

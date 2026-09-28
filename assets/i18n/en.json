@@ -1512,6 +1512,17 @@
     "언어 · Language": "Language",
     "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.": "Restart Morupixel to show it in the selected language.",
     "언어": "Language",
-    "CMYK 미리보기": "CMYK preview"
+    "CMYK 미리보기": "CMYK preview",
+    "5–800% 사이 백분율": "Percent between 5 and 800%",
+    "JPEG 품질": "JPEG quality",
+    "무손실 압축, 인쇄·보관용.": "Lossless compression, for print and archiving.",
+    "무손실, 투명도를 지원합니다.": "Lossless, supports transparency.",
+    "배율": "Scale",
+    "사용자 지정": "Custom",
+    "사용자 지정 배율 (%)": "Custom scale (%)",
+    "예상 파일 크기 {0}": "Estimated file size {0}",
+    "작은 파일, 투명한 곳은 흰색으로 채워집니다.": "Small files; transparent areas are filled with white.",
+    "투명 배경 유지": "Keep transparent background",
+    "파일 이름": "File name"
   }
 }
