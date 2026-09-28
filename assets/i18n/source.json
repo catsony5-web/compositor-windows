@@ -4056,6 +4056,10 @@
   "file": "UI/MainWindow.BrushOptions.cs"
  },
  {
+  "ko": "현재 브러시 획 미리보기",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
   "ko": "브러시 모양",
   "file": "UI/MainWindow.BrushTips.cs"
  },
@@ -5888,10 +5892,6 @@
   "file": "UI/MainWindow.Studio.cs"
  },
  {
-  "ko": "크기와 획",
-  "file": "UI/MainWindow.Studio.cs"
- },
- {
   "ko": "세밀하게",
   "file": "UI/MainWindow.Studio.cs"
  },
@@ -5901,6 +5901,10 @@
  },
  {
   "ko": "넓게",
+  "file": "UI/MainWindow.Studio.cs"
+ },
+ {
+  "ko": "크기와 획",
   "file": "UI/MainWindow.Studio.cs"
  },
  {

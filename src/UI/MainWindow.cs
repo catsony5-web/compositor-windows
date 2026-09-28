@@ -171,6 +171,7 @@ public sealed partial class MainWindow : Window
         if (sizeSlider != null && Math.Abs(sizeSlider.Value - brushSize) > .001) sizeSlider.Value = brushSize;
         studioDiameter?.SetValue(brushSize);
         if (hardnessSlider != null && Math.Abs(hardnessSlider.Value - hardness) > .001) hardnessSlider.Value = hardness;
+        UpdateBrushStrokePreviews();
         double radius = brushSize / 2;
         if (canvas.BrushRadius != radius) { canvas.BrushRadius = radius; canvas.InvalidateVisual(); }
     }

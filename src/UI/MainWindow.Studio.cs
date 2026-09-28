@@ -137,20 +137,36 @@ public sealed partial class MainWindow
         studioColorSwatches?.SetColors(foreground, backgroundColor);
         studioPalette?.SetColor(foreground);
     }
+    internal static readonly (string Label, double Size, double Hardness)[] BrushPresets = [("세밀하게", 12d, 1d), ("부드럽게", 100d, .15), ("넓게", 240d, .7)];
     void BuildStudioBrushes()
     {
         studioContent.Children.Add(BuildBrushTipControls());
         studioContent.Children.Add(Theme.Section("크기와 획"));
-        var presets = new WrapPanel();
-        foreach (var (label, size, edge) in new[] { ("세밀하게", 12d, 1d), ("부드럽게", 100d, .15), ("넓게", 240d, .7) })
-            presets.Children.Add(Theme.Button(label, () => { SetTool(Tool.Brush); brushSize = size; hardness = edge; UpdateBrushLabel(); studioHardness?.SetValue(hardness * 100); }, label + " 브러시 프리셋"));
+        // Presets as stroke samples in the current shape rather than name-only buttons.
+        brushPresetPreviews.Clear();
+        var presets = new StackPanel();
+        foreach (var (label, size, edge) in BrushPresets)
+        {
+            var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new ColumnDefinition());
+            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 10, 0), MinWidth = 64 };
+            var title = Theme.Label(label, Theme.BodySize); title.FontWeight = FontWeights.SemiBold; text.Children.Add(title);
+            text.Children.Add(Theme.Label($"{size:0}px · {edge * 100:0}%", Theme.CaptionSize, Theme.Muted));
+            row.Children.Add(text);
+            var sample = new Image { Height = 40, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Stretch }; Grid.SetColumn(sample, 1); row.Children.Add(sample);
+            brushPresetPreviews.Add((sample, size, edge));
+            var button = Theme.Button("", () => { SetTool(Tool.Brush); brushSize = size; hardness = edge; UpdateBrushLabel(); studioHardness?.SetValue(hardness * 100); }, label + " 브러시 프리셋");
+            button.Content = row; button.HorizontalContentAlignment = HorizontalAlignment.Stretch; button.Padding = new Thickness(8, 6, 8, 6); button.Margin = new Thickness(0, 0, 0, 4);
+            System.Windows.Automation.AutomationProperties.SetName(button, label + " 브러시 프리셋");
+            presets.Children.Add(button);
+        }
         studioContent.Children.Add(presets);
+        UpdateBrushStrokePreviews();
         var diameter = studioDiameter = new ParameterSlider("크기 px", 1, MaxBrushSize, brushSize, 42); diameter.Changed += v => { brushSize = v; UpdateBrushLabel(); }; studioContent.Children.Add(diameter);
         var soft = studioHardness = new ParameterSlider("경도 %", 0, 100, hardness * 100, 80); soft.Changed += v => { hardness = v / 100; UpdateBrushLabel(); }; studioContent.Children.Add(soft);
         var angle = new ParameterSlider("모양 회전 °", -180, 180, brushAngle);
         angle.Changed += v => { brushAngle = v; UpdateBrushTipCursor(); }; studioContent.Children.Add(angle);
         var spacing = new ParameterSlider("찍는 간격 %", 1, 150, brushSpacing * 100, 10);
-        spacing.Changed += v => brushSpacing = v / 100; studioContent.Children.Add(spacing);
+        spacing.Changed += v => { brushSpacing = v / 100; UpdateBrushStrokePreviews(); }; studioContent.Children.Add(spacing);
         spacing.ToolTip = "간격을 늘리면 모양을 띄워 그립니다. 브러시·지우개·마스크에 적용됩니다.";
         diameter.ToolTip = "Alt + 좌우 드래그로 크기 조절";
     }
