@@ -3124,7 +3124,79 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
+  "ko": "최근",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "화면",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인쇄",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "사진",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
   "ko": "현재 Windows 화면",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "정사각형 1:1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "세로 4:5",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "세로 9:16",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "가로 16:9",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "가로 1.91:1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "배너 3:1",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "엽서",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "명함",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "3:2 가로",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "4:3 가로",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "3:2 세로",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인화 10×15cm",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인화 13×18cm",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "인화 20×25cm",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -3136,11 +3208,19 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
-  "ko": "프리셋을 고르거나 오른쪽에서 크기를 직접 입력하세요.",
+  "ko": "용도를 고르고 크기를 선택하거나 오른쪽에서 직접 입력하세요.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "화면용",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
   "ko": "문서 설정",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "비율 미리보기",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -3176,7 +3256,35 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
+  "ko": "현재 크기를 내 프리셋으로 저장",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "이름 칸의 이름으로 저장합니다. 최근 탭에 표시됩니다.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
   "ko": "문서 만들기  →",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "최근 크기",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "최근에 만든 크기와 저장한 프리셋이 여기에 표시됩니다.",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "프리셋 삭제",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "마우스 오른쪽 단추로 삭제",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "내 프리셋",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -4424,10 +4532,6 @@
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
-  "ko": "세로 4:5",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
- },
- {
   "ko": "와이드 16:9",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
@@ -5220,10 +5324,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "인쇄",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "ICC / CMYK 내보내기…",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -5325,10 +5425,6 @@
  },
  {
   "ko": "만들기",
-  "file": "UI/MainWindow.Modes.cs"
- },
- {
-  "ko": "사진",
   "file": "UI/MainWindow.Modes.cs"
  },
  {
@@ -5513,10 +5609,6 @@
  },
  {
   "ko": "그룹·합성",
-  "file": "UI/MainWindow.Ribbon.cs"
- },
- {
-  "ko": "화면",
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {

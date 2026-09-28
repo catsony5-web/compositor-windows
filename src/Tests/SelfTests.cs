@@ -98,6 +98,7 @@ public static class SelfTests
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);
         ExportDialogTests.Run(Test);
+        NewDocumentDialogTests.Run(Test, directory);
         ParameterSliderTests.Run(Test);
         ParameterDialogTests.Run(Test);
         TextEditorDialogTests.Run(Test);

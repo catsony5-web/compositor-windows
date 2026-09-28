@@ -27,7 +27,7 @@ public sealed partial class MainWindow
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
             using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
         }
-        Capture(new NewDocumentDialog(null), "new-document", 970, 720);
+        Capture(new NewDocumentDialog(null), "new-document", 1020, 760);
         void CaptureFit(Window window, string name, int width)
         {
             var content = (FrameworkElement)window.Content; window.Content = null;

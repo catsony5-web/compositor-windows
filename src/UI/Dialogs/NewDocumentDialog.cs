@@ -12,43 +12,58 @@ public sealed class NewDocumentDialog : Window
     readonly ComboBox units = new() { ItemsSource = new[] { "픽셀 (px)", "밀리미터 (mm)" }, SelectedIndex = 0 };
     readonly ComboBox background = new() { ItemsSource = new[] { "투명", "흰색", "검정" }, SelectedIndex = 0 };
     readonly TextBlock error = Theme.Label("", Theme.CaptionSize, Theme.Danger), summary = Theme.Label("", Theme.CaptionSize, Theme.Muted);
-    internal record Preset(string Name, int Width, int Height, bool Paper = false);
+    readonly Border ratioFrame = new() { BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.5), CornerRadius = new CornerRadius(3), Background = Theme.Selected, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    readonly TextBlock ratioLabel = Theme.Label("", Theme.CaptionSize, Theme.Muted);
+    readonly System.Windows.Controls.Primitives.UniformGrid cards = new() { Columns = 3, VerticalAlignment = VerticalAlignment.Top };
+    readonly SegmentedChoice<string> groups;
+    readonly string? store;
+    Button? selected;
+
+    public const string RecentGroup = "최근";
+    public static readonly string[] Groups = [RecentGroup, "화면", "SNS", "인쇄", "사진"];
+
+    /// <summary>Paper sizes are whole millimeters. Dpi/Background override the unit defaults (96 px, 150 mm).</summary>
+    internal record Preset(string Name, int Width, int Height, bool Paper = false, string Group = "화면", double? Dpi = null, int? Background = null);
+
     internal static Preset[] Presets(int screenWidth, int screenHeight) =>
     [new("현재 Windows 화면", screenWidth, screenHeight), new("Full HD", 1920, 1080), new("QHD", 2560, 1440),
-     new("4K UHD", 3840, 2160), new("HD", 1280, 720), new("A2", 420, 594, true), new("A3", 297, 420, true), new("A4", 210, 297, true), new("A5", 148, 210, true)];
-    public NewDocumentDialog(Window? owner)
+     new("4K UHD", 3840, 2160), new("HD", 1280, 720),
+     new("정사각형 1:1", 1080, 1080, Group: "SNS"), new("세로 4:5", 1080, 1350, Group: "SNS"), new("세로 9:16", 1080, 1920, Group: "SNS"),
+     new("가로 16:9", 1920, 1080, Group: "SNS"), new("가로 1.91:1", 1200, 628, Group: "SNS"), new("배너 3:1", 1500, 500, Group: "SNS"),
+     new("A2", 420, 594, true, "인쇄"), new("A3", 297, 420, true, "인쇄"), new("A4", 210, 297, true, "인쇄"), new("A5", 148, 210, true, "인쇄"),
+     new("엽서", 100, 148, true, "인쇄"), new("명함", 90, 50, true, "인쇄", 300),
+     new("3:2 가로", 6000, 4000, Group: "사진", Background: 1), new("4:3 가로", 4032, 3024, Group: "사진", Background: 1), new("3:2 세로", 4000, 6000, Group: "사진", Background: 1),
+     new("인화 10×15cm", 102, 152, true, "사진", 300), new("인화 13×18cm", 127, 178, true, "사진", 300), new("인화 20×25cm", 203, 254, true, "사진", 300)];
+
+    public NewDocumentDialog(Window? owner, string? presetStore = null)
     {
-        Owner = owner; Title = "Morupixel · 새 문서"; Width = 990; Height = 760; MinWidth = 900; MinHeight = 700;
+        store = presetStore;
+        Owner = owner; Title = "Morupixel · 새 문서"; Width = 1020; Height = 760; MinWidth = 900; MinHeight = 700;
         Background = Theme.Panel; Foreground = Theme.Text; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var root = new Grid { Margin = new Thickness(24), Background = Theme.Panel }; Content = root;
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); root.RowDefinitions.Add(new RowDefinition());
-        var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 18) };
+        var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
         var title = Theme.Label("새 문서", Theme.TitleSize); title.FontWeight = FontWeights.SemiBold; heading.Children.Add(title);
-        heading.Children.Add(Theme.Label("프리셋을 고르거나 오른쪽에서 크기를 직접 입력하세요.", Theme.BodySize, Theme.Muted)); root.Children.Add(heading);
-        var body = new Grid(); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(290) }); Grid.SetRow(body, 1); root.Children.Add(body);
-        var cards = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3, Rows = 3, Margin = new Thickness(0, 0, 18, 0) }; body.Children.Add(cards);
-        Button? selected = null;
-        var screen = WindowAppearance.ScreenSize(owner);
-        foreach (var preset in Presets(screen.Width, screen.Height))
-        {
-            var content = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; double scale = 40d / Math.Max(preset.Width, preset.Height);
-            content.Children.Add(new Border { Width = preset.Width * scale, Height = preset.Height * scale, BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 0, 10) });
-            var label = Theme.Label(preset.Name, Theme.BodySize); label.FontWeight = FontWeights.SemiBold; label.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(label);
-            var detail = Theme.Label($"{preset.Width} × {preset.Height} {(preset.Paper ? "mm" : "px")}", Theme.CaptionSize, Theme.Subtle); detail.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(detail);
-            var button = Theme.Button("", () => { }); button.Content = content; button.Margin = new Thickness(4); button.Padding = new Thickness(5); button.BorderThickness = new Thickness(1.5);
-            void Select()
-            {
-                units.SelectedIndex = preset.Paper ? 1 : 0; dpi.Text = preset.Paper ? "150" : "96";
-                width.Text = preset.Width.ToString(); height.Text = preset.Height.ToString(); background.SelectedIndex = preset.Paper ? 1 : 0;
-                if (selected != null) { selected.BorderBrush = Theme.Surface; selected.Background = Theme.Surface; }
-                selected = button; button.BorderBrush = Theme.Accent; button.Background = Theme.Selected; UpdateSummary();
-            }
-            button.Click += (_, _) => Select(); cards.Children.Add(button); if (selected == null) Select();
-        }
+        heading.Children.Add(Theme.Label("용도를 고르고 크기를 선택하거나 오른쪽에서 직접 입력하세요.", Theme.BodySize, Theme.Muted)); root.Children.Add(heading);
+        var body = new Grid(); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(300) }); Grid.SetRow(body, 1); root.Children.Add(body);
+
+        var left = new Grid { Margin = new Thickness(0, 0, 18, 0) }; left.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); left.RowDefinitions.Add(new RowDefinition()); body.Children.Add(left);
+        groups = new SegmentedChoice<string>(Groups.Select(g => (g, g == "화면" ? "화면용" : g)), "화면") { Margin = new Thickness(4, 0, 4, 10) };
+        left.Children.Add(groups);
+        var scroll = new ScrollViewer { Content = cards, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        Grid.SetRow(scroll, 1); left.Children.Add(scroll);
+
         foreach (var box in new[] { name, width, height, dpi }) box.Padding = new Thickness(9, 4, 9, 4);
         var fields = new StackPanel { Margin = new Thickness(16) };
-        var card = new GlassPanel { Background = Theme.Header, CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = fields, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } }; Grid.SetColumn(card, 1); body.Children.Add(card);
+        var right = new Grid(); right.RowDefinitions.Add(new RowDefinition()); right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Grid.SetColumn(right, 1); body.Children.Add(right);
+        var card = new GlassPanel { Background = Theme.Header, CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = fields, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } }; right.Children.Add(card);
+        // Create/cancel stay visible below the scrolling settings.
+        var actions = new StackPanel { Margin = new Thickness(0, 10, 0, 0) }; Grid.SetRow(actions, 1); right.Children.Add(actions);
         var settingsTitle = Theme.Label("문서 설정", Theme.HeadingSize); settingsTitle.FontWeight = FontWeights.SemiBold; settingsTitle.Margin = new Thickness(2, 0, 2, 6); fields.Children.Add(settingsTitle);
+        var ratioBox = new Grid { Height = 96, Margin = new Thickness(2, 4, 2, 2) }; ratioBox.Children.Add(ratioFrame);
+        System.Windows.Automation.AutomationProperties.SetName(ratioBox, "비율 미리보기");
+        fields.Children.Add(ratioBox);
+        ratioLabel.HorizontalAlignment = HorizontalAlignment.Center; ratioLabel.Margin = new Thickness(0, 4, 0, 2); fields.Children.Add(ratioLabel);
         void Field(string label, FrameworkElement input) { var caption = Theme.Label(label, Theme.CaptionSize, Theme.Muted); caption.Margin = new Thickness(2, 8, 2, 2); fields.Children.Add(caption); fields.Children.Add(input); }
         Field("이름", name); Field("크기 단위", units); Field("너비", width); Field("높이", height);
         var swap = Theme.Styled(Theme.Button("가로 / 세로 바꾸기", () => (width.Text, height.Text) = (height.Text, width.Text)), "GhostButton"); swap.Margin = new Thickness(2, 6, 2, 2); fields.Children.Add(swap);
@@ -57,12 +72,18 @@ public sealed class NewDocumentDialog : Window
         var colorMode = Theme.Label("RGB · 8 bit · sRGB", Theme.CaptionSize, Theme.Subtle);
         colorMode.ToolTip = "CMYK 미리보기는 상단에서 전환"; fields.Children.Add(colorMode);
         error.TextWrapping = TextWrapping.Wrap; fields.Children.Add(error);
+        var savePreset = Theme.Styled(Theme.Button("현재 크기를 내 프리셋으로 저장", SaveCustomPreset, "이름 칸의 이름으로 저장합니다. 최근 탭에 표시됩니다."), "GhostButton"); savePreset.Margin = new Thickness(2, 8, 2, 2); fields.Children.Add(savePreset);
         var create = Theme.Button("문서 만들기  →", () =>
         {
-            try { Result = CreateDocument(name.Text, width.Text, height.Text, background.SelectedIndex, units.SelectedIndex == 1, dpi.Text); DialogResult = true; }
+            try
+            {
+                Result = CreateDocument(name.Text, width.Text, height.Text, background.SelectedIndex, units.SelectedIndex == 1, dpi.Text);
+                if (CurrentSize(Loc.T("최근 크기")) is { } recent) NewDocumentPresetStore.AddRecent(recent, store);
+                DialogResult = true;
+            }
             catch (Exception ex) { error.Text = ex.Message; }
-        }); Theme.Styled(create, "PrimaryButton"); create.IsDefault = true; create.MinHeight = 34; create.Margin = new Thickness(2, 14, 2, 2); fields.Children.Add(create);
-        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; fields.Children.Add(cancel);
+        }); Theme.Styled(create, "PrimaryButton"); create.IsDefault = true; create.MinHeight = 34; create.Margin = new Thickness(0); actions.Children.Add(create);
+        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0); actions.Children.Add(cancel);
         foreach (var box in new[] { width, height, dpi }) box.TextChanged += (_, _) => UpdateSummary();
         units.SelectionChanged += (_, e) =>
         {
@@ -73,13 +94,117 @@ public sealed class NewDocumentDialog : Window
                 height.Text = (units.SelectedIndex == 1 ? Math.Round(h * factor, 3) : Math.Round(h * factor)).ToString(CultureInfo.InvariantCulture);
             }
             UpdateSummary();
-        }; UpdateSummary();
+        };
+        screen = WindowAppearance.ScreenSize(owner);
+        groups.Changed += _ => ShowGroup(false);
+        ShowGroup(true);
+        UpdateSummary();
     }
+
+    readonly (int Width, int Height) screen;
+    internal string Group => groups.Selected;
+    internal IReadOnlyList<Button> Cards => cards.Children.OfType<Button>().ToArray();
+    internal void ShowGroupForTest(string group) => groups.Select(group);
+
+    void ShowGroup(bool selectFirst)
+    {
+        cards.Children.Clear(); selected = null;
+        if (groups.Selected == RecentGroup)
+        {
+            var saved = NewDocumentPresetStore.Load(store);
+            foreach (var custom in saved.Custom) AddCard(Loc.Keep(Theme.Label(custom.Name, Theme.BodySize)), custom, true);
+            foreach (var recent in saved.Recent) AddCard(Theme.Label("최근 크기", Theme.BodySize), recent, false);
+            if (cards.Children.Count == 0)
+            {
+                var empty = Theme.Label("최근에 만든 크기와 저장한 프리셋이 여기에 표시됩니다.", Theme.BodySize, Theme.Muted);
+                empty.TextWrapping = TextWrapping.Wrap; empty.Margin = new Thickness(6, 10, 6, 0); cards.Children.Add(empty);
+            }
+            return;
+        }
+        foreach (var preset in Presets(screen.Width, screen.Height).Where(p => p.Group == groups.Selected))
+        {
+            var size = new SavedDocumentSize(preset.Name, preset.Width, preset.Height, preset.Paper, preset.Dpi ?? (preset.Paper ? 150 : 96), preset.Background ?? (preset.Paper ? 1 : 0));
+            var label = Theme.Label(preset.Name, Theme.BodySize);
+            var button = AddCard(label, size, false);
+            if (selectFirst && selected == null) Apply(size, button);
+        }
+    }
+
+    Button AddCard(TextBlock label, SavedDocumentSize size, bool removable)
+    {
+        var content = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        double scale = 44d / Math.Max(size.Width, size.Height);
+        content.Children.Add(new Border { Width = Math.Max(3, size.Width * scale), Height = Math.Max(3, size.Height * scale), BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Center });
+        label.FontWeight = FontWeights.SemiBold; label.HorizontalAlignment = HorizontalAlignment.Center; label.TextAlignment = TextAlignment.Center; label.TextWrapping = TextWrapping.Wrap; content.Children.Add(label);
+        var detail = Theme.Label(Describe(size), Theme.CaptionSize, Theme.Subtle); detail.HorizontalAlignment = HorizontalAlignment.Center; detail.TextAlignment = TextAlignment.Center; detail.TextWrapping = TextWrapping.Wrap; content.Children.Add(detail);
+        var button = Theme.Button("", () => { }); button.Content = content; button.Margin = new Thickness(4); button.Padding = new Thickness(5, 12, 5, 10); button.BorderThickness = new Thickness(1.5); button.MinHeight = 128;
+        button.Tag = size;
+        System.Windows.Automation.AutomationProperties.SetName(button, $"{label.Text} · {Describe(size)}");
+        button.Click += (_, _) => Apply(size, button);
+        if (removable)
+        {
+            var remove = new MenuItem { Header = "프리셋 삭제" };
+            remove.Click += (_, _) => { NewDocumentPresetStore.RemoveCustom(size.Name, store); ShowGroup(false); };
+            button.ContextMenu = new ContextMenu { Items = { remove } }; button.ToolTip = "마우스 오른쪽 단추로 삭제";
+        }
+        cards.Children.Add(button); return button;
+    }
+
+    static string Describe(SavedDocumentSize size) => size.Millimeters
+        ? $"{size.Width.ToString("0.###", CultureInfo.InvariantCulture)} × {size.Height.ToString("0.###", CultureInfo.InvariantCulture)} mm · {size.Dpi:0.##} DPI"
+        : $"{size.Width:0} × {size.Height:0} px";
+
+    void Apply(SavedDocumentSize size, Button button)
+    {
+        units.SelectedIndex = size.Millimeters ? 1 : 0; dpi.Text = size.Dpi.ToString("0.##", CultureInfo.InvariantCulture);
+        width.Text = size.Width.ToString("0.###", CultureInfo.InvariantCulture); height.Text = size.Height.ToString("0.###", CultureInfo.InvariantCulture);
+        background.SelectedIndex = size.Background;
+        if (selected != null) { selected.BorderBrush = Theme.Surface; selected.Background = Theme.Surface; }
+        selected = button; button.BorderBrush = Theme.Accent; button.Background = Theme.Selected; UpdateSummary();
+    }
+
+    SavedDocumentSize? CurrentSize(string label)
+    {
+        try
+        {
+            _ = Dimensions(width.Text, height.Text, units.SelectedIndex == 1, dpi.Text);
+            return new(label, double.Parse(width.Text, CultureInfo.InvariantCulture), double.Parse(height.Text, CultureInfo.InvariantCulture), units.SelectedIndex == 1, double.Parse(dpi.Text, CultureInfo.InvariantCulture), background.SelectedIndex);
+        }
+        catch (Exception e) when (e is ArgumentException or FormatException or OverflowException or System.IO.InvalidDataException) { return null; }
+    }
+
+    internal void SaveCustomPreset()
+    {
+        string label = string.IsNullOrWhiteSpace(name.Text) ? Loc.T("내 프리셋") : name.Text.Trim();
+        if (label.Length > 80) label = label[..80];
+        if (CurrentSize(label) is not { } size) { error.Text = Loc.T("크기 또는 DPI를 확인하세요"); return; }
+        NewDocumentPresetStore.AddCustom(size, store);
+        groups.Select(RecentGroup); ShowGroup(false);
+    }
+
     void UpdateSummary()
     {
-        try { var size = Dimensions(width.Text, height.Text, units.SelectedIndex == 1, dpi.Text); summary.Text = $"{size.Width:N0} × {size.Height:N0} px · {size.Dpi:0.##} DPI"; error.Text = ""; }
-        catch (Exception ex) { summary.Text = "크기 또는 DPI를 확인하세요"; error.Text = ex.Message; }
+        try
+        {
+            var size = Dimensions(width.Text, height.Text, units.SelectedIndex == 1, dpi.Text);
+            summary.Text = $"{size.Width:N0} × {size.Height:N0} px · {size.Dpi:0.##} DPI"; error.Text = "";
+            double scale = 88d / Math.Max(size.Width, size.Height);
+            ratioFrame.Width = Math.Max(4, size.Width * scale); ratioFrame.Height = Math.Max(4, size.Height * scale);
+            ratioLabel.Text = Ratio(size.Width, size.Height);
+        }
+        catch (Exception ex) { summary.Text = "크기 또는 DPI를 확인하세요"; error.Text = ex.Message; ratioLabel.Text = ""; }
     }
+
+    /// <summary>Reduced aspect ratio ("16:9"); falls back to a decimal for sizes that do not reduce to small numbers.</summary>
+    internal static string Ratio(int w, int h)
+    {
+        int a = w, b = h; while (b != 0) (a, b) = (b, a % b);
+        int rw = w / a, rh = h / a;
+        if (rw <= 32 && rh <= 32) return $"{rw}:{rh}";
+        double r = w >= h ? (double)w / h : (double)h / w;
+        return w >= h ? $"{r.ToString("0.##", CultureInfo.InvariantCulture)}:1" : $"1:{r.ToString("0.##", CultureInfo.InvariantCulture)}";
+    }
+
     internal static (int Width, int Height, double Dpi) Dimensions(string width, string height, bool millimeters, string dpi)
     {
         double resolution = Dialogs.Number(dpi, 1, 9600), w = Dialogs.Number(width, .01, 100000), h = Dialogs.Number(height, .01, 100000);
