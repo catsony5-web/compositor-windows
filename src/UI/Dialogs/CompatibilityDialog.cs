@@ -55,7 +55,7 @@ internal sealed partial class CompatibilityDialog : Window
         var actions = new Grid(); actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); actions.ColumnDefinitions.Add(new ColumnDefinition());
         actions.Children.Add(cancel); Grid.SetColumn(accept, 1); actions.Children.Add(accept); bottom.Children.Add(actions);
         var content = new StackPanel(); contentScroll.Content = content; side.Children.Add(contentScroll);
-        content.Children.Add(new TextBlock { Text = Path.GetFileName(path), FontSize = Theme.TitleSize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 0, 3, 10) });
+        content.Children.Add(Loc.Keep(new TextBlock { Text = Path.GetFileName(path), FontSize = Theme.TitleSize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 0, 3, 10) }));
         content.Children.Add(details); content.Children.Add(settings);
         advanced.SetResourceReference(StyleProperty, "ImportDetailsExpander"); advanced.Content = advancedSettings;
         information.SetResourceReference(StyleProperty, "ImportDetailsExpander"); information.Content = notices;

@@ -8,7 +8,7 @@ namespace Compositor.Windows;
 public sealed class NewDocumentDialog : Window
 {
     public Document? Result { get; private set; }
-    readonly TextBox name = new() { Text = "제목 없음" }, width = new(), height = new(), dpi = new() { Text = "96" };
+    readonly TextBox name = new() { Text = Loc.T("제목 없음") }, width = new(), height = new(), dpi = new() { Text = "96" };
     readonly ComboBox units = new() { ItemsSource = new[] { "픽셀 (px)", "밀리미터 (mm)" }, SelectedIndex = 0 };
     readonly ComboBox background = new() { ItemsSource = new[] { "투명", "흰색", "검정" }, SelectedIndex = 0 };
     readonly TextBlock error = Theme.Label("", Theme.CaptionSize, Theme.Danger), summary = Theme.Label("", Theme.CaptionSize, Theme.Muted);
@@ -90,8 +90,8 @@ public sealed class NewDocumentDialog : Window
     internal static Document CreateDocument(string name, string width, string height, int background, bool millimeters = false, string dpi = "96")
     {
         var size = Dimensions(width, height, millimeters, dpi);
-        var document = new Document { Width = size.Width, Height = size.Height, Dpi = size.Dpi, Name = string.IsNullOrWhiteSpace(name) ? "제목 없음" : name.Trim() };
-        document.Add(new Layer { Name = background == 0 ? "레이어 1" : "배경", Pixels = background == 0 ? new Raster(size.Width, size.Height) : Raster.Solid(size.Width, size.Height, background == 1 ? Colors.White : Colors.Black) });
+        var document = new Document { Width = size.Width, Height = size.Height, Dpi = size.Dpi, Name = string.IsNullOrWhiteSpace(name) ? Loc.T("제목 없음") : name.Trim() };
+        document.Add(new Layer { Name = Loc.T(background == 0 ? "레이어 1" : "배경"), Pixels = background == 0 ? new Raster(size.Width, size.Height) : Raster.Solid(size.Width, size.Height, background == 1 ? Colors.White : Colors.Black) });
         return document;
     }
 }

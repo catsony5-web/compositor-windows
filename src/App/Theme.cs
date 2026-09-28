@@ -43,7 +43,8 @@ public static class Theme
     // Segoe UI for Latin/numbers with Windows-hinted Malgun Gothic for Korean. Small UI text stays on
     // hinted system faces at integer sizes: an offscreen A/B showed the bundled Pretendard CFF faces
     // render softer at 12-13 px (the reason Preview 7 moved away from them).
-    public static readonly FontFamily UiFont = new("Segoe UI, Malgun Gothic");
+    // Follows the display language (Loc.Use runs before Theme is first touched).
+    public static readonly FontFamily UiFont = new(Loc.FontFamilyName);
     // Type scale: caption 12 · body 13 · strong/section 13 SemiBold · heading 14 · title 18.
     public const double CaptionSize = 12;
     public const double BodySize = 13;
@@ -200,6 +201,7 @@ public static class Theme
         public const string Document = "M13.5 3H7A2 2 0 0 0 5 5V19A2 2 0 0 0 7 21H17A2 2 0 0 0 19 19V8.5Z M13.5 3V8.5H19 | ~M9 13H15 M9 16.5H15 | *M13.5 3H7A2 2 0 0 0 5 5V19A2 2 0 0 0 7 21H17A2 2 0 0 0 19 19V8.5Z";
         public const string Save = "M6.5 4H15.5L20 8.5V17.5A2.5 2.5 0 0 1 17.5 20H6.5A2.5 2.5 0 0 1 4 17.5V6.5A2.5 2.5 0 0 1 6.5 4Z M8 4V9H15V4 M8 20V14.5H16V20 | *M8 14.5H16V20H8Z";
         public const string Paste = "M9 3.5H15V6.5H9Z M9 5H7A2 2 0 0 0 5 7V18A2 2 0 0 0 7 20H17A2 2 0 0 0 19 18V7A2 2 0 0 0 17 5H15 | ~M9 11H15 M9 15H13";
+        public const string Globe = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z M3.5 12H20.5 | ~M12 3C9.2 6.2 9.2 17.8 12 21 M12 3C14.8 6.2 14.8 17.8 12 21 M5 7.5H19 M5 16.5H19";
         public const string ChevronDown = "M6 9L12 15L18 9";
         // Adjustments and photo work.
         public const string Camera = "M4 8.5A2 2 0 0 1 6 6.5H7.8L9.3 4.5H14.7L16.2 6.5H18A2 2 0 0 1 20 8.5V17.5A2 2 0 0 1 18 19.5H6A2 2 0 0 1 4 17.5Z | M12 9.5A3.5 3.5 0 1 0 12 16.5A3.5 3.5 0 1 0 12 9.5Z | *M12 9.5A3.5 3.5 0 1 0 12 16.5A3.5 3.5 0 1 0 12 9.5Z";

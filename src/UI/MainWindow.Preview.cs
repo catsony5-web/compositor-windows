@@ -23,7 +23,7 @@ public sealed partial class MainWindow
             if (ReferenceEquals(window, this)) studioScroll.Height = PreferredStudioHeight(height);
             content.Measure(size); content.Arrange(new Rect(size)); content.UpdateLayout();
             if (ReferenceEquals(window, this)) { canvas.Fit(); canvas.InvalidateVisual(); content.UpdateLayout(); }
-            var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(content);
+            var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(content); image.Render(content);
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
             using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
         }
@@ -37,7 +37,7 @@ public sealed partial class MainWindow
                 host.Measure(new Size(width, double.PositiveInfinity));
                 int height = (int)Math.Ceiling(host.DesiredSize.Height);
                 host.Measure(new Size(width, height)); host.Arrange(new Rect(0, 0, width, height)); host.UpdateLayout();
-                var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(host);
+                var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(host); image.Render(host);
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
                 using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
             }
@@ -72,7 +72,7 @@ public sealed partial class MainWindow
             saveHost.Measure(new Size(width, double.PositiveInfinity));
             int height = (int)Math.Ceiling(Math.Max(saveChanges.MinHeight, saveHost.DesiredSize.Height));
             saveHost.Measure(new Size(width, height)); saveHost.Arrange(new Rect(0, 0, width, height)); saveHost.UpdateLayout();
-            var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(saveHost);
+            var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(saveHost); image.Render(saveHost);
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
             using var output = File.Create(Path.Combine(directory, "save-changes.png")); encoder.Save(output);
         }
@@ -109,7 +109,7 @@ public sealed partial class MainWindow
             try
             {
                 host.Measure(new Size(width, height)); host.Arrange(new Rect(0, 0, width, height)); host.UpdateLayout();
-                var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(host);
+                var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(host); image.Render(host);
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
                 using var output = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(output);
             }
@@ -146,7 +146,7 @@ public sealed partial class MainWindow
         else { composite = null; canvas.Composite = null; }
         canvas.InvalidateVisual();
         content.UpdateLayout();
-        var image = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32); image.Render(content);
+        var image = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(content); image.Render(content);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
         string full = Path.GetFullPath(path); Directory.CreateDirectory(Path.GetDirectoryName(full)!); using var output = File.Create(full); encoder.Save(output);
     }

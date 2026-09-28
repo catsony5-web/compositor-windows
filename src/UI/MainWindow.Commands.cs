@@ -45,7 +45,7 @@ public sealed partial class MainWindow
         if (children.Length > 0) { foreach (var child in children) AddMenuCommands(commands, child, here); return; }
         string id = "menu:" + string.Join("/", here);
         if (header.Length == 0 || id == PaletteCommandId) return;
-        commands.Add(new EditorCommand(id, header, string.Join(" › ", path), item.InputGestureText ?? "", () => item.IsEnabled, () => InvokeMenuItem(item)));
+        commands.Add(new EditorCommand(id, Loc.T(header), string.Join(" › ", path.Select(Loc.T)), item.InputGestureText ?? "", () => item.IsEnabled, () => InvokeMenuItem(item)));
     }
 
     // Same effect as clicking: checkable items flip first, then the Click handlers run.

@@ -39,7 +39,11 @@ public static class Program
             }
             return AutomationCommandLine.Run(args);
         }
+        // Automation hosts keep Korean messages for a stable AI contract; the editor and its previews follow the display language.
+        bool automationHost = args.Length > 0 && args[0] == "--automation-headless";
+        if (!automationHost) Loc.Use(Loc.Preferred());
         var app = new Application();
+        Loc.Attach();
         if (args.Length > 0 && args[0] == "--automation-headless")
         {
             if (args.Length != 2) return 2;

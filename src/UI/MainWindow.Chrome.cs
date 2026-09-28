@@ -89,7 +89,7 @@ public sealed partial class MainWindow
             int index = i; var tab = tabs[i]; bool active = index == activeTab;
             var card = new Border { Background = active ? Theme.Stage : Brushes.Transparent, CornerRadius = new CornerRadius(7, 7, 0, 0), Margin = new Thickness(i == 0 ? 6 : 0, 5, 2, 0) };
             var content = new Grid(); content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); card.Child = content;
-            var title = new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center };
+            var title = Loc.Keep(new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center });
             var labels = new StackPanel { Orientation = Orientation.Horizontal };
             if (tab.History.Dirty(tab.Document)) labels.Children.Add(new TextBlock { Text = "●", FontSize = 7, Foreground = Theme.Accent, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 7, 0), ToolTip = "저장하지 않은 변경 사항" });
             labels.Children.Add(title);

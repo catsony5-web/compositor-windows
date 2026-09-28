@@ -75,6 +75,22 @@ public sealed partial class MainWindow
             var item = new MenuItem { Header = label }; if (requiresDocument) DocumentControl(item);
             item.Click += (_, _) => { if (!requiresDocument || HasDocument) Guard(action); }; view.Items.Add(item);
         }
+        // Language names stay in their own script so everyone can find theirs.
+        var languages = new MenuItem { Header = "언어 · Language" };
+        foreach (var (code, native) in Loc.Languages)
+        {
+            var choice = new MenuItem { Header = native, IsCheckable = true, IsChecked = code == Loc.Language };
+            System.Windows.Automation.AutomationProperties.SetName(choice, native);
+            choice.Click += (_, _) =>
+            {
+                foreach (var other in languages.Items.OfType<MenuItem>()) other.IsChecked = ReferenceEquals(other, choice);
+                if (headlessTesting) return;
+                Loc.SavePreference(code);
+                if (code != Loc.Language) MessageDialog.Show(this, "모루픽셀을 다시 시작하면 선택한 언어로 표시됩니다.", "언어", NoticeKind.Information);
+            };
+            languages.Items.Add(choice);
+        }
+        view.Items.Add(new Separator()); view.Items.Add(languages);
         ribbonToggle = new MenuItem { Header = "리본 메뉴로 보기", IsCheckable = true, IsChecked = ribbonMode, ToolTip = "메뉴를 탭과 아이콘 버튼으로 표시합니다. ^로 접을 수 있습니다." };
         ribbonToggle.Click += (_, _) => SetRibbonMode(ribbonToggle.IsChecked);
         view.Items.Add(new Separator()); view.Items.Add(ribbonToggle);

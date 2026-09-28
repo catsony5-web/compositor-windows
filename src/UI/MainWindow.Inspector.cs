@@ -125,7 +125,7 @@ public sealed partial class MainWindow
         }
 
         // Kind badge, name and kind caption identify the selection before any fields.
-        var name = Theme.Label(layer.Name, Theme.HeadingSize); name.FontWeight = FontWeights.SemiBold;
+        var name = Loc.Keep(Theme.Label(layer.Name, Theme.HeadingSize)); name.FontWeight = FontWeights.SemiBold;
         name.TextWrapping = TextWrapping.Wrap; name.ToolTip = layer.Name;
         var (kindGlyph, kindName) = layer.Kind switch
         {

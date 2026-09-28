@@ -65,7 +65,7 @@ public sealed partial class MainWindow
             content.Children.Add(new Grid { Height = 20, Margin = new Thickness(0, 0, 0, 8), Children = { outline } });
             content.Children.Add(new TextBlock { Text = preset.Label, FontSize = Theme.CaptionSize, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center });
             content.Children.Add(new TextBlock { Text = preset.Caption, FontSize = 11, Foreground = Theme.Subtle, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap });
-            var button = Theme.Button("", () => Guard(() => AddTab(NewDocumentDialog.CreateDocument("제목 없음", preset.Width, preset.Height, preset.Background, preset.Millimeters, preset.Dpi), null)), $"{preset.Label} · {preset.Caption}{(preset.Millimeters ? $" · {preset.Dpi} DPI" : " px")} · {(preset.Background == 1 ? "흰 배경" : "투명 배경")}으로 새 문서 만들기");
+            var button = Theme.Button("", () => Guard(() => AddTab(NewDocumentDialog.CreateDocument(Loc.T("제목 없음"), preset.Width, preset.Height, preset.Background, preset.Millimeters, preset.Dpi), null)), $"{preset.Label} · {preset.Caption}{(preset.Millimeters ? $" · {preset.Dpi} DPI" : " px")} · {(preset.Background == 1 ? "흰 배경" : "투명 배경")}으로 새 문서 만들기");
             button.Content = content; button.Width = 108; button.MinHeight = 84; button.Margin = new Thickness(4); button.Padding = new Thickness(6, 10, 6, 8);
             button.HorizontalContentAlignment = HorizontalAlignment.Center;
             System.Windows.Automation.AutomationProperties.SetName(button, $"빠른 시작: {preset.Label} {preset.Caption}");
@@ -106,7 +106,7 @@ public sealed partial class MainWindow
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) }); row.ColumnDefinitions.Add(new ColumnDefinition());
             row.Children.Add(Theme.Glyph(Theme.Glyphs.NewFile.Split(" M12 11")[0], 18, Theme.Muted, 1.6));
             var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            labels.Children.Add(new TextBlock { Text = Path.GetFileName(file), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+            labels.Children.Add(Loc.Keep(new TextBlock { Text = Path.GetFileName(file), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis }));
             labels.Children.Add(new TextBlock { Text = Path.GetDirectoryName(file) ?? "", FontSize = Theme.CaptionSize, Foreground = Theme.Subtle, TextTrimming = TextTrimming.CharacterEllipsis });
             Grid.SetColumn(labels, 1); row.Children.Add(labels);
             var button = Theme.Styled(Theme.Button("", () => OpenRecent(file), file), "GhostButton");
@@ -163,7 +163,7 @@ public sealed partial class MainWindow
     void OpenLearningSample()
     {
         if (tabs.Count >= 8) throw new InvalidOperationException("열린 문서는 최대 8개입니다. 다른 문서를 저장하고 닫아주세요.");
-        var sample = Demo.Create(); sample.Name = "배우기 · " + sample.Name;
+        var sample = Demo.Create(); sample.Name = Loc.T("배우기") + " · " + sample.Name;
         AddTab(sample, null);
     }
 

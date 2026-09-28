@@ -224,6 +224,7 @@ public sealed partial class MainWindow
             ("RGB / CMYK", Theme.Glyphs.Palette), ("CMYK ICC", Theme.Glyphs.Palette), ("Windows 기본 CMYK", Theme.Glyphs.Palette), ("패널 배치", Theme.Glyphs.Reset), ("히스토그램", Theme.Glyphs.Levels),
             ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders)
         ];
+        if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
         foreach (var (key, glyph) in map) if (label.StartsWith(key, StringComparison.Ordinal)) return glyph;
         return Theme.Glyphs.More;
     }
