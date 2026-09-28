@@ -1,4 +1,13 @@
-# Morupixel 0.2.0 Preview 26 — editable material mapping
+# Morupixel 0.2.0 Preview 27 — studio interface refresh
+
+- **Layered studio layout.** Panels float as cards on a dark window base. Buttons sit above the panel surface and input fields below it, so controls are easier to tell apart; blue marks selection, focus and one primary action per screen. The menu moves into the title bar and tool options into one card below it.
+- **More room at small windows.** Layer rows shrink from 60 to 40 DIP and parameter sliders from three rows to two. A 1280×720 window now shows the whole toolbar, both colors and the layer list.
+- **Consistent dialogs and notices.** Every dialog shares one frame with a single primary action. Errors and notices use the app's dark notice window with selectable, copyable text instead of the system message box.
+- **Start screen and canvas.** The start screen lists recently opened or saved documents, stored only in the user's local application data. The canvas adds a left ruler, and the status bar shows document size, DPI and the RGB/CMYK view.
+- **Unchanged.** Editing behavior, shortcuts, document formats and panel width limits stay the same. Typography remains hinted Segoe UI and Malgun Gothic for sharp small text.
+- **Validation.** 499 source checks passed, and 33 offscreen captures covering every dialog and three window sizes were reviewed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 26 — editable material mapping
 
 - **Materials through MCP.** Register an existing image, capture a polygon, current selection or closed drawing object, and apply it as an editable 2D pattern. Inner holes remain empty. Change the source, repeat size, rotation and offset without flattening the boundary or original texture. Mapping and updates share the atomic batch and undo path.
 - **Embedded originals.** Material sources, region templates and mapping settings persist in native project format 6. These projects require Preview 26 or later; ordinary projects retain their earlier format. Pixel coordinates do not infer physical CAD units, rooms or 3D UVs. Image generation remains the connected AI provider's responsibility.

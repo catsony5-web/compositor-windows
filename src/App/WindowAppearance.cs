@@ -20,7 +20,8 @@ internal static class WindowAppearance
         window.SnapsToDevicePixels = true;
         var handle = new WindowInteropHelper(window).Handle;
         if (handle == IntPtr.Zero || SystemParameters.HighContrast) return;
-        int enabled = 1, caption = 0x001E1713, text = 0x00F9F4F0, border = 0x003D322C;
+        // Header #111317, Text #E8EBF0 and Line #2A2F37 so the system caption blends into the title bar.
+        int enabled = 1, caption = 0x00171311, text = 0x00F0EBE8, border = 0x00372F2A;
         // Unsupported attributes simply return HRESULT on older Windows versions.
         DwmSetWindowAttribute(handle, 20, ref enabled, sizeof(int));
         DwmSetWindowAttribute(handle, 35, ref caption, sizeof(int));

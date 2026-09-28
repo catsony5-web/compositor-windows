@@ -9,7 +9,7 @@ public sealed partial class MainWindow
 {
     Menu BuildMenu()
     {
-        var menu = new Menu { Background = Theme.Header, Foreground = Theme.Text, Padding = new Thickness(12, 0, 0, 0) };
+        var menu = new Menu { Background = Brushes.Transparent, Foreground = Theme.Text, Padding = new Thickness(4, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         static bool RequiresDocument(string section, string label) => section switch
         {
             "파일" => label is not ("새 캔버스…" or "열기…" or "레이어로 가져오기…" or "Compositor .comp 가져오기…"),

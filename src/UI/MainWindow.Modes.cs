@@ -29,7 +29,7 @@ public sealed partial class MainWindow
         {
             int index = host.Children.IndexOf(original);
             original.Children.Clear(); host.Children.RemoveAt(index);
-            workspaceTools = new StackPanel { Margin = new Thickness(4, 4, 4, 8) };
+            workspaceTools = new StackPanel { Margin = new Thickness(4, 6, 4, 4) };
             host.Children.Insert(index, workspaceTools);
         }
         // Clear the old grids first: live tool buttons have exactly one WPF parent.
@@ -38,9 +38,9 @@ public sealed partial class MainWindow
         photoToolOrder = WorkspaceToolGroups(false).SelectMany(group => group.Tools).ToArray();
         foreach (var group in WorkspaceToolGroups(designWorkspace))
         {
-            var caption = Theme.Label(group.Caption, 12, Theme.Muted);
-            caption.Margin = new Thickness(5, 8, 3, 3); workspaceTools.Children.Add(caption);
+            if (workspaceTools.Children.Count > 0) workspaceTools.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(8, 5, 8, 5) });
             var grid = new UniformGrid { Columns = 2 };
+            System.Windows.Automation.AutomationProperties.SetName(grid, group.Caption + " 도구");
             foreach (var item in group.Tools) grid.Children.Add(toolButtons[item]);
             workspaceTools.Children.Add(grid);
         }
@@ -48,7 +48,7 @@ public sealed partial class MainWindow
 
     FrameworkElement BuildWorkspaceSwitch()
     {
-        workspaceSwitch = new GlassSwitch("사진 편집", "디자인", 184) { Margin = new Thickness(8, 0, 8, 0),
+        workspaceSwitch = new GlassSwitch("사진 편집", "디자인", 168) { Margin = new Thickness(8, 0, 6, 0),
             ToolTip = "사진 편집: 선택·리터치·보정 / 디자인: 도형·문자·배치 · 같은 문서에서 전환합니다" };
         workspaceSwitch.Click += (_, _) => SetWorkspaceMode(workspaceSwitch.IsChecked == true);
         return workspaceSwitch;

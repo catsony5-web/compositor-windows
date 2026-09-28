@@ -55,50 +55,57 @@ public sealed partial class MainWindow
         return menu;
     }
 
-    void ShowAutomationSettings()
+    void ShowAutomationSettings() => CreateAutomationSettingsDialog().ShowDialog();
+
+    internal Window CreateAutomationSettingsDialog()
     {
-        var dialog = new Window
+        var dialog = new Window { Width = 620, MinWidth = 520, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize };
+        DialogShell.Prepare(dialog, IsLoaded ? this : null, "AI 연결");
+        var root = new StackPanel { Margin = new Thickness(24, 22, 24, 22) }; dialog.Content = root;
+        root.Children.Add(DialogShell.Title("AI로 편집하기"));
+        var stateRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 8) };
+        var dot = new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Margin = new Thickness(1, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        var state = Theme.Label("", Theme.BodySize); state.FontWeight = FontWeights.SemiBold; state.Margin = new Thickness(0);
+        void UpdateState(string? message = null)
         {
-            Owner = this, Title = "Morupixel · AI 연결", Icon = Theme.BrandIcon,
-            Width = 620, MinWidth = 520, SizeToContent = SizeToContent.Height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner, ShowInTaskbar = false,
-            Background = Theme.Header, Foreground = Theme.Text, FontFamily = Theme.UiFont,
-            FontSize = Theme.BodySize, ResizeMode = ResizeMode.NoResize
-        };
-        dialog.SourceInitialized += (_, _) => WindowAppearance.Apply(dialog);
-        var root = new StackPanel { Margin = new Thickness(24) }; dialog.Content = root;
-        root.Children.Add(Theme.Label("AI로 편집하기", 20));
-        var state = Theme.Label(automationBridge?.IsRunning == true ? "연결 켜짐" : "연결 꺼짐", 14);
-        state.Margin = new Thickness(0, 12, 0, 10); root.Children.Add(state);
-        var detail = Theme.Label("같은 Windows 계정의 로컬 도구가 문서와 파일을 편집합니다. 연결을 끄면 새 명령을 받지 않습니다.", 13);
-        detail.TextWrapping = TextWrapping.Wrap; root.Children.Add(detail);
+            bool running = automationBridge?.IsRunning == true;
+            dot.Fill = running ? Theme.Success : Theme.Subtle;
+            state.Text = message ?? (running ? "연결 켜짐" : "연결 꺼짐");
+        }
+        stateRow.Children.Add(dot); stateRow.Children.Add(state); root.Children.Add(stateRow);
+        var detail = Theme.Label("같은 Windows 계정의 로컬 도구가 문서와 파일을 편집합니다. 연결을 끄면 새 명령을 받지 않습니다.", Theme.BodySize, Theme.Muted);
+        detail.Margin = new Thickness(0); root.Children.Add(detail);
         string executable = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Morupixel.exe");
         var configuration = new JsonObject { ["mcpServers"] = new JsonObject { ["morupixel"] = new JsonObject
-            { ["command"] = executable, ["args"] = new JsonArray("--mcp") } } }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-        root.Children.Add(Theme.Label("MCP 서버 설정", 14));
-        var config = new TextBox { Text = configuration, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
-            MinHeight = 160, MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0, 8, 0, 12) };
-        root.Children.Add(config);
-        var client = new ComboBox { ItemsSource = new[] { "공통 MCP 설정", "Codex · PowerShell 명령", "Claude Code · PowerShell 명령" }, SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 12) };
+            { ["command"] = executable, ["args"] = new JsonArray("--mcp") } } }.ToJsonString(new JsonSerializerOptions
+            { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        root.Children.Add(DialogShell.FieldLabel("연결할 AI 프로그램"));
+        var client = new ComboBox { ItemsSource = new[] { "공통 MCP 설정", "Codex · PowerShell 명령", "Claude Code · PowerShell 명령" }, SelectedIndex = 0, Margin = new Thickness(0) };
         System.Windows.Automation.AutomationProperties.SetName(client, "연결할 AI 프로그램");
+        root.Children.Add(client);
+        root.Children.Add(DialogShell.FieldLabel("MCP 서버 설정"));
+        var config = new TextBox { Text = configuration, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas"), FontSize = Theme.CaptionSize,
+            MinHeight = 150, MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0) };
+        System.Windows.Automation.AutomationProperties.SetName(config, "MCP 서버 설정");
+        root.Children.Add(config);
         client.SelectionChanged += (_, _) => config.Text = client.SelectedIndex switch
         {
             1 => "codex mcp add morupixel -- " + "'" + executable.Replace("'", "''") + "' --mcp",
             2 => "claude mcp add --transport stdio --scope user morupixel -- " + "'" + executable.Replace("'", "''") + "' --mcp",
             _ => configuration
         };
-        root.Children.Add(client);
-        var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right };
-        actions.Children.Add(Theme.Button("설정 복사", () => { Clipboard.SetText(config.Text); state.Text = "선택한 AI 연결 설정을 복사했습니다."; }));
-        var toggle = Theme.Button(automationBridge?.IsRunning == true ? "연결 끄기" : "연결 켜기", () => { });
+        var copy = DialogShell.Secondary("설정 복사", () => { Clipboard.SetText(config.Text); UpdateState("선택한 AI 연결 설정을 복사했습니다."); });
+        var toggle = DialogShell.Primary(automationBridge?.IsRunning == true ? "연결 끄기" : "연결 켜기", () => { });
         toggle.Click += (_, _) => Guard(() =>
         {
             if (automationBridge?.IsRunning == true) DisableAutomation(); else EnableAutomation();
             toggle.Content = automationBridge?.IsRunning == true ? "연결 끄기" : "연결 켜기";
-            state.Text = automationBridge?.IsRunning == true ? "연결 켜짐" : "연결 꺼짐";
+            UpdateState();
         });
-        actions.Children.Add(toggle); actions.Children.Add(Theme.Button("닫기", dialog.Close)); root.Children.Add(actions);
-        dialog.ShowDialog();
+        var close = DialogShell.Secondary("닫기", dialog.Close); close.IsCancel = true;
+        root.Children.Add(DialogShell.Footer(copy, close, toggle));
+        UpdateState();
+        return dialog;
     }
 
     // The bridge only schedules a fixed command catalog. No script evaluation, shell commands,

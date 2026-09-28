@@ -25,8 +25,8 @@ public sealed partial class MainWindow
         jobCts?.Cancel(); CancelGesture(); ResetInteractionTransient(); tool = next;
         foreach (var pair in toolButtons)
         {
-            pair.Value.Background = pair.Key == tool ? Theme.Selected : Theme.Panel;
-            pair.Value.BorderBrush = pair.Key == tool ? Theme.Accent : Theme.Panel;
+            pair.Value.Background = pair.Key == tool ? Theme.Selected : Brushes.Transparent;
+            pair.Value.BorderBrush = pair.Key == tool ? Theme.Accent : Brushes.Transparent;
         }
         canvas.ShowLayerBounds = tool == Tool.Move;
         canvas.ArtboardMode = tool == Tool.Artboard;

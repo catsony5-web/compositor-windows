@@ -9,38 +9,40 @@ namespace Compositor.Windows;
 
 public sealed partial class MainWindow
 {
-    readonly TextBlock toolCaption = new() { FontSize = 12.5, FontWeight = FontWeights.SemiBold, Foreground = Theme.Text, MinWidth = 88, Margin = new Thickness(4, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center };
+    readonly TextBlock toolCaption = new() { FontSize = Theme.BodySize, FontWeight = FontWeights.SemiBold, Foreground = Theme.Text, MinWidth = 88, Margin = new Thickness(4, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center };
     ScrollViewer? documentTabsScroll;
 
     FrameworkElement BuildHeader()
     {
         var header = new DockPanel { Background = Theme.Header, LastChildFill = true };
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 7, 14, 7) };
-        var import = Theme.Button("가져오기", () => Guard(Import), "이미지를 레이어로 가져오기 · Ctrl+Shift+O");
-        var save = DocumentControl(Theme.Button("저장", () => { if (HasDocument) Save(false); }, "레이어를 보존하는 작업 저장 · Ctrl+S"));
-        foreach (var button in new[] { import, save }) { button.Background = Brushes.Transparent; button.BorderBrush = Brushes.Transparent; button.Margin = new Thickness(2, 0, 2, 0); actions.Children.Add(button); }
-        var export = DocumentControl(Theme.Button("내보내기  ↗", () => { if (HasDocument) Guard(Export); }, "이미지 내보내기 · Ctrl+Shift+E"));
-        export.Background = Theme.Primary; export.BorderBrush = Theme.Primary; export.Margin = new Thickness(8, 0, 0, 0); actions.Children.Add(export);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4, 7, 10, 7), VerticalAlignment = VerticalAlignment.Center };
+        var import = Theme.Styled(Theme.Button("가져오기", () => Guard(Import), "이미지를 레이어로 가져오기 · Ctrl+Shift+O"), "GhostButton");
+        var save = DocumentControl(Theme.Styled(Theme.Button("저장", () => { if (HasDocument) Save(false); }, "레이어를 보존하는 작업 저장 · Ctrl+S"), "GhostButton"));
+        foreach (var button in new[] { import, save }) { button.Margin = new Thickness(1, 0, 1, 0); button.Padding = new Thickness(10, 4, 10, 4); button.Foreground = Theme.Text; actions.Children.Add(button); }
+        var export = DocumentControl(Theme.Styled(Theme.Button("내보내기", () => { if (HasDocument) Guard(Export); }, "이미지 내보내기 · Ctrl+Shift+E"), "PrimaryButton"));
+        export.Margin = new Thickness(8, 0, 0, 0); export.Padding = new Thickness(16, 4, 16, 4); actions.Children.Add(export);
         DockPanel.SetDock(actions, Dock.Right); header.Children.Add(actions);
+        var divider = new Border { Width = 1, Height = 20, Background = Theme.Line, Margin = new Thickness(6, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
+        DockPanel.SetDock(divider, Dock.Right); header.Children.Add(divider);
         var proof = DocumentControl(BuildProofSwitch()); DockPanel.SetDock(proof, Dock.Right); header.Children.Add(proof);
         var modes = BuildWorkspaceSwitch(); DockPanel.SetDock(modes, Dock.Right); header.Children.Add(modes);
-        var brand = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(16, 0, 0, 0) };
-        brand.Children.Add(new Image { Source = Theme.BrandIcon, Width = 26, Height = 26 });
-        brand.Children.Add(new TextBlock { Text = "Morupixel", FontSize = 17, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 12, 0) });
-        header.Children.Add(brand); return header;
+        var brand = new Image { Source = Theme.BrandIcon, Width = 22, Height = 22, Margin = new Thickness(16, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Morupixel · 모루픽셀" };
+        DockPanel.SetDock(brand, Dock.Left); header.Children.Add(brand);
+        header.Children.Add(BuildMenu()); return header;
     }
 
     FrameworkElement BuildViewportActions()
     {
-        var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 0, 0) };
+        var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        foreach (var (glyph, action, tip) in new (string, Action, string)[] { (Theme.Glyphs.Undo, Undo, "실행 취소 · Ctrl+Z"), (Theme.Glyphs.Redo, Redo, "다시 실행 · Ctrl+Shift+Z") })
+            panel.Children.Add(DocumentControl(Theme.IconButton(glyph, () => { if (HasDocument) action(); }, tip)));
+        panel.Children.Add(new Border { Width = 1, Height = 18, Background = Theme.Line, Margin = new Thickness(8, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
         foreach (var (label, action, tip) in new (string, Action, string)[] {
-            ("↶", Undo, "실행 취소 · Ctrl+Z"), ("↷", Redo, "다시 실행 · Ctrl+Shift+Z"),
             ("맞춤", () => { canvas.Fit(); UpdateStatus(); canvas.Focus(); }, "화면에 맞춤 · Ctrl+0"),
             ("100%", () => { canvas.Zoom = 1; canvas.Pan = new(); canvas.InvalidateVisual(); UpdateStatus(); canvas.Focus(); }, "실제 크기 · Ctrl+1") })
         {
-            var button = DocumentControl(Theme.Button(label, () => { if (HasDocument) action(); }, tip)); button.Height = 30; button.MinWidth = 30;
-            button.Padding = new Thickness(9, 3, 9, 3); button.Margin = new Thickness(2, 0, 2, 0);
-            button.Background = Brushes.Transparent; button.BorderBrush = Brushes.Transparent;
+            var button = DocumentControl(Theme.Styled(Theme.Button(label, () => { if (HasDocument) action(); }, tip), "GhostButton"));
+            button.MinHeight = 28; button.Height = 28; button.Padding = new Thickness(9, 2, 9, 2); button.Margin = new Thickness(1, 0, 1, 0);
             panel.Children.Add(button);
         }
         return panel;
@@ -48,10 +50,9 @@ public sealed partial class MainWindow
 
     FrameworkElement BuildDocumentStrip()
     {
-        var host = new DockPanel { Background = Theme.Header, LastChildFill = true };
-        var add = Theme.Button("＋", () => Guard(NewDocument), "새 문서 · Ctrl+N");
-        add.Width = 34; add.Margin = new Thickness(5, 3, 8, 3); add.Padding = new Thickness(0); add.FontSize = 18;
-        add.Background = Brushes.Transparent; add.BorderBrush = Brushes.Transparent;
+        var host = new DockPanel { Background = Theme.Panel, LastChildFill = true };
+        var add = Theme.IconButton(Theme.Glyphs.Plus, () => Guard(NewDocument), "새 문서 · Ctrl+N");
+        add.Margin = new Thickness(4, 4, 8, 4);
         DockPanel.SetDock(add, Dock.Right); host.Children.Add(add);
         documentTabsScroll = new ScrollViewer { Content = tabsBar, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
         documentTabsScroll.PreviewMouseWheel += (_, e) => { if (documentTabsScroll.ScrollableWidth <= 0) return; documentTabsScroll.ScrollToHorizontalOffset(documentTabsScroll.HorizontalOffset - e.Delta); e.Handled = true; };
@@ -65,17 +66,17 @@ public sealed partial class MainWindow
         for (int i = 0; i < tabs.Count; i++)
         {
             int index = i; var tab = tabs[i]; bool active = index == activeTab;
-            var card = new Border { Background = active ? Theme.Surface : Brushes.Transparent, BorderBrush = active ? Theme.Accent : Brushes.Transparent, BorderThickness = new Thickness(0, 0, 0, 2), Margin = new Thickness(0, 2, 2, 0) };
-            var content = new Grid(); content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) }); card.Child = content;
-            var title = new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 185, Foreground = active ? Theme.Text : Theme.Muted, FontSize = 12, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center };
+            var card = new Border { Background = active ? Theme.Stage : Brushes.Transparent, CornerRadius = new CornerRadius(7, 7, 0, 0), Margin = new Thickness(i == 0 ? 6 : 0, 5, 2, 0) };
+            var content = new Grid(); content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); card.Child = content;
+            var title = new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center };
             var labels = new StackPanel { Orientation = Orientation.Horizontal };
             if (tab.History.Dirty(tab.Document)) labels.Children.Add(new TextBlock { Text = "●", FontSize = 7, Foreground = Theme.Accent, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 7, 0), ToolTip = "저장하지 않은 변경 사항" });
             labels.Children.Add(title);
             var select = Theme.Button("", () => { SwitchTab(index); canvas.Focus(); }, tab.Document.Name + (tab.History.Dirty(tab.Document) ? " · 저장하지 않음" : ""));
-            select.Content = labels; select.Background = Brushes.Transparent; select.BorderBrush = Brushes.Transparent; select.Margin = new Thickness(0); select.Padding = new Thickness(13, 6, 5, 6); select.MinWidth = 90;
+            Theme.Styled(select, "GhostButton"); select.Content = labels; select.Margin = new Thickness(0); select.Padding = new Thickness(12, 4, 4, 4); select.MinWidth = 90; select.MinHeight = 30;
             AutomationProperties.SetName(select, "문서 선택: " + tab.Document.Name); content.Children.Add(select);
-            var close = Theme.Button("×", () => Guard(() => CloseTabAt(index)), "문서 닫기 · " + tab.Document.Name);
-            close.FontSize = 17; close.Margin = new Thickness(2, 4, 4, 4); close.Padding = new Thickness(0); close.Background = Brushes.Transparent; close.BorderBrush = Brushes.Transparent;
+            var close = Theme.IconButton(Theme.Glyphs.Close, () => Guard(() => CloseTabAt(index)), "문서 닫기 · " + tab.Document.Name, 22, 11);
+            close.Margin = new Thickness(0, 0, 5, 0); close.VerticalAlignment = VerticalAlignment.Center;
             AutomationProperties.SetName(close, "문서 닫기: " + tab.Document.Name); Grid.SetColumn(close, 1); content.Children.Add(close);
             tabsBar.Children.Add(card); if (active) selectedTab = card;
         }

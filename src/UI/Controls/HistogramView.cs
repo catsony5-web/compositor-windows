@@ -21,8 +21,8 @@ public sealed class HistogramView : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight; if (w < 1 || h < 1) return;
-        dc.DrawRoundedRectangle(Theme.Brush("#14171C"), null, new Rect(0, 0, w, h), 7, 7);
-        for (int i = 1; i < 4; i++) dc.DrawLine(new Pen(Theme.Brush("#30353F"), .5), new Point(w * i / 4, 0), new Point(w * i / 4, h));
+        dc.DrawRoundedRectangle(Theme.Input, null, new Rect(0, 0, w, h), 7, 7);
+        for (int i = 1; i < 4; i++) dc.DrawLine(new Pen(Theme.Line, .5), new Point(w * i / 4, 0), new Point(w * i / 4, h));
         double max = Math.Max(1, Bins.SelectMany(b => b).Max());
         Color[] colors = [Color.FromArgb(115, 248, 134, 145), Color.FromArgb(100, 110, 226, 173), Color.FromArgb(130, 120, 178, 255)];
         for (int c = 0; c < 3; c++)

@@ -22,22 +22,32 @@ public sealed partial class MainWindow
     {
         var stack = new StackPanel();
         BuildWorkspaceTools();
-        histogramCard = new StackPanel { Margin = new Thickness(13, 10, 13, 10) };
-        var label = new DockPanel(); var badge = Theme.Label("R   G   B", 12, Theme.Accent); DockPanel.SetDock(badge, Dock.Right); label.Children.Add(badge); label.Children.Add(Theme.Label("히스토그램", 13));
+        histogramCard = new StackPanel { Margin = new Thickness(12, 9, 12, 2) };
+        var label = new DockPanel(); var badge = Theme.Label("RGB", Theme.CaptionSize, Theme.Subtle); DockPanel.SetDock(badge, Dock.Right); label.Children.Add(badge);
+        var histogramTitle = Theme.Label("히스토그램", Theme.CaptionSize, Theme.Muted); histogramTitle.FontWeight = FontWeights.SemiBold; label.Children.Add(histogramTitle);
+        histogram.Height = 62; histogram.Margin = new Thickness(0, 2, 0, 0);
+        histogramInfo.FontSize = Theme.CaptionSize; histogramInfo.Foreground = Theme.Subtle; histogramInfo.Margin = new Thickness(2, 3, 2, 0);
         histogramCard.Children.Add(label); histogramCard.Children.Add(histogram); histogramCard.Children.Add(histogramInfo); stack.Children.Add(histogramCard);
-        var tabs = studioTabStrip = new System.Windows.Controls.Primitives.UniformGrid { Columns = 4, Margin = new Thickness(0, 0, 0, 8) };
+        var tabRow = new DockPanel { Margin = new Thickness(6, 2, 4, 0) };
+        Button? paneMenu = null;
+        paneMenu = Theme.IconButton(Theme.Glyphs.More, () => { if (studioPanes.Length > studioPage) studioPanes[studioPage].ShowDockMenu(paneMenu!); }, "현재 패널 이동과 도킹", 28, 16);
+        paneMenu.VerticalAlignment = VerticalAlignment.Center; DockPanel.SetDock(paneMenu, Dock.Right); tabRow.Children.Add(paneMenu);
+        var tabs = studioTabStrip = new System.Windows.Controls.Primitives.UniformGrid { Columns = 4 };
+        tabRow.Children.Add(tabs);
         string[] labels = ["작업", "속성", "색상", "브러시"];
         for (int i = 0; i < labels.Length; i++)
         {
             int page = i; var button = Theme.Button(labels[i], () => ShowStudioPage(page));
             if (TryFindResource("PanelTab") is Style tabStyle) button.Style = tabStyle;
-            button.FontSize = Theme.BodySize; button.MinHeight = 36; studioTabs.Add(button); tabs.Children.Add(button);
+            button.FontSize = Theme.BodySize; button.MinHeight = 34; studioTabs.Add(button); tabs.Children.Add(button);
         }
-        stack.Children.Add(tabs);
+        stack.Children.Add(tabRow);
+        stack.Children.Add(new Border { Height = 1, Background = Theme.Line });
         studioPanes = labels.Select((label, page) => CreatePane(label, page, new ScrollViewer { Content = studioContents[page], VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(12, 8, 12, 12) })).ToArray();
         for (int i = 0; i < 4; i++) { studioPage = i; BuildStudioPage(i); }
         stack.Children.Add(studioScroll);
-        ApplyWorkspaceStudio(); ShowStudioPage(0); return stack;
+        ApplyWorkspaceStudio(); ShowStudioPage(0);
+        return new ClipBorder { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = stack };
     }
     void ShowStudioPage(int page, bool activate = true)
     {
@@ -51,7 +61,7 @@ public sealed partial class MainWindow
             studioScroll.Content = Theme.Button(pane.Caption + " 패널 · 오른쪽으로 가져오기", () => { pane.Unlock(); MovePane(pane, "right"); });
             if (activate) pane.Floating?.Activate();
         }
-        for (int i = 0; i < studioTabs.Count; i++) { studioTabs[i].Background = Brushes.Transparent; studioTabs[i].BorderBrush = i == page ? Theme.Accent : Theme.Line; studioTabs[i].Foreground = i == page ? Theme.Text : Theme.Muted; studioTabs[i].FontWeight = i == page ? FontWeights.SemiBold : FontWeights.Normal; }
+        for (int i = 0; i < studioTabs.Count; i++) { studioTabs[i].Background = Brushes.Transparent; studioTabs[i].BorderBrush = i == page ? Theme.Accent : Brushes.Transparent; studioTabs[i].Foreground = i == page ? Theme.Text : Theme.Muted; studioTabs[i].FontWeight = i == page ? FontWeights.SemiBold : FontWeights.Normal; }
     }
     double PreferredStudioHeight(double height)
     {
@@ -81,14 +91,14 @@ public sealed partial class MainWindow
     void BuildStudioColors()
     {
         var actions = new WrapPanel();
-        actions.Children.Add(Theme.Button("전경색", () => ChooseColor(false))); actions.Children.Add(Theme.Button("배경색", () => ChooseColor(true))); actions.Children.Add(Theme.Button("⇄", SwapColors, "색 교환 · X")); studioContent.Children.Add(actions);
-        studioColorValue = Theme.Label("", 12, Theme.Muted); studioColorValue.TextWrapping = TextWrapping.Wrap; studioColorValue.Margin = new Thickness(2, 6, 2, 10); studioContent.Children.Add(studioColorValue); UpdateStudioColor();
-        studioContent.Children.Add(Theme.Label("색상 견본", 13));
+        actions.Children.Add(Theme.Button("전경색", () => ChooseColor(false))); actions.Children.Add(Theme.Button("배경색", () => ChooseColor(true))); actions.Children.Add(Theme.IconButton(Theme.Glyphs.Swap, SwapColors, "색 교환 · X", 30, 15)); studioContent.Children.Add(actions);
+        studioColorValue = Theme.Label("", Theme.CaptionSize, Theme.Muted); studioColorValue.TextWrapping = TextWrapping.Wrap; studioColorValue.Margin = new Thickness(2, 6, 2, 10); studioContent.Children.Add(studioColorValue); UpdateStudioColor();
+        studioContent.Children.Add(Theme.Section("색상 견본"));
         var swatches = new System.Windows.Controls.Primitives.UniformGrid { Columns = 9 };
         foreach (string hex in new[] { "#FFFFFF", "#D8DCE2", "#88929F", "#4A515B", "#171A20", "#000000", "#EAE2D5", "#C5AE94", "#8C7061", "#F28792", "#DB5269", "#A12D4D", "#FFB774", "#F28446", "#B75132", "#F4D37A", "#D3AD4E", "#826C35", "#A5D9AF", "#50A98D", "#2A665E", "#AFDCF1", "#76A5E5", "#375C9D", "#CBB5EB", "#9D7BC8", "#624B86" })
         {
             var color = (Color)ColorConverter.ConvertFromString(hex);
-            var b = Theme.Button("", () => { foreground = color; UpdateColor(); }, hex + " · 전경색 지정"); b.Background = new SolidColorBrush(color); b.Height = 27; b.MinHeight = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2); swatches.Children.Add(b);
+            var b = Theme.Button("", () => { foreground = color; UpdateColor(); }, hex + " · 전경색 지정"); b.Background = new SolidColorBrush(color); b.BorderBrush = Theme.Line; b.Height = 24; b.MinHeight = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2); swatches.Children.Add(b);
         }
         studioContent.Children.Add(swatches);
         studioPalette = new ColorPalettePanel();

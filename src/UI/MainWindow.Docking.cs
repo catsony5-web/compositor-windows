@@ -17,7 +17,8 @@ public sealed partial class MainWindow
 
     StudioPane CreatePane(string name, int page, UIElement content)
     {
-        var pane = new StudioPane(name, page, content, MovePane, DragPane); movablePanels.Add(pane); return pane;
+        var pane = new StudioPane(name, page, content, MovePane, DragPane); movablePanels.Add(pane);
+        pane.SetEmbedded(page >= 0); return pane;
     }
     void RemovePane(StudioPane pane)
     {
@@ -31,8 +32,9 @@ public sealed partial class MainWindow
     {
         if (pane.Pinned || pane.Location == destination && destination != "float") return;
         CommitFocusedInspectorField(); RemovePane(pane); pane.Location = destination;
+        pane.SetEmbedded(destination == "right" && pane.Page >= 0);
         if (destination == "left")
-        { pane.Height = pane.Page < 0 ? 440 : 600; pane.Margin = new Thickness(0, 0, 6, 6); leftPanels.Children.Add(pane); }
+        { pane.Height = pane.Page < 0 ? 440 : 600; pane.Margin = new Thickness(0, 0, 8, 8); leftPanels.Children.Add(pane); }
         else if (destination == "right")
         { pane.Margin = new Thickness(0); if (pane.Page < 0) layersSlot.Child = pane; }
         else

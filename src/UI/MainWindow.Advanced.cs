@@ -104,6 +104,7 @@ public sealed partial class MainWindow
         else if (ext is ".moruproj" or ".cwproj") OpenProject(path);
         else if (CompatibilityImport.Supports(path)) OpenCompatibility(path);
         else OpenImage(path);
+        RememberRecent(path);
     }
     int FindPathTab(string path)
     {
@@ -122,7 +123,7 @@ public sealed partial class MainWindow
     }
     void ShowImportWarnings(IReadOnlyList<string> warnings)
     {
-        if (warnings.Count > 0) MessageBox.Show(this, string.Join("\n", warnings), "가져오기 안내", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (warnings.Count > 0) MessageDialog.Show(this, string.Join("\n", warnings), "가져오기 안내", NoticeKind.Information);
     }
     void ExportCompositor()
     {
@@ -148,7 +149,7 @@ public sealed partial class MainWindow
             Edit(name, () => { var target = doc.Layers.Single(l => l.Id == layer.Id); DocumentFeatures.Rasterize(target); target.Pixels = result; });
         }
         catch (OperationCanceledException) { if (ReferenceEquals(document, doc)) status.Text = "작업을 취소했습니다."; }
-        catch (Exception e) { if (ReferenceEquals(document, doc)) MessageBox.Show(this, e.Message, name, MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (Exception e) { if (ReferenceEquals(document, doc)) MessageDialog.Show(this, e.Message, name); }
         finally { if (ReferenceEquals(jobCts, cts)) jobCts = null; cts.Dispose(); }
     }
     IEnumerable<(Layer Layer, int Depth)> LayerDisplayRows()
@@ -359,7 +360,7 @@ public sealed partial class MainWindow
             status.Text = "AI 배경 제거 완료 · 마스크 브러시로 가장자리를 다듬을 수 있습니다.";
         }
         catch (OperationCanceledException) { if (ReferenceEquals(document, doc)) status.Text = "AI 배경 제거를 취소했습니다."; }
-        catch (Exception e) { if (ReferenceEquals(document, doc)) MessageBox.Show(this, e.Message, "AI 배경 제거", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (Exception e) { if (ReferenceEquals(document, doc)) MessageDialog.Show(this, e.Message, "AI 배경 제거"); }
         finally { if (ReferenceEquals(jobCts, cts)) jobCts = null; cts.Dispose(); }
     }
     void FeatherMask()

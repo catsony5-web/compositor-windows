@@ -11,7 +11,7 @@ public sealed class NewDocumentDialog : Window
     readonly TextBox name = new() { Text = "제목 없음" }, width = new(), height = new(), dpi = new() { Text = "96" };
     readonly ComboBox units = new() { ItemsSource = new[] { "픽셀 (px)", "밀리미터 (mm)" }, SelectedIndex = 0 };
     readonly ComboBox background = new() { ItemsSource = new[] { "투명", "흰색", "검정" }, SelectedIndex = 0 };
-    readonly TextBlock error = Theme.Label("", 11, Theme.Brush("#F8ABAD")), summary = Theme.Label("", 11, Theme.Muted);
+    readonly TextBlock error = Theme.Label("", Theme.CaptionSize, Theme.Danger), summary = Theme.Label("", Theme.CaptionSize, Theme.Muted);
     internal record Preset(string Name, int Width, int Height, bool Paper = false);
     internal static Preset[] Presets(int screenWidth, int screenHeight) =>
     [new("현재 Windows 화면", screenWidth, screenHeight), new("Full HD", 1920, 1080), new("QHD", 2560, 1440),
@@ -19,11 +19,12 @@ public sealed class NewDocumentDialog : Window
     public NewDocumentDialog(Window? owner)
     {
         Owner = owner; Title = "Morupixel · 새 문서"; Width = 990; Height = 760; MinWidth = 900; MinHeight = 700;
-        Background = Theme.Header; Foreground = Theme.Text; WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var root = new Grid { Margin = new Thickness(24), Background = Theme.Header }; Content = root;
+        Background = Theme.Panel; Foreground = Theme.Text; WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var root = new Grid { Margin = new Thickness(24), Background = Theme.Panel }; Content = root;
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); root.RowDefinitions.Add(new RowDefinition());
-        var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 20) };
-        heading.Children.Add(Theme.Label("새 문서", 25)); root.Children.Add(heading);
+        var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 18) };
+        var title = Theme.Label("새 문서", Theme.TitleSize); title.FontWeight = FontWeights.SemiBold; heading.Children.Add(title);
+        heading.Children.Add(Theme.Label("프리셋을 고르거나 오른쪽에서 크기를 직접 입력하세요.", Theme.BodySize, Theme.Muted)); root.Children.Add(heading);
         var body = new Grid(); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(290) }); Grid.SetRow(body, 1); root.Children.Add(body);
         var cards = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3, Rows = 3, Margin = new Thickness(0, 0, 18, 0) }; body.Children.Add(cards);
         Button? selected = null;
@@ -32,34 +33,35 @@ public sealed class NewDocumentDialog : Window
         {
             var content = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; double scale = 40d / Math.Max(preset.Width, preset.Height);
             content.Children.Add(new Border { Width = preset.Width * scale, Height = preset.Height * scale, BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 0, 10) });
-            var label = Theme.Label(preset.Name, 13); label.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(label);
-            var detail = Theme.Label($"{preset.Width} × {preset.Height} {(preset.Paper ? "mm" : "px")}", 11, Theme.Muted); detail.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(detail);
-            var button = Theme.Button("", () => { }); button.Content = content; button.Margin = new Thickness(4); button.Padding = new Thickness(5);
+            var label = Theme.Label(preset.Name, Theme.BodySize); label.FontWeight = FontWeights.SemiBold; label.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(label);
+            var detail = Theme.Label($"{preset.Width} × {preset.Height} {(preset.Paper ? "mm" : "px")}", Theme.CaptionSize, Theme.Subtle); detail.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(detail);
+            var button = Theme.Button("", () => { }); button.Content = content; button.Margin = new Thickness(4); button.Padding = new Thickness(5); button.BorderThickness = new Thickness(1.5);
             void Select()
             {
                 units.SelectedIndex = preset.Paper ? 1 : 0; dpi.Text = preset.Paper ? "150" : "96";
                 width.Text = preset.Width.ToString(); height.Text = preset.Height.ToString(); background.SelectedIndex = preset.Paper ? 1 : 0;
-                if (selected != null) selected.BorderBrush = Theme.Line; selected = button; button.BorderBrush = Theme.Accent; UpdateSummary();
+                if (selected != null) { selected.BorderBrush = Theme.Surface; selected.Background = Theme.Surface; }
+                selected = button; button.BorderBrush = Theme.Accent; button.Background = Theme.Selected; UpdateSummary();
             }
             button.Click += (_, _) => Select(); cards.Children.Add(button); if (selected == null) Select();
         }
-        foreach (var box in new[] { name, width, height, dpi }) { box.Height = 34; box.Padding = new Thickness(9, 4, 9, 4); }
-        var fields = new StackPanel { Margin = new Thickness(17) };
-        var card = new GlassPanel { Child = new ScrollViewer { Content = fields, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } }; Grid.SetColumn(card, 1); body.Children.Add(card);
-        fields.Children.Add(Theme.Label("문서 설정", 16));
-        void Field(string label, FrameworkElement input) { fields.Children.Add(Theme.Label(label, 11, Theme.Muted)); fields.Children.Add(input); }
+        foreach (var box in new[] { name, width, height, dpi }) box.Padding = new Thickness(9, 4, 9, 4);
+        var fields = new StackPanel { Margin = new Thickness(16) };
+        var card = new GlassPanel { Background = Theme.Header, CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = fields, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } }; Grid.SetColumn(card, 1); body.Children.Add(card);
+        var settingsTitle = Theme.Label("문서 설정", Theme.HeadingSize); settingsTitle.FontWeight = FontWeights.SemiBold; settingsTitle.Margin = new Thickness(2, 0, 2, 6); fields.Children.Add(settingsTitle);
+        void Field(string label, FrameworkElement input) { var caption = Theme.Label(label, Theme.CaptionSize, Theme.Muted); caption.Margin = new Thickness(2, 8, 2, 2); fields.Children.Add(caption); fields.Children.Add(input); }
         Field("이름", name); Field("크기 단위", units); Field("너비", width); Field("높이", height);
-        fields.Children.Add(Theme.Button("가로 / 세로 바꾸기  ⇄", () => (width.Text, height.Text) = (height.Text, width.Text)));
+        var swap = Theme.Styled(Theme.Button("가로 / 세로 바꾸기", () => (width.Text, height.Text) = (height.Text, width.Text)), "GhostButton"); swap.Margin = new Thickness(2, 6, 2, 2); fields.Children.Add(swap);
         Field("해상도 · DPI", dpi); Field("배경", background);
         summary.TextWrapping = TextWrapping.Wrap; fields.Children.Add(summary);
-        var colorMode = Theme.Label("RGB · 8 bit · sRGB", 11, Theme.Muted);
+        var colorMode = Theme.Label("RGB · 8 bit · sRGB", Theme.CaptionSize, Theme.Subtle);
         colorMode.ToolTip = "CMYK 미리보기는 상단에서 전환"; fields.Children.Add(colorMode);
         error.TextWrapping = TextWrapping.Wrap; fields.Children.Add(error);
         var create = Theme.Button("문서 만들기  →", () =>
         {
             try { Result = CreateDocument(name.Text, width.Text, height.Text, background.SelectedIndex, units.SelectedIndex == 1, dpi.Text); DialogResult = true; }
             catch (Exception ex) { error.Text = ex.Message; }
-        }); create.Background = Theme.Primary; create.IsDefault = true; create.Margin = new Thickness(3, 10, 3, 3); fields.Children.Add(create);
+        }); Theme.Styled(create, "PrimaryButton"); create.IsDefault = true; create.MinHeight = 34; create.Margin = new Thickness(2, 14, 2, 2); fields.Children.Add(create);
         var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; fields.Children.Add(cancel);
         foreach (var box in new[] { width, height, dpi }) box.TextChanged += (_, _) => UpdateSummary();
         units.SelectionChanged += (_, e) =>

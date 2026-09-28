@@ -12,7 +12,7 @@ public sealed partial class MainWindow
     GlassSwitch? proofSwitch;
     FrameworkElement BuildProofSwitch()
     {
-        proofSwitch = new GlassSwitch("RGB", "CMYK 보기", 164) { Margin = new Thickness(4, 0, 8, 0) };
+        proofSwitch = new GlassSwitch("RGB", "CMYK 보기", 148) { Margin = new Thickness(2, 0, 2, 0) };
         proofSwitch.Click += (_, _) => Guard(() => { try { SetProof(proofSwitch.IsChecked == true); } finally { UpdateProofButtons(); } });
         UpdateProofButtons(); return proofSwitch;
     }
@@ -26,7 +26,7 @@ public sealed partial class MainWindow
     {
         if (enabled == cmykProof) return;
         if (enabled) _ = CmykExport.ProfileName(proofProfile);
-        CancelGesture(); ClearTextMovePreview(); cmykProof = enabled; UpdateProofButtons();
+        CancelGesture(); ClearTextMovePreview(); cmykProof = enabled; UpdateProofButtons(); UpdateDocumentInfo();
         if (!enabled && composite != null) { canvas.Composite = composite.Bitmap(); canvas.InvalidateVisual(); }
         QueueRender(); status.Text = enabled ? "CMYK 인쇄색을 준비합니다 · RGB 원본과 레이어는 유지됩니다" : "RGB 편집 화면";
     }

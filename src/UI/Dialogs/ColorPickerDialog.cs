@@ -75,28 +75,28 @@ public sealed class ColorPickerDialog : Window
     public Color SelectedColor { get; private set; }
     readonly ColorPlane plane = new(); readonly HueStrip hue = new();
     readonly TextBox hex = new() { Width = 116 }, red = new(), green = new(), blue = new(), alpha = new();
-    readonly Border newColor = new() { Height = 45, BorderBrush = Theme.Line, BorderThickness = new Thickness(1) };
-    readonly TextBlock error = new() { Foreground = Theme.Brush("#FFBE9D"), FontSize = 11, TextWrapping = TextWrapping.Wrap };
+    readonly Border newColor = new() { Height = 45, BorderBrush = Theme.Stroke, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6, 6, 0, 0) };
+    readonly TextBlock error = new() { Foreground = Theme.Danger, FontSize = Theme.CaptionSize, TextWrapping = TextWrapping.Wrap };
     readonly Button apply;
     bool syncing;
     public ColorPickerDialog(Window owner, Color initial, string label = "전경색")
     {
-        SelectedColor = initial; Owner = owner; Title = "Morupixel · " + label; Width = 560; Height = 455;
+        SelectedColor = initial; Owner = owner; Title = "Morupixel · " + label; Width = 560; Height = 470;
         ResizeMode = ResizeMode.NoResize; WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Panel; Foreground = Theme.Text; FontFamily = Theme.UiFont;
         var root = new Grid { Margin = new Thickness(22) }; Content = root;
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); root.RowDefinitions.Add(new RowDefinition()); root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.Children.Add(Theme.Label(label + " 선택", 20));
+        root.Children.Add(DialogShell.Title(label + " 선택"));
         var body = new Grid { Margin = new Thickness(0, 12, 0, 8) }; body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) }); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(145) }); Grid.SetRow(body, 1); root.Children.Add(body);
         body.Children.Add(plane); Grid.SetColumn(hue, 1); body.Children.Add(hue);
         var values = new StackPanel { Margin = new Thickness(12, 0, 0, 0) }; Grid.SetColumn(values, 2); body.Children.Add(values);
-        values.Children.Add(Theme.Label("새 색상 / 이전 색상", 10, Theme.Muted)); values.Children.Add(newColor);
+        values.Children.Add(Theme.Label("새 색상 / 이전 색상", Theme.CaptionSize, Theme.Muted)); values.Children.Add(newColor);
         var previous = Theme.Button("", () => SetColor(initial), "이전 색상으로 복원"); previous.Height = 26; previous.Background = new SolidColorBrush(initial); previous.Margin = new Thickness(0, 0, 0, 8); values.Children.Add(previous);
         void Field(string text, TextBox box) { var row = new DockPanel(); row.Children.Add(new TextBlock { Text = text, Width = 25, VerticalAlignment = VerticalAlignment.Center, Foreground = Theme.Muted }); box.Width = 92; box.Padding = new Thickness(5, 2, 5, 2); row.Children.Add(box); values.Children.Add(row); }
         Field("R", red); Field("G", green); Field("B", blue); Field("A", alpha); Field("#", hex);
         values.Children.Add(error);
-        var footer = new DockPanel(); Grid.SetRow(footer, 2); root.Children.Add(footer);
-        apply = Theme.Button("색상 적용", () => { if (ValidateFields()) DialogResult = true; }); apply.IsDefault = true; apply.Background = Theme.Primary; DockPanel.SetDock(apply, Dock.Right); footer.Children.Add(apply);
-        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; DockPanel.SetDock(cancel, Dock.Right); footer.Children.Add(cancel);
+        var footer = new DockPanel { LastChildFill = false }; Grid.SetRow(footer, 2); root.Children.Add(footer);
+        apply = DialogShell.Primary("색상 적용", () => { if (ValidateFields()) DialogResult = true; }); apply.IsDefault = true; apply.Margin = new Thickness(8, 0, 0, 0); DockPanel.SetDock(apply, Dock.Right); footer.Children.Add(apply);
+        var cancel = DialogShell.Secondary("취소", () => DialogResult = false); cancel.IsCancel = true; DockPanel.SetDock(cancel, Dock.Right); footer.Children.Add(cancel);
         plane.ToolTip = "드래그하여 채도·명도 조절"; hue.ToolTip = "드래그하여 색조 조절";
         plane.Changed += (_, _) => SetColor(ColorValues.FromHsv(hue.Hue, plane.Saturation, plane.Value, SelectedColor.A), true);
         hue.Changed += h => { plane.Hue = h; SetColor(ColorValues.FromHsv(h, plane.Saturation, plane.Value, SelectedColor.A), true); };

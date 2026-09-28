@@ -9,7 +9,7 @@ namespace Compositor.Windows;
 public sealed partial class MainWindow
 {
     readonly TextBlock layerCountLabel = Theme.Label("", Theme.CaptionSize, Theme.Muted);
-    static readonly Brush inspectorInvalid = Theme.Brush("#D67A79");
+    static readonly Brush inspectorInvalid = Theme.Danger;
     long inspectorVersion;
     Action? pendingInspectorCommit;
     Document? layerPanelDocument;
@@ -37,10 +37,13 @@ public sealed partial class MainWindow
         var widthTemplate = new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb));
         var gripSurface = new FrameworkElementFactory(typeof(Border));
         gripSurface.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+        // The gap between the canvas and the panels is the resize handle; it shows a line on hover.
         var gripLine = new FrameworkElementFactory(typeof(Border));
-        gripLine.SetValue(WidthProperty, 1d);
+        gripLine.SetValue(WidthProperty, 2d);
+        gripLine.SetValue(MarginProperty, new Thickness(0, 16, 0, 24));
+        gripLine.SetValue(Border.CornerRadiusProperty, new CornerRadius(1));
         gripLine.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
-        gripLine.SetValue(Border.BackgroundProperty, Theme.Line);
+        gripLine.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding(nameof(Control.Background)) { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
         gripSurface.AppendChild(gripLine); widthTemplate.VisualTree = gripSurface; widthGrip.Template = widthTemplate;
         void ResizePanel(double change) => rightPanelColumn.Width = new GridLength(Math.Clamp(
             (rightPanelColumn.ActualWidth > 0 ? rightPanelColumn.ActualWidth : rightPanelColumn.Width.Value) + change,
@@ -56,57 +59,55 @@ public sealed partial class MainWindow
             if (e.Key is not (Key.Left or Key.Right)) return;
             ResizePanel(e.Key == Key.Left ? 8 : -8); e.Handled = true;
         };
+        widthGrip.MouseEnter += (_, _) => widthGrip.Background = Theme.Stroke;
+        widthGrip.MouseLeave += (_, _) => widthGrip.Background = Brushes.Transparent;
         host.Children.Add(widthGrip);
         var panel = new Grid(); Grid.SetColumn(panel, 1); host.Children.Add(panel);
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(6) });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
         panel.RowDefinitions.Add(new RowDefinition());
         panel.Children.Add(BuildStudioTop());
-        var splitter = new System.Windows.Controls.Primitives.Thumb { Height = 6, Cursor = Cursors.SizeNS, Background = Theme.Line };
+        // The 8px gap between the cards is the vertical splitter; a short handle appears on hover.
+        var splitter = new System.Windows.Controls.Primitives.Thumb { Height = 8, Cursor = Cursors.SizeNS, Background = Brushes.Transparent, ToolTip = "패널 높이 조절" };
         var splitterTemplate = new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb));
-        var splitterBorder = new FrameworkElementFactory(typeof(Border)); splitterBorder.SetValue(Border.BackgroundProperty, Theme.Line); splitterBorder.SetValue(HeightProperty, 2d); splitterTemplate.VisualTree = splitterBorder; splitter.Template = splitterTemplate;
+        var splitterSurface = new FrameworkElementFactory(typeof(Border)); splitterSurface.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+        var splitterHandle = new FrameworkElementFactory(typeof(Border));
+        splitterHandle.SetValue(WidthProperty, 36d); splitterHandle.SetValue(HeightProperty, 3d); splitterHandle.SetValue(Border.CornerRadiusProperty, new CornerRadius(1.5));
+        splitterHandle.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding(nameof(Control.Background)) { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        splitterSurface.AppendChild(splitterHandle); splitterTemplate.VisualTree = splitterSurface; splitter.Template = splitterTemplate;
+        splitter.MouseEnter += (_, _) => splitter.Background = Theme.Stroke;
+        splitter.MouseLeave += (_, _) => splitter.Background = Brushes.Transparent;
         splitter.DragDelta += (_, e) => studioScroll.Height = Math.Clamp(studioScroll.Height + e.VerticalChange, 100, Math.Max(120, ActualHeight - 430));
         Grid.SetRow(splitter, 1); panel.Children.Add(splitter);
         layersPane = CreatePane("레이어", -1, BuildLayersPanel()); layersSlot.Child = layersPane;
+        layerCountLabel.Foreground = Theme.Subtle; layerCountLabel.FontSize = Theme.CaptionSize; layersPane.AddHeaderDetail(layerCountLabel);
+        layersSlot.Margin = new Thickness(0, 0, 0, 8);
         Grid.SetRow(layersSlot, 2); panel.Children.Add(layersSlot); return host;
     }
 
     FrameworkElement BuildLayersPanel()
     {
         var panel = new Grid { Background = Brushes.Transparent };
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(38) });
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1) });
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(26) });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
         panel.Children.Add(BuildLayerCategoryTabs());
-        var divider = new Border { Background = Theme.Line };
-        Grid.SetRow(divider, 1); panel.Children.Add(divider);
 
-        var heading = new DockPanel { Margin = new Thickness(13, 4, 13, 2) };
-        layerCountLabel.VerticalAlignment = VerticalAlignment.Center;
-        DockPanel.SetDock(layerCountLabel, Dock.Right); heading.Children.Add(layerCountLabel);
         layerList.ToolTip = "레이어를 드래그하여 순서 변경";
-        Grid.SetRow(heading, 2); panel.Children.Add(heading);
-
         layerList.CreateRow = CreateLayerRow;
-        layerList.Margin = new Thickness(7, 0, 7, 0);
-        Grid.SetRow(layerList, 3); panel.Children.Add(layerList);
+        layerList.Margin = new Thickness(6, 0, 6, 0);
+        Grid.SetRow(layerList, 1); panel.Children.Add(layerList);
 
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        Button ActionButton(string glyph, string tip, Action action)
-        {
-            var button = Theme.Button(glyph, () => Guard(action), tip);
-            button.Width = 43; button.Height = 32; button.FontSize = 17; button.Padding = new Thickness(0);
-            button.Margin = new Thickness(2, 0, 2, 0);
-            return button;
-        }
-        actions.Children.Add(ActionButton("＋", "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = $"레이어 {doc.Layers.Count + 1}", Pixels = new Raster(doc.Width, doc.Height) }))));
-        actions.Children.Add(ActionButton("▣", "선택 레이어 복제 · Ctrl+J", Duplicate));
-        actions.Children.Add(ActionButton("↑", "선택 레이어를 위로", () => Reorder(1)));
-        actions.Children.Add(ActionButton("↓", "선택 레이어를 아래로", () => Reorder(-1)));
-        actions.Children.Add(ActionButton("×", "선택 레이어 삭제", DeleteLayer));
-        Grid.SetRow(actions, 4); panel.Children.Add(actions);
+        var actions = new DockPanel { Margin = new Thickness(8, 0, 8, 0), LastChildFill = false };
+        var footer = new Border { BorderBrush = Theme.Line, BorderThickness = new Thickness(0, 1, 0, 0), Child = actions };
+        Button ActionButton(string glyph, string tip, Action action) => Theme.IconButton(glyph, () => Guard(action), tip, 30, 16);
+        var delete = ActionButton(Theme.Glyphs.Delete, "선택 레이어 삭제", DeleteLayer); DockPanel.SetDock(delete, Dock.Right); actions.Children.Add(delete);
+        actions.Children.Add(ActionButton(Theme.Glyphs.Plus, "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = $"레이어 {doc.Layers.Count + 1}", Pixels = new Raster(doc.Width, doc.Height) }))));
+        actions.Children.Add(ActionButton(Theme.Glyphs.Duplicate, "선택 레이어 복제 · Ctrl+J", Duplicate));
+        actions.Children.Add(new Border { Width = 1, Height = 16, Background = Theme.Line, Margin = new Thickness(5, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center });
+        actions.Children.Add(ActionButton(Theme.Glyphs.ArrowUp, "선택 레이어를 위로", () => Reorder(1)));
+        actions.Children.Add(ActionButton(Theme.Glyphs.ArrowDown, "선택 레이어를 아래로", () => Reorder(-1)));
+        Grid.SetRow(footer, 2); panel.Children.Add(footer);
         return DocumentControl(panel);
     }
 
@@ -318,7 +319,7 @@ public sealed partial class MainWindow
         if ((!ReferenceEquals(layerPanelDocument, doc) || layerPanelActive != doc.ActiveId) && categories.TryGetValue(doc.ActiveId, out var activeCategory)) layerCategory = activeCategory;
         layerPanelDocument = doc; layerPanelActive = doc.ActiveId;
         foreach (var (category, button) in layerCategoryButtons)
-        { button.BorderBrush = category == layerCategory ? Theme.Accent : Theme.Line; button.Background = category == layerCategory ? Theme.Selected : Theme.Panel; }
+        { bool on = category == layerCategory; button.Background = on ? Theme.Surface : Brushes.Transparent; button.BorderBrush = on ? Theme.Stroke : Brushes.Transparent; button.Foreground = on ? Theme.Text : Theme.Muted; button.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal; }
         int roots = doc.Layers.Count(l => l.ParentId == null && categories[l.Id] == layerCategory);
         int objects = doc.Layers.Count(l => l.Kind != LayerKind.Group && categories[l.Id] == layerCategory);
         layerCountLabel.Text = !HasDocument ? "" : layerCategory == LayerCategory.Drawing ? $"{roots:N0}개 레이어 · {objects:N0}개 객체" : $"{objects:N0}개 레이어";

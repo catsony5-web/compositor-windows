@@ -45,25 +45,25 @@ internal sealed partial class CompatibilityDialog : Window
         Owner = owner; Title = "Morupixel · 호환 파일 가져오기"; Width = 940; Height = 700; MinWidth = 780; MinHeight = 570;
         Background = Theme.Panel; Foreground = Theme.Text; FontFamily = Theme.UiFont; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var root = new Grid { Margin = new Thickness(20) }; root.ColumnDefinitions.Add(new ColumnDefinition()); root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(330) }); Content = root;
-        root.Children.Add(new Border { Background = Theme.Brush("#11171C"), CornerRadius = new CornerRadius(10), Child = preview, Margin = new Thickness(0, 0, 20, 0) });
+        root.Children.Add(new Border { Background = Theme.Stage, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = preview, Margin = new Thickness(0, 0, 20, 0) });
         var side = new DockPanel { LastChildFill = true }; Grid.SetColumn(side, 1); root.Children.Add(side);
         var bottom = new StackPanel { Margin = new Thickness(0, 12, 0, 0) }; DockPanel.SetDock(bottom, Dock.Bottom); side.Children.Add(bottom);
         bottom.Children.Add(new ScrollViewer { Content = messages, MaxHeight = 110, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
         render = Theme.Button("미리보기 새로고침", async () => await RenderAsync()); render.IsEnabled = false;
-        accept = Theme.Button("가져오기", () => { if (prepared != null && preparedComposite != null) { Result = prepared.Document; DialogResult = true; } }); accept.IsEnabled = false; accept.Background = Theme.Primary; accept.IsDefault = true;
-        var cancel = Theme.Button("취소", Close); cancel.IsCancel = true; bottom.Children.Add(render);
+        accept = DialogShell.Primary("가져오기", () => { if (prepared != null && preparedComposite != null) { Result = prepared.Document; DialogResult = true; } }); accept.IsEnabled = false; accept.IsDefault = true; accept.Margin = new Thickness(8, 0, 0, 0);
+        var cancel = DialogShell.Secondary("취소", Close); cancel.IsCancel = true; bottom.Children.Add(render);
         var actions = new Grid(); actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); actions.ColumnDefinitions.Add(new ColumnDefinition());
         actions.Children.Add(cancel); Grid.SetColumn(accept, 1); actions.Children.Add(accept); bottom.Children.Add(actions);
         var content = new StackPanel(); contentScroll.Content = content; side.Children.Add(contentScroll);
-        content.Children.Add(new TextBlock { Text = Path.GetFileName(path), FontSize = 19, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 0, 3, 10) });
+        content.Children.Add(new TextBlock { Text = Path.GetFileName(path), FontSize = Theme.TitleSize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 0, 3, 10) });
         content.Children.Add(details); content.Children.Add(settings);
         advanced.SetResourceReference(StyleProperty, "ImportDetailsExpander"); advanced.Content = advancedSettings;
         information.SetResourceReference(StyleProperty, "ImportDetailsExpander"); information.Content = notices;
         void Field(StackPanel panel, string title, Control control, string? hint = null)
         {
-            panel.Children.Add(Theme.Label(title, 12)); control.Margin = new Thickness(3, 4, 3, 10); panel.Children.Add(control);
+            panel.Children.Add(Theme.Label(title, Theme.CaptionSize, Theme.Muted)); control.Margin = new Thickness(3, 4, 3, 10); panel.Children.Add(control);
             System.Windows.Automation.AutomationProperties.SetName(control, title);
-            if (hint != null) panel.Children.Add(Theme.Label(hint, 12, Theme.Muted));
+            if (hint != null) panel.Children.Add(Theme.Label(hint, Theme.CaptionSize, Theme.Subtle));
         }
         if (pdf)
         {
@@ -88,7 +88,7 @@ internal sealed partial class CompatibilityDialog : Window
         }
         if (pdf || cad) { advancedSettings.Children.Add(retain); settings.Children.Add(advanced); }
         content.Children.Add(information);
-        if (placeAsLayer) content.Children.Add(Theme.Label("현재 문서에 그룹으로 추가해요.", 12, Theme.Muted));
+        if (placeAsLayer) content.Children.Add(Theme.Label("현재 문서에 그룹으로 추가해요.", Theme.CaptionSize, Theme.Muted));
         messages.Text = "미리보기를 준비하고 있어요…";
         foreach (var box in new[] { page, dpi, edge }) box.TextChanged += (_, _) => InvalidatePrepared();
         separate.Checked += (_, _) => InvalidatePrepared(); separate.Unchecked += (_, _) => InvalidatePrepared();
@@ -145,16 +145,16 @@ internal sealed partial class CompatibilityDialog : Window
             ? $"{layers.Count(l => l.Kind == LayerKind.Vector || l.Kind == LayerKind.Raster):N0}개 요소 · {layers.Count(l => l.Kind == LayerKind.Group):N0}개 그룹"
             : $"레이어 {layers.Count:N0}개";
         notices.Children.Clear();
-        notices.Children.Add(Theme.Label($"{result.Document.Width:N0} × {result.Document.Height:N0} px · {count}", 12, Theme.Muted));
+        notices.Children.Add(Theme.Label($"{result.Document.Width:N0} × {result.Document.Height:N0} px · {count}", Theme.CaptionSize, Theme.Muted));
         foreach (string warning in result.Warnings)
         {
-            var note = Theme.Label(warning, 12, Theme.Muted); note.Margin = new Thickness(3, 12, 3, 0); notices.Children.Add(note);
+            var note = Theme.Label(warning, Theme.CaptionSize, Theme.Muted); note.Margin = new Thickness(3, 12, 3, 0); notices.Children.Add(note);
         }
         information.Header = result.Warnings.Count > 0 ? $"변환 안내 ({result.Warnings.Count})" : "가져오기 정보";
         information.Visibility = Visibility.Visible;
         messages.Foreground = Theme.Muted; messages.Text = "미리보기를 확인하고 가져오세요.";
     }
-    void ShowError(Exception error) { ClearPrepared(); messages.Foreground = Theme.Brush("#FFB8B8"); messages.Text = FriendlyError(error); }
+    void ShowError(Exception error) { ClearPrepared(); messages.Foreground = Theme.Danger; messages.Text = FriendlyError(error); }
     async Task RenderAsync()
     {
         if (busy || closed) return; busy = true; render.IsEnabled = false; settings.IsEnabled = false; ClearPrepared();
@@ -191,8 +191,8 @@ internal sealed class CompatibilityExportDialog : Window
         snapshot = document.Snapshot(); Owner = owner; Title = "Morupixel · PDF / Photoshop 내보내기"; Width = 510; SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Panel; Foreground = Theme.Text; FontFamily = Theme.UiFont;
         var panel = new StackPanel { Margin = new Thickness(24) }; Content = panel;
-        panel.Children.Add(Theme.Label("호환 형식 내보내기", 21)); panel.Children.Add(format); panel.Children.Add(message);
-        save = Theme.Button("파일로 저장…", async () => await SaveAsync()); panel.Children.Add(save); var close = Theme.Button("닫기", Close); close.IsCancel = true; panel.Children.Add(close);
+        panel.Children.Add(DialogShell.Title("호환 형식 내보내기")); panel.Children.Add(DialogShell.FieldLabel("파일 형식")); panel.Children.Add(format); panel.Children.Add(message);
+        save = DialogShell.Primary("파일로 저장…", async () => await SaveAsync()); var close = DialogShell.Secondary("닫기", Close); close.IsCancel = true; panel.Children.Add(DialogShell.Footer(close, save));
         format.SelectionChanged += (_, _) => Describe();
         if (DesignRenderer.HasRetainedContent(snapshot) && VectorPdfExport.Limitation(snapshot) == null) format.SelectedIndex = 3;
         Describe(); Closing += (_, e) => { if (busy) e.Cancel = true; };

@@ -22,7 +22,7 @@ public sealed class AdjustmentDialog : Window
     readonly HistogramView histogram = new();
     readonly Image preview = new() { Stretch = Stretch.Uniform, Margin = new Thickness(12) };
     readonly CheckBox enabled = new() { Content = "미리보기", IsChecked = true, Foreground = Theme.Text, Margin = new Thickness(8) };
-    readonly TextBlock info = Theme.Label("", 11, Theme.Muted);
+    readonly TextBlock info = Theme.Label("", Theme.CaptionSize, Theme.Muted);
     long version;
     bool closed, synchronizing, preservePendingInputs;
     internal void SetDesignPreview(Raster raster) { preview.Source = raster.Bitmap(); histogram.Update(raster); }
@@ -34,12 +34,13 @@ public sealed class AdjustmentDialog : Window
         selectionMask = editingId == null && selection != null ? SelectionTools.Mask(selection, document.Width, document.Height) : null;
         Owner = owner; Title = "Morupixel · " + (photoDevelop ? "사진 현상" : initial.Kind.ToString()); Width = photoDevelop ? 1040 : 1000; Height = photoDevelop ? 760 : 660; MinWidth = 860; MinHeight = 580;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Header; Foreground = Theme.Text;
-        var grid = new Grid { Margin = new Thickness(18) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 340 : 292) });
+        var grid = new Grid { Margin = new Thickness(12) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 360 : 320) });
         grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) }); Content = grid;
-        grid.Children.Add(new Border { Background = Theme.Brush("#11171C"), Child = preview });
+        grid.Children.Add(new Border { Background = Theme.Stage, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = preview });
         var controls = new StackPanel { Margin = new Thickness(15) };
         var controlScroll = new ScrollViewer { Content = controls, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; var glass = new GlassPanel { Child = controlScroll, Margin = new Thickness(12, 0, 0, 0) }; Grid.SetColumn(glass, 1); grid.Children.Add(glass);
         var heading = Theme.Label(initial.Kind switch { AdjustmentKind.Exposure => "노출", AdjustmentKind.Curves => "곡선", AdjustmentKind.Levels => "레벨", AdjustmentKind.HueSaturation => "색조 / 채도", AdjustmentKind.Grain => "그레인", AdjustmentKind.PhotoDevelop => "사진 현상", _ => "그라데이션 맵" }, 23);
+        heading.FontSize = Theme.TitleSize; heading.FontWeight = FontWeights.SemiBold; heading.Margin = new Thickness(2, 0, 2, 8);
         heading.ToolTip = "원본 픽셀을 보존하는 조정 레이어"; controls.Children.Add(heading);
         if (photoDevelop)
             controls.Children.Add(Theme.Button("현상 설정 모두 초기화", () => { Spec = Spec with { PhotoDevelop = new() }; SyncControls(); Schedule(); }));
@@ -113,8 +114,9 @@ public sealed class AdjustmentDialog : Window
             enabled.Content = "보정 결과 보기"; enabled.VerticalAlignment = VerticalAlignment.Center;
             enabled.ToolTip = "해제하면 현재 사진 현상을 끈 보정 전 모습을 표시합니다."; footerRow.Children.Add(enabled);
         }
-        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; footer.Children.Add(cancel);
-        footer.Children.Add(Theme.Button("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageBox.Show(this, e.Message); } }));
+        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; cancel.MinWidth = 80; footer.Children.Add(cancel);
+        var apply = Theme.Styled(Theme.Button("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageDialog.Show(this, e.Message); } }), "PrimaryButton");
+        apply.MinWidth = 96; footer.Children.Add(apply);
         Closed += (_, _) => { closed = true; version++; previewCts?.Cancel(); }; Loaded += (_, _) => Schedule();
     }
     internal bool TryCommitParameters()
@@ -260,9 +262,9 @@ public sealed class CurveEditor : FrameworkElement
     void Update() { RebuildCurve(); InvalidateVisual(); Changed?.Invoke(points.ToArray()); }
     protected override void OnRender(DrawingContext dc)
     {
-        dc.DrawRectangle(Theme.Brush("#151B22"), new Pen(Theme.Line, 1), new Rect(RenderSize));
+        dc.DrawRectangle(Theme.Input, new Pen(Theme.Stroke, 1), new Rect(RenderSize));
         for (int i = 1; i < 4; i++) { dc.DrawLine(new Pen(Theme.Line, 1), new Point(ActualWidth * i / 4,0),new Point(ActualWidth * i / 4,ActualHeight)); dc.DrawLine(new Pen(Theme.Line,1),new Point(0,ActualHeight*i/4),new Point(ActualWidth,ActualHeight*i/4)); }
-        dc.DrawLine(new Pen(Theme.Brush("#46505B"),1),new Point(0,ActualHeight),new Point(ActualWidth,0));
+        dc.DrawLine(new Pen(Theme.Stroke, 1), new Point(0, ActualHeight), new Point(ActualWidth, 0));
         Point Screen(CurvePoint p) => new(p.X * ActualWidth,(1-p.Y)*ActualHeight);
         var curvePen = new Pen(Theme.Accent, 2);
         for (int i = 1; i < curveDisplay.Length; i++) dc.DrawLine(curvePen, new Point((i - 1) * ActualWidth / 255, (1 - curveDisplay[i - 1] / 255d) * ActualHeight), new Point(i * ActualWidth / 255, (1 - curveDisplay[i] / 255d) * ActualHeight));
@@ -272,14 +274,16 @@ public sealed class CurveEditor : FrameworkElement
 
 public static class ExportDialog
 {
-    public static void Show(Window owner, Document doc, Guid? selectedArtboard = null)
+    public static void Show(Window owner, Document doc, Guid? selectedArtboard = null) => Create(owner, doc, selectedArtboard).ShowDialog();
+
+    internal static Window Create(Window? owner, Document doc, Guid? selectedArtboard = null)
     {
         var window = new Window { Owner = owner, Title = "Morupixel · 내보내기", Width = 920, Height = 630, MinWidth = 760, MinHeight = 500, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Theme.Panel, Foreground = Theme.Text };
         var grid = new Grid { Margin = new Thickness(20) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(230) }); window.Content = grid;
-        var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(8) }; grid.Children.Add(new Border { Background = Theme.Brush("#11171C"), Child = image });
+        var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(8) }; grid.Children.Add(DialogShell.Card(image));
         var side = new StackPanel { Margin = new Thickness(18, 0, 0, 0) }; Grid.SetColumn(side,1); grid.Children.Add(side);
-        side.Children.Add(Theme.Label("내보내기",24));
-        var dimensions = Theme.Label("", 12, Theme.Muted); side.Children.Add(dimensions);
+        side.Children.Add(DialogShell.Title("내보내기"));
+        var dimensions = Theme.Label("", Theme.BodySize, Theme.Muted); dimensions.Margin = new Thickness(0, 4, 0, 4); side.Children.Add(dimensions);
         ComboBox? boards = null;
         if (doc.Artboards.Count > 0)
         {
@@ -287,10 +291,11 @@ public static class ExportDialog
             boards = new ComboBox { ItemsSource = doc.Artboards, DisplayMemberPath = "Name", SelectedItem = doc.Artboards.FirstOrDefault(b => b.Id == selectedArtboard) ?? doc.Artboards[0], MinHeight = 34, Margin = new Thickness(3, 6, 3, 4) };
             side.Children.Add(boards);
         }
-        var format = new ComboBox { ItemsSource = new[] { ".png", ".jpg", ".tiff" }, SelectedIndex = 0, Padding = new Thickness(8), Margin = new Thickness(3,15,3,8) }; side.Children.Add(format);
-        var qualityLabel = Theme.Label("JPEG 품질 95"); side.Children.Add(qualityLabel);
+        side.Children.Add(DialogShell.FieldLabel("파일 형식"));
+        var format = new ComboBox { ItemsSource = new[] { ".png", ".jpg", ".tiff" }, SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 6) }; side.Children.Add(format);
+        var qualityLabel = DialogShell.FieldLabel("JPEG 품질 95"); side.Children.Add(qualityLabel);
         var quality = new Slider { Minimum = 1, Maximum = 100, Value = 95, TickFrequency = 1, IsSnapToTickEnabled = true, Margin = new Thickness(5) }; side.Children.Add(quality);
-        var size = Theme.Label("미리보기 준비…",11,Theme.Muted); side.Children.Add(size);
+        var size = DialogShell.Note("미리보기 준비…"); side.Children.Add(size);
         int generation = 0; bool closed = false, saving = false;
         Document Snapshot() => boards?.SelectedItem is Artboard board ? ArtboardEditing.ExportDocument(doc, board.Id) : doc.Snapshot();
         var snapshot = Snapshot(); dimensions.Text = $"{snapshot.Width} × {snapshot.Height} px";
@@ -356,11 +361,11 @@ public static class ExportDialog
                 window.Close();
             }
             catch (OperationCanceledException) { }
-            catch (Exception e) { if (!closed) MessageBox.Show(window, e.Message, "내보내기 실패"); }
+            catch (Exception e) { if (!closed) MessageDialog.Show(window, e.Message, "내보내지 못했습니다", NoticeKind.Error); }
             finally { saving = false; if (!closed) { window.IsEnabled = true; Update(); } }
         }
-        side.Children.Add(Theme.Button("파일로 저장…", Save));
-        var cancel=Theme.Button("닫기",window.Close); cancel.IsCancel=true; side.Children.Add(cancel);
-        window.Closed += (_, _) => { closed = true; generation++; lifetime.Cancel(); pending?.Cancel(); }; window.Loaded += (_, _) => Update(); window.ShowDialog();
+        var saveButton = DialogShell.Primary("파일로 저장…", Save); saveButton.IsDefault = true; saveButton.Margin = new Thickness(0, 16, 0, 0); side.Children.Add(saveButton);
+        var cancel = DialogShell.Secondary("닫기", window.Close); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0); side.Children.Add(cancel);
+        window.Closed += (_, _) => { closed = true; generation++; lifetime.Cancel(); pending?.Cancel(); }; window.Loaded += (_, _) => Update(); return window;
     }
 }
