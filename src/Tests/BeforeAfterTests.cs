@@ -240,6 +240,62 @@ public static class BeforeAfterTests
             Check(CompareControls.IsHoldKey(Key.Oem5) && CompareControls.IsHoldKey(Key.OemBackslash) && !CompareControls.IsHoldKey(Key.Space), "Hold key mapping changed");
         }));
 
+        test("develop compare histogram reads the full-resolution states whatever the toggle history", () => WithDispatcher(() =>
+        {
+            // Alternating dark and light columns: the 2560 px stage copy averages them toward the middle, the full image keeps both ends.
+            int width = 3000, height = 12; var noisy = new Raster(width, height);
+            for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
+            { int i = (y * width + x) * 4; byte v = (byte)(x % 2 == 0 ? 20 : 200); noisy.Data[i] = v; noisy.Data[i + 1] = v; noisy.Data[i + 2] = v; noisy.Data[i + 3] = 255; }
+            var document = new Document { Width = width, Height = height }; document.Add(new Layer { Name = "사진", Pixels = noisy });
+            static bool Same(double[][] a, double[][] b) => a.Length == b.Length && a.Zip(b).All(p => p.First.Zip(p.Second).All(v => Math.Abs(v.First - v.Second) < 1e-9));
+            static void Click(AdjustmentDialog dialog, bool isChecked) { dialog.PreviewToggle.IsChecked = isChecked; dialog.PreviewToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); }
+            var dialog = new AdjustmentDialog(null, document, Develop(.5));
+            try
+            {
+                var before = HistogramView.Compute(Imaging.Render(document));
+                var afterFull = Imaging.Render(AdjustmentDialog.PreviewDocument(document, null, dialog.Spec, true, null)); var after = HistogramView.Compute(afterFull);
+                Check(!Same(before, after) && !Same(after, HistogramView.Compute(PreviewScaling.Fit(afterFull, AdjustmentDialog.PreviewMaxSide))), "Test image does not tell the full render from the stage copy");
+                dialog.StartPreview(); Wait(dialog);
+                Check(Same(dialog.HistogramPanel.Bins, after), "First histogram is not the full-resolution adjusted image");
+                Click(dialog, false); Wait(dialog);
+                Check(Same(dialog.HistogramPanel.Bins, before), "Before histogram came from the reduced stage copy");
+                Click(dialog, true); Wait(dialog);
+                Check(Same(dialog.HistogramPanel.Bins, after), "Toggling back rebuilt the after histogram from the reduced stage copy");
+                dialog.SelectCompareMode(CompareMode.Toggle); Wait(dialog); dialog.ToggleCompareState(); dialog.ToggleCompareState();
+                Check(Same(dialog.HistogramPanel.Bins, after), "Toggle view changed the histogram of an unchanged image");
+            }
+            finally { dialog.Close(); }
+        }));
+
+        test("develop compare reports a failed before image and retries it on the next change", () => WithDispatcher(() =>
+        {
+            var document = Photo(); var dialog = new AdjustmentDialog(null, document, Develop(.8));
+            bool fail = true; int layers = document.Layers.Count;
+            // The before document is the original layer stack; the after document has the new adjustment layer on top.
+            dialog.Renderer = (d, token) => fail && d.Layers.Count == layers ? throw new System.IO.InvalidDataException("simulated failure") : Imaging.Render(d, token);
+            try
+            {
+                dialog.StartPreview(); dialog.SelectCompareMode(CompareMode.Split); Wait(dialog);
+                Check(dialog.BeforePreview == null && dialog.BeforeRenderCount == 1 && dialog.CompareView.BeforeFailed, "Failed before image still shows as calculating");
+                Check(dialog.InfoText.Contains("simulated failure") && !dialog.InfoText.Contains("보정 전후 비교"), "Info line does not report the failed before image: " + dialog.InfoText);
+                var exposure = NamedSlider(dialog, "노출 EV");
+                exposure.Value = 1.2; Wait(dialog);
+                Check(dialog.BeforePreview == null && dialog.CompareView.BeforeFailed && dialog.InfoText.Contains("simulated failure") && !dialog.InfoText.Contains("보정 전후 비교"), "After render claimed a comparison without a before image: " + dialog.InfoText);
+                Check(dialog.BeforeRenderCount == 2, $"Settings change did not retry the before image ({dialog.BeforeRenderCount} renders)");
+                fail = false; exposure.Value = 1.4; Wait(dialog);
+                Check(dialog.BeforePreview != null && !dialog.CompareView.BeforeFailed && dialog.CompareView.Before != null && dialog.BeforeRenderCount == 3, "Retry did not bring the before image back");
+                Check(dialog.InfoText.Contains("보정 전후 비교"), "Info line did not return to the comparison: " + dialog.InfoText);
+                exposure.Value = 1.5; Wait(dialog);
+                Check(dialog.BeforeRenderCount == 3, "A ready before image was rendered again");
+            }
+            finally { dialog.Close(); }
+            var red = Color.FromRgb(210, 40, 40);
+            var pending = new BeforeAfterView { After = Solid(red), Mode = CompareMode.SideBySide };
+            var failed = new BeforeAfterView { After = Solid(red), Mode = CompareMode.SideBySide, BeforeFailed = true };
+            var a = Snapshot(pending, 824, 424); var b = Snapshot(failed, 824, 424);
+            Check(!a.Data.SequenceEqual(b.Data), "Failed before cell draws the same calculating caption");
+        }));
+
         test("develop compare keeps preview-size rasters for large photos", () => WithDispatcher(() =>
         {
             var small = Raster.Solid(40, 30, Colors.Red);
