@@ -100,6 +100,8 @@ public static class SelfTests
         ImportSettingsTests.Run(Test, directory);
         CompatibilityDialog.RunImportFlowDialogTests(Test);
         MainWindow.RunImportFlowTests(Test, directory);
+        CompatibilityDialog.RunImportFlowFollowupDialogTests(Test, directory);
+        MainWindow.RunImportFlowFollowupTests(Test, directory);
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);

@@ -69,7 +69,7 @@ public static class ImportSettingsTests
             {
                 CadStructure = CadImportStructure.Combined, CadLineWeights = false, CadHatches = HatchTreatment.Image, CadMaterialImage = Path.Combine(root, "마루.png"),
                 CadLongEdge = 3000, CadRetainVectors = false, CadLayout = "배치1", CadRoles = new Dictionary<string, DrawingRole> { ["A-FURN"] = DrawingRole.Annotation },
-                CadSkipDialog = true, PdfDpi = 300, PdfLayers = false, PdfRetainVectors = false, PsdLayers = true, Artboard = false
+                CadSkipDialog = true, PdfDpi = 300, PdfLayers = false, PdfRetainVectors = false, PsdLayers = true, CadArtboard = false, PdfArtboard = false
             };
             ImportSettingsStore.Save(custom, store);
             var loaded = ImportSettingsStore.Load(store);
@@ -192,7 +192,7 @@ internal sealed partial class CompatibilityDialog
             {
                 CadStructure = CadImportStructure.Layers, CadLineWeights = false, CadHatches = HatchTreatment.Keep, CadLongEdge = 1800, CadRetainVectors = false, CadLayout = "배치1",
                 CadRoles = new Dictionary<string, DrawingRole>(StringComparer.OrdinalIgnoreCase) { ["A-FURN-SOFA"] = DrawingRole.Annotation, ["OTHER-LAYER"] = DrawingRole.Structure },
-                CadSkipDialog = true, Artboard = false
+                CadSkipDialog = true, CadArtboard = false
             };
             var dialog = new CompatibilityDialog(null, "평면.dxf", false, remembered, ["평면.dxf", "2층.dxf", "3층.dwg"]);
             try
@@ -222,7 +222,7 @@ internal sealed partial class CompatibilityDialog
             }
             finally { dialog.Close(); }
 
-            var pdfDialog = new CompatibilityDialog(null, "도면.pdf", false, new ImportSettings { PdfDpi = 300, PdfLayers = false, PdfRetainVectors = false, Artboard = false });
+            var pdfDialog = new CompatibilityDialog(null, "도면.pdf", false, new ImportSettings { PdfDpi = 300, PdfLayers = false, PdfRetainVectors = false, PdfArtboard = false });
             try
             {
                 Check(pdfDialog.dpi.Text == "300" && pdfDialog.ReadOptions() is { Dpi: 300, SeparateLayers: false, PreservePdfLayers: false, Artboard: false, RetainVectors: false }
