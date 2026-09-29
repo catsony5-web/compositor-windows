@@ -70,7 +70,7 @@ public sealed class AdjustmentDialog : Window
         Owner = owner; Title = "Morupixel · " + (photoDevelop ? "사진 현상" : initial.Kind.ToString()); Width = photoDevelop ? 1040 : 1000; Height = photoDevelop ? 760 : 660; MinWidth = 860; MinHeight = 580;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Header; Foreground = Theme.Text;
         var grid = new Grid { Margin = new Thickness(12) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 360 : 320) });
-        grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) }); Content = grid;
+        grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Content = grid;
         grid.Children.Add(BuildCompareStage());
         var controls = new StackPanel { Margin = new Thickness(15) };
         var controlScroll = new ScrollViewer { Content = controls, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; var glass = new GlassPanel { Child = controlScroll, Margin = new Thickness(12, 0, 0, 0) }; Grid.SetColumn(glass, 1); grid.Children.Add(glass);
@@ -142,8 +142,9 @@ public sealed class AdjustmentDialog : Window
         }
         if (!photoDevelop) controls.Children.Add(enabled);
         controls.Children.Add(info); enabled.Click += (_, _) => RefreshView();
-        var footerRow = new DockPanel(); Grid.SetRow(footerRow, 1); Grid.SetColumnSpan(footerRow, 2); grid.Children.Add(footerRow);
-        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right }; DockPanel.SetDock(footer, Dock.Right); footerRow.Children.Add(footer);
+        // The footer keeps the same 12 DIP gap below the panels as between them; buttons keep their own height.
+        var footerRow = new DockPanel { Margin = new Thickness(0, 12, 0, 0) }; Grid.SetRow(footerRow, 1); Grid.SetColumnSpan(footerRow, 2); grid.Children.Add(footerRow);
+        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center }; DockPanel.SetDock(footer, Dock.Right); footerRow.Children.Add(footer);
         // View controls under the preview: the result check box (photo develop) and, in the toggle view, the hold button.
         var viewControls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center }; footerRow.Children.Add(viewControls);
         if (photoDevelop)
@@ -152,9 +153,9 @@ public sealed class AdjustmentDialog : Window
             enabled.ToolTip = "해제하면 현재 사진 현상을 끈 보정 전 모습을 표시합니다."; viewControls.Children.Add(enabled);
         }
         viewControls.Children.Add(holdButton);
-        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; cancel.MinWidth = 80; footer.Children.Add(cancel);
-        var apply = Theme.Styled(Theme.Button("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageDialog.Show(this, e.Message); } }), "PrimaryButton");
-        apply.MinWidth = 96; footer.Children.Add(apply);
+        var cancel = DialogShell.Secondary("취소", () => DialogResult = false); cancel.IsCancel = true; footer.Children.Add(cancel);
+        var apply = DialogShell.Primary("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageDialog.Show(this, e.Message); } });
+        apply.MinWidth = 96; apply.Margin = new Thickness(8, 0, 0, 0); footer.Children.Add(apply);
         // Hold \ (₩ on Korean layouts) to see the image before this adjustment; typing in number fields is left alone.
         PreviewKeyDown += (_, e) => { if (CompareControls.IsHoldKey(e.Key) && e.OriginalSource is not System.Windows.Controls.Primitives.TextBoxBase && preview.ShowsSingleImage) { SetHold(true); e.Handled = true; } };
         PreviewKeyUp += (_, e) => { if (CompareControls.IsHoldKey(e.Key) && preview.HoldBefore) { SetHold(false); e.Handled = true; } };

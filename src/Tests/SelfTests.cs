@@ -109,12 +109,14 @@ public static class SelfTests
         NewDocumentDialogTests.Run(Test, directory);
         ParameterSliderTests.Run(Test);
         ParameterDialogTests.Run(Test);
+        DialogLayoutTests.Run(Test, directory);
         TextEditorDialogTests.Run(Test);
         MainWindow.RunTextPropertiesTests(Test, directory);
         ColorPaletteTests.Run(Test);
         ColorShadePaletteTests.Run(Test);
         BrushTipTests.Run(Test, directory);
         MainWindow.RunBrushTipIntegrationTests(Test);
+        MainWindow.RunBrushTipPlaceholderTests(Test);
         PhotoDevelopTests.Run(Test, directory);
         BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);

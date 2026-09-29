@@ -19,7 +19,9 @@ public sealed partial class MainWindow
         void Capture(Window window, string name, int width, int height)
         {
             var content = (FrameworkElement)window.Content; var size = new Size(width, height);
-            if (content is System.Windows.Controls.Panel panel && panel.Background == null) panel.Background = window.Background;
+            // Dialogs are captured on their window background so the root margin (inner padding) shows.
+            if (!ReferenceEquals(window, this)) content = OffscreenPreview.Host(window);
+            else if (content is System.Windows.Controls.Panel panel && panel.Background == null) panel.Background = window.Background;
             if (ReferenceEquals(window, this)) studioScroll.Height = PreferredStudioHeight(height);
             content.Measure(size); content.Arrange(new Rect(size)); content.UpdateLayout();
             if (ReferenceEquals(window, this)) { canvas.Fit(); canvas.InvalidateVisual(); content.UpdateLayout(); }

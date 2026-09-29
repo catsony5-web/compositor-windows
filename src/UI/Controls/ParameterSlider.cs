@@ -35,7 +35,8 @@ public sealed class ParameterSlider : StackPanel
         if (showStepControls)
         {
             // The movement unit sits beside the value; its purpose is carried by the tooltip and accessible name.
-            steps = new ComboBox { MinHeight = 26, Width = 68, Padding = new Thickness(7, 2, 4, 2), FontSize = Theme.CaptionSize, Margin = new Thickness(4, 0, 4, 0), ToolTip = "이동 간격 · 슬라이더와 방향키가 움직이는 단위" };
+            // MinWidth keeps the numeric steps aligned; a longer translated "기본"/"연속" widens the box instead of being cut.
+            steps = new ComboBox { MinHeight = 26, MinWidth = 68, Padding = new Thickness(7, 2, 4, 2), FontSize = Theme.CaptionSize, Margin = new Thickness(4, 0, 4, 0), ToolTip = "이동 간격 · 슬라이더와 방향키가 움직이는 단위" };
             AutomationProperties.SetName(steps, label + " 이동 간격");
             steps.Items.Add(new ComboBoxItem { Content = minimumStep > 0 ? "기본" : "연속", Tag = 0d });
             foreach (double step in new[] { .01, .1, 1d, 5d }.Where(step => step <= max - min && step >= minimumStep))
