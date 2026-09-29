@@ -299,7 +299,7 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 5 && capabilities["commands"]!.AsArray().Count == 33,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 6 && capabilities["commands"]!.AsArray().Count == 33,
                 "Running editor did not advertise its command contract");
             Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
                 "Supported 2D mapping must remain distinct from unsupported 3D operations");
@@ -684,6 +684,40 @@ public sealed partial class MainWindow
             int composite = window.doc.Layers.Count;
             Success(Call(window, "open_document", new JsonObject { ["path"] = psd, ["separateLayers"] = true }));
             Check(composite == 1 && window.doc.Layers.Count == 2 && window.doc.Layers.Any(l => l.Name == "위"), "separateLayers must import each PSD layer");
+        });
+        Case("apply_batch steps refer to objects created earlier in the same batch with @ref", window =>
+        {
+            New(window, "참조 묶음", 100, 80);
+            JsonObject Step(string command, JsonObject arguments, string? reference = null)
+            { var step = new JsonObject { ["command"] = command, ["arguments"] = arguments }; if (reference != null) step["ref"] = reference; return step; }
+            var steps = new JsonArray(
+                Step("add_artboard", new JsonObject { ["name"] = "표지", ["x"] = 0, ["y"] = 0, ["width"] = 50, ["height"] = 40 }, "cover"),
+                Step("update_artboard", new JsonObject { ["artboardId"] = "@cover", ["name"] = "앞표지" }),
+                Step("add_text", new JsonObject { ["text"] = "제목", ["x"] = 4, ["y"] = 4 }, "title"),
+                Step("set_layer", new JsonObject { ["layerId"] = "@title", ["opacity"] = .5 }),
+                Step("add_shape", new JsonObject { ["shape"] = "rectangle", ["width"] = 10, ["height"] = 10 }, "box"),
+                Step("reorder_layer", new JsonObject { ["layerId"] = "@box", ["direction"] = "down" }));
+            var dry = Success(Call(window, "apply_batch", Write(window, ("operationId", Guid.NewGuid().ToString()), ("dryRun", true), ("steps", steps.DeepClone()))));
+            Check(dry["steps"]!.AsArray().All(r => r!["layerId"] == null && r["artboardId"] == null) && !window.doc.Layers.Any(l => l.Text != null), "Dry run with refs must not edit or leak ids");
+            var applied = Success(Call(window, "apply_batch", Write(window, ("operationId", Guid.NewGuid().ToString()), ("steps", steps))));
+            var title = window.doc.Layers.Single(l => l.Text != null);
+            Check(Math.Abs(title.Opacity - .5) < 1e-9 && applied["steps"]!.AsArray()[2]!["ref"]!.GetValue<string>() == "title", "@title must reach set_layer");
+            Check(DocumentState(State(window))["artboards"]!.AsArray().Any(b => b!["name"]!.GetValue<string>() == "앞표지"), "@cover must reach update_artboard");
+            Success(Call(window, "undo", Write(window)));
+            Check(!window.doc.Layers.Any(l => l.Text != null), "Referenced batch must still be one undo step");
+            foreach (var (bad, why) in new[]
+            {
+                (new JsonArray(Step("set_layer", new JsonObject { ["layerId"] = "@missing", ["opacity"] = .5 })), "unknown ref"),
+                (new JsonArray(Step("add_text", new JsonObject { ["text"] = "a" }, "x"), Step("add_text", new JsonObject { ["text"] = "b" }, "x")), "duplicate ref"),
+                (new JsonArray(Step("add_text", new JsonObject { ["text"] = "a" }, "1bad")), "invalid ref name"),
+                (new JsonArray(Step("add_text", new JsonObject { ["text"] = "a" }, "t"), Step("update_text", new JsonObject { ["layerId"] = "@t", ["text"] = "@t" })), "ref in a non-ID field is only text")
+            })
+            {
+                var response = Call(window, "apply_batch", Write(window, ("operationId", Guid.NewGuid().ToString()), ("steps", bad)));
+                if (why.StartsWith("ref in a non-ID")) { Success(response); Check(window.doc.Layers.Any(l => l.Text?.Content == "@t"), "Plain text starting with @ must stay text"); Success(Call(window, "undo", Write(window))); continue; }
+                Check(Text(FailureError(response), "code") == "invalid_arguments", "Expected invalid_arguments for " + why);
+            }
+            Check(!window.doc.Layers.Any(l => l.Text != null), "Rejected batches must not edit the document");
         });
     }
 }

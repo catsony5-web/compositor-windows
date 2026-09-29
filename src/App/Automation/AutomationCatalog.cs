@@ -10,6 +10,19 @@ public static partial class AutomationCatalog
     sealed record Field(string Type, string Description, double? Minimum = null, double? Maximum = null,
         int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null)
     {
+        /// <summary>Inside apply_batch an ID field may also name an earlier step's ref as "@name".</summary>
+        public JsonObject BatchSchema()
+        {
+            var schema = Schema();
+            if (!GuidValue) return schema;
+            schema.Remove("maxLength"); schema.Remove("minLength");
+            return new JsonObject
+            {
+                ["description"] = Description + " In apply_batch, \"@name\" refers to the object created or targeted by an earlier step with that ref.",
+                ["anyOf"] = new JsonArray(schema, new JsonObject { ["type"] = "string", ["pattern"] = BatchRefPattern })
+            };
+        }
+
         public JsonObject Schema()
         {
             if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
