@@ -109,6 +109,7 @@ public static class SelfTests
         BrushTipTests.Run(Test, directory);
         MainWindow.RunBrushTipIntegrationTests(Test);
         PhotoDevelopTests.Run(Test, directory);
+        BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
