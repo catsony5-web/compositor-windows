@@ -6,22 +6,38 @@ namespace Compositor.Windows;
 
 // Re-applies the import-time line cleanup (DrawingCleanup weights and tones by layer role)
 // to drawings already in a document, e.g. one imported without cleanup. The role comes from
-// the CAD layer name kept on the layer: its CAD-layer folder (object imports), its source
-// name, then its own name (layer imports). Layers without a recognized role, locked layers
-// and PDF sources are left untouched. Hatch materials cannot be rebuilt here because the
-// hatch regions are not retained after import; material layers can only be shown or hidden.
+// the CAD layer name kept on the layer: the nearest CAD-layer folder (object imports, also
+// after objects were grouped inside it), otherwise its own name (layer imports), resolved
+// like the import: the user's remembered role choices first, then the automatic guess.
+// Layers without a recognized role, locked layers and PDF sources are left untouched. Hatch
+// materials cannot be rebuilt here because the hatch regions are not retained after import;
+// material layers can only be shown or hidden.
 public static class DrawingLineCleanup
 {
     public sealed record Result(int Restyled, int Unchanged, int Unknown, int Locked, IReadOnlyDictionary<DrawingRole, int> Roles);
 
-    public static DrawingRole RoleOf(Document doc, Layer layer, IReadOnlyDictionary<Guid, Layer>? index = null)
+    // Import cleanup (CadCompatibility.ApplyCleanup) names its hatch regions "해치 · …"; materials
+    // the user fills selections with ("선택 영역") or maps by hand are not import hatches.
+    const string HatchRegionPrefix = "해치 · ";
+    public static bool IsHatchMaterial(Layer layer) => layer.Kind == LayerKind.Material && layer.Material?.RegionName.StartsWith(HatchRegionPrefix, StringComparison.Ordinal) == true;
+
+    // The CAD layer a layer was drawn on. Object layers take it from the nearest folder that keeps
+    // one and never from their generated names ('문자 7', '해치 5'), which import cleanup ignores too.
+    // A folder's own name is the document name for layer imports, so only its source name counts.
+    static string? CadLayerName(Layer layer, IReadOnlyDictionary<Guid, Layer> index)
+    {
+        if (!string.IsNullOrWhiteSpace(layer.SourceLayerName)) return layer.SourceLayerName;
+        var parent = layer.ParentId;
+        for (int depth = 0; parent is { } id && depth < 64 && index.TryGetValue(id, out var ancestor); depth++, parent = ancestor.ParentId)
+            if (!string.IsNullOrWhiteSpace(ancestor.SourceLayerName)) return ancestor.SourceLayerName;
+        return layer.Kind == LayerKind.Group || string.IsNullOrWhiteSpace(layer.Name) ? null : layer.Name;
+    }
+
+    /// <param name="roles">Roles the user chose in the import dialog, by CAD layer name (ImportSettings.CadRoles).</param>
+    public static DrawingRole RoleOf(Document doc, Layer layer, IReadOnlyDictionary<Guid, Layer>? index = null, IReadOnlyDictionary<string, DrawingRole>? roles = null)
     {
         index ??= doc.Layers.ToDictionary(l => l.Id);
-        var parent = layer.ParentId is { } id && index.TryGetValue(id, out var found) ? found : null;
-        // A folder's own name is the document name for layer imports, so only its source name counts.
-        foreach (var name in new[] { parent?.SourceLayerName, layer.SourceLayerName, layer.Kind == LayerKind.Group ? null : layer.Name })
-            if (!string.IsNullOrWhiteSpace(name) && DrawingCleanup.Classify(name) is var role && role != DrawingRole.Other) return role;
-        return DrawingRole.Other;
+        return CadLayerName(layer, index) is { } name ? new CadCleanup(Roles: roles).RoleFor(name) : DrawingRole.Other;
     }
 
     // Vector path layers inside the scope (selected layers and their descendants); an empty
@@ -43,7 +59,9 @@ public static class DrawingLineCleanup
         return scoped.Length > 0 ? scoped : paths;
     }
 
-    public static Result Apply(Document doc, IReadOnlyCollection<Guid>? scope = null)
+    // Runs off the UI thread (an STA, like import): progress reports (done, total) candidates.
+    public static Result Apply(Document doc, IReadOnlyCollection<Guid>? scope = null, IReadOnlyDictionary<string, DrawingRole>? roles = null,
+        IProgress<(int Done, int Total)>? progress = null, CancellationToken token = default)
     {
         var index = doc.Layers.ToDictionary(l => l.Id);
         bool Locked(Layer layer)
@@ -56,18 +74,21 @@ public static class DrawingLineCleanup
             }
             return false;
         }
-        int restyled = 0, unchanged = 0, unknown = 0, locked = 0; var roles = new Dictionary<DrawingRole, int>();
-        foreach (var layer in Candidates(doc, scope))
+        int restyled = 0, unchanged = 0, unknown = 0, locked = 0, done = 0; var counts = new Dictionary<DrawingRole, int>();
+        var candidates = Candidates(doc, scope);
+        foreach (var layer in candidates)
         {
-            var role = RoleOf(doc, layer, index);
+            token.ThrowIfCancellationRequested();
+            if (++done % 256 == 0) progress?.Report((done, candidates.Length));
+            var role = RoleOf(doc, layer, index, roles);
             if (role == DrawingRole.Other) { unknown++; continue; }
             if (Locked(layer)) { locked++; continue; }
             if (Restyle(layer.Vector!, role) is not { } vector) { unchanged++; continue; }
             layer.Vector = vector;
             layer.Pixels = Rasterize(vector, layer.Pixels.Width, layer.Pixels.Height);
-            restyled++; roles[role] = roles.GetValueOrDefault(role) + 1;
+            restyled++; counts[role] = counts.GetValueOrDefault(role) + 1;
         }
-        return new(restyled, unchanged, unknown, locked, roles);
+        return new(restyled, unchanged, unknown, locked, counts);
     }
 
     // Same weight and tone as the import cleanup gives the role (DrawingCleanup), alpha kept.
@@ -100,12 +121,12 @@ public static class DrawingLineCleanup
 
     // Top-most drawing layers with the role: CAD-layer folders (by their source name) and
     // vector layers, so hiding one hides its objects once.
-    public static Guid[] RoleLayers(Document doc, DrawingRole role)
+    public static Guid[] RoleLayers(Document doc, DrawingRole role, IReadOnlyDictionary<string, DrawingRole>? roles = null)
     {
-        var index = doc.Layers.ToDictionary(l => l.Id); var categories = DrawingLayers.Categories(doc);
+        var index = doc.Layers.ToDictionary(l => l.Id); var categories = DrawingLayers.Categories(doc); var cleanup = new CadCleanup(Roles: roles);
         bool Match(Layer layer) => categories.GetValueOrDefault(layer.Id) == LayerCategory.Drawing && (layer.Kind == LayerKind.Group
-            ? layer.SourceLayerName is { } source && DrawingCleanup.Classify(source) == role
-            : layer.Kind == LayerKind.Vector && RoleOf(doc, layer, index) == role);
+            ? !string.IsNullOrWhiteSpace(layer.SourceLayerName) && cleanup.RoleFor(layer.SourceLayerName) == role
+            : layer.Kind == LayerKind.Vector && RoleOf(doc, layer, index, roles) == role);
         var matches = doc.Layers.Where(Match).Select(l => l.Id).ToHashSet();
         bool UnderMatch(Layer layer)
         {
