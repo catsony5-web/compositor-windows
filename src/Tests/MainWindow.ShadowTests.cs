@@ -97,6 +97,55 @@ public sealed partial class MainWindow
             finally { w.StopRenderingForShutdown(); }
         });
 
+        test("UI shadow: duplicating a source with its shadow links the copied shadow to the copy", () =>
+        {
+            var w = Open(Board());
+            try
+            {
+                var figure = w.doc.Active!;
+                var shadow = w.CreateShadow(ShadowSpec.Default(ShadowProjection.Drop) with { Angle = 0, Softness = 0, Sources = [figure.Id] })!;
+                w.selectedLayers.Clear(); w.selectedLayers.UnionWith([figure.Id, shadow.Id]); w.doc.ActiveId = figure.Id;
+                w.Duplicate();
+                var copies = w.selectedLayers.Select(id => w.doc.Layers.Single(l => l.Id == id)).ToArray();
+                var copyFigure = copies.Single(l => l.Shadow == null); var copyShadow = copies.Single(l => l.Shadow != null);
+                Check(copyShadow.Shadow!.Sources.SequenceEqual([copyFigure.Id]), "The copied shadow still points at the original source");
+                Check(w.doc.Layers.Single(l => l.Id == shadow.Id).Shadow!.Sources.SequenceEqual([figure.Id]), "The original shadow lost its source");
+                copyFigure.X += 40; double before = copyShadow.X;
+                w.doc.ActiveId = copyShadow.Id; w.RegenerateShadow();
+                Check(Math.Abs(w.doc.Layers.Single(l => l.Id == copyShadow.Id).X - before - 40) <= 1, "The copied shadow did not follow the copied source");
+                // Duplicating only a shadow keeps it tied to the original source.
+                w.selectedLayers.Clear(); w.selectedLayers.Add(shadow.Id); w.doc.ActiveId = shadow.Id; w.Duplicate();
+                Check(w.doc.Active!.Id != shadow.Id && w.doc.Active!.Shadow!.Sources.SequenceEqual([figure.Id]), "A lone duplicated shadow lost its source");
+                // A duplicated group keeps the copied shadow inside the copy.
+                var group = DocumentFeatures.CreateGroup(w.doc, "무리"); w.doc.Add(group);
+                var person = new Layer { Name = "안", Pixels = Raster.Solid(10, 20, Colors.Black), X = 20, Y = 20, ParentId = group.Id }; w.doc.Add(person);
+                ShadowRenderer.Insert(w.doc, ShadowSpec.Default(ShadowProjection.Drop) with { Sources = [person.Id] });
+                w.selectedLayers.Clear(); w.selectedLayers.Add(group.Id); w.doc.ActiveId = group.Id; w.Duplicate();
+                var copyGroup = w.doc.Active!;
+                var copyInner = w.doc.Layers.Single(l => l.ParentId == copyGroup.Id && l.Shadow != null);
+                var copyPerson = w.doc.Layers.Single(l => l.ParentId == copyGroup.Id && l.Shadow == null);
+                Check(copyGroup.Id != group.Id && copyInner.Shadow!.Sources.SequenceEqual([copyPerson.Id]), "The shadow in a duplicated group points at the original group's layer");
+                w.doc.ActiveId = copyInner.Id; w.RegenerateShadow();
+                Check(w.doc.Layers.Single(l => l.Id == copyInner.Id).ParentId == copyGroup.Id && w.doc.Layers.Count(l => l.ParentId == group.Id && l.Shadow != null) == 1,
+                    "Regenerating the copied shadow moved it into the original group");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("UI shadow: a shadow copied to another document keeps its settings only where its sources exist", () =>
+        {
+            var source = Board(); var figure = source.Layers[1];
+            var shadow = ShadowRenderer.Insert(source, ShadowSpec.Default(ShadowProjection.Drop) with { Sources = [figure.Id] });
+            var other = Board();
+            var copy = CopyForDocument(shadow, other);
+            Check(copy.Shadow == null && copy.Id != shadow.Id && copy.ParentId == null && copy.Pixels.Data.SequenceEqual(shadow.Pixels.Data), "A copied shadow kept settings whose sources are not in the target");
+            other.Add(copy); Check(ShadowRenderer.ResolveSources(other, [copy.Id]).SequenceEqual([copy.Id]), "The pasted layer cannot cast a shadow of its own");
+            // The same document opened twice has the same layers: the settings stay usable there.
+            var twin = source.Snapshot(); var kept = CopyForDocument(shadow, twin);
+            Check(kept.Shadow == shadow.Shadow, "A copy into a document with the sources lost its settings");
+            Check(shadow.Shadow != null, "Copying changed the original shadow");
+        });
+
         test("UI shadow: the dialog previews both styles and all projections without touching the document", () =>
         {
             var document = Board(); var figure = document.Layers[1];

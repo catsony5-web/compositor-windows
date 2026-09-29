@@ -247,8 +247,15 @@ public sealed partial class MainWindow
         if (HasTransformedParent(l)) { status.Text = "변형된 그룹의 레이어는 먼저 선택 픽셀을 새 레이어로 추출한 뒤 복사하세요."; return; }
         var f = Dialogs.Fields(this, "다른 문서에 레이어 복사", (string.Join("\n", tabs.Select((t, i) => $"{i + 1}: {t.Document.Name}")), "1"));
         if (f == null) return; int index = (int)Dialogs.Number(f[0], 1, tabs.Count) - 1;
-        var copy = l.Snapshot(); copy.Id = Guid.NewGuid(); copy.ParentId = null; copy.Clipped = false;
-        SwitchTab(index); Edit("다른 문서의 레이어 추가", () => doc.Add(copy));
+        SwitchTab(index); Edit("다른 문서의 레이어 추가", () => doc.Add(CopyForDocument(l, doc)));
+    }
+    // A top-level copy of a layer for another document. A shadow's settings stay only when every
+    // source is in the target; otherwise the copy is a plain image that can cast its own shadow.
+    internal static Layer CopyForDocument(Layer layer, Document target)
+    {
+        var copy = layer.Snapshot(); copy.Id = Guid.NewGuid(); copy.ParentId = null; copy.Clipped = false;
+        if (copy.Shadow is { } spec && !spec.Sources.All(id => target.Layers.Any(l => l.Id == id))) copy.Shadow = null;
+        return copy;
     }
     void ShowAdjustment(AdjustmentKind kind)
     {

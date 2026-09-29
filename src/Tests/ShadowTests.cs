@@ -220,5 +220,70 @@ public static class ShadowTests
             bool stopped = false; try { ShadowRenderer.Cast(silhouette, spec with { Sources = [source.Id] }, canceled.Token); } catch (OperationCanceledException) { stopped = true; }
             Check(stopped, "A canceled shadow kept working");
         });
+
+        static bool SamePixels(Layer a, Layer b) => a.X == b.X && a.Y == b.Y && a.Pixels.Width == b.Pixels.Width && a.Pixels.Height == b.Pixels.Height && a.Pixels.Data.SequenceEqual(b.Pixels.Data);
+
+        test("a group's shadow ignores shadow layers inside the group", () =>
+        {
+            var groupSpec = new ShadowSpec { Projection = ShadowProjection.Plan, Angle = 45, Elevation = 30, Height = 60, Softness = 8, Opacity = 1 };
+            (Document Doc, Layer Group, Layer Building) Scene(bool childShadow)
+            {
+                var doc = Board(); var group = DocumentFeatures.CreateGroup(doc, "건물"); doc.Add(group);
+                var a = Block(30, 30, 60, 60, "가"); a.ParentId = group.Id; doc.Add(a);
+                var b = Block(30, 30, 160, 60, "나"); b.ParentId = group.Id; doc.Add(b);
+                if (childShadow) ShadowRenderer.Insert(doc, new ShadowSpec { Projection = ShadowProjection.Plan, Angle = 0, Elevation = 20, Height = 60, Softness = 0, Opacity = 1, Sources = [b.Id] });
+                return (doc, group, b);
+            }
+            var plain = Scene(false); var nested = Scene(true);
+            Check(nested.Doc.Layers.Any(l => l.Shadow != null && l.ParentId == nested.Group.Id), "The child shadow was not placed inside the group");
+            var expected = ShadowRenderer.Create(plain.Doc, groupSpec with { Sources = [plain.Group.Id] });
+            var actual = ShadowRenderer.Create(nested.Doc, groupSpec with { Sources = [nested.Group.Id] });
+            Check(SamePixels(expected, actual), "A shadow inside the group cast a shadow of its own");
+            // A group's shadow dragged into the group does not take in its own pixels on regeneration.
+            var own = ShadowRenderer.Insert(nested.Doc, groupSpec with { Sources = [nested.Group.Id] });
+            nested.Doc.Layers.Remove(own); own.ParentId = nested.Group.Id; nested.Doc.Layers.Insert(nested.Doc.Layers.IndexOf(nested.Group) + 1, own); nested.Doc.Validate();
+            ShadowRenderer.Regenerate(nested.Doc, own.Id); ShadowRenderer.Regenerate(nested.Doc, own.Id);
+            Check(SamePixels(expected, own), "Regenerating a group's shadow inside the group grew the shadow");
+        });
+
+        test("clipped sources cast the shadow of their clipped, visible shape", () =>
+        {
+            var doc = Board(); var person = Block(20, 60, 100, 100, "사람"); doc.Add(person);
+            // A wide texture clipped to the person: only its top 20 rows are visible, on the person.
+            var texture = Block(120, 30, 60, 90, "무늬"); texture.Clipped = true; doc.Add(texture);
+            var spec = new ShadowSpec { Projection = ShadowProjection.Drop, Style = ShadowStyle.Shape, Angle = 0, Distance = 30, Opacity = 1 };
+            var alone = ShadowRenderer.Create(doc, spec with { Sources = [texture.Id] });
+            Check(alone.X == 130 && alone.Y == 100 && alone.Pixels.Width == 20 && alone.Pixels.Height == 20, $"A clipped layer cast its unclipped shape ({alone.X}, {alone.Y}, {alone.Pixels.Width} × {alone.Pixels.Height})");
+            var both = ShadowRenderer.Create(doc, spec with { Sources = [person.Id, texture.Id] });
+            var personOnly = ShadowRenderer.Create(doc, spec with { Sources = [person.Id] });
+            Check(both.X == 130 && both.Y == 100 && both.Pixels.Width == 20 && both.Pixels.Height == 60 && SamePixels(both, personOnly), "A clipping run did not cast its base's shape");
+            var ground = spec with { Projection = ShadowProjection.Ground, Angle = 330, Elevation = 45 };
+            Check(SamePixels(ShadowRenderer.Create(doc, ground with { Sources = [person.Id, texture.Id] }), ShadowRenderer.Create(doc, ground with { Sources = [person.Id] })),
+                "A clipped layer cast its own ground shadow beside its base's");
+        });
+
+        test("shadows in a placed drawing folder reach past the folder's page but stay on the canvas", () =>
+        {
+            var doc = Board(800, 600);
+            // A drawing placed into a board: its folder is offset and scaled, its page surface is 400 × 300.
+            var folder = new Layer { Name = "도면", Kind = LayerKind.Group, Category = LayerCategory.Drawing, Pixels = new Raster(400, 300), X = 100, Y = 100, Scale = .5 };
+            doc.Add(folder);
+            var near = Block(20, 20, 370, 100, "가"); near.ParentId = folder.Id; doc.Add(near);
+            var moved = Block(20, 20, 600, 100, "나"); moved.ParentId = folder.Id; doc.Add(moved);
+            var edge = Block(20, 20, 1370, 100, "다"); edge.ParentId = folder.Id; doc.Add(edge);
+            var spec = new ShadowSpec { Projection = ShadowProjection.Drop, Style = ShadowStyle.Shape, Angle = 0, Distance = 60, Opacity = 1 };
+            var shadow = ShadowRenderer.Create(doc, spec with { Sources = [near.Id] });
+            Check(shadow.ParentId == folder.Id && shadow.X == 430 && shadow.Pixels.Width == 20 && shadow.Pixels.Height == 20, $"The shadow was cut at the folder's page ({shadow.X}, {shadow.Pixels.Width} px)");
+            var outside = ShadowRenderer.Create(doc, spec with { Sources = [moved.Id] });
+            Check(outside.X == 660 && outside.Pixels.Width == 20, "An object moved off the folder's page cast no shadow");
+            // The canvas (800 px wide) ends at folder x = (800 - 100) / .5 = 1400.
+            var clipped = ShadowRenderer.Create(doc, spec with { Sources = [edge.Id], Distance = 20 });
+            Check(clipped.X == 1390 && clipped.Pixels.Width == 10, $"The shadow was not limited to the canvas ({clipped.X}, {clipped.Pixels.Width} px)");
+            // An ordinary transformed group still crops its children to its own surface.
+            var group = new Layer { Name = "그룹", Kind = LayerKind.Group, Pixels = new Raster(400, 300), X = 100, Y = 100, Scale = .5 }; doc.Add(group);
+            var inside = Block(20, 20, 370, 100, "라"); inside.ParentId = group.Id; doc.Add(inside);
+            var cropped = ShadowRenderer.Create(doc, spec with { Sources = [inside.Id] });
+            Check(cropped.Pixels.Data.Where((_, i) => i % 4 == 3).All(a => a == 0), "A cropping group's shadow reached past its surface");
+        });
     }
 }
