@@ -88,8 +88,19 @@ public sealed partial class MainWindow
         var developSpec = new AdjustmentSpec { Kind = AdjustmentKind.PhotoDevelop, PhotoDevelop = new()
             { Exposure = .2, Highlights = -35, Shadows = 28, Temperature = 8, Vibrance = 20, Texture = 15 } };
         var develop = new AdjustmentDialog(null, doc, developSpec);
-        develop.SetDesignPreview(Imaging.Render(AdjustmentDialog.PreviewDocument(doc, null, developSpec, true, null)));
+        var developAfter = Imaging.Render(AdjustmentDialog.PreviewDocument(doc, null, developSpec, true, null));
+        develop.SetDesignPreview(developAfter);
         Capture(develop, "photo-develop", 1040, 760);
+        // Before/after views: split bar, side by side, and one image switched to "before" (also at the minimum width).
+        var developBefore = Imaging.Render(AdjustmentDialog.PreviewDocument(doc, null, developSpec, false, null));
+        foreach (var (mode, name, width, height) in new[] { (CompareMode.Split, "photo-develop-split", 1040, 760), (CompareMode.SideBySide, "photo-develop-side-by-side", 1040, 760),
+            (CompareMode.Toggle, "photo-develop-toggle", 1040, 760), (CompareMode.Toggle, "photo-develop-toggle-860", 860, 600) })
+        {
+            var compare = new AdjustmentDialog(null, doc, developSpec);
+            compare.SetDesignPreview(developAfter); compare.SetDesignBefore(developBefore); compare.SelectCompareMode(mode);
+            if (mode == CompareMode.Toggle) compare.ToggleCompareState();
+            Capture(compare, name, width, height); compare.Close();
+        }
         ShowStudioPage(2); Capture(this, "colors", 1480, 920);
         ShowStudioPage(3); Capture(this, "brush", 1480, 920);
         ShowStudioPage(0); Capture(this, "compact", 1200, 750);

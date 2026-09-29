@@ -68,6 +68,7 @@
 | 도구 버튼 | `StyleToolButton` | 아이콘 버튼 34px, 선택 시 Selected 바탕 + Accent 테두리 |
 | 패널 탭 | `"PanelTab"` | 글자만, 선택 시 Text SemiBold + 2px Accent 밑줄 |
 | 세그먼트 | `"SegmentButton"` + Input 트랙 | 선택 조각만 Surface로 올라옴. 레이어 분류, 사진 편집/디자인, RGB/CMYK |
+| 전후 비교 | `BeforeAfterView` + `CompareControls.ModeChoice` | 조정 미리보기 위 세그먼트(결과 · 좌우 분할 · 나란히 · 전후 전환, 16px 아이콘). 두 상태는 같은 맞춤 사각형을 써서 픽셀이 맞는다. 분할 막대는 2px Text 선 + 26px 원형 손잡이(포커스 시 Accent 링), 상태 표시는 Panel 86% 칩(모서리 5). 누르는 동안 보기는 `HoldButton` |
 | 입력칸·콤보 | `TextBox`, `ComboBox` 기본 스타일 | Input 바탕 + Stroke 외곽선, 포커스 시 Accent |
 | 체크박스 | `CheckBox` 기본 스타일 | 16px, 선택 시 Primary 바탕 + 흰 체크 |
 | 슬라이더 | `Slider`, `"SpectrumSlider"` | 4px 트랙, Accent 채움, 14px 밝은 손잡이와 호버 후광 |
