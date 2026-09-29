@@ -23,6 +23,8 @@ public sealed partial class MainWindow
         public Vector Pan;
         public Guid ArtboardId;
         public List<(bool Vertical, double Position)> Guides = [];
+        /// <summary>The layer panel selection when the tab was left; null until the tab is first left.</summary>
+        public Guid[]? LayerSelection;
     }
     readonly List<WorkspaceTab> tabs = [];
     readonly StackPanel tabsBar = new() { Orientation = Orientation.Horizontal };
@@ -59,6 +61,7 @@ public sealed partial class MainWindow
         tab.Selection = selection; tab.Zoom = canvas.Zoom; tab.Pan = canvas.Pan;
         tab.Guides = canvas.Guides.ToList();
         tab.ArtboardId = selectedArtboard;
+        tab.LayerSelection = selectedLayers.ToArray();
     }
     void AddTab(Document document, string? path)
     {
@@ -74,7 +77,11 @@ public sealed partial class MainWindow
         jobCts?.Cancel(); renderCts?.Cancel(); activeTab = index;
         var tab = tabs[index]; doc = tab.Document; history = tab.History; projectPath = tab.Path; selection = tab.Selection;
         selectedArtboard = tab.ArtboardId; sourceLayerSelection = null;
-        selectedLayers.Clear(); if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
+        // Returning to a tab restores its layer selection as it was, so a switch does not turn the
+        // active layer alone into an explicit selection (e.g. for 선 정리 다시 적용's scope).
+        selectedLayers.Clear();
+        if (tab.LayerSelection is { } saved) { var present = doc.Layers.Select(l => l.Id).ToHashSet(); selectedLayers.UnionWith(saved.Where(present.Contains)); }
+        else if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
         maskEditing = false; canvas.Document = doc; canvas.Composite = null; composite = null;
         canvas.Guides.Clear(); canvas.Guides.AddRange(tab.Guides);
         canvas.Zoom = tab.Zoom > 0 ? tab.Zoom : .65; canvas.Pan = tab.Pan; Refresh();

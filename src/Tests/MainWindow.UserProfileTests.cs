@@ -337,6 +337,30 @@ public sealed partial class MainWindow
             }
         });
 
+        test("선 정리 다시 적용 after switching tabs still restyles the whole placed drawing", () =>
+        {
+            string file = Plan("탭 전환 평면.dxf", false);
+            var plain = Import(file, CadImportStructure.Objects, null);
+            var cleaned = Import(file, CadImportStructure.Objects, new CadCleanup(Hatches: HatchTreatment.Keep));
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(NewDocumentDialog.CreateDocument("보드", "900", "700", 1), null);
+                var candidate = w.doc.Snapshot();
+                CompatibilityImport.Place(candidate, plain.Snapshot(), false, w.doc.Width, w.doc.Height);
+                w.Edit("이미지 가져오기", () => { w.doc = candidate; });
+                w.AddTab(NewDocumentDialog.CreateDocument("다른 보드", "100", "100", 1), null);
+                w.SwitchTab(0);
+                // Returning to the tab restores its layer selection; the last placed object stays implicit.
+                Check(!w.selectedLayers.Contains(w.doc.ActiveId), "A tab switch turned the active layer into an explicit selection");
+                Reapply(w);
+                foreach (var layer in new[] { "A-WALL", "A-FURN", "A-ANNO-DIMS" })
+                    Check(Same(w.doc, cleaned, layer), $"{layer} was not cleaned after a tab switch; only the restored active layer was the scope");
+                Settle(w);
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
         test("해치 재질 표시 전환 hides import hatch materials only, not materials applied to selections", () =>
         {
             string file = Plan("재질 평면 표시.dxf", true);
