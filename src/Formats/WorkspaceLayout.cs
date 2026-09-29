@@ -25,6 +25,8 @@ public sealed class WorkspaceLayout
     public string[]? RecentColors { get; init; }
     /// <summary>Sections that start folded (the tone grid) but the user opened.</summary>
     public string[]? OpenedSections { get; init; }
+    /// <summary>사용 목적 (UserProfiles id) the user chose; null until one is chosen.</summary>
+    public string? Profile { get; init; }
 }
 
 public sealed record WindowBounds(double Left, double Top, double Width, double Height, bool Maximized);
@@ -89,7 +91,8 @@ public static class WorkspaceLayoutStore
             RibbonFavorites = layout.RibbonFavorites?.Where(f => f is { Length: > 5 and <= 200 } && f.StartsWith("menu:", StringComparison.Ordinal)).Distinct().Take(64).ToArray(),
             RecentColors = layout.RecentColors?.Where(c => c is { Length: 9 } && c[0] == '#' && uint.TryParse(c.AsSpan(1), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out _))
                 .Select(c => c.ToUpperInvariant()).Distinct().Take(ColorPalettePanel.RecentLimit).ToArray(),
-            OpenedSections = layout.OpenedSections?.Where(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 80).Distinct().Take(64).ToArray()
+            OpenedSections = layout.OpenedSections?.Where(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 80).Distinct().Take(64).ToArray(),
+            Profile = UserProfiles.Find(layout.Profile)?.Id
         };
     }
 }

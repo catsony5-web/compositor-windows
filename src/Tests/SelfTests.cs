@@ -87,6 +87,7 @@ public static class SelfTests
         MainWindow.RunStudioTests(Test);
         MainWindow.RunStudioUiTests(Test, directory);
         MainWindow.RunWorkspaceLayoutTests(Test, directory);
+        MainWindow.RunUserProfileTests(Test, directory);
         MainWindow.RunCommandPaletteTests(Test, directory);
         MainWindow.RunPropertyPanelTests(Test, directory);
         MainWindow.RunQuickActionTests(Test, directory);

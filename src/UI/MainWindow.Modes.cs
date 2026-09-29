@@ -35,8 +35,8 @@ public sealed partial class MainWindow
         // Clear the old grids first: live tool buttons have exactly one WPF parent.
         foreach (var grid in workspaceTools.Children.OfType<UniformGrid>()) grid.Children.Clear();
         workspaceTools.Children.Clear();
-        photoToolOrder = WorkspaceToolGroups(false).SelectMany(group => group.Tools).ToArray();
-        foreach (var group in WorkspaceToolGroups(designWorkspace))
+        photoToolOrder = CurrentToolGroups(false).SelectMany(group => group.Tools).ToArray();
+        foreach (var group in CurrentToolGroups(designWorkspace))
         {
             if (workspaceTools.Children.Count > 0) workspaceTools.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(8, 5, 8, 5) });
             var grid = new UniformGrid { Columns = 2 };
