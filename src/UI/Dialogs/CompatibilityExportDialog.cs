@@ -111,6 +111,28 @@ internal sealed class CompatibilityExportDialog : Window
         close.Content = busy ? "저장 취소" : "닫기";
     }
 
+    /// <summary>
+    /// Writes the export off the UI thread and replaces <paramref name="path"/> atomically. A cancel
+    /// seen before the replacement leaves the file unchanged (OperationCanceledException); once the
+    /// file has been replaced the save is complete even if cancel was pressed meanwhile, so the
+    /// dialog never reports an unchanged file that was in fact overwritten.
+    /// </summary>
+    internal static async Task WriteFileAsync(string path, Action<Stream> write, CancellationToken token, Action<string, Action<Stream>>? replace = null)
+    {
+        replace ??= ProjectStore.AtomicWrite;
+        bool replaced = false;
+        try
+        {
+            await CompatibilityImport.OnSta(() =>
+            {
+                // The last cancel check is inside the write, before the temporary file is moved over the destination.
+                replace(path, stream => { write(stream); token.ThrowIfCancellationRequested(); });
+                replaced = true; return true;
+            }, token);
+        }
+        catch (OperationCanceledException) when (replaced) { }
+    }
+
     async Task SaveAsync()
     {
         if (saving != null || report.Problem != null) return;
@@ -134,7 +156,7 @@ internal sealed class CompatibilityExportDialog : Window
         bool completed = false;
         try
         {
-            await CompatibilityImport.OnSta(() => { ProjectStore.AtomicWrite(path, stream => CompatibilityExport.Write(snapshot, format, stream, keepVectors, Progress, token)); return true; }, token);
+            await WriteFileAsync(path, stream => CompatibilityExport.Write(snapshot, format, stream, keepVectors, Progress, token), token);
             completed = true;
         }
         catch (OperationCanceledException) { Say("저장을 취소했습니다. 파일은 바뀌지 않았습니다."); }

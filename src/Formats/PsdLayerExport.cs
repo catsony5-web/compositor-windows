@@ -180,7 +180,7 @@ internal static class PsdLayerExport
         long recordsAt = output.Position; buffer.WriteTo(output);
 
         int total = records.Count(r => r.Kind == RecordKind.Layer), done = 0;
-        var rowScratch = new byte[document.Width]; var packScratch = new byte[document.Width + document.Width / 128 + 4];
+        var rowScratch = new byte[document.Width]; var packScratch = new byte[PackBound(document.Width)];
         void Patch(long at, Action write) { long end = output.Position; output.Position = at; write(); output.Position = end; }
         foreach (var (node, kind) in records)
         {
@@ -312,16 +312,27 @@ internal static class PsdLayerExport
         long end = w.Position; w.Position = tableAt; foreach (var count in counts) w.U16(count); w.Position = end;
     }
 
-    /// <summary>PackBits: runs of two or more equal bytes are repeated, everything else is literal.</summary>
+    /// <summary>Largest PackBits output for <paramref name="length"/> input bytes (one header per 128 literal bytes).</summary>
+    internal static int PackBound(int length) => length + (length + 127) / 128;
+
+    /// <summary>
+    /// PackBits: runs of three or more equal bytes are repeated; shorter repeats stay inside the
+    /// literal around them. A run packet then always saves at least one byte, so a row never grows
+    /// beyond <see cref="PackBound"/> even for noisy photo channels full of isolated equal pairs.
+    /// </summary>
     internal static int Pack(ReadOnlySpan<byte> source, Span<byte> destination)
     {
         int s = 0, d = 0, n = source.Length;
+        static bool RunAt(ReadOnlySpan<byte> row, int i) => i + 2 < row.Length && row[i] == row[i + 1] && row[i] == row[i + 2];
         while (s < n)
         {
-            int run = 1; while (s + run < n && run < 128 && source[s + run] == source[s]) run++;
-            if (run >= 2) { destination[d++] = unchecked((byte)(1 - run)); destination[d++] = source[s]; s += run; continue; }
+            if (RunAt(source, s))
+            {
+                int run = 3; while (s + run < n && run < 128 && source[s + run] == source[s]) run++;
+                destination[d++] = unchecked((byte)(1 - run)); destination[d++] = source[s]; s += run; continue;
+            }
             int start = s, length = 0;
-            while (s < n && length < 128 && (s + 1 >= n || source[s] != source[s + 1])) { s++; length++; }
+            while (s < n && length < 128 && !RunAt(source, s)) { s++; length++; }
             destination[d++] = (byte)(length - 1); source.Slice(start, length).CopyTo(destination[d..]); d += length;
         }
         return d;

@@ -16,9 +16,11 @@ internal sealed class PsdReader : IDisposable
         // Section divider type: 0 = layer, 1/2 = group folder (open/closed), 3 = end of a group's children.
         public int Section; public string? SectionBlend;
         public readonly List<Channel> Channels = [];
+        // Layout details only used to recognise files from earlier Morupixel versions.
+        public byte Filler; public long BlendingRanges; public readonly List<string> Keys = [];
     }
     readonly FileStream stream; readonly CancellationToken token; readonly List<string> warnings = [];
-    readonly List<Record> records = [];
+    readonly List<Record> records = []; readonly List<int> resources = [];
     int width, height, channels, mode; bool large, mergedAlpha; double dpi = 96;
     PsdReader(string path, CancellationToken token) { stream = File.OpenRead(path); this.token = token; }
     public void Dispose() => stream.Dispose();
@@ -117,6 +119,11 @@ internal sealed class PsdReader : IDisposable
                 ? DecodePlane(channel.Offset, channel.Length, record.MaskWidth, record.MaskHeight) : null;
         }
         string Name(Record record, string fallback) => string.IsNullOrWhiteSpace(record.Name) ? fallback : record.Name;
+        if (LegacyTopFirst(mergedOffset))
+        {
+            records.Reverse();
+            warnings.Add("이전 Morupixel(0.2.0 Preview 35 이하)이 저장한 레이어 PSD입니다. 그 버전의 저장 순서(위에서 아래로)에 맞춰 레이어를 쌓았습니다.");
+        }
         // Records are stored bottom-first. A divider opens a group's children; the folder record closes it.
         var open = new Stack<List<Layer>>(); var level = new List<Layer>();
         foreach (var record in records)
@@ -171,6 +178,33 @@ internal sealed class PsdReader : IDisposable
         if (folders > 0) warnings.Add($"PSD 그룹 {folders:N0}개의 이름·순서·표시·불투명도·마스크를 유지했습니다.");
         doc.Validate(); return new(doc, warnings.Distinct().ToArray());
     }
+    /// <summary>
+    /// Layered files written by Morupixel 0.2.0 Preview 35 and earlier store their records top-first,
+    /// against the format. That writer had one fixed layout, used here as its fingerprint: only the
+    /// resolution resource (today's writer adds a 1057 version resource naming Morupixel), RGB with
+    /// a transparency composite, and two or more records that each cover the whole canvas with raw
+    /// R, G, B, A channels, no mask, clipping, flags other than "hidden", blending ranges or group
+    /// markers, and only a Unicode name block, followed by a raw composite.
+    /// </summary>
+    bool LegacyTopFirst(long mergedOffset)
+    {
+        if (resources is not [1005] || mode != 3 || channels != 4 || !mergedAlpha || large || records.Count < 2) return false;
+        long plane = (long)width * height + 2;
+        foreach (var r in records)
+        {
+            if (r.Section != 0 || r.Left != 0 || r.Top != 0 || r.Width != width || r.Height != height || r.Clip || r.HasMask
+                || (r.Flags & ~2) != 0 || r.Filler != 0 || r.BlendingRanges != 0 || r.Keys is not ["luni"]
+                || r.Channels.Count != 4 || r.Channels[0].Id != 0 || r.Channels[1].Id != 1 || r.Channels[2].Id != 2 || r.Channels[3].Id != -1
+                || r.Channels.Any(c => c.Length != plane)) return false;
+        }
+        long saved = stream.Position;
+        try
+        {
+            foreach (var channel in records.SelectMany(r => r.Channels)) { stream.Position = channel.Offset; if (U16() != 0) return false; }
+            stream.Position = mergedOffset; return stream.Length - mergedOffset >= 2 && U16() == 0;
+        }
+        finally { stream.Position = saved; }
+    }
     void ReadResources()
     {
         long end = End(Length(), stream.Length);
@@ -178,7 +212,7 @@ internal sealed class PsdReader : IDisposable
         {
             token.ThrowIfCancellationRequested(); if (end - stream.Position < 12) throw new InvalidDataException("잘린 PSD 이미지 리소스입니다.");
             string signature = Tag(); if (signature is not ("8BIM" or "MeSa")) throw new InvalidDataException("PSD 이미지 리소스 서명이 올바르지 않습니다.");
-            int id = U16(); Pascal(2); long length = Length(), resourceEnd = End(length, end);
+            int id = U16(); Pascal(2); long length = Length(), resourceEnd = End(length, end); resources.Add(id);
             if (id == 1005 && length >= 16)
             {
                 double value = U32() / 65536d; int units = U16(); if (units == 2) value *= 2.54; if (value >= 1 && value <= 9600) dpi = value;
@@ -194,7 +228,7 @@ internal sealed class PsdReader : IDisposable
         int count = U16(); if (count > 16) throw new NotSupportedException("레이어당 16개 이상의 PSD 채널은 지원하지 않습니다.");
         for (int i = 0; i < count; i++) r.Channels.Add(new Channel { Id = I16(), Length = Length(large) });
         if (Tag() != "8BIM") throw new InvalidDataException("PSD 레이어 서명이 올바르지 않습니다.");
-        r.Blend = Tag(); r.Opacity = Byte(); r.Clip = Byte() != 0; r.Flags = Byte(); Byte(); long extraEnd = End(Length(), limit);
+        r.Blend = Tag(); r.Opacity = Byte(); r.Clip = Byte() != 0; r.Flags = Byte(); r.Filler = Byte(); long extraEnd = End(Length(), limit);
         long maskLength = Length(), maskEnd = End(maskLength, extraEnd);
         if (maskLength != 0)
         {
@@ -203,12 +237,12 @@ internal sealed class PsdReader : IDisposable
             if (r.MaskWidth < 0 || r.MaskHeight < 0) throw new InvalidDataException("PSD 마스크 경계 오류입니다.");
             if ((r.MaskFlags & 16) != 0) warnings.Add("PSD 마스크의 추가 농도·페더 속성은 보존하지 않습니다.");
         }
-        Seek(maskEnd); Seek(End(Length(), extraEnd)); r.Name = Pascal(4);
+        Seek(maskEnd); r.BlendingRanges = Length(); Seek(End(r.BlendingRanges, extraEnd)); r.Name = Pascal(4);
         while (stream.Position + 12 <= extraEnd)
         {
             string signature = Tag(); if (signature is not ("8BIM" or "8B64")) throw new InvalidDataException("PSD 추가 레이어 정보가 올바르지 않습니다.");
             string key = Tag(); bool wide = large && (signature == "8B64" || key is "LMsk" or "Lr16" or "Lr32" or "Layr" or "Mt16" or "Mt32" or "Mtrn" or "Alph" or "FMsk" or "lnk2" or "FEid" or "FXid" or "PxSD");
-            long size = Length(wide), end = End(size, extraEnd);
+            long size = Length(wide), end = End(size, extraEnd); r.Keys.Add(key);
             if (key == "luni" && size >= 4) { uint n = U32(); if (n > 65536 || (long)n * 2 > end - stream.Position) throw new InvalidDataException("PSD 레이어 이름이 너무 깁니다."); r.Name = Encoding.BigEndianUnicode.GetString(Bytes((int)n * 2)); }
             if ((key is "lsct" or "lsdk") && size >= 4)
             {
