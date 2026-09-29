@@ -74,7 +74,8 @@ public sealed partial class MainWindow
     void SwitchTab(int index) { if (index < 0 || index >= tabs.Count || index == activeTab) return; CancelGesture(); StoreTab(); LoadTab(index); }
     void LoadTab(int index)
     {
-        jobCts?.Cancel(); renderCts?.Cancel(); activeTab = index;
+        // The hover index references the previous tab's document (possibly just closed).
+        jobCts?.Cancel(); renderCts?.Cancel(); pickCache.Clear(); activeTab = index;
         var tab = tabs[index]; doc = tab.Document; history = tab.History; projectPath = tab.Path; selection = tab.Selection;
         selectedArtboard = tab.ArtboardId; sourceLayerSelection = null;
         // Returning to a tab restores its layer selection as it was, so a switch does not turn the

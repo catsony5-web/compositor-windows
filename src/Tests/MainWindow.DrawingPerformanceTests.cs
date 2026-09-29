@@ -18,6 +18,19 @@ public sealed partial class MainWindow
                 if (layer.Pixels.Data[(y * layer.Pixels.Width + x) * 4 + 3] == 255) return DocumentFeatures.ToDocumentSpace(doc, layer, new Point(x + .5, y + .5));
             throw new InvalidOperationException("Object preview has no ink");
         }
+        static Document Photo(int width, int height)
+        {
+            var photo = new Document { Width = width, Height = height, Name = "Photo" };
+            photo.Add(new Layer { Kind = LayerKind.Raster, Name = "사진", Pixels = Raster.Solid(width, height, System.Windows.Media.Colors.White) });
+            return photo;
+        }
+        static bool SettleDesign(CanvasView canvas)
+        {
+            var frame = new DispatcherFrame(); var watch = System.Diagnostics.Stopwatch.StartNew();
+            var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(10) };
+            timer.Tick += (_, _) => { canvas.UpdateLayout(); if (canvas.IsDesignPreviewReady || canvas.DesignPreviewError != null || watch.ElapsedMilliseconds > 30000) frame.Continue = false; };
+            timer.Start(); Dispatcher.PushFrame(frame); timer.Stop(); return canvas.IsDesignPreviewReady;
+        }
 
         test("scene state follows in-place layer edits without reporting unchanged frames", () =>
         {
@@ -74,6 +87,56 @@ public sealed partial class MainWindow
                 var target = Topmost(window.doc); target.X -= 23; var ink = Ink(window.doc, target);
                 window.UpdatePointerHover(ink);
                 Check(window.canvas.HoveredLayerId == target.Id && window.pickCache.Builds == builds + 2, "Hover did not follow the moved object");
+            }
+            finally { window.StopRenderingForShutdown(); }
+        });
+
+        // A closed or no longer shown drawing must not stay referenced by the
+        // canvas' scene state, its cached viewports or the hover index.
+        test("the design preview releases a drawing once the canvas stops drawing it", () =>
+        {
+            var drawing = SyntheticDrawing.Create(groups: 2, objectsPerGroup: 40, width: 400, height: 300, materials: 1);
+            var photo = Photo(400, 300);
+            var canvas = new CanvasView();
+            var size = new Size(480, 360); canvas.Measure(size); canvas.Arrange(new Rect(size)); canvas.UpdateLayout();
+            void Frame() { canvas.InvalidateVisual(); canvas.UpdateLayout(); }
+            void Show(Document document)
+            {
+                canvas.Document = document; canvas.Composite = Imaging.Render(document).Bitmap(); canvas.DesignMode = true; canvas.Fit(); Frame();
+                Check(SettleDesign(canvas), "Design viewport failed: " + canvas.DesignPreviewError);
+                Check(canvas.HoldsDesignScene(document), "The shown drawing was not tracked; the check is not meaningful");
+            }
+            try
+            {
+                Show(drawing);
+                canvas.Document = photo; canvas.Composite = Imaging.Render(photo).Bitmap(); Frame();
+                Check(!canvas.HoldsDesignScene(drawing), "A photo shown after a drawing kept the drawing's scene state or viewports");
+                Show(drawing);
+                canvas.DesignMode = false; Frame();
+                Check(!canvas.HoldsDesignScene(drawing), "Photo editing mode kept the drawing's scene state or viewports");
+                Show(drawing);
+                canvas.Document = null; canvas.Composite = null; Frame();
+                Check(!canvas.HoldsDesignScene(drawing), "An empty canvas kept the closed drawing's scene state or viewports");
+            }
+            finally { canvas.CancelDesignPreview(); }
+        });
+
+        test("closing a drawing tab releases its hover index", () =>
+        {
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                window.AddTab(Photo(800, 560), null);
+                window.AddTab(SyntheticDrawing.Create(groups: 3, objectsPerGroup: 60, width: 800, height: 560, materials: 1), null);
+                window.SetTool(Tool.Move); window.autoSelectToggle.IsChecked = true;
+                window.doc.ActiveId = window.doc.Layers.First(l => l.Kind == LayerKind.Shape).Id; window.canvas.Zoom = 1;
+                for (int i = 0; i < 20; i++) window.UpdatePointerHover(new Point(40 + i * 30, 60 + i * 20));
+                var drawing = window.doc;
+                Check(window.pickCache.Holds(drawing), "Hover did not index the drawing; the check is not meaningful");
+                window.CloseTab();
+                Check(window.tabs.Count == 1 && !ReferenceEquals(window.doc, drawing), "The drawing tab did not close");
+                Check(!window.pickCache.Holds(drawing), "The hover index kept the closed drawing");
+                Check(!window.canvas.HoldsDesignScene(drawing), "The canvas kept the closed drawing");
             }
             finally { window.StopRenderingForShutdown(); }
         });

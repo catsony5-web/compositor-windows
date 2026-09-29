@@ -50,6 +50,9 @@ public sealed class SceneState
     }
 
     public void Reset() { entries = []; count = -1; document = null; Version++; }
+    // True while the state still references a document's layers (until Reset).
+    public bool HoldsScene => document != null;
+    public bool Holds(Document doc) => ReferenceEquals(document, doc);
 
     static int Flags(Layer l) => (int)l.Kind | (int)l.Blend << 4 | (l.Visible ? 1 << 9 : 0) | (l.Locked ? 1 << 10 : 0) |
         (l.Clipped ? 1 << 11 : 0) | (l.FlipX ? 1 << 12 : 0) | (l.FlipY ? 1 << 13 : 0);

@@ -49,6 +49,7 @@ public static class LayerPicking
             return Near(picker, documentPoint, zoom, radiusDip);
         }
         public void Clear() { picker = null; version = -1; state.Reset(); }
+        internal bool Holds(Document doc) => state.Holds(doc);
     }
 
     static bool ValidProbe(Document doc, Point point, double zoom, double radiusDip) =>
