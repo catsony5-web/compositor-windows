@@ -1304,6 +1304,142 @@
   "file": "Formats/CmykExport.cs"
  },
  {
+  "ko": "PDF · 한 장으로 합치기 (인쇄·공유용)",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "모든 레이어를 한 페이지에 합쳐, 어디서 열어도 같은 모습으로 보입니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PDF 문서",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PDF · 레이어 나누기 (레이어별 켜고 끄기)",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "맨 위 레이어와 그룹마다 PDF 레이어를 만들어, 여는 앱에서 하나씩 켜고 끌 수 있습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": ".psd · 레이어 유지",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "레이어와 그룹, 이름·순서·마스크·불투명도·혼합 모드를 그대로 저장합니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PSD 이미지",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": ".psd · 한 장으로 합치기",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "현재 모습을 한 장의 이미지로 저장합니다. 레이어가 너무 많을 때 사용하세요.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": ".ai · 레이어 유지 (PDF 호환)",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PDF 호환 .ai 파일입니다. 레이어를 나누고 선과 문자는 벡터로 유지합니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "AI 파일 (PDF 호환)",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "보이는 내용이 없는 빈 페이지입니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "선·문자·도형 {0}개를 모두 벡터로 담습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "사진과 효과가 있는 부분 {0}개를 이미지로 담습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "선·문자·도형 {0}개는 벡터로, 사진과 효과가 있는 부분 {1}개는 이미지로 담습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "용지 {0} × {1} mm · {2} DPI 기준 한 페이지입니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "현재 모습을 한 장의 이미지로 담습니다. 확대하면 픽셀이 보일 수 있습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "숨긴 레이어는 포함하지 않습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PDF 레이어 {0}개를 만듭니다. 맨 위 레이어와 그룹마다 하나씩입니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "도면 파일 묶음은 안에 있는 도면 레이어별로 나눕니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "숨긴 레이어 {0}개는 꺼진 레이어로 저장되어 여는 앱에서 다시 켤 수 있습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "그룹 안에서 숨긴 레이어는 포함하지 않습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PDF 부분만 담은 .ai 파일입니다. 여는 앱에 따라 레이어 표시 방식이 다를 수 있습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "레이어 {0}개와 그룹 {1}개를 나눠 저장합니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "이름·순서·표시·불투명도·혼합 모드·마스크·클리핑을 유지합니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "문자·도형·벡터 레이어 {0}개는 보이는 모습 그대로 픽셀 레이어로 바뀝니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "조정 레이어 {0}개는 아래 레이어에 적용한 결과를 픽셀로 담습니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "원근 변형이 있는 그룹 {0}개는 한 장의 레이어로 합칩니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "레이어가 {0}개를 넘지 않도록 그룹 {1}개를 각각 한 장의 레이어로 합칩니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "PSD 내보내기는 한 변 30,000px까지 지원합니다. 더 큰 이미지는 PNG 또는 TIFF로 저장해 주세요.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "현재 모습을 픽셀 레이어 하나와 합성 이미지로 저장합니다.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
+  "ko": "RGB로 저장합니다. 편집할 수 있는 원본은 .moruproj로도 보관하세요.",
+  "file": "Formats/CompatibilityExport.cs"
+ },
+ {
   "ko": "지원 파일|*.moruproj;*.cwproj;*.pdf;*.ai;*.psd;*.psb;*.dwg;*.dxf;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.gif;*.heic;*.heif|PDF / AI (PDF 호환)|*.pdf;*.ai|PSD / PSB 이미지|*.psd;*.psb|CAD 도면 (DWG / DXF)|*.dwg;*.dxf|모든 파일|*.*",
   "file": "Formats/CompatibilityImport.cs"
  },
@@ -1608,6 +1744,14 @@
   "file": "Formats/PdfCompatibility.cs"
  },
  {
+  "ko": "PDF 레이어가 {0}개가 됩니다. PDF 레이어는 {1}개까지 만들 수 있으니 레이어를 그룹으로 묶거나 ‘PDF · 한 장으로 합치기’를 선택해 주세요.",
+  "file": "Formats/PdfLayerExport.cs"
+ },
+ {
+  "ko": "PDF 내용을 만들 수 없습니다.",
+  "file": "Formats/PdfLayerExport.cs"
+ },
+ {
   "ko": "PDF 레이어 식별자가 없습니다.",
   "file": "Formats/PdfLayerImport.cs"
  },
@@ -1784,24 +1928,24 @@
   "file": "Formats/ProjectStore.cs"
  },
  {
-  "ko": "PSD 픽셀 레이어는 {0}개까지 내보낼 수 있습니다. 합성 PSD를 선택하고 객체 구조는 .moruproj로 저장해 주세요.",
-  "file": "Formats/PsdCompatibility.cs"
- },
- {
-  "ko": "그룹·조정·클리핑이 있는 문서는 합성 PSD로 내보내 주세요.",
-  "file": "Formats/PsdCompatibility.cs"
- },
- {
-  "ko": "PSD 내보내기는 한 변 30,000px까지 지원합니다. 더 큰 이미지는 PNG 또는 TIFF로 저장해 주세요.",
-  "file": "Formats/PsdCompatibility.cs"
- },
- {
-  "ko": "PSD 레이어 출력이 {0}GB를 초과합니다. 합성 이미지로 출력해 주세요.",
-  "file": "Formats/PsdCompatibility.cs"
- },
- {
   "ko": "PSD 레이어 섹션이 2GB를 초과합니다. 합성 PSD 또는 PNG·TIFF로 저장해 주세요.",
   "file": "Formats/PsdCompatibility.cs"
+ },
+ {
+  "ko": "레이어 {0}개는 .psd 레이어 한도 {1}개를 넘습니다. 레이어를 그룹으로 묶거나 ‘.psd · 한 장으로 합치기’를 선택해 주세요.",
+  "file": "Formats/PsdLayerExport.cs"
+ },
+ {
+  "ko": "그룹 {0}개는 .psd에 담을 수 있는 수를 넘습니다. 빈 그룹을 정리하거나 ‘.psd · 한 장으로 합치기’를 선택해 주세요.",
+  "file": "Formats/PsdLayerExport.cs"
+ },
+ {
+  "ko": "레이어를 유지하는 PSD는 파일로만 저장할 수 있습니다.",
+  "file": "Formats/PsdLayerExport.cs"
+ },
+ {
+  "ko": "PSD 레이어 섹션이 2GB를 초과합니다. 레이어 수나 크기를 줄이거나 ‘.psd · 한 장으로 합치기’ 또는 PNG·TIFF로 저장해 주세요.",
+  "file": "Formats/PsdLayerExport.cs"
  },
  {
   "ko": "PSD 레이어",
@@ -1864,6 +2008,18 @@
   "file": "Formats/PsdReader.cs"
  },
  {
+  "ko": "PSD 그룹이 16단계보다 깊게 중첩되어 있습니다. 합성 이미지로 가져와 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 그룹 구조가 올바르지 않습니다. 합성 이미지로 가져와 주세요.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 그룹",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
   "ko": "PSD에 중복 채널이 있습니다.",
   "file": "Formats/PsdReader.cs"
  },
@@ -1877,6 +2033,10 @@
  },
  {
   "ko": "기본 픽셀 레이어·위치·표시·불투명도·마스크·지원 혼합 모드를 가져왔습니다. 문자·내장 개체는 저장된 픽셀로 읽으며 편집 속성은 유지되지 않습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
+  "ko": "PSD 그룹 {0}개의 이름·순서·표시·불투명도·마스크를 유지했습니다.",
   "file": "Formats/PsdReader.cs"
  },
  {
@@ -2058,6 +2218,10 @@
  {
   "ko": "벡터 미리보기 실패: ",
   "file": "UI/Controls/CanvasView.Design.cs"
+ },
+ {
+  "ko": "선택됨",
+  "file": "UI/Controls/ChoiceList.cs"
  },
  {
   "ko": "아직 사용한 색이 없습니다",
@@ -2888,10 +3052,6 @@
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
-  "ko": "PSD 이미지",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
   "ko": "RGB / 회색조 · 8비트 픽셀 레이어를 가져옵니다. 그룹이나 조정 레이어가 있으면 이 옵션을 꺼 주세요.",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
@@ -2976,76 +3136,52 @@
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
-  "ko": "PDF · 합성 이미지",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "선과 글자를 벡터로 유지 (확대해도 선명)",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
-  "ko": "PSD · 합성 이미지",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "효과가 있는 레이어만 이미지로 담고, 나머지 선·문자·도형은 벡터로 담습니다.",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
-  "ko": "PSD · 픽셀 레이어",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "PDF · 벡터 원본 유지",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "Morupixel · PDF / PSD 내보내기",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "호환 형식 내보내기",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "PDF · PSD · AI로 내보내기",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
   "ko": "파일 형식",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
   "ko": "파일로 저장…",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
-  "ko": "문서 DPI에 맞춘 한 페이지 RGB PDF입니다. 현재 합성 결과를 이미지로 담습니다. PDF를 여는 다른 프로그램에서도 열 수 있지만 문자·벡터·레이어를 개별 편집할 수 있는 원본 파일은 아닙니다.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "저장되는 내용",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
-  "ko": "현재 합성 결과를 RGB / 8비트 PSD로 저장합니다. 원본 문서의 레이어·문자·벡터를 개별 편집하려면 .moruproj도 함께 보관하세요.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "저장 취소",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
-  "ko": "CAD 경로·문자·도형과 원본 PDF/AI의 벡터를 유지합니다. 사진은 원본 픽셀로 포함됩니다. 편집 레이어는 .moruproj에도 저장하세요.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "레이어 이름·표시·불투명도·혼합 모드를 저장합니다. 문자·도형·변형·마스크는 각 레이어의 픽셀에 적용됩니다. 그룹·조정·클리핑 문서는 합성 PSD로 출력하세요.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "픽셀 레이어 PSD는 최대 {0}개 레이어를 지원합니다. ‘PSD · 합성 이미지’를 선택하고 객체 구조는 .moruproj로 보관하세요.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "현재 문서에 그룹·조정·클리핑 레이어가 있습니다. 외형 보존을 위해 ‘PSD · 합성 이미지’를 선택해 주세요.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "PDF 문서|*.pdf",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "PSD 이미지|*.psd",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "{0} 파일이 이미 있습니다. 확장자를 {1}로 바꿔 다시 저장해 주세요.",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
   "ko": "파일을 저장하고 있습니다…",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
-  "ko": "저장 실패: ",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
+  "ko": "레이어 {0}/{1} 저장 중…",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
+ },
+ {
+  "ko": "저장을 취소했습니다. 파일은 바뀌지 않았습니다.",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
+ },
+ {
+  "ko": "저장하지 못했습니다.",
+  "file": "UI/Dialogs/CompatibilityExportDialog.cs"
  },
  {
   "ko": "적용",
@@ -3325,6 +3461,14 @@
  },
  {
   "ko": "내보내지 못했습니다",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "PDF · PSD · AI로 내보내기…",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "레이어를 유지하는 .psd·.ai 또는 PDF로 저장합니다.",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -5869,10 +6013,6 @@
  },
  {
   "ko": "스냅 꺼짐",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "PDF / PSD 파일로 내보내기…",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
