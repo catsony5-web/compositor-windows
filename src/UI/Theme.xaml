@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+                    xmlns:local="clr-namespace:Compositor.Windows">
     <!-- Studio UI tokens. Keep in sync with src/App/Theme.cs. -->
     <SolidColorBrush x:Key="UiHeader" Color="#111317" />
     <SolidColorBrush x:Key="UiPanel" Color="#1C1F24" />
@@ -70,7 +71,8 @@
                                               RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                                 <ContentPresenter.Resources>
                                     <DataTemplate DataType="{x:Type sys:String}">
-                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" TextAlignment="Center" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=Button}}" FontWeight="{Binding FontWeight, RelativeSource={RelativeSource AncestorType=Button}}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                        <!-- Wrapped Korean breaks between words (KeepWordsTextBlock). -->
+                                        <local:KeepWordsTextBlock Text="{Binding}" TextWrapping="Wrap" TextAlignment="Center" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=Button}}" FontWeight="{Binding FontWeight, RelativeSource={RelativeSource AncestorType=Button}}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                                     </DataTemplate>
                                 </ContentPresenter.Resources>
                             </ContentPresenter>
@@ -337,7 +339,7 @@
                             <Path x:Name="Mark" Data="M 3.5 8 L 6.5 11 L 12.5 5" Stroke="#FFFFFF" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Visibility="Collapsed" />
                         </Border>
                         <ContentPresenter Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True">
-                            <ContentPresenter.Resources><DataTemplate DataType="{x:Type sys:String}"><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate></ContentPresenter.Resources>
+                            <ContentPresenter.Resources><DataTemplate DataType="{x:Type sys:String}"><local:KeepWordsTextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate></ContentPresenter.Resources>
                         </ContentPresenter>
                     </Grid>
                     <ControlTemplate.Triggers>

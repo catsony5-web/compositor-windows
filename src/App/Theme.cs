@@ -77,7 +77,8 @@ public static class Theme
 
     public static TextBlock Label(string text, double size = BodySize, Brush? color = null)
     {
-        var label = new TextBlock
+        // Wrapped Korean breaks between words (KeepWordsTextBlock); Text stays the source string.
+        var label = new KeepWordsTextBlock
         {
             Text = text,
             FontFamily = UiFont,
@@ -105,7 +106,7 @@ public static class Theme
         button.BorderBrush = Brushes.Transparent; button.Padding = new Thickness(8, 7, 6, 7); button.Margin = new Thickness(0, 1, 0, 1);
         button.MinHeight = 34; button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
-        var text = new TextBlock { Text = label, FontSize = BodySize, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        var text = new KeepWordsTextBlock { Text = label, FontSize = BodySize, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
         if (glyph != null)
         {
             // An optional leading icon names the command at a glance; the label stays complete.

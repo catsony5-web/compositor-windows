@@ -96,6 +96,7 @@ public static class SelfTests
         MainWindow.RunRibbonTests(Test, directory);
         MainWindow.RunWindowFitTests(Test);
         LocalizationTests.Run(Test);
+        MainWindow.RunKeepWordsTests(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);
         MainWindow.RunLocalizedTextTests(Test, directory);
         CompatibilityDialog.RunCleanupTests(Test);
