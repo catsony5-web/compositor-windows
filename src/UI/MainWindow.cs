@@ -122,7 +122,7 @@ public sealed partial class MainWindow : Window
         PreviewKeyUp += (_, e) => { var key = e.Key == Key.System ? e.SystemKey : e.Key; if (suppressAltMenu && key is Key.LeftAlt or Key.RightAlt) { suppressAltMenu = false; e.Handled = true; } if (key is Key.Space or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift) UpdatePointerModifiers(); };
         Deactivated += (_, _) => { if (resizingBrush) EndBrushResize(true); suppressAltMenu = false; ClearPointerHover(); };
         DragOver += (_, e) => { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
-        Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Guard(() => { foreach (var file in files) { var ext = Path.GetExtension(file).ToLowerInvariant(); if (ext is ".moruproj" or ".cwproj" or ".comp" || CompatibilityImport.Supports(file)) OpenPath(file); else ImportFiles([file]); } }); };
+        Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Guard(() => DropFiles(files)); };
         Closing += (_, e) => { CancelGesture(); if (!ConfirmAllTabs()) e.Cancel = true; else { SaveWorkspace(); CloseFloatingPanels(); StopRenderingForShutdown(); } };
         Loaded += (_, _) => InitializeStartup();
         canvas.MouseLeave += (_, _) => { if (!resizingBrush) canvas.BrushPoint = null; ClearPointerHover(); if (!dragging && !panning) lastPointerScreen = null; canvas.InvalidateVisual(); };
@@ -256,7 +256,7 @@ public sealed partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog { Filter = CompatibilityImport.Filter, Multiselect = true };
         if (dialog.ShowDialog(this) != true) return;
-        foreach (var path in dialog.FileNames) OpenPath(path);
+        OpenPaths(dialog.FileNames);
     }
     void OpenProject(string path)
     {
@@ -276,25 +276,39 @@ public sealed partial class MainWindow : Window
     }
     void ImportFiles(string[] paths)
     {
-        if (!HasDocument) { foreach (var path in paths) OpenPath(path); return; }
-        var layers = new List<Layer>();
+        if (!HasDocument) { OpenPaths(paths); return; }
+        // Drawings share one settings dialog; each is placed as its own group, on a new artboard
+        // beside the existing ones when the document uses artboards and the option is on.
+        var imported = new List<ImportedFile>();
+        var drawings = paths.Where(CompatibilityImport.Supports).ToArray();
+        if (drawings.Length > 0 && !ReadCompatibilityDocuments(drawings, true, imported, out _)) return;
+        var queue = imported.ToLookup(i => i.Path).ToDictionary(g => g.Key, g => new Queue<ImportedFile>(g));
+        int width = doc.Width, height = doc.Height;
+        var candidate = doc.Snapshot(); var layers = new List<Layer>();
         foreach (var path in paths)
         {
             if (CompatibilityImport.Supports(path))
             {
-                var imported = ReadCompatibilityDocument(path, placeAsLayer: true); if (imported == null) return;
-                layers.AddRange(CompatibilityImport.PlacementLayers(imported, doc.Width, doc.Height));
+                if (!queue.TryGetValue(path, out var pending) || pending.Count == 0 || pending.Dequeue().Document is not { } drawing) continue;
+                layers.AddRange(CompatibilityImport.Place(candidate, drawing, drawing.Artboards.Count > 0, width, height));
             }
             else
             {
                 var layer = new Layer { Name = Path.GetFileNameWithoutExtension(path), Pixels = ImportExport.LoadImage(path) };
-                layer.Scale = Math.Min(1, Math.Min(doc.Width / (double)layer.Pixels.Width, doc.Height / (double)layer.Pixels.Height));
-                layer.X = (doc.Width - layer.Pixels.Width * layer.Scale) / 2; layer.Y = (doc.Height - layer.Pixels.Height * layer.Scale) / 2; layers.Add(layer);
+                layer.Scale = Math.Min(1, Math.Min(width / (double)layer.Pixels.Width, height / (double)layer.Pixels.Height));
+                layer.X = (width - layer.Pixels.Width * layer.Scale) / 2; layer.Y = (height - layer.Pixels.Height * layer.Scale) / 2; layers.Add(layer);
+                candidate.Add(layer);
             }
         }
-        var candidate = doc.Snapshot(); foreach (var layer in layers) candidate.Add(layer); candidate.Validate();
-        Edit("이미지 가져오기", () => { doc = candidate; maskEditing = false; });
-        if (layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
+        if (layers.Count > 0)
+        {
+            candidate.Validate();
+            bool grew = candidate.Width != width || candidate.Height != height;
+            Edit("이미지 가져오기", () => { doc = candidate; maskEditing = false; });
+            if (layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
+            if (grew) canvas.Fit();
+        }
+        ReportImportProblems(imported, 0);
     }
     bool Save(bool saveAs)
     {

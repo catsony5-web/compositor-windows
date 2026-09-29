@@ -78,7 +78,8 @@ internal sealed partial class CompatibilityDialog
                 ToolTip = $"{layer.Name} · 객체 {layer.Objects:N0}개" + (layer.Hatches > 0 ? $" · 해치 {layer.Hatches:N0}개" : "") });
             row.Children.Add(name);
             var picker = new ComboBox { ItemsSource = Enum.GetValues<DrawingRole>().Select(r => new RoleChoice(r)).ToArray(), MinHeight = 26, FontSize = Theme.CaptionSize };
-            picker.SelectedIndex = (int)layer.Role;
+            // A role the user chose for a layer of this name before is chosen again.
+            picker.SelectedIndex = (int)(remembered.CadRoles is { } roles && roles.TryGetValue(layer.Name, out var role) ? role : layer.Role);
             System.Windows.Automation.AutomationProperties.SetName(picker, "레이어 역할: " + layer.Name);
             picker.SelectionChanged += (_, _) => InvalidatePrepared();
             Grid.SetColumn(picker, 1); row.Children.Add(picker); roleRows.Children.Add(row);
@@ -86,7 +87,7 @@ internal sealed partial class CompatibilityDialog
         }
         int shown = Math.Min(info.Layers.Count, MaxRoleRows);
         var byRole = info.Layers.GroupBy(l => l.Role).OrderBy(g => g.Key).Select(g => $"{DrawingCleanup.RoleName(g.Key).Split(' ')[0]} {g.Count()}");
-        roleExpander.Header = $"레이어 역할 ({info.Layers.Count:N0}) · " + string.Join(" · ", byRole);
+        roleExpander.Header = $"레이어 역할 ({info.Layers.Count:N0}) · {string.Join(" · ", byRole)}";
         if (info.Layers.Count > shown) roleRows.Children.Add(Theme.Label($"처음 {shown}개 레이어만 표시합니다. 나머지는 이름으로 자동 분류합니다.", Theme.CaptionSize, Theme.Subtle));
         roleExpander.Visibility = info.Layers.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         DescribeHatches();
@@ -106,7 +107,7 @@ internal sealed partial class CompatibilityDialog
             : total == 0 ? "이 도면에는 해치가 없어요."
             : SelectedHatches switch
             {
-                HatchTreatment.Suggest => $"해치 {total:N0}개 추천: " + string.Join(" · ", drawingInfo.HatchMaterials.OrderByDescending(p => p.Value).Select(p => $"{DrawingCleanup.MaterialName(p.Key)} {p.Value}")),
+                HatchTreatment.Suggest => $"해치 {total:N0}개 추천: {string.Join(" · ", drawingInfo.HatchMaterials.OrderByDescending(p => p.Value).Select(p => $"{DrawingCleanup.MaterialName(p.Key)} {p.Value}"))}",
                 HatchTreatment.Image => $"해치 {total:N0}개를 ‘{Path.GetFileName(materialImage)}’ 이미지로 채워요.",
                 _ => $"해치 {total:N0}개를 경계선으로만 가져와요."
             };
@@ -122,6 +123,19 @@ internal sealed partial class CompatibilityDialog
     {
         var dialog = new CompatibilityDialog(null, path); dialog.ShowDrawingInfo(SampleDrawing);
         dialog.cleanupExpander.IsExpanded = true; dialog.roleExpander.IsExpanded = true; dialog.messages.Text = "미리보기를 확인하고 가져오세요.";
+        return dialog;
+    }
+
+    // Offscreen previews: three floor plans chosen together (the quick path offered), and the quick
+    // path itself importing with the remembered settings.
+    internal static CompatibilityDialog BatchPreview(string path, bool quick = false)
+    {
+        string folder = Path.GetDirectoryName(path) ?? "";
+        var dialog = new CompatibilityDialog(null, path, false, new ImportSettings { CadSkipDialog = true },
+            [path, Path.Combine(folder, "3층 평면도.dwg"), Path.Combine(folder, "4층 평면도.dwg")], quick);
+        dialog.ShowDrawingInfo(SampleDrawing); dialog.details.Text = "CAD 도면";
+        if (quick) { dialog.SetInputs(false); dialog.messages.Text = $"가져오는 중 {2}/{dialog.files.Count} · {Path.GetFileName(dialog.files[1])}"; }
+        else dialog.messages.Text = "미리보기를 확인하고 가져오세요.";
         return dialog;
     }
 
@@ -149,14 +163,7 @@ internal sealed partial class CompatibilityDialog
 
     HatchTreatment SelectedHatches => hatchMode.SelectedItem is HatchChoice choice ? choice.Value : HatchTreatment.Suggest;
 
-    // Only layers whose role was changed from the automatic guess are sent as overrides.
-    CadCleanup? ReadCleanup()
-    {
-        if (!cad) return null;
-        var overrides = rolePickers.Where(p => p.Value.SelectedItem is RoleChoice choice && choice.Value != DrawingCleanup.Classify(p.Key))
-            .ToDictionary(p => p.Key, p => ((RoleChoice)p.Value.SelectedItem).Value, StringComparer.OrdinalIgnoreCase);
-        bool weights = lineWeights.IsChecked == true; var hatches = SelectedHatches;
-        if (!weights && hatches == HatchTreatment.Keep) return null;
-        return new CadCleanup(weights, hatches, hatches == HatchTreatment.Image ? materialImage : null, overrides.Count > 0 ? overrides : null);
-    }
+    // Only layers whose role was changed from the automatic guess are sent as overrides
+    // (with roles remembered for layers of the same name; see CaptureSettings).
+    CadCleanup? ReadCleanup() => cad ? CaptureSettings().Cleanup() : null;
 }
