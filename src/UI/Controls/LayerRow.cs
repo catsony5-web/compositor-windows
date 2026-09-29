@@ -68,7 +68,8 @@ public sealed class LayerRow : Grid
             MouseLeave += (_, _) => Background = Brushes.Transparent;
         }
 
-        var visible = IconButton(EyeIcon(layer.Visible), (layer.Visible ? "레이어 숨기기" : "레이어 표시") + " · Alt+클릭: 이 레이어만 보기", () => setVisible(!layer.Visible));
+        var visible = IconButton(EyeIcon(layer.Visible), string.Join(" · ", layer.Visible ? "레이어 숨기기" : "레이어 표시",
+            "Shift+클릭: 마지막으로 누른 눈(없으면 맨 위 레이어)의 상태를 여기까지 적용", "Alt+클릭: 이 레이어만 보기"), () => setVisible(!layer.Visible));
         AutomationProperties.SetName(visible, $"레이어 표시: {layer.Name}, {(layer.Visible ? "표시됨" : "숨김")}");
         Children.Add(visible);
 
