@@ -156,6 +156,7 @@ public sealed partial class MainWindow
         if (HasDocument)
         {
             canvas.Fit(); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap(); histogram.Update(composite);
+            UpdateStatus(); // the zoom readout must reflect the fit, not the unlaid-out canvas
         }
         else { composite = null; canvas.Composite = null; }
         canvas.InvalidateVisual();
