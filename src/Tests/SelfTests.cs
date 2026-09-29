@@ -97,6 +97,9 @@ public static class SelfTests
         LocalizationTests.Run(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);
         CompatibilityDialog.RunCleanupTests(Test);
+        ImportSettingsTests.Run(Test, directory);
+        CompatibilityDialog.RunImportFlowDialogTests(Test);
+        MainWindow.RunImportFlowTests(Test, directory);
         MainWindow.RunWorkspaceUpgradeTests(Test, directory);
         CmykExportTests.Run(Test);
         EditingDialogTests.Run(Test);

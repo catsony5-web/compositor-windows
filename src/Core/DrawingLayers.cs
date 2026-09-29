@@ -19,21 +19,28 @@ public static class DrawingLayers
         document.Layers.Remove(folder); document.Layers.Insert(0, folder); document.ActiveId = folder.Id;
         document.Validate();
     }
+    // A root decides the category of its whole subtree, except material (hatch fill) layers: they are
+    // always photo layers, edited on the photo tab with opacity, blend and masks, even while they stay
+    // inside a drawing folder below its linework and move with it.
     public static Dictionary<Guid, LayerCategory> Categories(Document doc)
     {
         var children = doc.Layers.ToLookup(l => l.ParentId); var result = new Dictionary<Guid, LayerCategory>();
         LayerCategory Kind(Layer layer)
         {
             if (result.TryGetValue(layer.Id, out var existing)) return existing;
+            if (layer.Kind == LayerKind.Material) return result[layer.Id] = LayerCategory.Photo;
             var category = layer.Category;
             if (category == LayerCategory.Automatic) category = layer.Kind == LayerKind.Group
                 ? (children[layer.Id].Any(l => Kind(l) == LayerCategory.Drawing) ? LayerCategory.Drawing : LayerCategory.Photo)
-                : layer.Kind is LayerKind.Vector or LayerKind.Shape or LayerKind.Text or LayerKind.Material ? LayerCategory.Drawing : LayerCategory.Photo;
+                : layer.Kind is LayerKind.Vector or LayerKind.Shape or LayerKind.Text ? LayerCategory.Drawing : LayerCategory.Photo;
             result[layer.Id] = category; return category;
         }
         void Assign(Layer layer, LayerCategory category)
-        { result[layer.Id] = category; foreach (var child in children[layer.Id]) Assign(child, category); }
+        { result[layer.Id] = layer.Kind == LayerKind.Material ? LayerCategory.Photo : category; foreach (var child in children[layer.Id]) Assign(child, category); }
         foreach (var root in children[null]) Assign(root, Kind(root));
         return result;
     }
+    /// <summary>A photo layer (hatch material) kept inside a drawing folder. The photo tab lists it on its own.</summary>
+    public static bool IsNestedPhoto(Layer layer, IReadOnlyDictionary<Guid, LayerCategory> categories) =>
+        layer.ParentId is { } parent && categories.GetValueOrDefault(layer.Id) == LayerCategory.Photo && categories.GetValueOrDefault(parent) == LayerCategory.Drawing;
 }

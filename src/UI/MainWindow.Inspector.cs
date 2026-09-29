@@ -142,6 +142,7 @@ public sealed partial class MainWindow
             LayerKind.Text => (Theme.Glyphs.Text, "텍스트 레이어"),
             LayerKind.Adjustment => (Theme.Glyphs.Adjustment, "조정 레이어"),
             LayerKind.Group => (Theme.Glyphs.Folder, "그룹"),
+            LayerKind.Material => (Theme.Glyphs.Image, "재료 맵핑 레이어"),
             _ => (Theme.Glyphs.Image, "이미지 레이어")
         };
         var kind = Theme.Label(kindName, Theme.CaptionSize, Theme.Muted); kind.Margin = new Thickness(0, 1, 0, 0);
@@ -303,7 +304,10 @@ public sealed partial class MainWindow
         var byId = doc.Layers.ToDictionary(layer => layer.Id);
         if (!byId.TryGetValue(id, out var selected)) return;
         var parent = selected.ParentId;
-        bool keepDrawingCollapsed = DrawingLayers.Categories(doc).GetValueOrDefault(id) == LayerCategory.Drawing;
+        var categories = DrawingLayers.Categories(doc);
+        // A hatch material is its own row on the photo tab; its drawing folder stays as it was.
+        if (DrawingLayers.IsNestedPhoto(selected, categories)) { pendingLayerReveal = id; return; }
+        bool keepDrawingCollapsed = categories.GetValueOrDefault(id) == LayerCategory.Drawing;
         Guid reveal = id;
         for (int depth = 0; parent is { } parentId && depth < 16; depth++)
         {

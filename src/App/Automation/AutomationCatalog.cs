@@ -77,7 +77,7 @@ public static partial class AutomationCatalog
             Fields(("documentId", Id), ("expectedRevision", Id), ("parentId", Id), ("rootsOnly", Bool("Only root layers; cannot be combined with parentId.")),
                 ("nameContains", new("string", "Case-insensitive literal substring of layer names, not a regular expression.", MaxLength: 256)),
                 ("kind", Choice(Enum.GetNames<LayerKind>())), ("visible", Bool("Filter the layer's own visibility flag.")),
-                ("category", new("string", "Effective workspace category, including inheritance from the root drawing/photo folder.", Choices: ["Drawing", "Photo"])),
+                ("category", new("string", "Effective workspace category, including inheritance from the root drawing/photo folder. Material layers (hatch fills, apply_material) are always Photo.", Choices: ["Drawing", "Photo"])),
                 ("selectedOnly", Bool("Only selected layers; an inactive document reports its active layer as selected.")),
                 ("locked", Bool("Filter the layer's own lock flag; inherited locks are reported separately.")),
                 ("offset", Integer(0, Document.MaxNodes)), ("limit", Integer(1, 200, "Page size; defaults to 50."))), "documentId");

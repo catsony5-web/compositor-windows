@@ -50,6 +50,8 @@ public sealed partial class MainWindow
         CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
         CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
         Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf")), "import-cad-cleanup", 940, 700);
+        Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg")), "import-cad-batch", 940, 700);
+        Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), quick: true), "import-cad-quick", 940, 700);
         RenderCleanupPreviews(directory);
         // Palette states: recent commands first, then a ranked search.
         recentCommands.Clear(); recentCommands.AddRange(["menu:레이어/레이어 복제", "tool:Brush", "menu:보정/레벨…"]);
@@ -147,6 +149,13 @@ public sealed partial class MainWindow
         RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
         RenderShadowPreviews(Capture, CapturePane);
+        // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
+        string plan = Path.Combine(directory, "평면 예시.dxf");
+        var drawing = CompatibilityImport.ReadAsync(plan, new ImportSettings { CadLongEdge = 900 }.Options(plan)).GetAwaiter().GetResult().Document;
+        AddTab(drawing, null); var hatch = doc.Layers.First(l => l.Kind == LayerKind.Material);
+        doc.ActiveId = hatch.Id; selectedLayers.Clear(); selectedLayers.Add(hatch.Id); ShowStudioPage(1);
+        Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
+        Capture(this, "drawing-photo-layers", 1480, 920);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)

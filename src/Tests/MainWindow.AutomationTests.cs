@@ -488,7 +488,7 @@ public sealed partial class MainWindow
                 Success(Call(window, "query_regions", query))["regions"]!.AsArray().Count == 1, "Registered IDs were not discoverable");
             var args = Write(window, ("materialId", Text(registered, "materialId")), ("regionId", Text(region, "regionId")), ("tileWidth", 8), ("tileHeight", 8));
             var result = Success(Call(window, "apply_material", args)); var layer = window.doc.Layers.Single(l => l.Id == LayerId(result));
-            Check(layer.Material != null && layer.Category == LayerCategory.Drawing && layer.Blend == BlendMode.Multiply &&
+            Check(layer.Material != null && layer.Category == LayerCategory.Photo && layer.Blend == BlendMode.Multiply &&
                 layer.Material.Boundary.Geometry.FillContains(new Point(10, 10)) && !layer.Material.Boundary.Geometry.FillContains(new Point(1, 1)), "Material ignored the selected ellipse or default blend");
             var revision = window.doc.Revision; var pixels = layer.Pixels;
             Success(Call(window, "update_material", Write(window, ("layerId", layer.Id.ToString()), ("tileWidth", 8))));

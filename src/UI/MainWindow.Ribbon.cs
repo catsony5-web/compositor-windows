@@ -204,7 +204,7 @@ public sealed partial class MainWindow
     {
         (string Key, string Glyph)[] map =
         [
-            ("새 캔버스", Theme.Glyphs.NewFile), ("열기", Theme.Glyphs.Open), ("레이어로 가져오기", Theme.Glyphs.Import), ("Compositor .comp 가져오기", Theme.Glyphs.Import),
+            ("새 캔버스", Theme.Glyphs.NewFile), ("열기", Theme.Glyphs.Open), ("레이어로 가져오기", Theme.Glyphs.Import), ("도면 가져오기 설정", Theme.Glyphs.Import), ("Compositor .comp 가져오기", Theme.Glyphs.Import),
             ("저장", Theme.Glyphs.Save), ("다른 이름으로 저장", Theme.Glyphs.Save), ("내보내기", Theme.Glyphs.Export), ("인쇄용 CMYK", Theme.Glyphs.Palette), ("PDF", Theme.Glyphs.Document),
             ("Compositor .comp 내보내기", Theme.Glyphs.Export), ("선택 레이어 이미지로", Theme.Glyphs.Export), ("현재 문서 닫기", Theme.Glyphs.Close),
             ("실행 취소", Theme.Glyphs.Undo), ("다시 실행", Theme.Glyphs.Redo), ("합성 이미지 복사", Theme.Glyphs.Duplicate), ("이미지 붙여넣기", Theme.Glyphs.Paste),

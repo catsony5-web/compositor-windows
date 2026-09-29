@@ -1128,6 +1128,10 @@
   "file": "Formats/CadCompatibility.cs"
  },
  {
+  "ko": "‘{0}’ 배치가 없어 자동으로 고른 도면을 가져왔습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
   "ko": "기울어진 3D 뷰포트",
   "file": "Formats/CadCompatibility.cs"
  },
@@ -1240,7 +1244,7 @@
   "file": "Formats/CadCompatibility.cs"
  },
  {
-  "ko": ". 재질 레이어는 선 아래에 곱하기로 놓이며, 숨기거나 삭제해 원래 해치로 돌아갈 수 있습니다.",
+  "ko": ". 재질 레이어는 선 아래에 곱하기로 놓이며 사진 레이어 탭에서 편집할 수 있습니다. 숨기거나 삭제하면 원래 해치로 돌아갑니다.",
   "file": "Formats/CadCompatibility.cs"
  },
  {
@@ -2900,7 +2904,7 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
-  "ko": "레이어 역할 ({0}) · ",
+  "ko": "레이어 역할 ({0}) · {1}",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -2940,7 +2944,7 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
-  "ko": "해치 {0}개 추천: ",
+  "ko": "해치 {0}개 추천: {1}",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -2953,6 +2957,22 @@
  },
  {
   "ko": "미리보기를 확인하고 가져오세요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "3층 평면도.dwg",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "4층 평면도.dwg",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "CAD 도면",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "가져오는 중 {0}/{1} · {2}",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -2969,6 +2989,26 @@
  },
  {
   "ko": "선과 도형은 벡터로, 사진은 원본 해상도로 유지합니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "도면 크기에 맞춰 대지 만들기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "새 문서는 도면 범위로 대지를 만들어요. 배치를 가져오면 용지 크기로 만들어요. 대지가 있는 문서에 추가하면 기존 대지 오른쪽에 새 대지로 놓아요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "다음부터 묻지 않고 이 설정으로 가져오기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "DWG·DXF를 열면 이 창 없이 같은 설정으로 바로 가져와요. Shift를 누른 채 열거나 파일 메뉴의 ‘도면 가져오기 설정 다시 묻기’로 다시 볼 수 있어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "Shift를 누른 채 열면 이 창이 다시 열려요.",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
@@ -2992,6 +3032,10 @@
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
+  "ko": "지난번 재질 이미지를 찾을 수 없어 설정 창을 열었어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
   "ko": "Morupixel · 호환 파일 가져오기",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
@@ -3001,6 +3045,18 @@
  },
  {
   "ko": "가져오기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "모든 파일에 같은 설정 적용 ({0}개)",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "첫 파일로 미리보기를 만들고 나머지 파일도 같은 설정으로 가져와요. 파일마다 새 탭이 열리고, 바꾼 레이어 역할은 이름이 같은 레이어에만 적용돼요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "함께 고른 파일 {0}개 · 미리보기는 첫 파일이에요.",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
@@ -3060,31 +3116,19 @@
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
+  "ko": "이전 설정으로 가져오고 있어요…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
   "ko": "미리보기를 준비하고 있어요…",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
-  "ko": "아트보드 {0}개",
+  "ko": "가져오는 중…",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
-  "ko": "총 {0}페이지",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "저장된 레이어 {0}개를 유지합니다.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "이 파일에는 따로 저장된 레이어가 없어요.",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "자동 선택",
-  "file": "UI/Dialogs/CompatibilityDialog.cs"
- },
- {
-  "ko": "CAD 도면",
+  "ko": "{0}개 모두 가져오기",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
@@ -3120,11 +3164,35 @@
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
+  "ko": "아트보드 {0}개",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "총 {0}페이지",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "저장된 레이어 {0}개를 유지합니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "이 파일에는 따로 저장된 레이어가 없어요.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "자동 선택",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
   "ko": "미리보기를 만들고 있어요…",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
   "ko": "가져오기를 취소했습니다.",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "이전 설정으로 가져오지 못했어요. 설정을 확인해 주세요.",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
@@ -4828,7 +4896,35 @@
   "file": "UI/MainWindow.Commands.cs"
  },
  {
+  "ko": "이전 가져오기 설정으로 {0}개 파일을 열었습니다 · 설정 창을 보려면 Shift를 누른 채 여세요.",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "호환 파일 {0}개 가져오기 완료 · 원본은 변경하지 않았습니다.",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
   "ko": "호환 파일 가져오기 완료 · 원본은 변경하지 않았습니다.",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "열린 문서는 최대 8개라서 파일 {0}개는 열지 않았습니다.",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "가져오지 못한 파일",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "도면 가져오기 설정 다시 묻기",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "레이어로 가져오기…",
+  "file": "UI/MainWindow.Compatibility.cs"
+ },
+ {
+  "ko": "다음 DWG·DXF 가져오기부터 설정 창을 다시 표시합니다.",
   "file": "UI/MainWindow.Compatibility.cs"
  },
  {
@@ -5128,6 +5224,10 @@
   "file": "UI/MainWindow.DrawingLayers.cs"
  },
  {
+  "ko": "도면 해치 재질 · {0}%",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
   "ko": "도면 그룹 잠금",
   "file": "UI/MainWindow.DrawingLayers.cs"
  },
@@ -5305,6 +5405,10 @@
  },
  {
   "ko": "텍스트 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "재료 맵핑 레이어",
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
@@ -5760,10 +5864,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "레이어로 가져오기…",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "Compositor .comp 가져오기…",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -6148,6 +6248,10 @@
   "file": "UI/MainWindow.Preview.cs"
  },
  {
+  "ko": "2층 평면도.dwg",
+  "file": "UI/MainWindow.Preview.cs"
+ },
+ {
   "ko": "사용 목적: {0} · 도구와 패널 순서를 맞췄습니다. 모든 기능은 그대로입니다.",
   "file": "UI/MainWindow.Profiles.cs"
  },
@@ -6457,6 +6561,10 @@
  },
  {
   "ko": "레이어로 가져오기",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "도면 가져오기 설정",
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {

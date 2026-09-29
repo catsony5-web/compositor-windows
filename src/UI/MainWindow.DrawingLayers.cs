@@ -37,11 +37,17 @@ public sealed partial class MainWindow
         }
         var counts = new Dictionary<Guid, int>();
         int Count(Layer layer) => counts.TryGetValue(layer.Id, out var count) ? count
-            : counts[layer.Id] = layer.Kind == LayerKind.Group ? children[layer.Id].Sum(Count) : 1;
+            : counts[layer.Id] = layer.Kind == LayerKind.Group ? children[layer.Id].Sum(Count) : categories[layer.Id] == layerCategory ? 1 : 0;
+        // Paint order across parents, so the photo tab can interleave hatch materials kept inside
+        // drawing folders with root photo layers exactly as they render. Siblings keep list order.
+        var rank = new Dictionary<Guid, int>();
+        void Rank(Guid? parent, int depth) { if (depth > 16) return; foreach (var layer in children[parent]) { rank[layer.Id] = rank.Count; if (layer.Kind == LayerKind.Group) Rank(layer.Id, depth + 1); } }
+        Rank(null, 0);
         var entries = new List<LayerListEntry>();
         void Walk(IEnumerable<Layer> siblings, int depth)
         {
-            var stack = siblings.OrderByDescending(l => order[l.Id]).ToArray();
+            // Each layer is listed on one tab: hatch materials inside a drawing folder show on the photo tab only.
+            var stack = siblings.Where(l => categories[l.Id] == layerCategory).OrderByDescending(l => rank.GetValueOrDefault(l.Id, order[l.Id])).ToArray();
             var sourceGroups = stack.Where(l => l.Kind == LayerKind.Group && l.SourceLayerName != null)
                 .GroupBy(l => l.SourceLayerName!, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
             var shown = new HashSet<Guid>();
@@ -61,13 +67,16 @@ public sealed partial class MainWindow
                 else
                 {
                     bool expanded = !collapsedGroups.Contains(layer.Id);
-                    string? description = layer.Kind == LayerKind.Group && categories[layer.Id] == LayerCategory.Drawing ? $"도면 레이어 · 객체 {Count(layer):N0}개" : null;
+                    string? description = layer.Kind == LayerKind.Group && categories[layer.Id] == LayerCategory.Drawing ? $"도면 레이어 · 객체 {Count(layer):N0}개"
+                        : DrawingLayers.IsNestedPhoto(layer, categories) ? $"도면 해치 재질 · {layer.Opacity * 100:0}%" : null;
                     entries.Add(new(layer, depth, selected.Contains(layer.Id), expanded, Description: description));
                     if (layer.Kind == LayerKind.Group && expanded) Walk(children[layer.Id], depth + 1);
                 }
             }
         }
-        Walk(children[null].Where(l => categories[l.Id] == layerCategory), 0);
+        var top = children[null].AsEnumerable();
+        if (layerCategory == LayerCategory.Photo) top = top.Concat(doc.Layers.Where(l => DrawingLayers.IsNestedPhoto(l, categories)));
+        Walk(top, 0);
         return entries.ToArray();
     }
 

@@ -207,7 +207,8 @@ public static class MaterialEditing
         int width = checked((int)Math.Ceiling(bounds.Right - left)), height = checked((int)Math.Ceiling(bounds.Bottom - top));
         ValidateSize(width, height);
         var fill = new MaterialFill(asset, region.Id, region.Name, region.Path.Translate(-left, -top), width, height, tileWidth, tileHeight, angle, offsetX, offsetY);
-        var layer = new Layer { Name = "재료 · " + asset.Name + " · " + region.Name, Kind = LayerKind.Material, Category = LayerCategory.Drawing,
+        // Material layers are photo layers (DrawingLayers.Categories), wherever they sit.
+        var layer = new Layer { Name = "재료 · " + asset.Name + " · " + region.Name, Kind = LayerKind.Material, Category = LayerCategory.Photo,
             Material = fill, X = left, Y = top, Pixels = new Raster(1, 1), Blend = BlendMode.Multiply };
         ValidateFill(fill, layer.Pixels, false);
         layer.Pixels = MaterialRenderer.Render(fill); return layer;
