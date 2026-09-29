@@ -353,6 +353,15 @@ public sealed partial class MainWindow : Window
                 if (roots.Contains(original.Id)) { copy.Name += " 복사"; if (copy.SourceLayerName != null) copy.SourceLayerName += " 복사"; }
                 return copy;
             }).ToArray();
+            // A shadow copied together with its sources follows the copies; a shadow copied alone
+            // (or whose sources would then sit in different groups) keeps the original sources.
+            var parents = doc.Layers.Concat(copies).ToDictionary(l => l.Id, l => l.ParentId);
+            foreach (var copy in copies)
+            {
+                if (copy.Shadow is not { } spec || !spec.Sources.Any(map.ContainsKey)) continue;
+                var sources = spec.Sources.Select(id => map.TryGetValue(id, out var mapped) ? mapped : id).ToArray();
+                if (sources.Where(parents.ContainsKey).Select(id => parents[id]).Distinct().Count() <= 1) copy.Shadow = spec with { Sources = sources };
+            }
             doc.Layers.AddRange(copies); doc.Validate();
             selectedLayers.Clear(); selectedLayers.UnionWith(roots.Select(id => map[id])); doc.ActiveId = selectedLayers.Last();
             sourceLayerSelection = sourceLayerSelection?.Where(map.ContainsKey).Select(id => map[id]).ToArray();

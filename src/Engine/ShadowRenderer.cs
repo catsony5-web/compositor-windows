@@ -21,8 +21,11 @@ public sealed class AlphaMap
     public byte At(int x, int y) => x < X || y < Y || x >= X + Width || y >= Y + Height ? (byte)0 : Data[(y - Y) * Width + x - X];
 }
 
-/// <summary>Source coverage in the parent space of the source layers, at <see cref="Scale"/> of its pixels.</summary>
-public sealed record ShadowSilhouette(Guid? ParentId, int SpaceWidth, int SpaceHeight, double Scale, IReadOnlyList<AlphaMap> Items);
+/// <summary>
+/// Source coverage in the parent space of the source layers, at <see cref="Scale"/> of its pixels.
+/// The space (the part of the parent space that can show) starts at <see cref="SpaceX"/>, <see cref="SpaceY"/>.
+/// </summary>
+public sealed record ShadowSilhouette(Guid? ParentId, int SpaceWidth, int SpaceHeight, double Scale, IReadOnlyList<AlphaMap> Items, int SpaceX = 0, int SpaceY = 0);
 
 /// <summary>
 /// Builds shadow layers from the rendered coverage of their source layers. Work is bounded by the
@@ -97,9 +100,51 @@ public static class ShadowRenderer
     }
 
     /// <summary>
+    /// The part of a parent space that can show: the canvas mapped into that space, cropped by every
+    /// group of the chain that crops its children. Drawing folders do not crop (objects may sit off
+    /// their original page), so a placed drawing's shadows reach as far as the canvas.
+    /// </summary>
+    internal static Rect SpaceBounds(Document doc, Guid? parentId)
+    {
+        var canvas = new Rect(0, 0, doc.Width, doc.Height);
+        if (parentId is not { } id) return canvas;
+        var lookup = doc.Layers.ToDictionary(l => l.Id);
+        if (!lookup.TryGetValue(id, out var parent)) throw new InvalidOperationException("그룹이 없습니다.");
+        var region = Rect.Empty; bool first = true;
+        void Crop(Rect rect) { region = first ? rect : Rect.Intersect(region, rect); first = false; }
+        // toGroup maps the parent's space to the current group's space (to the canvas past the top).
+        var toGroup = Matrix.Identity; Guid? current = id; bool reachedCanvas = true;
+        for (int depth = 0; current is { } next && lookup.TryGetValue(next, out var group); depth++, current = group.ParentId)
+        {
+            if (depth >= 17 || !toGroup.HasInverse) { reachedCanvas = false; break; }
+            var back = toGroup; back.Invert();
+            if (!DrawingLayers.IsContainer(group)) Crop(Rect.Transform(new Rect(0, 0, group.Pixels.Width, group.Pixels.Height), back));
+            // A perspective group shows its own surface only; spaces above it cannot be mapped back.
+            if (group.Warp != null) { reachedCanvas = false; break; }
+            toGroup.Append(group.Matrix);
+        }
+        if (reachedCanvas && toGroup.HasInverse) { var back = toGroup; back.Invert(); Crop(Rect.Transform(canvas, back)); }
+        if (first) Crop(new Rect(0, 0, parent.Pixels.Width, parent.Pixels.Height));
+        return region;
+    }
+
+    // Space bounds at a scale, as whole pixels; far-off spaces are bounded so they stay representable.
+    static Box ScaledSpace(Rect region, double scale)
+    {
+        if (region.IsEmpty) return new Box(0, 0, 0, 0);
+        const double Limit = 1 << 28;
+        int Floor(double v) => (int)Math.Clamp(Math.Floor(v * scale), -Limit, Limit);
+        int Ceiling(double v) => (int)Math.Clamp(Math.Ceiling(v * scale), -Limit, Limit);
+        int left = Floor(region.Left), top = Floor(region.Top);
+        return new Box(left, top, Math.Max(left + 1, Ceiling(region.Right)), Math.Max(top + 1, Ceiling(region.Bottom)));
+    }
+
+    /// <summary>
     /// Renders the coverage of the sources in their parent's space (the canvas for top-level layers).
     /// Sources are drawn fully visible and opaque with normal blending: a shadow follows an object's
-    /// form, not its current transparency. <paramref name="separate"/> keeps one map per source.
+    /// form, not its current transparency. A clipped source covers only what its clip base covers, and
+    /// shadow layers inside a group source are not part of its form. <paramref name="separate"/> keeps
+    /// one map per source.
     /// </summary>
     public static ShadowSilhouette Silhouette(Document doc, IReadOnlyList<Guid> sourceIds, double scale, bool separate, CancellationToken token = default)
     {
@@ -111,9 +156,15 @@ public static class ShadowRenderer
         var parentId = sources[0].ParentId;
         if (sources.Any(l => l.ParentId != parentId)) throw new InvalidOperationException(SameGroup);
         var (width, height) = SpaceSize(doc, parentId);
-        var space = new Box(0, 0, Math.Max(1, (int)Math.Ceiling(width * scale)), Math.Max(1, (int)Math.Ceiling(height * scale)));
+        var space = ScaledSpace(SpaceBounds(doc, parentId), scale);
         var children = doc.Layers.Where(l => l.ParentId != null).ToLookup(l => l.ParentId!.Value);
-        IEnumerable<Layer[]> groups = separate ? sources.Select(s => new[] { s }) : new[] { sources };
+        var siblings = doc.Layers.Where(l => l.ParentId == parentId).ToList();
+        var bases = sources.ToDictionary(s => s.Id, s => ClipBase(siblings, s));
+        var chosen = sources.Select(s => s.Id).ToHashSet();
+        // A clipped layer never covers more than its base: with the base chosen it adds nothing of its own.
+        IEnumerable<Layer[]> groups = separate
+            ? sources.Where(s => bases[s.Id] is not { } b || !chosen.Contains(b.Id)).Select(s => new[] { s })
+            : new[] { sources };
         var items = new List<AlphaMap>();
         foreach (var group in groups)
         {
@@ -124,12 +175,55 @@ public static class ShadowRenderer
             var box = new Box((int)Math.Floor(bounds.Left * scale) - 1, (int)Math.Floor(bounds.Top * scale) - 1,
                 (int)Math.Ceiling(bounds.Right * scale) + 1, (int)Math.Ceiling(bounds.Bottom * scale) + 1).Intersect(space);
             if (box.IsEmpty) continue;
-            var subtree = new Document { Width = width, Height = height, Name = doc.Name };
-            foreach (var source in group) Include(subtree, source, children, 0, true);
-            var alpha = group.Length == 1 && group[0].Kind is LayerKind.Raster or LayerKind.Shape ? CompositeAlpha(subtree.Layers[0], box, scale, token) : RenderAlpha(subtree, box, scale, token);
+            var members = group.Select(l => l.Id).ToHashSet();
+            // Clipped sources whose base is not rendered with them are limited by the base's coverage.
+            var limited = group.Where(s => bases[s.Id] is { } b && !members.Contains(b.Id)).ToArray();
+            var direct = group.Except(limited).ToArray();
+            byte[] Alpha(IReadOnlyList<Layer> roots)
+            {
+                var subtree = new Document { Width = width, Height = height, Name = doc.Name };
+                foreach (var source in roots) Include(subtree, source, children, 0, true, source.Clipped && bases.GetValueOrDefault(source.Id) is { } b && members.Contains(b.Id));
+                return roots.Count == 1 && roots[0].Kind is LayerKind.Raster or LayerKind.Shape && !subtree.Layers[0].Clipped
+                    ? CompositeAlpha(subtree.Layers[0], box, scale, token) : RenderAlpha(subtree, box, scale, token);
+            }
+            var alpha = direct.Length > 0 ? Alpha(direct) : new byte[checked(box.Width * box.Height)];
+            foreach (var source in limited)
+            {
+                token.ThrowIfCancellationRequested();
+                var own = Alpha([source]); var limit = Alpha([bases[source.Id]!]);
+                // Source-over of the visible (clipped) part onto what is already covered.
+                for (int i = 0; i < alpha.Length; i++)
+                {
+                    int part = (own[i] * limit[i] + 127) / 255;
+                    alpha[i] = (byte)(alpha[i] + part - (alpha[i] * part + 127) / 255);
+                }
+            }
             if (Trim(alpha, box) is { } map) items.Add(map);
         }
-        return new ShadowSilhouette(parentId, space.Width, space.Height, scale, items);
+        return new ShadowSilhouette(parentId, space.Width, space.Height, scale, items, space.Left, space.Top);
+    }
+
+    // The layer a clipped source is clipped to: the nearest sibling below that is not clipped.
+    // Without one (or on an adjustment), the source is treated as not clipped.
+    static Layer? ClipBase(List<Layer> siblings, Layer source)
+    {
+        if (!source.Clipped) return null;
+        for (int i = siblings.IndexOf(source) - 1; i >= 0; i--)
+            if (!siblings[i].Clipped) return siblings[i].Kind == LayerKind.Adjustment ? null : siblings[i];
+        return null;
+    }
+
+    // Children that are part of a group's form: shadow layers (and layers clipped to one) are effects.
+    static IEnumerable<Layer> Content(IEnumerable<Layer> children)
+    {
+        bool skipping = false;
+        foreach (var child in children)
+        {
+            if (child.Shadow != null) { if (!child.Clipped) skipping = true; continue; }
+            if (child.Clipped && skipping) continue;
+            skipping = false;
+            yield return child;
+        }
     }
 
     // Bounds of visible content: leaf corners mapped through the subtree to the parent space.
@@ -139,7 +233,7 @@ public static class ShadowRenderer
         Point Map(Point p) => toSpace(layer.Document(p));
         if (layer.Kind == LayerKind.Group)
         {
-            foreach (var child in children[layer.Id]) Accumulate(child, Map, children, ref bounds, depth + 1, false);
+            foreach (var child in Content(children[layer.Id])) Accumulate(child, Map, children, ref bounds, depth + 1, false);
             return;
         }
         foreach (var corner in new[] { new Point(0, 0), new Point(layer.Pixels.Width, 0), new Point(layer.Pixels.Width, layer.Pixels.Height), new Point(0, layer.Pixels.Height) })
@@ -149,12 +243,13 @@ public static class ShadowRenderer
         }
     }
 
-    static void Include(Document subtree, Layer layer, ILookup<Guid, Layer> children, int depth, bool root)
+    // A root keeps its clipping only when its base is rendered below it in the same subtree.
+    static void Include(Document subtree, Layer layer, ILookup<Guid, Layer> children, int depth, bool root, bool keepClip = false)
     {
         var copy = layer.Snapshot();
-        if (root) { copy.ParentId = null; copy.Visible = true; copy.Opacity = 1; copy.Blend = BlendMode.Normal; copy.Clipped = false; }
+        if (root) { copy.ParentId = null; copy.Visible = true; copy.Opacity = 1; copy.Blend = BlendMode.Normal; copy.Clipped = keepClip; }
         subtree.Layers.Add(copy);
-        if (depth < 17) foreach (var child in children[layer.Id]) Include(subtree, child, children, depth + 1, false);
+        if (depth < 17) foreach (var child in Content(children[layer.Id])) Include(subtree, child, children, depth + 1, false);
     }
 
     static byte[] CompositeAlpha(Layer layer, Box box, double scale, CancellationToken token)
@@ -212,7 +307,7 @@ public static class ShadowRenderer
     {
         ArgumentNullException.ThrowIfNull(silhouette); ArgumentNullException.ThrowIfNull(spec);
         spec.Validate();
-        double s = silhouette.Scale; var space = new Box(0, 0, silhouette.SpaceWidth, silhouette.SpaceHeight);
+        double s = silhouette.Scale; var space = new Box(silhouette.SpaceX, silhouette.SpaceY, silhouette.SpaceX + silhouette.SpaceWidth, silhouette.SpaceY + silhouette.SpaceHeight);
         bool realistic = spec.Style == ShadowStyle.Realistic;
         double soft = realistic ? spec.Softness * s : 0, angle = spec.Angle * Math.PI / 180, ux = Math.Cos(angle), uy = Math.Sin(angle);
         var parts = new List<AlphaMap>();
