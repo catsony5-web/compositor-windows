@@ -14,7 +14,7 @@
 - **AI connection.** `apply_batch` steps can be named with `ref` and later steps can use `"@name"` in ID arguments (contract 6).
 - **Checked before release.** An independent review of the combined work found 31 issues — among them a crash in layered .psd export on ordinary photos, group blend modes and clipped layers drawn wrong in PDF, a photo moving into a drawing folder when dropped next to a hatch row, selection materials offset inside a placed drawing, line cleanup touching only the last placed layer, and shadows including other shadows — all fixed with regression checks.
 - **Cleaner screens in every language.** A review of every offscreen screen in Korean and English led to 40 fixes: counts in English no longer say "1 layers", command search results, range hints and app-made layer names (shapes, materials, groups, artboards, shadows) follow the display language while file and layer names you gave stay as they are, the square brush tip is now 정사각형 so English can say Rectangle for the shape tool, dropdowns and dialogs no longer cut off English words, the tool rail and layer list fit a 1280×720 window, the zoom readout follows every fit (opening, crop, canvas size), ribbon labels break only between words, flip and mask commands have their own icons, drawing layer thumbnails sit on a light background, and wrapped Korean descriptions break only between words.
-- **Validation.** 673 source checks passed. [Validation](VALIDATION.md) lists the details.
+- **Validation.** 674 source checks passed. [Validation](VALIDATION.md) lists the details.
 
 ## Preview 36 — drawing cleanup no longer stops on thin hatches
 

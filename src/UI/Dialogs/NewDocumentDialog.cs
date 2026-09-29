@@ -150,7 +150,10 @@ public sealed class NewDocumentDialog : Window
     {
         var content = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         double scale = 44d / Math.Max(size.Width, size.Height);
-        content.Children.Add(new Border { Width = Math.Max(3, size.Width * scale), Height = Math.Max(3, size.Height * scale), BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Center });
+        // Icons of different ratios share one 44 px slot, so every card's title starts at the same height.
+        var slot = new Grid { Height = 44, Margin = new Thickness(0, 0, 0, 10) };
+        slot.Children.Add(new Border { Width = Math.Max(3, size.Width * scale), Height = Math.Max(3, size.Height * scale), BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center });
+        content.Children.Add(slot);
         label.FontWeight = FontWeights.SemiBold; label.HorizontalAlignment = HorizontalAlignment.Center; label.TextAlignment = TextAlignment.Center; label.TextWrapping = TextWrapping.Wrap; content.Children.Add(label);
         var detail = Theme.Label(Describe(size), Theme.CaptionSize, Theme.Subtle); detail.HorizontalAlignment = HorizontalAlignment.Center; detail.TextAlignment = TextAlignment.Center; detail.TextWrapping = TextWrapping.Wrap; content.Children.Add(detail);
         var button = Theme.Button("", () => { }); button.Content = content; button.Margin = new Thickness(4); button.Padding = new Thickness(5, 12, 5, 10); button.BorderThickness = new Thickness(1.5); button.MinHeight = 128;

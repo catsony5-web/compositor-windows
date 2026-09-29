@@ -126,7 +126,7 @@ public sealed partial class MainWindow
             string file = path;
             var row = new Grid();
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) }); row.ColumnDefinitions.Add(new ColumnDefinition());
-            row.Children.Add(Theme.Glyph(Theme.Glyphs.NewFile.Split(" M12 11")[0], 18, Theme.Muted, 1.6));
+            row.Children.Add(Theme.Glyph(Theme.Glyphs.Document, 18, Theme.Muted, 1.6));
             var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             labels.Children.Add(Loc.Keep(new TextBlock { Text = Path.GetFileName(file), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis }));
             labels.Children.Add(new TextBlock { Text = Path.GetDirectoryName(file) ?? "", FontSize = Theme.CaptionSize, Foreground = Theme.Subtle, TextTrimming = TextTrimming.CharacterEllipsis });
