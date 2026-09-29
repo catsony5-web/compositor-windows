@@ -268,7 +268,7 @@ public sealed partial class MainWindow : Window
     void OpenImage(string path)
     {
         var pixels = ImportExport.LoadImage(path); var next = new Document { Width = pixels.Width, Height = pixels.Height, Name = Path.GetFileNameWithoutExtension(path) };
-        next.Add(new Layer { Name = "원본", Pixels = pixels }); AddTab(next, null);
+        next.Add(new Layer { Name = Loc.T("원본"), Pixels = pixels }); AddTab(next, null);
     }
     void Import()
     {
@@ -409,7 +409,7 @@ public sealed partial class MainWindow : Window
     }
     void AddMask() => EditLayer("마스크 추가", l => { if (l.Mask != null) return; l.Mask = new byte[l.Pixels.Width * l.Pixels.Height]; for (int y = 0; y < l.Pixels.Height; y++) for (int x = 0; x < l.Pixels.Width; x++) { var p = DocumentFeatures.ToDocumentSpace(doc, l, new Point(x + .5, y + .5)); l.Mask[y * l.Pixels.Width + x] = Imaging.Byte((selection?.Weight(p.X, p.Y) ?? 1) * 255); } maskEditing = true; });
     void InvertMask() => EditLayer("마스크 반전", l => { if (l.Mask != null) l.Mask = l.Mask.Select(v => (byte)(255 - v)).ToArray(); });
-    void Flatten() => Edit("모든 레이어 병합", () => { var rendered = Imaging.Render(doc); doc.Layers.Clear(); doc.Add(new Layer { Name = "합성 이미지", Pixels = rendered }); maskEditing = false; });
+    void Flatten() => Edit("모든 레이어 병합", () => { var rendered = Imaging.Render(doc); doc.Layers.Clear(); doc.Add(new Layer { Name = Loc.T("합성 이미지"), Pixels = rendered }); maskEditing = false; });
     void Adjust(string kind, double a = 0, double b = 255, double c = 1) => RunRasterJob("색상 보정", (l, s, ct) => Imaging.Adjust(l, s, kind, a, b, c));
     void Levels() => QuickAdjustment("levels");
     void Exposure() => QuickAdjustment("exposure");
@@ -459,10 +459,10 @@ public sealed partial class MainWindow : Window
     {
         if (!HasDocument)
         {
-            var document = new Document { Width = raster.Width, Height = raster.Height, Name = "붙여넣은 이미지" };
-            document.Add(new Layer { Name = "붙여넣은 이미지", Pixels = raster }); AddTab(document, null); return;
+            var document = new Document { Width = raster.Width, Height = raster.Height, Name = Loc.T("붙여넣은 이미지") };
+            document.Add(new Layer { Name = Loc.T("붙여넣은 이미지"), Pixels = raster }); AddTab(document, null); return;
         }
-        Edit("붙여넣기", () => { doc.Add(new Layer { Name = "붙여넣은 이미지", Pixels = raster }); maskEditing = false; });
+        Edit("붙여넣기", () => { doc.Add(new Layer { Name = Loc.T("붙여넣은 이미지"), Pixels = raster }); maskEditing = false; });
     }
     void TextAt(Point p) => EditTextAt(p);
     void OnDown(object sender, MouseButtonEventArgs e) => InteractionDown(sender, e);

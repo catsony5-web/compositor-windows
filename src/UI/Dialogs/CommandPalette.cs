@@ -7,7 +7,10 @@ namespace Compositor.Windows;
 
 // One editor action as it appears in the command palette. Execute runs the same path as
 // its menu item, tool button or panel tab, so availability and undo behave identically.
-internal sealed record EditorCommand(string Id, string Title, string Category, string Shortcut, Func<bool> IsAvailable, Action Execute);
+// Title and Category are shown as they are (already in the display language); the Korean
+// source text, when it differs, is searched as well so Korean queries keep matching.
+internal sealed record EditorCommand(string Id, string Title, string Category, string Shortcut, Func<bool> IsAvailable, Action Execute,
+    string SourceTitle = "", string SourceCategory = "");
 
 // Ctrl+K search over menus, tools and panels. Matches titles, categories and shortcuts,
 // and Korean initial consonants (ㅂㄹㅅ → 브러시 도구).
@@ -140,7 +143,14 @@ internal sealed class CommandPalette : Window
 
     static int Score(EditorCommand command, string q, bool initials)
     {
-        string title = Normalize(command.Title);
+        int score = Score(command.Title, command.Category, command.Shortcut, q, initials);
+        return command.SourceTitle.Length == 0 || command.SourceTitle == command.Title ? score
+            : Math.Max(score, Score(command.SourceTitle, command.SourceCategory, "", q, initials));
+    }
+
+    static int Score(string shownTitle, string category, string shortcut, string q, bool initials)
+    {
+        string title = Normalize(shownTitle);
         if (title.StartsWith(q, StringComparison.Ordinal)) return 100;
         if (title.Contains(q, StringComparison.Ordinal)) return 80;
         if (initials)
@@ -149,8 +159,8 @@ internal sealed class CommandPalette : Window
             if (letters.StartsWith(q, StringComparison.Ordinal)) return 70;
             if (letters.Contains(q, StringComparison.Ordinal)) return 60;
         }
-        if (Normalize(command.Category + command.Title).Contains(q, StringComparison.Ordinal)) return 50;
-        if (command.Shortcut.Length > 0 && Normalize(command.Shortcut).Contains(q, StringComparison.Ordinal)) return 40;
+        if (Normalize(category + shownTitle).Contains(q, StringComparison.Ordinal)) return 50;
+        if (shortcut.Length > 0 && Normalize(shortcut).Contains(q, StringComparison.Ordinal)) return 40;
         return 0;
     }
 

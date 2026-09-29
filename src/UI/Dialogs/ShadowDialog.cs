@@ -260,7 +260,7 @@ public sealed class ShadowDialog : Window
         }
         else
         {
-            layer = new Layer { Name = "그림자", Blend = BlendMode.Multiply, ParentId = silhouette.ParentId, Pixels = new Raster(1, 1) };
+            layer = new Layer { Name = Loc.T("그림자"), Blend = BlendMode.Multiply, ParentId = silhouette.ParentId, Pixels = new Raster(1, 1) };
             document.Layers.Insert(ShadowRenderer.InsertionIndex(document, spec.Sources), layer);
         }
         if (ShadowRenderer.Colorize(alpha, spec) is { } colored)

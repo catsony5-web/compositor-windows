@@ -191,7 +191,7 @@ public sealed partial class MainWindow
     {
         var ids = selectedLayers.Where(id => doc.Layers.Any(l => l.Id == id)).ToArray();
         if (ids.Length == 0 && doc.ActiveId != Guid.Empty) ids = [doc.ActiveId];
-        Edit("그룹 만들기", () => { var g = ids.Length > 0 ? DocumentFeatures.Group(doc, ids, "새 그룹") : DocumentFeatures.CreateGroup(doc); if (ids.Length == 0) doc.Add(g); selectedLayers.Clear(); selectedLayers.Add(g.Id); });
+        Edit("그룹 만들기", () => { var g = ids.Length > 0 ? DocumentFeatures.Group(doc, ids, Loc.T("새 그룹")) : DocumentFeatures.CreateGroup(doc, Loc.T("그룹")); if (ids.Length == 0) doc.Add(g); selectedLayers.Clear(); selectedLayers.Add(g.Id); });
     }
     void UngroupSelected() { if (doc.Active?.Kind == LayerKind.Group) Edit("그룹 해제", () => { DocumentFeatures.Ungroup(doc, doc.ActiveId); selectedLayers.Clear(); }); }
     void MoveToGroup()
@@ -289,7 +289,7 @@ public sealed partial class MainWindow
         if (dialog.ShowDialog() != true) return;
         Edit("조정 레이어 추가", () =>
         {
-            var layer = DocumentFeatures.CreateAdjustment(doc, dialog.Spec);
+            var layer = DocumentFeatures.CreateAdjustment(doc, dialog.Spec); layer.Name = Loc.T(layer.Name);
             if (selection != null) layer.Mask = SelectionTools.Mask(selection, doc.Width, doc.Height);
             doc.Add(layer);
         });
@@ -348,7 +348,7 @@ public sealed partial class MainWindow
         if (layer.Kind == LayerKind.Adjustment) { status.Text = "조정 레이어는 독립 픽셀을 포함하지 않습니다."; return; }
         var pixels = Imaging.Render(LayerDocument(layer));
         for (int y = 0; y < doc.Height; y++) for (int x = 0; x < doc.Width; x++) { int i = (y * doc.Width + x) * 4; pixels.Data[i + 3] = Imaging.Byte(pixels.Data[i + 3] * selection.Weight(x + .5, y + .5)); }
-        Edit("선택 픽셀 복제", () => doc.Add(new Layer { Name = layer.Name + " 선택", Pixels = pixels })); SetTool(Tool.Move);
+        Edit("선택 픽셀 복제", () => doc.Add(new Layer { Name = layer.Name + Loc.T(" 선택"), Pixels = pixels })); SetTool(Tool.Move);
     }
     void ApplySelection(Selection incoming) { selection = SelectionTools.Combine(selection, incoming, doc.Width, doc.Height, selectionMode); Refresh(false); }
     void FillFromSurroundings()

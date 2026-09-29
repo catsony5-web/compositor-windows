@@ -27,12 +27,14 @@ public sealed partial class MainWindow
             string title = ToolDisplayName(tool), alias = name.Split(" / ")[0];
             // A tool already reachable from a menu (G: 버킷 채우기) keeps the menu entry only.
             if (shortcuts.Contains(key)) continue;
-            commands.Add(new EditorCommand("tool:" + tool, $"{title} 도구", alias == title ? "도구" : "도구 · " + alias, key, () => HasDocument, () => SetTool(tool)));
+            string toolTitle = $"{title} 도구", toolCategory = alias == title ? "도구" : "도구 · " + alias;
+            commands.Add(new EditorCommand("tool:" + tool, Loc.T(toolTitle), Loc.T(toolCategory), key, () => HasDocument, () => SetTool(tool), toolTitle, toolCategory));
         }
         for (int page = 0; page < studioTabs.Count; page++)
         {
             int target = page; string caption = studioPanes.Length > page ? studioPanes[page].Caption : studioTabs[page].Content?.ToString() ?? "";
-            commands.Add(new EditorCommand("panel:page" + page, caption + " 패널 열기", "패널", "", () => true, () => ShowStudioPage(target)));
+            string panelTitle = $"{caption} 패널 열기";
+            commands.Add(new EditorCommand("panel:page" + page, Loc.T(panelTitle), Loc.T("패널"), "", () => true, () => ShowStudioPage(target), panelTitle, "패널"));
         }
         return commands;
     }
@@ -45,7 +47,8 @@ public sealed partial class MainWindow
         if (children.Length > 0) { foreach (var child in children) AddMenuCommands(commands, child, here); return; }
         string id = "menu:" + string.Join("/", here);
         if (header.Length == 0 || id == PaletteCommandId) return;
-        commands.Add(new EditorCommand(id, Loc.T(header), string.Join(" › ", path.Select(Loc.T)), item.InputGestureText ?? "", () => item.IsEnabled, () => InvokeMenuItem(item)));
+        commands.Add(new EditorCommand(id, Loc.T(header), string.Join(" › ", path.Select(Loc.T)), item.InputGestureText ?? "", () => item.IsEnabled, () => InvokeMenuItem(item),
+            header, string.Join(" › ", path)));
     }
 
     // Same effect as clicking: checkable items flip first, then the Click handlers run.

@@ -65,6 +65,10 @@ internal sealed partial class CompatibilityDialog
         materialImage = open.FileName; return true;
     }
 
+    internal string RoleSummary => roleExpander.Header as string ?? "";
+    internal TextBlock MessageText => messages;
+    internal TextBlock HatchSummaryText => hatchSummary;
+
     internal void UseMaterialImage(string path) { materialImage = path; lastHatchIndex = 2; hatchMode.SelectedIndex = 2; }
 
     internal void ShowDrawingInfo(CadDrawingInfo info)
@@ -86,8 +90,7 @@ internal sealed partial class CompatibilityDialog
             rolePickers[layer.Name] = picker;
         }
         int shown = Math.Min(info.Layers.Count, MaxRoleRows);
-        var byRole = info.Layers.GroupBy(l => l.Role).OrderBy(g => g.Key).Select(g => $"{DrawingCleanup.RoleName(g.Key).Split(' ')[0]} {g.Count()}");
-        roleExpander.Header = $"레이어 역할 ({info.Layers.Count:N0}) · {string.Join(" · ", byRole)}";
+        roleExpander.Header = $"{Loc.T("레이어 역할")} ({info.Layers.Count:N0}) · {DrawingCleanup.RoleSummary(info.Layers.Select(l => l.Role), Loc.T, unbreakable: true)}";
         if (info.Layers.Count > shown) roleRows.Children.Add(Theme.Label($"처음 {shown}개 레이어만 표시합니다. 나머지는 이름으로 자동 분류합니다.", Theme.CaptionSize, Theme.Subtle));
         roleExpander.Visibility = info.Layers.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         DescribeHatches();
@@ -103,12 +106,15 @@ internal sealed partial class CompatibilityDialog
     {
         DescribeCleanup();
         int total = drawingInfo?.HatchMaterials.Values.Sum() ?? 0;
+        // The user's image name is data: the sentence is translated, the file name is not.
+        if (drawingInfo != null && total > 0 && SelectedHatches == HatchTreatment.Image)
+        { Loc.SetText(hatchSummary, "해치 {0}개를 ‘{1}’ 이미지로 채워요.", total.ToString("N0"), Path.GetFileName(materialImage)); return; }
         hatchSummary.Text = drawingInfo == null ? "도면을 확인하면 해치 재질을 추천해요."
             : total == 0 ? "이 도면에는 해치가 없어요."
             : SelectedHatches switch
             {
-                HatchTreatment.Suggest => $"해치 {total:N0}개 추천: {string.Join(" · ", drawingInfo.HatchMaterials.OrderByDescending(p => p.Value).Select(p => $"{DrawingCleanup.MaterialName(p.Key)} {p.Value}"))}",
-                HatchTreatment.Image => $"해치 {total:N0}개를 ‘{Path.GetFileName(materialImage)}’ 이미지로 채워요.",
+                // Each material keeps its count on the same line (no-break space).
+                HatchTreatment.Suggest => $"해치 {total:N0}개 추천: {string.Join(" · ", drawingInfo.HatchMaterials.OrderByDescending(p => p.Value).Select(p => $"{Loc.T(DrawingCleanup.MaterialName(p.Key))}\u00A0{p.Value}"))}",
                 _ => $"해치 {total:N0}개를 경계선으로만 가져와요."
             };
     }
@@ -134,7 +140,7 @@ internal sealed partial class CompatibilityDialog
         var dialog = new CompatibilityDialog(null, path, false, new ImportSettings { CadSkipDialog = true },
             [path, Path.Combine(folder, "3층 평면도.dwg"), Path.Combine(folder, "4층 평면도.dwg")], quick);
         dialog.ShowDrawingInfo(SampleDrawing); dialog.details.Text = "CAD 도면";
-        if (quick) { dialog.SetInputs(false); dialog.messages.Text = $"가져오는 중 {2}/{dialog.files.Count} · {Path.GetFileName(dialog.files[1])}"; }
+        if (quick) { dialog.SetInputs(false); dialog.ShowProgress(1, dialog.files); }
         else if (failed) dialog.ShowFileError(new InvalidDataException("블록 배열이 너무 큽니다."));
         else dialog.messages.Text = "미리보기를 확인하고 가져오세요.";
         return dialog;
@@ -150,7 +156,7 @@ internal sealed partial class CompatibilityDialog
             {
                 Check(dialog.ReadCleanup() is { LineWeights: true, Hatches: HatchTreatment.Suggest, Roles: null }, "Cleanup is not on with recommended materials by default");
                 dialog.ShowDrawingInfo(SampleDrawing);
-                Check(dialog.rolePickers.Count == 5 && dialog.hatchSummary.Text.Contains("콘크리트 4"), "Layer roles or hatch recommendations are not shown");
+                Check(dialog.rolePickers.Count == 5 && dialog.hatchSummary.Text.Contains("콘크리트\u00A04"), "Layer roles or hatch recommendations are not shown");
                 dialog.rolePickers["A-WALL"].SelectedIndex = (int)DrawingRole.Furniture;
                 Check(dialog.ReadCleanup()!.Roles is { Count: 1 } roles && roles["A-WALL"] == DrawingRole.Furniture, "A changed role was not sent as the only override");
                 dialog.UseMaterialImage(@"C:\재질\오크.png");

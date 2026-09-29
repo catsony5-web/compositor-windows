@@ -401,7 +401,8 @@ public sealed partial class MainWindow
     {
         int w = Math.Max(1, (int)Math.Ceiling(bounds.Width)), h = Math.Max(1, (int)Math.Ceiling(bounds.Height));
         var layer = VectorShapes.Create(new ShapeSpec { Kind = ellipse ? ShapeKind.Ellipse : ShapeKind.Rectangle, Width = w, Height = h, FillArgb = VectorShapes.Argb(foreground) }, bounds.X, bounds.Y);
-        layer.Opacity = brushOpacity;
+        // App-made names are created in the display language (user-typed names never change).
+        layer.Name = Loc.T(layer.Name); layer.Opacity = brushOpacity;
         if (selection != null)
         {
             layer.Mask = new byte[w * h];
@@ -424,7 +425,7 @@ public sealed partial class MainWindow
                 pixels.Data[i + 2] = total > 0 ? Imaging.Byte((foreground.R * a + backgroundColor.R * b) / total) : foreground.R;
                 pixels.Data[i + 3] = Imaging.Byte(total * brushOpacity * weight);
             }
-            doc.Add(new Layer { Name = "그라데이션", Pixels = pixels }); maskEditing = false;
+            doc.Add(new Layer { Name = Loc.T("그라데이션"), Pixels = pixels }); maskEditing = false;
         });
     }
 

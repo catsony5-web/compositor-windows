@@ -317,7 +317,7 @@ public static class CadCompatibility
         if (totalBytes > Document.MaxLayerBytes)
             throw new InvalidDataException("도면 객체의 미리보기가 메모리 한도를 초과합니다. 긴 변 크기를 줄이거나 ‘레이어별’ 또는 ‘하나로’를 선택해 주세요.");
         var doc = new Document { Name = Path.GetFileNameWithoutExtension(path), Width = width, Height = height };
-        var paper = VectorShapes.Create(new ShapeSpec { Width = width, Height = height, FillArgb = 0xFFFFFFFF }); paper.Name = "도면 배경"; paper.Locked = true; doc.Layers.Add(paper);
+        var paper = VectorShapes.Create(new ShapeSpec { Width = width, Height = height, FillArgb = 0xFFFFFFFF }); paper.Name = Loc.T("도면 배경"); paper.Locked = true; doc.Layers.Add(paper);
         if (options.Artboard)
         {
             // Model space: the drawing extents with the 20px import margin. Layout: the paper sheet.
@@ -439,9 +439,8 @@ public static class CadCompatibility
     {
         if (cleanup.LineWeights)
         {
-            var summary = marks.Select(m => m.Layer).Distinct(StringComparer.OrdinalIgnoreCase).GroupBy(role).OrderBy(g => g.Key)
-                .Select(g => $"{DrawingCleanup.RoleName(g.Key).Split(' ')[0]} {g.Count()}");
-            warnings.Add("레이어 역할에 맞춰 선 굵기와 농도를 정리했습니다: " + string.Join(" · ", summary) + " (레이어 수).");
+            var summary = DrawingCleanup.RoleSummary(marks.Select(m => m.Layer).Distinct(StringComparer.OrdinalIgnoreCase).Select(role));
+            warnings.Add("레이어 역할에 맞춰 선 굵기와 농도를 정리했습니다: " + summary + " (레이어 수).");
         }
         if (hatches.Count == 0 || cleanup.Hatches == HatchTreatment.Keep) return;
         MaterialAsset? custom = null;
@@ -485,7 +484,8 @@ public static class CadCompatibility
                     foreach (var member in members) { chunk.Children.Add(member); Flush(); }
                     return;
                 }
-                layer.Name = "재질 · " + region.Name[5..];
+                // Layer names are made in the display language; a user's material image keeps its file name.
+                layer.Name = Loc.T("재질 · ") + (custom != null ? label : Loc.T(label)) + (part == 1 ? "" : $" {part}");
                 doc.Layers.Insert(insertAt++, layer);
                 chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
             }
