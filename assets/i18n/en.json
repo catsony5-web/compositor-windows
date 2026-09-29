@@ -1883,6 +1883,19 @@
     "타일 {0}": "Tile {0}",
     "함께 고른 파일 {0}개 · 미리보기는 첫 파일이에요.": "{0} files chosen together · The preview shows the first file.",
     "해치 {0}개 추천: {1}": "{0} hatches suggested: {1}",
-    "호환 파일 {0}개 가져오기 완료 · 원본은 변경하지 않았습니다.": "{0} compatible files imported · The originals were not changed."
+    "호환 파일 {0}개 가져오기 완료 · 원본은 변경하지 않았습니다.": "{0} compatible files imported · The originals were not changed.",
+    "보정 전 이미지를 만들지 못했습니다": "Couldn't create the before image",
+    "보정 전 이미지를 만들지 못했습니다: {0}\n설정을 바꾸면 다시 시도합니다.": "Couldn't create the before image: {0}\nChanging a setting tries again.",
+    "PDF 그룹을 만들 수 없습니다.": "Could not create the PDF group.",
+    "이전 Morupixel(0.2.0 Preview 35 이하)이 저장한 레이어 PSD입니다. 그 버전의 저장 순서(위에서 아래로)에 맞춰 레이어를 쌓았습니다.": "This layered PSD was saved by an earlier Morupixel (0.2.0 Preview 35 or older). Its layers were stacked in that version's saving order (top to bottom).",
+    "도면 숨김": "Drawing hidden",
+    "도면 잠김": "Drawing locked",
+    "도면 해치 재질": "Drawing hatch material",
+    "이 파일 건너뛰기": "Skip this file",
+    "이 파일 빼고 {0}개 가져오기": "Import the other {0}",
+    "선 정리 다시 적용 중…  Esc: 취소": "Reapplying line cleanup…  Esc: cancel",
+    "선 정리 다시 적용 중… {0} / {1}  Esc: 취소": "Reapplying line cleanup… {0} / {1}  Esc: cancel",
+    "선 정리를 취소했습니다.": "Line cleanup canceled.",
+    "정리하는 동안 문서가 바뀌어 선 정리를 적용하지 않았습니다. 다시 실행하세요.": "The document changed during cleanup, so the line cleanup was not applied. Run it again."
   }
 }

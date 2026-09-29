@@ -860,6 +860,10 @@
   "file": "Engine/DesignRenderer.cs"
  },
  {
+  "ko": "해치 · ",
+  "file": "Engine/DrawingLineCleanup.cs"
+ },
+ {
   "ko": "레이어가 없습니다.",
   "file": "Engine/FillTools.cs"
  },
@@ -1221,10 +1225,6 @@
  },
  {
   "ko": "해치에 적용할 재질 이미지를 찾을 수 없습니다.",
-  "file": "Formats/CadCompatibility.cs"
- },
- {
-  "ko": "해치 · ",
   "file": "Formats/CadCompatibility.cs"
  },
  {
@@ -1752,6 +1752,10 @@
   "file": "Formats/PdfLayerExport.cs"
  },
  {
+  "ko": "PDF 그룹을 만들 수 없습니다.",
+  "file": "Formats/PdfLayerExport.cs"
+ },
+ {
   "ko": "PDF 내용을 만들 수 없습니다.",
   "file": "Formats/PdfLayerExport.cs"
  },
@@ -2012,6 +2016,10 @@
   "file": "Formats/PsdReader.cs"
  },
  {
+  "ko": "이전 Morupixel(0.2.0 Preview 35 이하)이 저장한 레이어 PSD입니다. 그 버전의 저장 순서(위에서 아래로)에 맞춰 레이어를 쌓았습니다.",
+  "file": "Formats/PsdReader.cs"
+ },
+ {
   "ko": "PSD 그룹이 16단계보다 깊게 중첩되어 있습니다. 합성 이미지로 가져와 주세요.",
   "file": "Formats/PsdReader.cs"
  },
@@ -2181,6 +2189,10 @@
  },
  {
   "ko": "미리보기 계산 중…",
+  "file": "UI/Controls/BeforeAfterView.cs"
+ },
+ {
+  "ko": "보정 전 이미지를 만들지 못했습니다",
   "file": "UI/Controls/BeforeAfterView.cs"
  },
  {
@@ -3128,6 +3140,14 @@
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
+  "ko": "이 파일 빼고 {0}개 가져오기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "이 파일 건너뛰기",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
   "ko": "{0}개 모두 가져오기",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
@@ -3445,6 +3465,10 @@
  },
  {
   "ko": "보정 전 이미지 계산 중…",
+  "file": "UI/Dialogs/EditingDialogs.cs"
+ },
+ {
+  "ko": "보정 전 이미지를 만들지 못했습니다: {0}\n설정을 바꾸면 다시 시도합니다.",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -5216,15 +5240,27 @@
   "file": "UI/MainWindow.DrawingLayers.cs"
  },
  {
+  "ko": "도면 해치 재질 · {0}%",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 해치 재질",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 숨김",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
+  "ko": "도면 잠김",
+  "file": "UI/MainWindow.DrawingLayers.cs"
+ },
+ {
   "ko": "도면 그룹 · 객체 {0}개",
   "file": "UI/MainWindow.DrawingLayers.cs"
  },
  {
   "ko": "도면 레이어 · 객체 {0}개",
-  "file": "UI/MainWindow.DrawingLayers.cs"
- },
- {
-  "ko": "도면 해치 재질 · {0}%",
   "file": "UI/MainWindow.DrawingLayers.cs"
  },
  {
@@ -6333,6 +6369,22 @@
  },
  {
   "ko": "크기와 경도, 브러시 프리셋",
+  "file": "UI/MainWindow.Profiles.cs"
+ },
+ {
+  "ko": "선 정리 다시 적용 중… {0} / {1}  Esc: 취소",
+  "file": "UI/MainWindow.Profiles.cs"
+ },
+ {
+  "ko": "선 정리 다시 적용 중…  Esc: 취소",
+  "file": "UI/MainWindow.Profiles.cs"
+ },
+ {
+  "ko": "선 정리를 취소했습니다.",
+  "file": "UI/MainWindow.Profiles.cs"
+ },
+ {
+  "ko": "정리하는 동안 문서가 바뀌어 선 정리를 적용하지 않았습니다. 다시 실행하세요.",
   "file": "UI/MainWindow.Profiles.cs"
  },
  {
