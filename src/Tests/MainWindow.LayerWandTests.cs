@@ -221,6 +221,164 @@ public sealed partial class MainWindow
             finally { w.StopRenderingForShutdown(); }
         });
 
+        test("a selection material in a placed, scaled or side-by-side drawing covers the selection", () =>
+        {
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                Document Drawing() { var plan = Plan(); DrawingLayers.Wrap(plan); return plan; }
+                Document Target(params Artboard[] boards)
+                {
+                    var target = new Document { Width = 800, Height = 600, Name = "시트" };
+                    target.Add(new Layer { Name = "사진", Pixels = Raster.Solid(800, 600, Colors.White) });
+                    target.Artboards.AddRange(boards); return target;
+                }
+                Layer Fill(Document target, Rect bounds)
+                {
+                    w.AddTab(target, null);
+                    w.selection = new Selection(bounds); w.Refresh(false);
+                    var layer = w.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Wood), DrawingCleanup.MaterialName(MaterialKind.Wood));
+                    Check(layer != null, "The swatch did not create a layer");
+                    var world = WorldBounds(w.doc, layer!);
+                    Check(Math.Abs(world.X - bounds.X) < .01 && Math.Abs(world.Y - bounds.Y) < .01 && Math.Abs(world.Width - bounds.Width) < .01 && Math.Abs(world.Height - bounds.Height) < .01,
+                        $"The material is drawn at {world}, not over the selection {bounds}");
+                    return layer!;
+                }
+
+                // Centered in a larger document: the drawing folder is offset.
+                var centered = Target(); var layers = CompatibilityImport.Place(centered, Drawing(), false, 800, 600); centered.Validate();
+                var folder = layers.Single(l => l.ParentId == null);
+                Check(folder.X == 300 && folder.Y == 220, "The test drawing was not centered");
+                var offset = Fill(centered, new Rect(320, 240, 80, 120));
+                Check(offset.ParentId == folder.Id, "The material did not go inside the drawing folder");
+                int index = w.doc.Layers.IndexOf(offset), lines = w.doc.Layers.FindIndex(l => l.Kind == LayerKind.Vector), paper = w.doc.Layers.FindIndex(l => l.Name == "도면 배경");
+                Check(paper < index && index < lines, "The material is not between the paper and the linework");
+                var render = Imaging.Render(w.doc);
+                byte Blue(int x, int y) => render.Data[(y * render.Width + x) * 4];
+                Check(Blue(360, 300) < 250, "The rendered room is not filled");
+
+                // Fitted onto a smaller artboard: the folder is scaled by half.
+                var scaled = Target(new Artboard(Guid.NewGuid(), "작은 대지", 0, 0, 100, 80));
+                layers = CompatibilityImport.Place(scaled, Drawing(), true, 800, 600); scaled.Validate();
+                folder = layers.Single(l => l.ParentId == null);
+                Check(Math.Abs(folder.Scale - .5) < 1e-9 && folder.X == 140 && folder.Y == 0, $"The test drawing was not scaled onto its artboard: {folder.Scale} {folder.X}");
+                Check(Fill(scaled, new Rect(150, 10, 40, 60)).ParentId == folder.Id, "The material left the scaled drawing folder");
+
+                // Two drawings side by side: the fill goes into the drawing under the selection.
+                var pair = Target(new Artboard(Guid.NewGuid(), "1층", 0, 0, 200, 160));
+                var first = CompatibilityImport.Place(pair, Drawing(), true, 800, 600).Single(l => l.ParentId == null);
+                var second = CompatibilityImport.Place(pair, Drawing(), true, 800, 600).Single(l => l.ParentId == null); pair.Validate();
+                Check(second.X > first.X + 200, "The second drawing was not placed beside the first");
+                var right = new Rect(second.X + 20, 20, 80, 120);
+                Check(Fill(pair, right).ParentId == second.Id, "The fill for the right drawing went into the left drawing's folder");
+
+                // A rotated folder cannot hold an upright fill: it goes above the drawing at the top level.
+                var turned = Target(); layers = CompatibilityImport.Place(turned, Drawing(), false, 800, 600); turned.Validate();
+                folder = layers.Single(l => l.ParentId == null); folder.Rotation = 90;
+                var root = Fill(turned, new Rect(320, 240, 80, 120));
+                int last = w.doc.Layers.FindLastIndex(l => l.ParentId == folder.Id);
+                Check(root.ParentId == null && w.doc.Layers.IndexOf(root) == last + 1, "A fill for a rotated drawing was not put directly above it");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("a photo group under a drawing is not mistaken for its linework", () =>
+        {
+            var plan = Plan(); DrawingLayers.Wrap(plan);
+            var folder = plan.Layers[0];
+            var photo = new Layer { Name = "현장 사진", Kind = LayerKind.Group, Category = LayerCategory.Photo, Pixels = new Raster(200, 160) };
+            plan.Layers.Insert(0, photo);
+            plan.Layers.Insert(1, new Layer { Name = "사진", ParentId = photo.Id, Category = LayerCategory.Photo, Pixels = Raster.Solid(200, 160, Colors.Gray) });
+            plan.Validate();
+            var place = SelectionMaterials.Placement(plan, new Rect(20, 20, 80, 120));
+            Check(place is { } spot && spot.Parent == folder.Id && plan.Layers[spot.Index].Name == "A-FLOR-PATT",
+                $"The material was not placed below the drawing's linework: {place}");
+        });
+
+        test("swatch fills reuse the slots of regions whose material layers were deleted", () =>
+        {
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(Plan(), null);
+                w.Edit("준비", () =>
+                {
+                    for (int i = 0; i < MaterialEditing.MaxRegions; i++)
+                        w.doc.MaterialRegions.Add(MaterialEditing.Region(w.doc, "해치 · 콘크리트", new RectangleGeometry(new Rect(i % 100, 0, 5, 5)), "polygon"));
+                });
+                var old = w.doc.MaterialRegions.ToArray();
+                w.selection = new Selection(new Rect(20, 20, 80, 120)); w.Refresh(false);
+                var layer = w.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Wood), DrawingCleanup.MaterialName(MaterialKind.Wood));
+                Check(layer?.Material is { } fill && w.doc.MaterialRegions.Count == MaterialEditing.MaxRegions && w.doc.MaterialRegions.Any(r => r.Id == fill.SourceRegionId),
+                    "A full list of regions no layer uses still blocked the swatch: " + w.status.Text);
+                Check(!w.doc.MaterialRegions.Any(r => r.Id == old[0].Id) && w.doc.MaterialRegions.Count(r => old.Contains(r)) == old.Length - 1, "The oldest unused region was not the only one released");
+                w.Undo();
+                Check(w.doc.MaterialRegions.SequenceEqual(old), "Undo did not restore the released region");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("material suggestions trace a selection's outline once, not after every edit", () =>
+        {
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(Plan(), null);
+                w.selection = SelectionTools.FromMask(Ring(w.doc.Width, w.doc.Height), w.doc.Width, w.doc.Height); w.Refresh(false);
+                Check(w.SelectionMaterialSuggestion().Surface == SurfaceHint.Wall, "The wall band was not recognized");
+                int traces = SelectionMaterials.ContourTraces;
+                var vector = w.doc.Layers.First(l => l.Kind == LayerKind.Vector).Id;
+                for (int i = 0; i < 3; i++) w.Edit("준비", () => w.doc.Layers.Single(l => l.Id == vector).Name = "A-FLOR-PATT " + i);
+                Check(w.SelectionMaterialSuggestion().Surface == SurfaceHint.Wall && SelectionMaterials.ContourTraces == traces, "Edits traced the unchanged selection again");
+                w.selection = w.selection with { }; w.Refresh(false);
+                Check(SelectionMaterials.ContourTraces == traces + 1, "A new selection was not traced");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("own-image fills reuse the library entry and swaps release what they added", () =>
+        {
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                string Image(string name, Color color)
+                {
+                    string file = Path.Combine(root, name);
+                    var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(Raster.Solid(16, 16, color).Bitmap()));
+                    using (var output = File.Create(file)) encoder.Save(output);
+                    return file;
+                }
+                string brick = Image("벽돌 타일.png", Colors.Firebrick), stone = Image("석재 벽.png", Colors.SlateGray);
+                w.AddTab(Plan(), null);
+                w.selection = new Selection(new Rect(20, 20, 80, 120)); w.Refresh(false);
+                var a = w.ApplySelectionMaterialImage(brick)!;
+                w.selection = new Selection(new Rect(100, 20, 80, 120)); w.Refresh(false);
+                var b = w.ApplySelectionMaterialImage(brick)!;
+                Check(a.Material!.Asset.Id == b.Material!.Asset.Id && w.doc.Materials.Count(m => m.Source == "벽돌 타일.png") == 1, "Picking the same image again registered a second copy");
+                Check(w.SelectionMaterialChoices(w.SelectionMaterialSuggestion()).Count(c => c.Name == "벽돌 타일") == 1, "The same image shows twice among the swatches");
+
+                // Swapping away from an image this flow added releases it; the replacement stays.
+                w.selection = new Selection(new Rect(30, 30, 20, 20)); w.Refresh(false);
+                var own = w.ApplySelectionMaterialImage(stone)!.Material!.Asset.Id;
+                w.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Tile), DrawingCleanup.MaterialName(MaterialKind.Tile));
+                Check(!w.doc.Materials.Any(m => m.Id == own) && w.doc.Materials.Any(m => m.Id == MaterialPresets.Create(MaterialKind.Tile).Id), "The swapped-away image stayed in the library");
+                w.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Wood), DrawingCleanup.MaterialName(MaterialKind.Wood));
+                Check(!w.doc.Materials.Any(m => m.Id == MaterialPresets.Create(MaterialKind.Tile).Id) && w.doc.Active?.Material?.Asset.Id == MaterialPresets.Create(MaterialKind.Wood).Id,
+                    "A swatch added by the previous swap stayed in the library");
+                w.Undo(); Check(w.doc.Materials.Any(m => m.Id == MaterialPresets.Create(MaterialKind.Tile).Id), "Undo did not bring the released entry back");
+
+                // An entry that was in the library beforehand is kept.
+                var registered = new MaterialAsset(Guid.NewGuid(), "등록 재질", Raster.Solid(8, 8, Colors.Tan), "등록 재질.png");
+                w.Edit("준비", () => w.doc.Materials.Add(registered));
+                w.selection = new Selection(new Rect(60, 60, 20, 20)); w.Refresh(false);
+                w.ApplySelectionMaterial(registered, registered.Name);
+                w.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Stone), DrawingCleanup.MaterialName(MaterialKind.Stone));
+                Check(w.doc.Materials.Any(m => m.Id == registered.Id), "A swap removed a material registered before the fill");
+                Check(w.doc.Materials.Any(m => m.Id == a.Material!.Asset.Id), "An image still used by other layers left the library");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
         test("a wand pick on a drawing brings the material swatches forward", () =>
         {
             var w = new MainWindow(null) { headlessTesting = true };
@@ -248,6 +406,14 @@ public sealed partial class MainWindow
     {
         var row = w.CreateLayerRow(entry);
         return row.Children.OfType<Button>().FirstOrDefault(b => Grid.GetColumn(b) == 0 && !ReferenceEquals(b, row.DragHandle));
+    }
+
+    // Where a layer is drawn: its matrix composed with every parent group's.
+    static Rect WorldBounds(Document document, Layer layer)
+    {
+        var byId = document.Layers.ToDictionary(l => l.Id); var matrix = layer.Matrix;
+        for (var parent = layer.ParentId; parent is { } id; parent = byId[id].ParentId) matrix.Append(byId[id].Matrix);
+        return new MatrixTransform(matrix).TransformBounds(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height));
     }
 
     static string? Header(StackPanel panel) => panel.Children.OfType<SectionHeader>().FirstOrDefault()?.Key;

@@ -17,7 +17,8 @@ namespace Compositor.Windows;
 public sealed partial class MainWindow
 {
     sealed record SelectionMaterialCache(Document Document, Guid Revision, Selection Selection, MaterialSuggestion Suggestion);
-    sealed record SelectionMaterialTarget(Document Document, Selection Selection, Guid LayerId);
+    // AddedAsset: the library entry this flow registered for the layer's current material, if any.
+    sealed record SelectionMaterialTarget(Document Document, Selection Selection, Guid LayerId, Guid? AddedAsset);
     internal sealed record SelectionMaterialChoice(MaterialAsset Asset, string Name, bool Preset);
     SelectionMaterialCache? selectionMaterialCache;
     SelectionMaterialTarget? selectionMaterialTarget;
@@ -146,9 +147,12 @@ public sealed partial class MainWindow
     internal Layer? ApplySelectionMaterialImage(string path)
     {
         var pixels = MaterialTextures.Load(path);
-        string name = Path.GetFileNameWithoutExtension(path);
+        string name = Path.GetFileNameWithoutExtension(path), source = Path.GetFileName(path);
         if (string.IsNullOrWhiteSpace(name)) name = "재질 이미지";
-        return ApplySelectionMaterial(new MaterialAsset(Guid.NewGuid(), name, pixels, Path.GetFileName(path), false), name);
+        // The same image picked again reuses its library entry instead of adding a copy.
+        var same = MaterialEditing.Assets(doc).FirstOrDefault(a => a.Name == name && a.Source == source && !a.Tileable &&
+            a.Pixels.Width == pixels.Width && a.Pixels.Height == pixels.Height && a.Pixels.Data.AsSpan().SequenceEqual(pixels.Data));
+        return ApplySelectionMaterial(same ?? new MaterialAsset(Guid.NewGuid(), name, pixels, source, false), name);
     }
 
     internal Layer? ApplySelectionMaterial(MaterialAsset asset, string displayName)
@@ -162,7 +166,7 @@ public sealed partial class MainWindow
         if (SelectionMaterialLayer() is { Material: { } fill } existing)
         {
             if (fill.Asset.Id == asset.Id) { status.Text = "이미 이 재질이 적용되어 있습니다."; return existing; }
-            Guid id = existing.Id;
+            Guid id = existing.Id; var target = selectionMaterialTarget!; bool swapped = false;
             Edit("선택 영역 재질 바꾸기", () =>
             {
                 if (!known) doc.Materials.Add(asset);
@@ -170,40 +174,56 @@ public sealed partial class MainWindow
                 var replacement = fill with { Asset = asset, TileHeight = fill.TileWidth * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width) };
                 MaterialEditing.ValidateFill(replacement, layer.Pixels);
                 layer.Pixels = MaterialRenderer.Render(replacement); layer.Material = replacement; layer.Name = layerName;
+                // An entry this flow registered for the material swapped away leaves with it once no layer uses it.
+                if (target.AddedAsset == fill.Asset.Id && !doc.Layers.Any(l => l.Material?.Asset.Id == fill.Asset.Id))
+                    doc.Materials.RemoveAll(m => m.Id == fill.Asset.Id);
+                swapped = true;
             });
+            if (swapped && ReferenceEquals(target.Document, doc)) selectionMaterialTarget = target with { AddedAsset = known ? null : asset.Id };
             status.Text = $"재질을 바꿨습니다: {displayName}";
             return doc.Layers.FirstOrDefault(l => l.Id == id);
         }
-        if (doc.MaterialRegions.Count >= MaterialEditing.MaxRegions) { status.Text = "적용 영역은 최대 128개까지 보관합니다. 쓰지 않는 재질 레이어를 정리하세요."; return null; }
+        // Regions whose material layers were deleted do not count: their slots are reused below.
+        if (UsedMaterialRegions().Count >= MaterialEditing.MaxRegions) { status.Text = "적용 영역은 최대 128개까지 보관합니다. 쓰지 않는 재질 레이어를 정리하세요."; return null; }
         Geometry boundary;
         try { boundary = SelectionMaterials.Boundary(region, doc.Width, doc.Height); }
         catch (InvalidDataException error) { status.Text = error.Message; return null; }
-        Layer? created = null;
+        Layer? created = null; bool added = false;
         Edit("선택 영역 재질", () =>
         {
-            if (!known && !doc.Materials.Any(m => m.Id == asset.Id)) doc.Materials.Add(asset);
+            if (!known && !doc.Materials.Any(m => m.Id == asset.Id)) { doc.Materials.Add(asset); added = true; }
+            if (doc.MaterialRegions.Count >= MaterialEditing.MaxRegions)
+            {
+                // Release just enough regions no layer uses, oldest first.
+                var used = UsedMaterialRegions();
+                var spare = doc.MaterialRegions.Where(r => !used.Contains(r.Id)).Take(doc.MaterialRegions.Count - MaterialEditing.MaxRegions + 1).Select(r => r.Id).ToHashSet();
+                doc.MaterialRegions.RemoveAll(r => spare.Contains(r.Id));
+            }
             var area = MaterialEditing.Region(doc, "선택 영역", boundary, "selection");
             doc.MaterialRegions.Add(area);
             double tile = Math.Clamp(Math.Max(doc.Width, doc.Height) / 14d, 40, 320);
             var layer = MaterialEditing.Apply(doc, asset.Id, area.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
             layer.Name = layerName;
-            var place = SelectionMaterials.Placement(doc);
+            var place = SelectionMaterials.Placement(doc, boundary.Bounds);
             if (place == null) layer.Category = LayerCategory.Photo;
             doc.Add(layer);
-            if (place is { } spot)
+            if (place is { } found)
             {
-                doc.Layers.Remove(layer); layer.ParentId = spot.Parent;
+                doc.Layers.Remove(layer);
+                var spot = SelectionMaterials.Localize(doc, layer, found); layer.ParentId = spot.Parent;
                 doc.Layers.Insert(Math.Clamp(spot.Index, 0, doc.Layers.Count), layer);
             }
             doc.ActiveId = layer.Id; selectedLayers.Clear(); selectedLayers.Add(layer.Id); sourceLayerSelection = null; maskEditing = false;
             created = layer;
         });
         if (created == null || !doc.Layers.Contains(created)) return null;
-        selectionMaterialTarget = new(doc, region, created.Id);
+        selectionMaterialTarget = new(doc, region, created.Id, added ? asset.Id : null);
         BuildProperties();
         status.Text = $"재질 레이어를 만들었습니다: {displayName}";
         return created;
     }
+
+    HashSet<Guid> UsedMaterialRegions() => doc.Layers.Select(l => l.Material?.SourceRegionId).OfType<Guid>().ToHashSet();
 
     // After a wand pick on a drawing, bring the properties tab forward so the swatches show.
     void RevealSelectionMaterials()
