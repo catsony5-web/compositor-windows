@@ -24,6 +24,8 @@ public sealed partial class MainWindow
             else if (content is System.Windows.Controls.Panel panel && panel.Background == null) panel.Background = window.Background;
             if (ReferenceEquals(window, this)) studioScroll.Height = PreferredStudioHeight(height);
             content.Measure(size); content.Arrange(new Rect(size)); content.UpdateLayout();
+            // Fit raises canvas.ZoomChanged, which refreshes the zoom readout for this size. (UpdateStatus
+            // is not called: it would replace the status line some captures show.)
             if (ReferenceEquals(window, this)) { canvas.Fit(); canvas.InvalidateVisual(); content.UpdateLayout(); }
             var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(content); image.Render(content);
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));

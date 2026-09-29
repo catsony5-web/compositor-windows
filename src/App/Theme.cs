@@ -26,6 +26,8 @@ public static class Theme
     public static readonly Brush Hover = Brush("#373D46");
     public static readonly Brush Pressed = Brush("#414853");
     public static readonly Brush Input = Brush("#101216");
+    // Light backing for drawing thumbnails, like the paper the canvas draws line work on.
+    public static readonly Brush Paper = Brush("#F4F5F7");
     public static readonly Brush Line = Brush("#2A2F37");
     public static readonly Brush Stroke = Brush("#3B414B");
     public static readonly Brush Text = Brush("#E8EBF0");
@@ -218,6 +220,13 @@ public static class Theme
         public const string Sliders = "M4 7H12.5 M17.5 7H20 M15 4.8A2.2 2.2 0 1 0 15 9.2A2.2 2.2 0 1 0 15 4.8Z M4 12H6 M10.5 12H20 M8.2 9.8A2.2 2.2 0 1 0 8.2 14.2A2.2 2.2 0 1 0 8.2 9.8Z M4 17H11 M16 17H20 M13.5 14.8A2.2 2.2 0 1 0 13.5 19.2A2.2 2.2 0 1 0 13.5 14.8Z";
         public const string SelectAlpha = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z | *M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z";
         public const string Mask = "M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z | M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z | *M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z";
+        // Mask commands: the mask frame with a badge (add / remove), or with its halves swapped (invert).
+        public const string MaskAdd = "M6.5 3.5H14A2.5 2.5 0 0 1 16.5 6V14A2.5 2.5 0 0 1 14 16.5H6.5A2.5 2.5 0 0 1 4 14V6A2.5 2.5 0 0 1 6.5 3.5Z | M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z M18.5 14V21 M15 17.5H22 | *M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z";
+        public const string MaskInvert = "M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z | M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z | ~M12 4V20 | *M7 4H12V7.5A4.5 4.5 0 0 0 12 16.5V20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z M12 7.5A4.5 4.5 0 0 1 12 16.5Z";
+        public const string MaskRemove = "M6.5 3.5H14A2.5 2.5 0 0 1 16.5 6V14A2.5 2.5 0 0 1 14 16.5H6.5A2.5 2.5 0 0 1 4 14V6A2.5 2.5 0 0 1 6.5 3.5Z | M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z M16.5 16.5L21.5 21.5 M21.5 16.5L16.5 21.5 | *M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z";
+        // Mirror across a dashed axis: left/right halves (horizontal) and top/bottom halves (vertical).
+        public const string FlipHorizontal = "M9.5 6L3.5 18H9.5Z M14.5 6L20.5 18H14.5Z | ~M12 3V5 M12 8V10 M12 13V15 M12 18V21 | *M9.5 6L3.5 18H9.5Z";
+        public const string FlipVertical = "M6 9.5L18 3.5V9.5Z M6 14.5L18 20.5V14.5Z | ~M3 12H5 M8 12H10 M13 12H15 M18 12H21 | *M6 9.5L18 3.5V9.5Z";
         public const string Sparkle = "M10 3.5C11.43 8.57 11.43 8.57 16.5 10C11.43 11.43 11.43 11.43 10 16.5C8.57 11.43 8.57 11.43 3.5 10C8.57 8.57 8.57 8.57 10 3.5Z | M18 14.5C18.66 16.84 18.66 16.84 21 17.5C18.66 18.16 18.66 18.16 18 20.5C17.34 18.16 17.34 18.16 15 17.5C17.34 16.84 17.34 16.84 18 14.5Z | *M10 3.5C11.43 8.57 11.43 8.57 16.5 10C11.43 11.43 11.43 11.43 10 16.5C8.57 11.43 8.57 11.43 3.5 10C8.57 8.57 8.57 8.57 10 3.5Z";
         public const string FillSelection = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M12 7.8C12.92 11.08 12.92 11.08 16.2 12C12.92 12.92 12.92 12.92 12 16.2C11.08 12.92 11.08 12.92 7.8 12C11.08 11.08 11.08 11.08 12 7.8Z | *M12 7.8C12.92 11.08 12.92 11.08 16.2 12C12.92 12.92 12.92 12.92 12 16.2C11.08 12.92 11.08 12.92 7.8 12C11.08 11.08 11.08 11.08 12 7.8Z";
         // Layers, arrangement and design.
