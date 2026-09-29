@@ -28,6 +28,10 @@ public sealed partial class CanvasView
     internal BitmapSource? DesignImage => designCache.Count > 0 ? designCache[0].Image : null;
     internal (Rect Area, int Width, int Height)? DesignViewport => designCache.Count > 0 ? (designCache[0].Request.Area, designCache[0].Request.Width, designCache[0].Request.Height) : null;
     internal CancellationToken? PendingDesignToken => designCancellation?.Token;
+    // Whether the design preview still references a document (scene state,
+    // cached viewports or a queued request).
+    internal bool HoldsDesignScene(Document doc) => designState.Holds(doc) || ReferenceEquals(requestedDesign?.Document, doc) ||
+        designCache.Exists(entry => ReferenceEquals(entry.Request.Document, doc));
     readonly SemaphoreSlim designGate = new(1, 1);
     // Detects content changes without hashing every object on every frame.
     readonly SceneState designState = new();
@@ -122,8 +126,13 @@ public sealed partial class CanvasView
         catch (Exception e) { await Dispatcher.InvokeAsync(() => { if (requestedDesign == request) { DesignPreviewError = e.Message; ToolTip = "벡터 미리보기 실패: " + e.Message; } }); }
         finally { if (entered) designGate.Release(); if (ReferenceEquals(designCancellation, cts)) designCancellation = null; cts.Dispose(); }
     }
+    // Also runs whenever the canvas stops drawing a design (photo mode, a photo
+    // document, no document). The scene state references every layer of the
+    // last drawing compared, so it is released here too; the guard keeps the
+    // per-frame early return from advancing its version on every frame.
     public void CancelDesignPreview()
     {
         designCancellation?.Cancel(); requestedDesign = null; designCache.Clear();
+        if (designState.HoldsScene) designState.Reset();
     }
 }

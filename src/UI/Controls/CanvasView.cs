@@ -7,7 +7,14 @@ namespace Compositor.Windows;
 
 public sealed partial class CanvasView : FrameworkElement
 {
-    public Document? Document { get; set; }
+    // OnRender returns before the design path when there is no document, so an
+    // emptied canvas releases the design preview of the drawing it last showed.
+    public Document? Document
+    {
+        get => shownDocument;
+        set { if (value == null && shownDocument != null) CancelDesignPreview(); shownDocument = value; }
+    }
+    Document? shownDocument;
     public Selection? Selection { get; set; }
     public Rect? GestureBounds { get; set; }
     public bool EllipseGesture { get; set; }
