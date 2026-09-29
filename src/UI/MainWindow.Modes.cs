@@ -44,6 +44,51 @@ public sealed partial class MainWindow
             foreach (var item in group.Tools) grid.Children.Add(toolButtons[item]);
             workspaceTools.Children.Add(grid);
         }
+        FitToolRail();
+    }
+
+    // The tool rail keeps every tool and the color swatches in view on short windows: it first
+    // tightens the buttons and gaps, then adds columns (widening the rail) before it would scroll.
+    readonly ColumnDefinition toolRailColumn = new() { Width = new GridLength(ToolRailWidth) };
+    readonly StackPanel toolRailContent = new();
+    ScrollViewer? toolRailScroll;
+    internal int toolRailLayout;
+    const double ToolRailWidth = 84, ToolButtonHeight = 34;
+    internal static readonly (int Columns, double Button, double Gap)[] ToolRailLayouts = [(2, ToolButtonHeight, 5), (2, 30, 3), (3, 30, 3), (3, 28, 2), (4, 28, 2)];
+
+    void FitToolRail()
+    {
+        if (toolRailScroll == null || workspaceTools == null) return;
+        double available = toolRailScroll.ActualHeight;
+        if (!(available > 0)) { ApplyToolRailLayout(toolRailLayout); return; }
+        try
+        {
+            for (int i = 0; i < ToolRailLayouts.Length; i++)
+            {
+                ApplyToolRailLayout(i);
+                // Measure skips elements that are not dirty; invalidate the chain down to the changed grids.
+                foreach (var grid in workspaceTools.Children.OfType<UniformGrid>()) grid.InvalidateMeasure();
+                workspaceTools.InvalidateMeasure(); toolRailContent.InvalidateMeasure();
+                toolRailContent.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                if (toolRailContent.DesiredSize.Height <= available + .5) return;
+            }
+        }
+        // The trial measure used an open constraint; lay the rail out again in its real viewport.
+        finally { toolRailContent.InvalidateMeasure(); }
+    }
+
+    void ApplyToolRailLayout(int index)
+    {
+        var (columns, button, gap) = ToolRailLayouts[index]; toolRailLayout = index;
+        if (workspaceTools != null)
+            foreach (var child in workspaceTools.Children)
+            {
+                if (child is UniformGrid grid) grid.Columns = columns;
+                else if (child is Border separator) separator.Margin = new Thickness(8, gap, 8, gap);
+            }
+        foreach (var tool in toolButtons.Values) tool.Height = button;
+        // Each extra column is one button wide (the button is square in the two-column rail).
+        toolRailColumn.Width = new GridLength(ToolRailWidth + (columns - 2) * (button + 4));
     }
 
     FrameworkElement BuildWorkspaceSwitch()

@@ -173,10 +173,12 @@ public sealed partial class MainWindow
         string glyph = RibbonGlyph(label);
         if (large)
         {
-            var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+            // Icons share one top line across the ribbon however many lines the label takes.
+            var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
             var icon = Theme.Glyph(glyph, 22, Theme.Text); icon.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(icon);
-            content.Children.Add(new TextBlock { Text = Loc.T(label).TrimEnd('…'), FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 76, Margin = new Thickness(0, 4, 0, 0) });
+            content.Children.Add(LargeRibbonLabel(Loc.T(label).TrimEnd('…')));
             button.Content = content; button.MinWidth = 58; button.MinHeight = 66; button.Padding = new Thickness(6, 6, 6, 4);
+            button.VerticalAlignment = VerticalAlignment.Stretch; button.VerticalContentAlignment = VerticalAlignment.Top;
         }
         else
         {
@@ -206,6 +208,51 @@ public sealed partial class MainWindow
         return button;
     }
 
+    const double LargeRibbonLabelWidth = 76, LargeRibbonLabelMaxWidth = 104;
+
+    // Large button labels break only between words ("Compositor .comp" never splits inside ".comp").
+    // Text without spaces (Japanese, Chinese) keeps the normal character wrapping.
+    static TextBlock LargeRibbonLabel(string text)
+    {
+        var block = new TextBlock { FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+        var lines = RibbonLabelLines(text, value => MeasureRibbonText(value, block.FontSize));
+        if (lines == null) { block.Text = text; block.TextWrapping = TextWrapping.Wrap; block.MaxWidth = LargeRibbonLabelWidth; }
+        else { block.Text = string.Join('\n', lines); block.TextWrapping = TextWrapping.NoWrap; }
+        return block;
+    }
+
+    static double MeasureRibbonText(string text, double size) =>
+        new FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+            new Typeface(Theme.UiFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), size, Brushes.White, 1).WidthIncludingTrailingWhitespace;
+
+    // One line when it fits, otherwise the most even two-line split, otherwise greedy lines of whole
+    // words. Null means the text has no word breaks and should wrap by character.
+    internal static string[]? RibbonLabelLines(string text, Func<string, double> measure)
+    {
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0) return [text];
+        if (measure(string.Join(' ', words)) <= LargeRibbonLabelWidth) return [string.Join(' ', words)];
+        if (words.Length == 1) return measure(words[0]) > LargeRibbonLabelMaxWidth ? null : words;
+        string[]? best = null; double bestWidth = double.MaxValue;
+        for (int split = 1; split < words.Length; split++)
+        {
+            string first = string.Join(' ', words[..split]), second = string.Join(' ', words[split..]);
+            double width = Math.Max(measure(first), measure(second));
+            if (width < bestWidth) { bestWidth = width; best = [first, second]; }
+        }
+        if (best != null && bestWidth <= LargeRibbonLabelMaxWidth) return best;
+        double limit = Math.Max(LargeRibbonLabelMaxWidth, words.Max(measure));
+        var lines = new List<string>(); string line = "";
+        foreach (var word in words)
+        {
+            string next = line.Length == 0 ? word : line + " " + word;
+            if (line.Length > 0 && measure(next) > limit) { lines.Add(line); line = word; }
+            else line = next;
+        }
+        lines.Add(line);
+        return lines.ToArray();
+    }
+
     // Icons by the start of the command name; unmatched commands share a neutral glyph.
     static string RibbonGlyph(string label)
     {
@@ -217,8 +264,8 @@ public sealed partial class MainWindow
             ("실행 취소", Theme.Glyphs.Undo), ("다시 실행", Theme.Glyphs.Redo), ("합성 이미지 복사", Theme.Glyphs.Duplicate), ("이미지 붙여넣기", Theme.Glyphs.Paste),
             ("선택 픽셀 지우기", Theme.Glyphs.Delete), ("전경색으로", ToolIcons.PathData(Tool.Bucket)), ("배경색으로", ToolIcons.PathData(Tool.Bucket)), ("버킷", ToolIcons.PathData(Tool.Bucket)),
             ("대지", ToolIcons.PathData(Tool.Artboard)), ("캔버스 크기", Theme.Glyphs.Fit), ("이미지 크기", Theme.Glyphs.Transform), ("선택 영역으로 자르기", ToolIcons.PathData(Tool.Crop)),
-            ("레이어 복제", Theme.Glyphs.Duplicate), ("이름 변경", Theme.Glyphs.Rename), ("변형", Theme.Glyphs.Transform), ("가로 뒤집기", Theme.Glyphs.Swap), ("세로 뒤집기", Theme.Glyphs.Swap),
-            ("마스크", Theme.Glyphs.Mask), ("모든 레이어 병합", Theme.Glyphs.GroupRemove), ("레이어 삭제", Theme.Glyphs.Delete), ("선택 레이어 그룹화", Theme.Glyphs.GroupAdd),
+            ("레이어 복제", Theme.Glyphs.Duplicate), ("이름 변경", Theme.Glyphs.Rename), ("변형", Theme.Glyphs.Transform), ("가로 뒤집기", Theme.Glyphs.FlipHorizontal), ("세로 뒤집기", Theme.Glyphs.FlipVertical),
+            ("마스크 추가", Theme.Glyphs.MaskAdd), ("마스크 반전", Theme.Glyphs.MaskInvert), ("마스크 제거", Theme.Glyphs.MaskRemove), ("마스크", Theme.Glyphs.Mask), ("모든 레이어 병합", Theme.Glyphs.GroupRemove), ("레이어 삭제", Theme.Glyphs.Delete), ("선택 레이어 그룹화", Theme.Glyphs.GroupAdd),
             ("그룹 해제", Theme.Glyphs.GroupRemove), ("그룹으로 이동", Theme.Glyphs.Folder), ("클리핑", Theme.Glyphs.Clip), ("아래 레이어와 병합", Theme.Glyphs.Backward),
             ("텍스트", Theme.Glyphs.Text), ("픽셀 레이어로", Theme.Glyphs.Image), ("다른 문서로", Theme.Glyphs.Duplicate),
             ("전체 선택", ToolIcons.PathData(Tool.RectangleSelect)), ("선택 해제", Theme.Glyphs.Close), ("선택 반전", Theme.Glyphs.Adjustment), ("페더", Theme.Glyphs.Sparkle),

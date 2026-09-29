@@ -29,7 +29,7 @@ public sealed class LayerRow : Grid
         var thumb = new Border
         {
             Width = 28, Height = 28, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = Theme.Stroke,
-            Background = Theme.Input, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+            Background = ThumbnailBacking(layer), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
         };
         thumb.Child = layer.Kind is LayerKind.Group or LayerKind.Adjustment
             ? Theme.Glyph(layer.Kind == LayerKind.Group ? Theme.Glyphs.Folder : Theme.Glyphs.Adjustment, 16, Theme.Accent, 1.6)
@@ -87,6 +87,9 @@ public sealed class LayerRow : Grid
         AutomationProperties.SetName(locked, $"레이어 잠금: {layer.Name}, {(layer.Locked ? "잠김" : "잠금 해제")}");
         SetColumn(locked, 4); Children.Add(locked);
     }
+
+    // Drawing line work is mostly dark; it sits on paper as it does on the canvas.
+    internal static Brush ThumbnailBacking(Layer layer) => layer.Kind == LayerKind.Vector || layer.Vector != null ? Theme.Paper : Theme.Input;
 
     static Button IconButton(UIElement icon, string tooltip, Action click)
     {

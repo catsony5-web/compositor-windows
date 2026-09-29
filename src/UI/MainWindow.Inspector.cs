@@ -62,11 +62,11 @@ public sealed partial class MainWindow
         widthGrip.MouseEnter += (_, _) => widthGrip.Background = Theme.Stroke;
         widthGrip.MouseLeave += (_, _) => widthGrip.Background = Brushes.Transparent;
         host.Children.Add(widthGrip);
-        var panel = new Grid(); Grid.SetColumn(panel, 1); host.Children.Add(panel);
+        var panel = new MeasureHookGrid { BeforeMeasure = LimitStudioHeight }; Grid.SetColumn(panel, 1); host.Children.Add(panel);
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
         panel.RowDefinitions.Add(new RowDefinition());
-        panel.Children.Add(BuildStudioTop());
+        panel.Children.Add(studioTopCard = BuildStudioTop());
         // The 8px gap between the cards is the vertical splitter; a short handle appears on hover.
         var splitter = new System.Windows.Controls.Primitives.Thumb { Height = 8, Cursor = Cursors.SizeNS, Background = Brushes.Transparent, ToolTip = "패널 높이 조절" };
         var splitterTemplate = new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb));

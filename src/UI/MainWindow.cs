@@ -80,7 +80,7 @@ public sealed partial class MainWindow : Window
         autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
         var body = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 3); root.Children.Add(body);
-        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(84) }); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
+        body.ColumnDefinitions.Add(toolRailColumn); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
         var tools = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(4, 8, 4, 8) };
         var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
         foreach (var def in toolDefs)
@@ -91,11 +91,13 @@ public sealed partial class MainWindow : Window
         {
             var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; toolShortcuts[def.Tool] = (def.Name, def.Key); tools.Children.Add(b);
         }
-        var toolColumn = new StackPanel(); toolColumn.Children.Add(tools);
+        var toolColumn = toolRailContent; toolColumn.Children.Add(tools);
         workspaceTools = tools; photoToolOrder = toolButtons.Keys.ToArray();
         toolColumn.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(10, 4, 10, 0) });
         colorSwatches = new ColorSwatches(() => ChooseColor(false), () => ChooseColor(true), SwapColors, ResetColors); toolColumn.Children.Add(colorSwatches);
-        toolRail = new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+        toolRailScroll = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        toolRailScroll.SizeChanged += (_, e) => { if (e.HeightChanged) FitToolRail(); };
+        toolRail = new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = toolRailScroll };
         body.Children.Add(toolRail);
         // The document stage: tabs merge into the canvas, clipped to the card's rounded corners.
         var workspace = new Grid { Background = Theme.Panel }; workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) }); workspace.RowDefinitions.Add(new RowDefinition());
@@ -128,6 +130,8 @@ public sealed partial class MainWindow : Window
         canvas.MouseLeave += (_, _) => { if (!resizingBrush) canvas.BrushPoint = null; ClearPointerHover(); if (!dragging && !panning) lastPointerScreen = null; canvas.InvalidateVisual(); };
         history.Reset(doc); UpdateColor(); UpdateBrushLabel(); UpdateToolOptions(); UpdateDocumentAvailability(); UpdateStatus();
         SizeChanged += (_, _) => studioScroll.Height = PreferredStudioHeight(ActualHeight);
+        // Refits (open, crop, canvas size, artboards, offscreen captures) change the scale without a status refresh.
+        canvas.ZoomChanged += UpdateZoomBox;
     }
 
     static void StyleToolButton(Button button)
