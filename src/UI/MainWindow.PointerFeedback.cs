@@ -12,7 +12,10 @@ public sealed partial class MainWindow
     Guid hoverRevision;
     double hoverZoom;
 
-    Layer? PickMoveTarget(Point point) => LayerPicking.PickNear(doc, point, canvas.Zoom);
+    // Hover probes every mouse move; the cache rebuilds its object index only
+    // after the scene changes instead of walking every drawing object each time.
+    readonly LayerPicking.Cache pickCache = new();
+    Layer? PickMoveTarget(Point point) => pickCache.PickNear(doc, point, canvas.Zoom);
 
     void ClearPointerHover()
     {

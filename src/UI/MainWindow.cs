@@ -190,7 +190,7 @@ public sealed partial class MainWindow : Window
     void SetTool(Tool next) => ChangeInteractionTool(next);
     void Refresh(bool render = true)
     {
-        ClearPointerHover();
+        ClearPointerHover(); if (!HasDocument) pickCache.Clear();
         var existingIds = doc.Layers.Select(l => l.Id).ToHashSet(); selectedLayers.IntersectWith(existingIds);
         canvas.Document = HasDocument ? doc : null; canvas.Selection = HasDocument ? selection : null;
         canvas.SelectedObjectIds = selectedLayers.ToHashSet();
