@@ -1,4 +1,10 @@
-# Morupixel 0.2.0 Preview 35 — PSD layers, drawing cleanup and artboard batches for AI connection
+# Morupixel 0.2.0 Preview 36 — drawing cleanup no longer stops on thin hatches
+
+- **Fixed: importing a DWG with drawing cleanup could fail with "면적이 있는 닫힌 영역을 지정하세요."** A thin hatch sliver (for example a brick hatch along a wall) was measured as having no area after being placed on its material layer, and that single hatch stopped the whole import. The area is now measured reliably, so these hatches get their material.
+- **One bad hatch no longer blocks the import.** If a hatch still cannot be used, only that hatch is imported as boundary lines without a material, the other hatches keep theirs, and the import notice says how many were affected.
+- **Validation.** 548 source checks passed, and two real site-plan drawings that failed before now import with cleanup. [Validation](VALIDATION.md) lists the details.
+
+## Preview 35 — PSD layers, drawing cleanup and artboard batches for AI connection
 
 - **PSD layers.** `open_document` with `separateLayers: true` imports each PSD/PSB layer instead of the composite image.
 - **Drawing cleanup settings.** `cadCleanup: true` applies the same cleanup as the import window: role-based line weights, recommended hatch materials, boundaries only, or one material image. `cadLayerRoles` overrides the detected role of any CAD layer.

@@ -416,7 +416,7 @@ public static class CadCompatibility
         }
         var canvas = new RectangleGeometry(new Rect(0, 0, width, height)); canvas.Freeze();
         double tile = Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
-        int insertAt = 1, skipped = 0; var counts = new Dictionary<string, int>();
+        int insertAt = 1, skipped = 0, unusable = 0; var counts = new Dictionary<string, int>();
         var groups = hatches.GroupBy(h => custom != null ? MaterialKind.Solid : DrawingCleanup.Suggest(h.Pattern, h.Layer, role(h.Layer))).OrderBy(g => g.Key);
         foreach (var group in groups)
         {
@@ -429,9 +429,26 @@ public static class CadCompatibility
                 if (chunk.Children.Count == 0) return;
                 if (doc.MaterialRegions.Count >= MaterialEditing.MaxRegions) { skipped += chunk.Children.Count; chunk = new GeometryGroup(); chunkBytes = 0; return; }
                 part++;
-                var region = MaterialEditing.Region(doc, part == 1 ? "해치 · " + label : $"해치 · {label} {part}", chunk, "polygon");
-                doc.MaterialRegions.Add(region);
-                var layer = MaterialEditing.Apply(doc, asset.Id, region.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
+                string regionName = part == 1 ? "해치 · " + label : $"해치 · {label} {part}";
+                MaterialRegion? region = null; Layer layer;
+                try
+                {
+                    region = MaterialEditing.Region(doc, regionName, chunk, "polygon");
+                    doc.MaterialRegions.Add(region);
+                    layer = MaterialEditing.Apply(doc, asset.Id, region.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
+                }
+                catch (InvalidDataException)
+                {
+                    // One degenerate hatch must not abort the import: its boundary lines stay, it just gets no material.
+                    if (region != null) doc.MaterialRegions.Remove(region);
+                    part--;
+                    var members = chunk.Children.ToArray();
+                    chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
+                    if (members.Length == 1) { unusable++; return; }
+                    // Retry the merged hatches one by one so only the unusable ones lose their material.
+                    foreach (var member in members) { chunk.Children.Add(member); Flush(); }
+                    return;
+                }
                 layer.Name = "재질 · " + region.Name[5..];
                 doc.Layers.Insert(insertAt++, layer);
                 chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
@@ -455,6 +472,7 @@ public static class CadCompatibility
             warnings.Add((custom != null ? "해치에 선택한 재질 이미지를 적용했습니다: " : "해치 재질을 추천해 채웠습니다: ") + string.Join(" · ", counts.Select(p => $"{p.Key} {p.Value}개"))
                 + ". 재질 레이어는 선 아래에 곱하기로 놓이며, 숨기거나 삭제해 원래 해치로 돌아갈 수 있습니다.");
         if (skipped > 0) warnings.Add($"복잡하거나 너무 많은 해치 {skipped}개는 경계선만 가져왔습니다.");
+        if (unusable > 0) warnings.Add($"면적을 계산할 수 없는 해치 {unusable}개는 재질 없이 경계선만 가져왔습니다.");
     }
 
     static string ObjectLabel(Entity entity) => entity switch

@@ -1060,6 +1060,10 @@
   "file": "Formats/CadCompatibility.cs"
  },
  {
+  "ko": "면적을 계산할 수 없는 해치 {0}개는 재질 없이 경계선만 가져왔습니다.",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
   "ko": "선",
   "file": "Formats/CadCompatibility.cs"
  },

@@ -1605,6 +1605,7 @@
     "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "找不到画板。请使用 get_state 返回的 artboardId。",
     "cadHatches=image에는 cadMaterialImage가 필요합니다.": "cadHatches=image 需要 cadMaterialImage。",
     "도면 정리 옵션은 cadCleanup=true와 함께 사용하세요.": "图纸整理选项需与 cadCleanup=true 一起使用。",
-    "재질 이미지를 찾을 수 없습니다.": "找不到材质图像。"
+    "재질 이미지를 찾을 수 없습니다.": "找不到材质图像。",
+    "면적을 계산할 수 없는 해치 {0}개는 재질 없이 경계선만 가져왔습니다.": "{0} 个无法计算面积的填充图案仅以边界线导入，未应用材质。"
   }
 }

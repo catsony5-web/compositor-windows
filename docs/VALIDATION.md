@@ -1,3 +1,11 @@
+# Preview 36 drawing cleanup hatch fix validation
+
+- Source self-tests: **548/548 passed** on Windows x64. The added check uses the exact sliver outline from a failing site plan: its area stays the same after translation to the layer origin, and a brick material layer is created at its position.
+- Two real site-plan DWG files that failed with cleanup before the fix now import with cleanup (2400×1707, 7 material regions each); without cleanup they import as before. The drawings were only read and are not part of the repository.
+- `tools/i18n/extract.py` reports 0 missing keys; Korean and English offscreen captures were reviewed (no UI change).
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: whether WPF misreports area for other shapes than thin slivers; such hatches are now skipped with a notice instead of stopping the import.
+
 # Preview 35 AI import settings and artboard batch validation
 
 - Source self-tests: **547/547 passed** on Windows x64. Added checks cover CAD layer roles and hatch-material counts from `inspect_file`, cleanup options rejected without `cadCleanup`, a cleanup import that fills the hatch with a material, a role override that thins the wall with hatches kept, an unknown role rejected, PSD import as one composite versus separate layers, batches that add two artboards and a text layer as one undo step, dry runs that create nothing and return no ids, and rollback when an artboard step fails.

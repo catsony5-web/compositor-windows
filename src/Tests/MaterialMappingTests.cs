@@ -32,6 +32,32 @@ public static class MaterialMappingTests
         }
         byte Alpha(Raster image, int x, int y) => image.Data[(y * image.Width + x) * 4 + 3];
 
+        test("a thin hatch sliver keeps its area after moving to the layer origin", () =>
+
+        {
+
+            // Shape taken from a real site-plan brick hatch: WPF reported area 0 once it was translated near the origin.
+
+            var path = new RegionPath("F1M1371.259521484375,648.6646728515625L1385.2828369140625,653.7686767578125 1385.00341796875,654.662353515625 1370.939697265625,649.543701171875 1371.259521484375,648.6646728515625z");
+
+            var moved = path.Translate(-1370, -648);
+
+            double original = MaterialEditing.Area(path.Geometry), shifted = MaterialEditing.Area(moved.Geometry);
+
+            if (original < 10 || Math.Abs(shifted - original) > .5) throw new Exception($"Sliver area changed after translation: {original} vs {shifted}");
+
+            var doc = new Document { Width = 2400, Height = 1700 }; doc.Add(new Layer { Pixels = new Raster(2400, 1700) });
+
+            var asset = MaterialPresets.Create(MaterialKind.Brick); doc.Materials.Add(asset);
+
+            var region = MaterialEditing.Region(doc, "Sliver", path.Geometry, "polygon"); doc.MaterialRegions.Add(region);
+
+            var layer = MaterialEditing.Apply(doc, asset.Id, region.Id, 40, 40);
+
+            if (layer.Kind != LayerKind.Material || layer.X != 1370 || layer.Y != 648) throw new Exception("Sliver material layer was not created at its position");
+
+        });
+
         test("Material boundary retains holes and leaves surrounding pixels transparent", () =>
         {
             var doc = Document(); var region = Region(doc, true); var layer = Map(doc, region);

@@ -1605,6 +1605,7 @@
     "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.": "アートボードが見つかりません。get_state の artboardId を使用してください。",
     "cadHatches=image에는 cadMaterialImage가 필요합니다.": "cadHatches=image には cadMaterialImage が必要です。",
     "도면 정리 옵션은 cadCleanup=true와 함께 사용하세요.": "図面整理のオプションは cadCleanup=true と一緒に使用してください。",
-    "재질 이미지를 찾을 수 없습니다.": "素材画像が見つかりません。"
+    "재질 이미지를 찾을 수 없습니다.": "素材画像が見つかりません。",
+    "면적을 계산할 수 없는 해치 {0}개는 재질 없이 경계선만 가져왔습니다.": "面積を計算できないハッチ {0} 個は、素材なしで境界線のみ読み込みました。"
   }
 }
