@@ -158,10 +158,14 @@ public sealed partial class MainWindow
                     }
                 }
                 var close = Descendants(w.ribbonBody!).OfType<Button>().First(b => AutomationProperties.GetName(b) == "현재 문서 닫기");
-                var label = ((StackPanel)close.Content).Children.OfType<KeepWordsTextBlock>().Single();
+                // Large ribbon labels are laid out by LargeRibbonLabel, which breaks only between words
+                // (one explicit line per group of whole words), so no Korean word is split.
+                var label = ((StackPanel)close.Content).Children.OfType<TextBlock>().Single();
                 close.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); close.Arrange(new Rect(close.DesiredSize)); close.UpdateLayout();
-                Check(label.Text == "현재 문서 닫기", "The ribbon label text changed");
-                Verify(label, "현재 문서 닫기", "in the ribbon");
+                var lines = label.Text.Split('\n');
+                Check(string.Join(" ", lines) == "현재 문서 닫기", "The ribbon label lost or changed words: " + label.Text);
+                var words = "현재 문서 닫기".Split(' ');
+                Check(lines.All(line => line.Split(' ').All(words.Contains)), "A ribbon label line split a Korean word: " + label.Text);
             }
             finally { w.StopRenderingForShutdown(); }
         });

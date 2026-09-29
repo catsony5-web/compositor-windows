@@ -3704,10 +3704,6 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
-  "ko": "너비",
-  "file": "UI/Dialogs/NewDocumentDialog.cs"
- },
- {
   "ko": "높이",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
@@ -3716,15 +3712,15 @@
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
+  "ko": "너비",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
   "ko": "해상도 · DPI",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
   "ko": "배경",
-  "file": "UI/Dialogs/NewDocumentDialog.cs"
- },
- {
-  "ko": "CMYK 미리보기는 상단에서 전환",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -3741,6 +3737,10 @@
  },
  {
   "ko": "최근 크기",
+  "file": "UI/Dialogs/NewDocumentDialog.cs"
+ },
+ {
+  "ko": "CMYK 미리보기는 상단에서 전환",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -4793,6 +4793,14 @@
  },
  {
   "ko": "이미지로 브러시를 추가하면 여기에 표시됩니다",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "저장한 브러시 없음",
+  "file": "UI/MainWindow.BrushTips.cs"
+ },
+ {
+  "ko": "저장한 브러시 선택",
   "file": "UI/MainWindow.BrushTips.cs"
  },
  {

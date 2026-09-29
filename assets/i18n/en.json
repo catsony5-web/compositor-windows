@@ -1896,6 +1896,8 @@
     "선 정리 다시 적용 중…  Esc: 취소": "Reapplying line cleanup…  Esc: cancel",
     "선 정리 다시 적용 중… {0} / {1}  Esc: 취소": "Reapplying line cleanup… {0} / {1}  Esc: cancel",
     "선 정리를 취소했습니다.": "Line cleanup canceled.",
-    "정리하는 동안 문서가 바뀌어 선 정리를 적용하지 않았습니다. 다시 실행하세요.": "The document changed during cleanup, so the line cleanup was not applied. Run it again."
+    "정리하는 동안 문서가 바뀌어 선 정리를 적용하지 않았습니다. 다시 실행하세요.": "The document changed during cleanup, so the line cleanup was not applied. Run it again.",
+    "저장한 브러시 없음": "No saved brushes",
+    "저장한 브러시 선택": "Choose a saved brush"
   }
 }
