@@ -207,6 +207,16 @@ public sealed partial class MainWindow
     {
         if (moving == target) return;
         var source = doc.Layers.Single(l => l.Id == moving); var destination = doc.Layers.Single(l => l.Id == target);
+        // The photo tab lists hatch materials kept inside a drawing folder next to root photo layers.
+        // A layer dropped beside one goes beside that drawing, never into its linework; only a material
+        // of the same drawing is reordered inside it.
+        var categories = DrawingLayers.Categories(doc);
+        if (DrawingLayers.IsNestedPhoto(destination, categories))
+        {
+            var drawing = OuterDrawingFolder(destination, categories);
+            if (!DrawingLayers.IsNestedPhoto(source, categories) || OuterDrawingFolder(source, categories) != drawing)
+            { destination = drawing; intoGroup = false; if (destination.Id == moving) return; }
+        }
         Guid? parent = intoGroup && destination.Kind == LayerKind.Group ? destination.Id : destination.ParentId;
         if (IsLockedWithParents(source) || IsLockedWithParents(destination)) throw new InvalidOperationException("잠긴 레이어나 그룹으로는 이동할 수 없습니다.");
         for (Guid? ancestor = parent; ancestor != null; ancestor = doc.Layers.Single(l => l.Id == ancestor).ParentId)
@@ -218,6 +228,14 @@ public sealed partial class MainWindow
             doc.Layers.Insert(doc.Layers.IndexOf(destination) + (above ? 1 : 0), source);
             if (parent != null) collapsedGroups.Remove(parent.Value);
         });
+    }
+    // The outermost drawing folder that holds a layer (the layer itself when it is not inside one).
+    Layer OuterDrawingFolder(Layer layer, IReadOnlyDictionary<Guid, LayerCategory> categories)
+    {
+        var outer = layer;
+        for (int depth = 0; depth < 32 && outer.ParentId is { } id && categories.GetValueOrDefault(id) == LayerCategory.Drawing
+            && doc.Layers.FirstOrDefault(l => l.Id == id) is { } parent; depth++) outer = parent;
+        return outer;
     }
     void ToggleClipping() => EditLayer("클리핑 마스크", l => l.Clipped = !l.Clipped);
     void RasterizeActive() => EditLayer("픽셀 레이어로 변환", DocumentFeatures.Rasterize);

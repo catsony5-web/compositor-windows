@@ -82,15 +82,17 @@ public static class CompatibilityImport
     /// <summary>Adds an imported document to <paramref name="target"/> as one group and returns the new layers.
     /// With <paramref name="artboard"/>, a target that already has explicit artboards gets the drawing on a new
     /// artboard 40px right of them, top-aligned with the last one and no larger than it, so no existing artboard
-    /// is covered. Otherwise the drawing is centered and fitted to <paramref name="width"/> × <paramref name="height"/>.</summary>
-    public static IReadOnlyList<Layer> Place(Document target, Document imported, bool artboard, int width, int height)
+    /// is covered. Otherwise the drawing is centered and fitted to <paramref name="width"/> × <paramref name="height"/>.
+    /// When several drawings are placed in one import, pass the last artboard from before the import as
+    /// <paramref name="reference"/>: each drawing is then sized against the user's artboard, not the one just added.</summary>
+    public static IReadOnlyList<Layer> Place(Document target, Document imported, bool artboard, int width, int height, Artboard? reference = null)
     {
         IReadOnlyList<Layer>? layers = null;
         if (artboard && target.Artboards.Count is > 0 and < ArtboardEditing.MaxArtboards)
         {
             imported.Validate();
             var source = imported.Artboards.FirstOrDefault()?.Bounds ?? new Rect(0, 0, imported.Width, imported.Height);
-            var reference = target.Artboards[^1];
+            reference ??= target.Artboards[^1];
             double scale = Math.Clamp(Math.Min(reference.Width / source.Width, reference.Height / source.Height), .01, 1);
             var board = new Artboard(Guid.Empty, imported.Artboards.FirstOrDefault()?.Name ?? imported.Name, Math.Round(target.Artboards.Max(b => b.Bounds.Right) + 40), Math.Round(reference.Y),
                 Math.Max(1, Math.Round(source.Width * scale)), Math.Max(1, Math.Round(source.Height * scale)));

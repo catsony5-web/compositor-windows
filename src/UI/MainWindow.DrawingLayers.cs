@@ -43,6 +43,19 @@ public sealed partial class MainWindow
         var rank = new Dictionary<Guid, int>();
         void Rank(Guid? parent, int depth) { if (depth > 16) return; foreach (var layer in children[parent]) { rank[layer.Id] = rank.Count; if (layer.Kind == LayerKind.Group) Rank(layer.Id, depth + 1); } }
         Rank(null, 0);
+        // A material row on the photo tab is listed without its drawing folder, so it says first when that
+        // folder hides or locks it; its own eye and lock still show and toggle the layer itself.
+        string MaterialDescription(Layer layer)
+        {
+            bool hidden = false, locked = false; var item = layer;
+            for (int depth = 0; depth < 16 && item.ParentId is { } parent && lookup.TryGetValue(parent, out item); depth++) { hidden |= !item.Visible; locked |= item.Locked; }
+            if (!hidden && !locked) return $"도면 해치 재질 · {layer.Opacity * 100:0}%";
+            var parts = new List<string> { "도면 해치 재질" };
+            if (hidden) parts.Add("도면 숨김");
+            if (locked) parts.Add("도면 잠김");
+            parts.Add($"{layer.Opacity * 100:0}%");
+            return string.Join(" · ", parts);
+        }
         var entries = new List<LayerListEntry>();
         void Walk(IEnumerable<Layer> siblings, int depth)
         {
@@ -68,7 +81,7 @@ public sealed partial class MainWindow
                 {
                     bool expanded = !collapsedGroups.Contains(layer.Id);
                     string? description = layer.Kind == LayerKind.Group && categories[layer.Id] == LayerCategory.Drawing ? $"도면 레이어 · 객체 {Count(layer):N0}개"
-                        : DrawingLayers.IsNestedPhoto(layer, categories) ? $"도면 해치 재질 · {layer.Opacity * 100:0}%" : null;
+                        : DrawingLayers.IsNestedPhoto(layer, categories) ? MaterialDescription(layer) : null;
                     entries.Add(new(layer, depth, selected.Contains(layer.Id), expanded, Description: description));
                     if (layer.Kind == LayerKind.Group && expanded) Walk(children[layer.Id], depth + 1);
                 }

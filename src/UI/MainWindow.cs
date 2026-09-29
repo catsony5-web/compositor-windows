@@ -286,12 +286,14 @@ public sealed partial class MainWindow : Window
         var queue = imported.ToLookup(i => i.Path).ToDictionary(g => g.Key, g => new Queue<ImportedFile>(g));
         int width = doc.Width, height = doc.Height;
         var candidate = doc.Snapshot(); var layers = new List<Layer>();
+        // Every drawing in this import is sized against the document's own last artboard, not the one added for the drawing before it.
+        var reference = candidate.Artboards.LastOrDefault();
         foreach (var path in paths)
         {
             if (CompatibilityImport.Supports(path))
             {
                 if (!queue.TryGetValue(path, out var pending) || pending.Count == 0 || pending.Dequeue().Document is not { } drawing) continue;
-                layers.AddRange(CompatibilityImport.Place(candidate, drawing, drawing.Artboards.Count > 0, width, height));
+                layers.AddRange(CompatibilityImport.Place(candidate, drawing, drawing.Artboards.Count > 0, width, height, reference));
             }
             else
             {
@@ -366,7 +368,19 @@ public sealed partial class MainWindow : Window
         CancelGesture();
         if (sourceLayerSelection is { Length: > 1 }) { ReorderSourceLayer(delta); return; }
         if (doc.Active is not { } active) return;
-        var siblings = doc.Layers.Where(l => l.ParentId == active.ParentId).ToList(); int next = siblings.IndexOf(active) + delta;
+        var siblings = doc.Layers.Where(l => l.ParentId == active.ParentId).ToList();
+        var categories = DrawingLayers.Categories(doc);
+        if (DrawingLayers.IsNestedPhoto(active, categories))
+        {
+            // The photo tab shows only the materials of a drawing folder: step among those and swap
+            // places, so the linework the photo tab does not list stays above them.
+            var materials = siblings.Where(l => categories.GetValueOrDefault(l.Id) == LayerCategory.Photo).ToList(); int step = materials.IndexOf(active) + delta;
+            if (step < 0 || step >= materials.Count) return;
+            var other = materials[step];
+            Edit("레이어 순서", () => { int a = doc.Layers.IndexOf(active), b = doc.Layers.IndexOf(other); doc.Layers[a] = other; doc.Layers[b] = active; });
+            return;
+        }
+        int next = siblings.IndexOf(active) + delta;
         if (next < 0 || next >= siblings.Count) return;
         Edit("레이어 순서", () => { int target = doc.Layers.IndexOf(siblings[next]); doc.Layers.Remove(active); doc.Layers.Insert(Math.Min(target, doc.Layers.Count), active); });
     }

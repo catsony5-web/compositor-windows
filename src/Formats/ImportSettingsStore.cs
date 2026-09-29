@@ -29,8 +29,14 @@ public sealed record ImportSettings
     public bool PdfLayers { get; init; } = true;
     public bool PdfRetainVectors { get; init; } = true;
     public bool PsdLayers { get; init; }
-    /// <summary>DWG/DXF and PDF/AI imports get an artboard sized to the drawing (a layout's paper when one is imported).</summary>
-    public bool Artboard { get; init; } = true;
+    /// <summary>DWG/DXF imports get an artboard sized to the drawing (a layout's paper when one is imported).</summary>
+    public bool CadArtboard { get; init; } = true;
+    /// <summary>PDF/AI imports get an artboard sized to the page. Kept apart from <see cref="CadArtboard"/> so a PDF
+    /// choice never changes quick DWG/DXF imports that show no dialog.</summary>
+    public bool PdfArtboard { get; init; } = true;
+    /// <summary>The single artboard choice saved by earlier versions; loading applies it to both kinds.</summary>
+    [JsonPropertyName("Artboard"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? LegacyArtboard { get; init; }
 
     public CadCleanup? Cleanup(IReadOnlyDictionary<string, DrawingRole>? roles = null) => !CadLineWeights && CadHatches == HatchTreatment.Keep ? null
         : new CadCleanup(CadLineWeights, CadHatches, CadHatches == HatchTreatment.Image ? CadMaterialImage : null, roles ?? CadRoles);
@@ -39,9 +45,9 @@ public sealed record ImportSettings
     public CompatibilityOptions Options(string path, int page = 1) => CompatibilityImport.Family(path) switch
     {
         ImportFamily.Cad => new(Dpi: 96, CadLongEdge: CadLongEdge, CadLayout: CadLayout, PreservePdfLayers: false, RetainVectors: CadRetainVectors,
-            CadStructure: CadStructure, GroupDrawingObjects: true, Cleanup: Cleanup(), Artboard: Artboard, CadLayoutOptional: CadLayout is not (null or ModelSpace)),
+            CadStructure: CadStructure, GroupDrawingObjects: true, Cleanup: Cleanup(), Artboard: CadArtboard, CadLayoutOptional: CadLayout is not (null or ModelSpace)),
         ImportFamily.Pdf => new(Page: page, Dpi: PdfDpi, SeparateLayers: PdfLayers, PreservePdfLayers: PdfLayers, RetainVectors: PdfRetainVectors,
-            GroupDrawingObjects: PdfRetainVectors, Artboard: Artboard),
+            GroupDrawingObjects: PdfRetainVectors, Artboard: PdfArtboard),
         _ => new(Dpi: 96, SeparateLayers: PsdLayers, PreservePdfLayers: false)
     };
 
@@ -63,7 +69,8 @@ public sealed record ImportSettings
             CadLongEdge = Math.Clamp(CadLongEdge, 256, 4096),
             CadLayout = Name(CadLayout) ? CadLayout : null,
             CadRoles = roles.Count > 0 ? roles : null,
-            PdfDpi = double.IsFinite(PdfDpi) ? Math.Clamp(PdfDpi, 36, 600) : defaults.PdfDpi
+            PdfDpi = double.IsFinite(PdfDpi) ? Math.Clamp(PdfDpi, 36, 600) : defaults.PdfDpi,
+            CadArtboard = LegacyArtboard ?? CadArtboard, PdfArtboard = LegacyArtboard ?? PdfArtboard, LegacyArtboard = null
         };
     }
 

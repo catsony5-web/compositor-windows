@@ -52,6 +52,7 @@ public sealed partial class MainWindow
         Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf")), "import-cad-cleanup", 940, 700);
         Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg")), "import-cad-batch", 940, 700);
         Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), quick: true), "import-cad-quick", 940, 700);
+        Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), failed: true), "import-cad-skip", 940, 700);
         RenderCleanupPreviews(directory);
         // Palette states: recent commands first, then a ranked search.
         recentCommands.Clear(); recentCommands.AddRange(["menu:레이어/레이어 복제", "tool:Brush", "menu:보정/레벨…"]);

@@ -9,7 +9,8 @@ namespace Compositor.Windows;
 
 // Import settings for PDF/AI, PSD/PSB and DWG/DXF. It opens prefilled with the last used settings,
 // can apply them to every file chosen together (one tab each), and for DWG/DXF can skip itself:
-// in that quick mode it only shows progress and falls back to the settings when a file fails.
+// in that quick mode it only shows progress and falls back to the settings when no file could be read.
+// A previewed file that cannot be read can be skipped when other files were chosen with it.
 internal sealed partial class CompatibilityDialog : Window
 {
     readonly string path;
@@ -51,6 +52,10 @@ internal sealed partial class CompatibilityDialog : Window
     CompatibilityResult? prepared;
     Raster? preparedComposite;
     string? startNotice;
+    // Why the previewed file could not be read. With other files chosen, it can be skipped instead of
+    // blocking them: the import records it as failed and continues with the rest.
+    string? previewFailure;
+    bool CanSkip => !direct && previewFailure != null && files.Count > 1;
     bool closed, busy;
     /// <summary>Every imported file in order, one document each (or the reason it failed).</summary>
     public IReadOnlyList<ImportedFile> Results { get; private set; } = [];
@@ -166,11 +171,11 @@ internal sealed partial class CompatibilityDialog : Window
             if (s.CadHatches == HatchTreatment.Image && s.CadMaterialImage is { } image && File.Exists(image)) UseMaterialImage(image);
             else { hatchMode.SelectedIndex = s.CadHatches == HatchTreatment.Keep ? 1 : 0; lastHatchIndex = hatchMode.SelectedIndex; }
             edge.Text = s.CadLongEdge.ToString(CultureInfo.InvariantCulture); retain.IsChecked = s.CadRetainVectors;
-            artboard.IsChecked = s.Artboard; skipDialog.IsChecked = s.CadSkipDialog;
+            artboard.IsChecked = s.CadArtboard; skipDialog.IsChecked = s.CadSkipDialog;
         }
         else if (pdf)
         {
-            dpi.Text = s.PdfDpi.ToString("0.##", CultureInfo.InvariantCulture); separate.IsChecked = s.PdfLayers; retain.IsChecked = s.PdfRetainVectors; artboard.IsChecked = s.Artboard;
+            dpi.Text = s.PdfDpi.ToString("0.##", CultureInfo.InvariantCulture); separate.IsChecked = s.PdfLayers; retain.IsChecked = s.PdfRetainVectors; artboard.IsChecked = s.PdfArtboard;
         }
         else separate.IsChecked = s.PsdLayers;
     }
@@ -181,7 +186,9 @@ internal sealed partial class CompatibilityDialog : Window
         text.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
         return new DataTemplate(typeof(string)) { VisualTree = text };
     }
-    void DescribeAccept() => accept.Content = direct ? "가져오는 중…" : files.Count > 1 && applyAll.IsChecked == true ? $"{files.Count}개 모두 가져오기" : "가져오기";
+    void DescribeAccept() => accept.Content = direct ? "가져오는 중…"
+        : CanSkip ? (applyAll.IsChecked == true ? $"이 파일 빼고 {files.Count - 1}개 가져오기" : "이 파일 건너뛰기")
+        : files.Count > 1 && applyAll.IsChecked == true ? $"{files.Count}개 모두 가져오기" : "가져오기";
     void DescribeStructure() => structureHint.Text = SelectedStructure switch
     {
         CadImportStructure.Objects => "선과 도형을 각각 선택할 수 있어요.",
@@ -207,10 +214,10 @@ internal sealed partial class CompatibilityDialog : Window
                 CadStructure = SelectedStructure, CadLineWeights = lineWeights.IsChecked == true, CadHatches = SelectedHatches,
                 CadMaterialImage = SelectedHatches == HatchTreatment.Image ? materialImage : remembered.CadMaterialImage,
                 CadLongEdge = Integer(edge.Text, 256, 4096), CadRetainVectors = retain.IsChecked == true, CadLayout = layout,
-                CadRoles = roles.Count > 0 ? roles : null, CadSkipDialog = skipDialog.IsChecked == true, Artboard = artboard.IsChecked == true
+                CadRoles = roles.Count > 0 ? roles : null, CadSkipDialog = skipDialog.IsChecked == true, CadArtboard = artboard.IsChecked == true
             };
         }
-        if (pdf) return remembered with { PdfDpi = Dialogs.Number(dpi.Text, 36, 600), PdfLayers = separate.IsChecked == true, PdfRetainVectors = retain.IsChecked == true, Artboard = artboard.IsChecked == true };
+        if (pdf) return remembered with { PdfDpi = Dialogs.Number(dpi.Text, 36, 600), PdfLayers = separate.IsChecked == true, PdfRetainVectors = retain.IsChecked == true, PdfArtboard = artboard.IsChecked == true };
         return remembered with { PsdLayers = separate.IsChecked == true };
     }
     // Options for the previewed file: its exact layout once the drawing has been read. Layer roles
@@ -225,6 +232,7 @@ internal sealed partial class CompatibilityDialog : Window
     void ClearPrepared()
     {
         prepared = null; preparedComposite = null; accept.IsEnabled = false; preview.Source = null;
+        if (previewFailure != null) { previewFailure = null; DescribeAccept(); }
         information.Visibility = Visibility.Collapsed; information.IsExpanded = false; notices.Children.Clear();
     }
     void InvalidatePrepared() { ClearPrepared(); messages.Foreground = Theme.Muted; messages.Text = "설정을 바꿨어요. 미리보기를 새로고침해 주세요."; }
@@ -246,6 +254,13 @@ internal sealed partial class CompatibilityDialog : Window
         messages.Foreground = Theme.Muted; messages.Text = startNotice ?? "미리보기를 확인하고 가져오세요."; startNotice = null;
     }
     void ShowError(Exception error) { ClearPrepared(); messages.Foreground = Theme.Danger; messages.Text = FriendlyError(error); }
+    // The previewed file itself could not be read (not a settings typo): offer to skip it when others were chosen.
+    void ShowFileError(Exception error)
+    {
+        ShowError(error);
+        if (files.Count < 2) return;
+        previewFailure = FriendlyError(error); accept.IsEnabled = !busy; DescribeAccept();
+    }
     // Reads the drawing's layouts and layers, then renders the first preview.
     internal async Task PrepareAsync()
     {
@@ -270,7 +285,7 @@ internal sealed partial class CompatibilityDialog : Window
             render.IsEnabled = true; await RenderAsync();
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { if (!closed) { ShowError(e); render.IsEnabled = true; } }
+        catch (Exception e) { if (!closed) { ShowFileError(e); render.IsEnabled = true; } }
     }
     // The remembered layout is chosen again when this drawing has one of that name.
     internal void ShowSpaces(IReadOnlyList<CadCompatibility.Space> spaces)
@@ -283,9 +298,10 @@ internal sealed partial class CompatibilityDialog : Window
     async Task RenderAsync()
     {
         if (busy || closed) return; busy = true; render.IsEnabled = false; settings.IsEnabled = false; ClearPrepared();
+        bool reading = false;
         try
         {
-            var options = ReadOptions();
+            var options = ReadOptions(); reading = true;
             messages.Foreground = Theme.Muted; messages.Text = "미리보기를 만들고 있어요…";
             var result = await CompatibilityImport.ReadAsync(path, options, lifetime.Token);
             var bitmap = await Task.Run(() =>
@@ -296,20 +312,22 @@ internal sealed partial class CompatibilityDialog : Window
             if (closed) return; ShowPrepared(result, bitmap.Full, bitmap.Preview, options);
         }
         catch (OperationCanceledException) { if (!closed) messages.Text = "가져오기를 취소했습니다."; }
-        catch (Exception e) { if (!closed) ShowError(e); }
-        finally { busy = false; if (!closed) { render.IsEnabled = true; settings.IsEnabled = true; } }
+        catch (Exception e) { if (!closed) { if (reading) ShowFileError(e); else ShowError(e); } }
+        finally { busy = false; if (!closed) { render.IsEnabled = true; settings.IsEnabled = true; accept.IsEnabled |= CanSkip; } }
     }
     void SetInputs(bool enabled)
     {
         settings.IsEnabled = enabled; applyAll.IsEnabled = enabled; skipDialog.IsEnabled = enabled; render.IsEnabled = enabled;
-        accept.IsEnabled = enabled && prepared != null && preparedComposite != null;
+        accept.IsEnabled = enabled && (prepared != null && preparedComposite != null || CanSkip);
     }
     /// <summary>Imports the previewed file, and with "apply to all" every other chosen file with the same
-    /// settings. A file that fails is reported and the rest continue. In the quick mode nothing was
-    /// previewed: a failing first file brings the settings back instead. Returns true when done.</summary>
+    /// settings. A file that fails is reported and the rest continue; a previewed file that could not be
+    /// read is skipped the same way. In the quick mode nothing was previewed: when no file could be read
+    /// with the remembered settings, the settings come back instead. Returns true when done.</summary>
     internal async Task<bool> ImportAsync()
     {
-        if (busy || closed || !direct && (prepared == null || preparedComposite == null)) return false;
+        bool skip = CanSkip;
+        if (busy || closed || !direct && !skip && (prepared == null || preparedComposite == null)) return false;
         ImportSettings used; CompatibilityOptions first;
         try { used = CaptureSettings(); first = ReadOptions(); }
         catch (Exception e) { ShowError(e); return false; }
@@ -322,15 +340,15 @@ internal sealed partial class CompatibilityDialog : Window
             {
                 messages.Foreground = Theme.Muted;
                 messages.Text = batch.Count > 1 ? $"가져오는 중 {i + 1}/{batch.Count} · {Path.GetFileName(batch[i])}" : "가져오는 중…";
-                if (i == 0 && !direct) { results.Add(new(batch[0], prepared!.Document, prepared.Warnings)); continue; }
+                if (i == 0 && !direct) { results.Add(skip ? new(batch[0], null, [], previewFailure) : new(batch[0], prepared!.Document, prepared.Warnings)); continue; }
                 try
                 {
                     var result = await CompatibilityImport.ReadAsync(batch[i], i == 0 ? first : used.Options(batch[i]), lifetime.Token);
                     results.Add(new(batch[i], result.Document, result.Warnings));
                 }
-                catch (Exception e) when (e is not OperationCanceledException && i == 0 && direct) { fallback = true; startNotice = "이전 설정으로 가져오지 못했어요. 설정을 확인해 주세요."; break; }
                 catch (Exception e) when (e is not OperationCanceledException) { results.Add(new(batch[i], null, [], FriendlyError(e))); }
             }
+            if (direct && results.All(r => r.Document == null)) { fallback = true; startNotice = "이전 설정으로 가져오지 못했어요. 설정을 확인해 주세요."; }
         }
         catch (OperationCanceledException) { if (!closed) messages.Text = "가져오기를 취소했습니다."; return false; }
         finally { busy = false; if (!closed) SetInputs(true); }

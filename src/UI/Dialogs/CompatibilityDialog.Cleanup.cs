@@ -128,13 +128,14 @@ internal sealed partial class CompatibilityDialog
 
     // Offscreen previews: three floor plans chosen together (the quick path offered), and the quick
     // path itself importing with the remembered settings.
-    internal static CompatibilityDialog BatchPreview(string path, bool quick = false)
+    internal static CompatibilityDialog BatchPreview(string path, bool quick = false, bool failed = false)
     {
         string folder = Path.GetDirectoryName(path) ?? "";
         var dialog = new CompatibilityDialog(null, path, false, new ImportSettings { CadSkipDialog = true },
             [path, Path.Combine(folder, "3층 평면도.dwg"), Path.Combine(folder, "4층 평면도.dwg")], quick);
         dialog.ShowDrawingInfo(SampleDrawing); dialog.details.Text = "CAD 도면";
         if (quick) { dialog.SetInputs(false); dialog.messages.Text = $"가져오는 중 {2}/{dialog.files.Count} · {Path.GetFileName(dialog.files[1])}"; }
+        else if (failed) dialog.ShowFileError(new InvalidDataException("블록 배열이 너무 큽니다."));
         else dialog.messages.Text = "미리보기를 확인하고 가져오세요.";
         return dialog;
     }
