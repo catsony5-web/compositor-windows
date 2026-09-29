@@ -71,6 +71,38 @@ public sealed partial class MainWindow
             finally { window.StopRenderingForShutdown(); }
         });
 
+        test("PDF · PSD · AI export says unchanged only when the file was not replaced", () =>
+        {
+            string folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "morupixel-export-cancel-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(folder);
+            try
+            {
+                string path = System.IO.Path.Combine(folder, "plan.pdf"); System.IO.File.WriteAllText(path, "old");
+                // Cancel pressed while the last bytes are written: the old file stays and cancel is reported.
+                using (var cancel = new CancellationTokenSource())
+                {
+                    bool canceled = false;
+                    try { Task.Run(() => CompatibilityExportDialog.WriteFileAsync(path, s => { s.Write("new"u8); cancel.Cancel(); }, cancel.Token)).GetAwaiter().GetResult(); }
+                    catch (OperationCanceledException) { canceled = true; }
+                    Check(canceled && System.IO.File.ReadAllText(path) == "old", "A cancel before the file was replaced must keep it and report the cancel");
+                }
+                // Cancel pressed while the finished file is moved into place: the save is done, not cancelled.
+                using (var cancel = new CancellationTokenSource())
+                {
+                    bool canceled = false;
+                    try
+                    {
+                        Task.Run(() => CompatibilityExportDialog.WriteFileAsync(path, s => s.Write("new"u8), cancel.Token,
+                            (target, write) => { ProjectStore.AtomicWrite(target, write); cancel.Cancel(); })).GetAwaiter().GetResult();
+                    }
+                    catch (OperationCanceledException) { canceled = true; }
+                    Check(!canceled && System.IO.File.ReadAllText(path) == "new", "A replaced file must be reported as saved, not as unchanged");
+                }
+                Check(System.IO.Directory.GetFiles(folder).Length == 1, "A temporary export file was left behind");
+            }
+            finally { System.IO.Directory.Delete(folder, true); }
+        });
+
         test("image export dialog links to the PDF · PSD · AI export", () =>
         {
             var export = ExportDialog.Create(null, Demo.Create());

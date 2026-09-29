@@ -165,6 +165,35 @@ public static class LayeredExportTests
             Check(difference < 3, $"Layered import differs from the file's own composite ({difference:0.###})");
         });
 
+        test("layered .psd files from Preview 35 and earlier reopen in their original order", () =>
+        {
+            var doc = new Document { Width = 48, Height = 32, Dpi = 96, Name = "이전 버전" };
+            doc.Add(new Layer { Name = "배경", Pixels = Solid(48, 32, Color.FromRgb(230, 220, 200)) });
+            doc.Add(new Layer { Name = "사진 가나다", Pixels = Solid(20, 12, Colors.SteelBlue), X = 6, Y = 4, Opacity = .75 });
+            doc.Add(new Layer { Name = "메모", Pixels = Solid(10, 10, Colors.Crimson), X = 30, Y = 18, Blend = BlendMode.Multiply });
+            doc.Add(new Layer { Name = "숨김", Pixels = Solid(8, 8, Colors.Black), X = 2, Y = 20, Visible = false });
+            string[] expected = ["배경", "사진 가나다", "메모", "숨김"];
+            string legacy = PathFor("preview35-layers.psd");
+            using (var output = File.Create(legacy)) LegacyPsd.Write(doc, output, extraResource: false);
+            var result = PsdCompatibility.Read(legacy, true); var back = result.Document;
+            Check(Names(back).SequenceEqual(expected), "Old-version file opened in another order: " + string.Join(", ", Names(back)));
+            Check(result.Warnings.Any(w => w.Contains("Preview 35")), "The old-version order was not explained");
+            Check(back.Layers[2].Blend == BlendMode.Multiply && Math.Abs(back.Layers[1].Opacity - .75) < .01 && !back.Layers[3].Visible, "Old-version layer settings changed");
+            double difference = Difference(DesignRenderer.RenderOutput(doc), DesignRenderer.RenderOutput(back));
+            Check(difference < .6, $"Old-version file looks different ({difference:0.###})");
+            // The same layout with any other resource is an external file: stored order (bottom-first) wins.
+            string other = PathFor("full-canvas-external.psd");
+            using (var output = File.Create(other)) LegacyPsd.Write(doc, output, extraResource: true);
+            var external = PsdCompatibility.Read(other, true);
+            Check(Names(external.Document).SequenceEqual(expected.Reverse()) && !external.Warnings.Any(w => w.Contains("Preview 35")), "An external file must keep its stored order");
+            // Files from this version carry the 1057 writer resource and are never taken for old ones.
+            string current = PathFor("current-full-canvas.psd"); ProjectStore.AtomicWrite(current, s => PsdCompatibility.Write(doc, s, true));
+            var now = PsdCompatibility.Read(current, true);
+            Check(Names(now.Document).SequenceEqual(expected) && !now.Warnings.Any(w => w.Contains("Preview 35")), "A current layered .psd was reordered");
+            string single = PathFor("current-single.psd"); ProjectStore.AtomicWrite(single, s => PsdCompatibility.Write(doc, s, false));
+            Check(!PsdCompatibility.Read(single, true).Warnings.Any(w => w.Contains("Preview 35")), "A one-layer .psd must not be taken for an old layered file");
+        });
+
         test("PackBits rows decode back to the original bytes", () =>
         {
             var random = new Random(7);
@@ -181,6 +210,45 @@ public static class LayeredExportTests
                 }
                 Check(decoded.SequenceEqual(row) && n <= length + (length + 127) / 128, $"PackBits failed for {length} bytes");
             }
+        });
+
+        test("PackBits stays within its bound on rows full of isolated equal pairs", () =>
+        {
+            static List<byte> Decode(byte[] packed, int n)
+            {
+                var decoded = new List<byte>();
+                for (int p = 0; p < n;)
+                {
+                    int header = unchecked((sbyte)packed[p++]);
+                    if (header >= 0) { decoded.AddRange(packed.AsSpan(p, header + 1).ToArray()); p += header + 1; }
+                    else if (header != -128) decoded.AddRange(Enumerable.Repeat(packed[p++], 1 - header));
+                }
+                return decoded;
+            }
+            var random = new Random(11);
+            var rows = new List<byte[]> { new byte[] { 0, 1, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7, 8, 9, 9 } };
+            // x, y, y repeated, and a noisy sky gradient like a photo channel.
+            rows.Add(Enumerable.Range(0, 3000).Select(i => (byte)(i % 3 == 0 ? i / 3 * 2 : i / 3 * 2 + 1)).ToArray());
+            rows.Add(Enumerable.Range(0, 8000).Select(i => (byte)Math.Clamp(i * 200 / 8000 + (int)Math.Round((random.NextDouble() + random.NextDouble() + random.NextDouble() - 1.5) * 3), 0, 255)).ToArray());
+            rows.Add(Enumerable.Range(0, 1000).Select(i => (byte)(i / 2)).ToArray());
+            foreach (var row in rows)
+            {
+                // Exactly the documented bound: any overflow throws here.
+                var packed = new byte[PsdLayerExport.PackBound(row.Length)];
+                int n = PsdLayerExport.Pack(row, packed);
+                Check(Decode(packed, n).SequenceEqual(row), $"PackBits changed a {row.Length}-byte row");
+            }
+            // A layered .psd of a noisy photo saves and reads back unchanged.
+            var noisy = new Raster(301, 40);
+            for (int y = 0; y < 40; y++) for (int x = 0; x < 301; x++)
+            {
+                int i = (y * 301 + x) * 4; byte v = (byte)Math.Clamp(x / 2 + random.Next(-2, 3), 0, 255);
+                noisy.Data[i] = v; noisy.Data[i + 1] = (byte)(x % 3 == 0 ? v : v + 1); noisy.Data[i + 2] = (byte)(x / 3); noisy.Data[i + 3] = 255;
+            }
+            var doc = new Document { Width = 301, Height = 40, Name = "노이즈 사진" }; doc.Add(new Layer { Name = "사진", Pixels = noisy });
+            string path = PathFor("noisy-photo.psd"); ProjectStore.AtomicWrite(path, s => PsdCompatibility.Write(doc, s, true));
+            var back = PsdCompatibility.Read(path, true).Document;
+            Check(back.Layers.Single().Pixels.Data.AsSpan().SequenceEqual(noisy.Data), "The noisy photo layer changed after the round trip");
         });
 
         test("layered PDF makes one Unicode PDF layer per top-level layer with visibility", () =>
@@ -237,6 +305,66 @@ public static class LayeredExportTests
             string blended = PathFor("blend.pdf"); var multiply = doc.Snapshot(); multiply.Layers[1].Blend = BlendMode.Multiply;
             ProjectStore.AtomicWrite(blended, s => CompatibilityExport.Write(multiply, CompatibilityExportFormat.PdfLayers, s));
             Check(Encoding.Latin1.GetString(File.ReadAllBytes(blended)).Contains("/BM/Multiply") || Encoding.Latin1.GetString(File.ReadAllBytes(blended)).Contains("/BM /Multiply"), "Blend mode must be written as a PDF blend state");
+        });
+
+        // Largest channel difference between the canvas and a flat re-import of the PDF at one pixel.
+        string pixelNote = "";
+        int PdfPixelDifference(Document doc, CompatibilityExportFormat format, string name, int x, int y)
+        {
+            string path = PathFor(name); ProjectStore.AtomicWrite(path, s => CompatibilityExport.Write(doc, format, s, true));
+            var editor = DesignRenderer.RenderOutput(doc); var pdf = Imaging.Render(Read(path, new(Dpi: doc.Dpi, PreservePdfLayers: false)).Document);
+            int i = (y * editor.Width + x) * 4, j = (y * pdf.Width + x) * 4, worst = 0;
+            for (int c = 0; c < 3; c++) worst = Math.Max(worst, Math.Abs(editor.Data[i + c] - pdf.Data[j + c]));
+            pixelNote = $" at ({x},{y}): canvas {editor.Data[i + 2]},{editor.Data[i + 1]},{editor.Data[i]}, PDF {pdf.Data[j + 2]},{pdf.Data[j + 1]},{pdf.Data[j]}";
+            return worst;
+        }
+
+        test("PDF keeps a blend mode inside a group to that group, as the canvas does", () =>
+        {
+            // A cut-out with its multiply shadow in a normal group above a coloured floor photo.
+            var doc = new Document { Width = 60, Height = 40, Dpi = 150, Name = "그룹 혼합" };
+            doc.Add(new Layer { Name = "바닥", Pixels = Solid(60, 40, Color.FromRgb(40, 120, 220)) });
+            var group = DocumentFeatures.CreateGroup(doc, "사진 그룹"); doc.Add(group);
+            doc.Add(new Layer { Name = "누끼", Pixels = Solid(16, 16, Colors.White), X = 4, Y = 4, ParentId = group.Id });
+            doc.Add(new Layer { Name = "그림자", Pixels = Solid(20, 12, Color.FromRgb(128, 128, 128)), X = 30, Y = 20, Blend = BlendMode.Multiply, ParentId = group.Id });
+            foreach (var format in new[] { CompatibilityExportFormat.PdfSingle, CompatibilityExportFormat.PdfLayers })
+            {
+                int difference = PdfPixelDifference(doc, format, $"group-blend-{format}.pdf", 40, 26);
+                Check(difference < 16, $"{format}: the shadow multiplied with the floor below its group ({difference}{pixelNote})");
+                Check(PdfPixelDifference(doc, format, $"group-blend-{format}-cut.pdf", 10, 10) < 16, $"{format}: the cut-out changed");
+            }
+            // An opened drawing file keeps one PDF layer per drawing layer while its hatch fill stays in the drawing.
+            var plan = new Document { Width = 60, Height = 40, Dpi = 150, Name = "재질 도면" };
+            plan.Add(new Layer { Name = "현장 사진", Pixels = Solid(60, 40, Color.FromRgb(40, 120, 220)) });
+            var file = DocumentFeatures.CreateGroup(plan, "평면.dxf"); file.Category = LayerCategory.Drawing; plan.Add(file);
+            var walls = DocumentFeatures.CreateGroup(plan, "A-WALL"); walls.Category = LayerCategory.Drawing; walls.ParentId = file.Id; plan.Add(walls);
+            var line = VectorShapes.Create(new ShapeSpec { Width = 40, Height = 3, FillArgb = 0xFF000000 }); line.X = 10; line.Y = 5; line.ParentId = walls.Id; plan.Add(line);
+            plan.Add(new Layer { Name = "재질 · 콘크리트", Pixels = Solid(24, 14, Color.FromRgb(150, 150, 150)), X = 30, Y = 20, Blend = BlendMode.Multiply, ParentId = file.Id });
+            Check(PdfLayerExport.Build(plan, true).Expanded, "The drawing file should still open into its layers");
+            int hatch = PdfPixelDifference(plan, CompatibilityExportFormat.PdfLayers, "drawing-hatch-layers.pdf", 40, 26);
+            Check(hatch < 16 && PdfLayerImport.Count(PathFor("drawing-hatch-layers.pdf")) == 3, $"Layered drawing: hatch {hatch}{pixelNote}, layers {PdfLayerImport.Count(PathFor("drawing-hatch-layers.pdf"))}");
+            var layered = Read(PathFor("drawing-hatch-layers.pdf"), new(Dpi: 150, PreservePdfLayers: true)).Document;
+            Check(layered.Layers.Any(l => l.Name == "A-WALL") && layered.Layers.Any(l => l.Name == "재질 · 콘크리트"), "Drawing layers inside the group did not reopen: " + string.Join(", ", Names(layered)));
+            Check(PdfPixelDifference(plan, CompatibilityExportFormat.PdfSingle, "drawing-hatch-single.pdf", 40, 26) < 16, "Single-page drawing: hatch multiplied with the photo");
+        });
+
+        test("PDF draws a clipping stack with its base's opacity and blend mode", () =>
+        {
+            foreach (var (opacity, blend) in new[] { (.5, BlendMode.Normal), (1d, BlendMode.Multiply) })
+            {
+                var doc = new Document { Width = 60, Height = 40, Dpi = 150, Name = "클리핑 기준" };
+                doc.Add(new Layer { Name = "바닥", Pixels = Solid(60, 40, Color.FromRgb(40, 120, 220)) });
+                doc.Add(new Layer { Name = "기준 도형", Pixels = Solid(30, 20, Colors.White), X = 10, Y = 10, Opacity = opacity, Blend = blend });
+                doc.Add(new Layer { Name = "질감", Pixels = Solid(60, 40, Color.FromRgb(230, 40, 20)), Clipped = true });
+                foreach (var format in new[] { CompatibilityExportFormat.PdfSingle, CompatibilityExportFormat.PdfLayers })
+                {
+                    int difference = PdfPixelDifference(doc, format, $"clip-{blend}-{format}.pdf", 20, 15);
+                    Check(difference < 16, $"{format}, base {opacity:0.#} {blend}: clipped layer ignored its base ({difference}{pixelNote})");
+                    Check(PdfPixelDifference(doc, format, $"clip-{blend}-{format}-out.pdf", 2, 2) < 16, $"{format}: area outside the base changed");
+                }
+                string layeredPath = PathFor($"clip-{blend}-{CompatibilityExportFormat.PdfLayers}.pdf");
+                Check(PdfLayerImport.Count(layeredPath) == 3, $"Each part of the stack keeps its PDF layer ({PdfLayerImport.Count(layeredPath)})");
+            }
         });
 
         test("layered PDF opens a wrapped drawing file into its drawing layers", () =>
@@ -297,5 +425,62 @@ public static class LayeredExportTests
             bool rejected = false; try { PsdLayerExport.Write(wide, output); } catch (InvalidDataException) { rejected = true; }
             Check(rejected && output.Length == 0, "Oversize PSD wrote output");
         });
+    }
+}
+
+/// <summary>
+/// The layered .psd writer of Morupixel 0.2.0 Preview 35 (origin/main PsdCompatibility.Write with
+/// layers on), kept verbatim so tests can produce files exactly as that version saved them:
+/// top-first full-canvas raw records. <c>extraResource</c> adds one more image resource to model an
+/// external file with the same layout.
+/// </summary>
+internal static class LegacyPsd
+{
+    public static void Write(Document document, Stream output, bool extraResource)
+    {
+        using var writer = new BinaryWriter(output, Encoding.ASCII, true);
+        void U16(int n) { Span<byte> b = stackalloc byte[2]; System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(b, checked((ushort)n)); writer.Write(b); }
+        void I16(short n) { Span<byte> b = stackalloc byte[2]; System.Buffers.Binary.BinaryPrimitives.WriteInt16BigEndian(b, n); writer.Write(b); }
+        void I32(int n) { Span<byte> b = stackalloc byte[4]; System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(b, n); writer.Write(b); }
+        void Text(string s) => writer.Write(Encoding.ASCII.GetBytes(s));
+        void Section(Action action) { long p = output.Position; I32(0); action(); long end = output.Position; output.Position = p; I32(checked((int)(end - p - 4))); output.Position = end; }
+        void Plane(Raster raster, int ch) { for (int y = 0; y < raster.Height; y++) for (int x = 0; x < raster.Width; x++) writer.Write(raster.Data[(y * raster.Width + x) * 4 + ch]); }
+        Text("8BPS"); U16(1); writer.Write(new byte[6]); U16(4); I32(document.Height); I32(document.Width); U16(8); U16(3); I32(0);
+        Section(() =>
+        {
+            Text("8BIM"); U16(1005); U16(0); I32(16); I32((int)Math.Round(document.Dpi * 65536)); U16(1); U16(1); I32((int)Math.Round(document.Dpi * 65536)); U16(1); U16(1);
+            if (extraResource) { Text("8BIM"); U16(1034); U16(0); I32(1); writer.Write((byte)0); writer.Write((byte)0); }
+        });
+        var merged = DesignRenderer.RenderOutput(document);
+        Section(() =>
+        {
+            Section(() =>
+            {
+                var selected = document.Layers.AsEnumerable().Reverse().ToArray();
+                I16((short)-selected.Length);
+                int planeBytes = checked(document.Width * document.Height);
+                foreach (var layer in selected)
+                {
+                    I32(0); I32(0); I32(document.Height); I32(document.Width); U16(4);
+                    foreach (short channel in new short[] { 0, 1, 2, -1 }) { I16(channel); I32(planeBytes + 2); }
+                    Text("8BIM"); Text(PsdCompatibility.Blends.First(p => p.Value == layer.Blend).Key); writer.Write(Imaging.Byte(layer.Opacity * 255)); writer.Write((byte)0); writer.Write((byte)(layer.Visible ? 0 : 2)); writer.Write((byte)0);
+                    Section(() =>
+                    {
+                        I32(0); I32(0);
+                        byte[] name = Encoding.ASCII.GetBytes(layer.Name.Length > 255 ? layer.Name[..255] : layer.Name); writer.Write((byte)name.Length); writer.Write(name); writer.Write(new byte[(4 - (name.Length + 1) % 4) % 4]);
+                        Text("8BIM"); Text("luni"); Section(() => { I32(layer.Name.Length); writer.Write(Encoding.BigEndianUnicode.GetBytes(layer.Name)); });
+                    });
+                }
+                foreach (var layer in selected)
+                {
+                    var single = new Document { Width = document.Width, Height = document.Height }; var copy = layer.Snapshot(); copy.Visible = true; copy.Opacity = 1; copy.Blend = BlendMode.Normal; single.Add(copy);
+                    var raster = DesignRenderer.RenderOutput(single);
+                    foreach (int channel in new[] { 2, 1, 0, 3 }) { U16(0); Plane(raster, channel); }
+                }
+                if ((output.Position & 1) != 0) writer.Write((byte)0);
+            });
+            I32(0);
+        });
+        U16(0); foreach (int channel in new[] { 2, 1, 0, 3 }) Plane(merged, channel);
     }
 }
