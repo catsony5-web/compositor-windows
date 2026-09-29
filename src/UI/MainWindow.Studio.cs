@@ -76,16 +76,16 @@ public sealed partial class MainWindow
     }
     void ApplyWorkspaceStudio()
     {
-        if (studioPanes.Length > 0) studioPanes[0].SetCaption(designWorkspace ? "디자인" : "사진 보정");
+        if (studioPanes.Length > 0) studioPanes[0].SetCaption(userProfile.PaneCaption ?? (designWorkspace ? "디자인" : "사진 보정"));
         UpdateHistogramVisibility();
         if (studioTabs.Count == 4 && studioTabStrip != null)
         {
-            studioTabs[0].Content = designWorkspace ? "디자인" : "보정";
+            studioTabs[0].Content = userProfile.TabCaption ?? (designWorkspace ? "디자인" : "보정");
             studioTabStrip.Children.Clear();
             foreach (int page in designWorkspace ? new[] { 0, 1, 2, 3 } : new[] { 0, 3, 1, 2 }) studioTabStrip.Children.Add(studioTabs[page]);
         }
         studioContents[0].Children.Clear();
-        if (designWorkspace) BuildDesignActions(studioContents[0]); else BuildPhotoActions(studioContents[0]);
+        BuildFirstTab(studioContents[0]);
     }
     void UpdateHistogramVisibility()
     {

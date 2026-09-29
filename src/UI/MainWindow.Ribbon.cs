@@ -226,6 +226,7 @@ public sealed partial class MainWindow
             ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders)
         ];
         if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
+        if (UserProfiles.All.FirstOrDefault(p => p.Name == label) is { } profile) return profile.Glyph;
         foreach (var (key, glyph) in map) if (label.StartsWith(key, StringComparison.Ordinal)) return glyph;
         return Theme.Glyphs.More;
     }

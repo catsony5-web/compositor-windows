@@ -38,6 +38,7 @@ public sealed partial class MainWindow
         card.Children.Add(title);
         var subtitle = Theme.Label("새 문서를 만들거나 이미지를 열어 편집을 시작하세요.", Theme.BodySize, Theme.Muted); subtitle.HorizontalAlignment = HorizontalAlignment.Center; subtitle.TextAlignment = TextAlignment.Center;
         card.Children.Add(subtitle);
+        card.Children.Add(BuildStartProfileChoice());
         var actions = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3, Margin = new Thickness(0, 20, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
         foreach (var (label, glyph, hint, action) in new (string, string, string, Action)[] {
             ("새 문서", Theme.Glyphs.NewFile, "Ctrl+N", NewDocument), ("열기", Theme.Glyphs.Open, "Ctrl+O", Open), ("배우기", Theme.Glyphs.Learn, "샘플 작업 열기", OpenLearningSample) })
@@ -54,24 +55,9 @@ public sealed partial class MainWindow
         card.Children.Add(actions);
         var quickTitle = Theme.Label("빠른 시작", Theme.BodySize, Theme.Muted); quickTitle.FontWeight = FontWeights.SemiBold; quickTitle.Margin = new Thickness(7, 18, 5, 6);
         card.Children.Add(quickTitle);
-        var quick = new System.Windows.Controls.Primitives.UniformGrid { Columns = 4, Margin = new Thickness(2, 0, 2, 0) };
-        foreach (var size in QuickSizes)
-        {
-            var preset = size;
-            var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
-            // The outline shows the page proportion at a glance.
-            double w = double.Parse(preset.Width), h = double.Parse(preset.Height), scale = 18 / Math.Max(w, h);
-            var outline = new Border { Width = Math.Max(8, w * scale), Height = Math.Max(8, h * scale), BorderBrush = Theme.Muted, BorderThickness = new Thickness(1.4), CornerRadius = new CornerRadius(2.5), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            content.Children.Add(new Grid { Height = 20, Margin = new Thickness(0, 0, 0, 8), Children = { outline } });
-            content.Children.Add(new TextBlock { Text = preset.Label, FontSize = Theme.CaptionSize, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center });
-            content.Children.Add(new TextBlock { Text = preset.Caption, FontSize = 11, Foreground = Theme.Subtle, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap });
-            var button = Theme.Button("", () => Guard(() => AddTab(NewDocumentDialog.CreateDocument(Loc.T("제목 없음"), preset.Width, preset.Height, preset.Background, preset.Millimeters, preset.Dpi), null)), $"{preset.Label} · {preset.Caption}{(preset.Millimeters ? $" · {preset.Dpi} DPI" : " px")} · {(preset.Background == 1 ? "흰 배경" : "투명 배경")}으로 새 문서 만들기");
-            button.Content = content; button.Width = 108; button.MinHeight = 84; button.Margin = new Thickness(4); button.Padding = new Thickness(6, 10, 6, 8);
-            button.HorizontalContentAlignment = HorizontalAlignment.Center;
-            System.Windows.Automation.AutomationProperties.SetName(button, $"빠른 시작: {preset.Label} {preset.Caption}");
-            quick.Children.Add(button);
-        }
-        card.Children.Add(quick);
+        startQuick = new System.Windows.Controls.Primitives.UniformGrid { Columns = 4, Margin = new Thickness(2, 0, 2, 0) };
+        RebuildQuickStart();
+        card.Children.Add(startQuick);
         var drop = new Grid { Margin = new Thickness(5, 14, 5, 0), Height = 44 };
         drop.Children.Add(new System.Windows.Shapes.Rectangle { Stroke = Theme.Stroke, StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = 8, RadiusY = 8 });
         drop.Children.Add(new TextBlock { Text = "이미지나 작업 파일을 여기로 끌어다 놓아도 열립니다", Foreground = Theme.Muted, FontSize = Theme.CaptionSize, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
@@ -83,6 +69,42 @@ public sealed partial class MainWindow
         centered.SetBinding(MinHeightProperty, new System.Windows.Data.Binding(nameof(ScrollViewer.ViewportHeight)) { Source = scroll });
         scroll.Content = centered;
         return new Border { Background = Theme.Stage, Child = scroll };
+    }
+
+    // Quick starts follow the 사용 목적 (UserProfile.QuickSizes / QuickDrawingImport).
+    System.Windows.Controls.Primitives.UniformGrid? startQuick;
+    void RebuildQuickStart()
+    {
+        if (startQuick == null) return;
+        startQuick.Children.Clear();
+        foreach (var size in userProfile.QuickSizes ?? QuickSizes) startQuick.Children.Add(QuickStartButton(size));
+        if (userProfile.QuickDrawingImport) startQuick.Children.Add(QuickStartTile(Theme.Glyph(Theme.Glyphs.Plan, 20, Theme.Muted, 1.5), "도면 가져오기", "DWG · DXF · PDF",
+            ImportDrawing, "DWG·DXF·PDF 도면을 열어 선 정리와 함께 가져오기", "빠른 시작: 도면 가져오기"));
+        startQuick.Columns = Math.Clamp(startQuick.Children.Count, 1, 4);
+    }
+
+    Button QuickStartButton((string Label, string Caption, string Width, string Height, bool Millimeters, string Dpi, int Background) preset)
+    {
+        // The outline shows the page proportion at a glance.
+        double w = double.Parse(preset.Width), h = double.Parse(preset.Height), scale = 18 / Math.Max(w, h);
+        var outline = new Border { Width = Math.Max(8, w * scale), Height = Math.Max(8, h * scale), BorderBrush = Theme.Muted, BorderThickness = new Thickness(1.4), CornerRadius = new CornerRadius(2.5), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        return QuickStartTile(outline, preset.Label, preset.Caption,
+            () => AddTab(NewDocumentDialog.CreateDocument(Loc.T("제목 없음"), preset.Width, preset.Height, preset.Background, preset.Millimeters, preset.Dpi), null),
+            $"{preset.Label} · {preset.Caption.Split('\n')[0]}{(preset.Millimeters ? $" · {preset.Dpi} DPI" : " px")} · {(preset.Background == 1 ? "흰 배경" : "투명 배경")}으로 새 문서 만들기",
+            $"빠른 시작: {preset.Label} {preset.Caption.Replace('\n', ' ')}");
+    }
+
+    Button QuickStartTile(FrameworkElement mark, string label, string caption, Action action, string tooltip, string name)
+    {
+        var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        content.Children.Add(new Grid { Height = 20, Margin = new Thickness(0, 0, 0, 8), Children = { mark } });
+        content.Children.Add(new TextBlock { Text = label, FontSize = Theme.CaptionSize, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap });
+        content.Children.Add(new TextBlock { Text = caption, FontSize = 11, Foreground = Theme.Subtle, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap });
+        var button = Theme.Button("", () => Guard(action), tooltip);
+        button.Content = content; button.Width = 108; button.MinHeight = 84; button.Margin = new Thickness(4); button.Padding = new Thickness(6, 10, 6, 8);
+        button.HorizontalContentAlignment = HorizontalAlignment.Center;
+        System.Windows.Automation.AutomationProperties.SetName(button, name);
+        return button;
     }
 
     // Headless checks and offscreen renders never read or write the user's recent list.
