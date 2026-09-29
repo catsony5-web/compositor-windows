@@ -112,6 +112,8 @@ public static class SelfTests
         PhotoDevelopTests.Run(Test, directory);
         BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);
+        ShadowTests.Run(Test, directory);
+        MainWindow.RunShadowCommandTests(Test);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
         VectorContentTests.Run(Test, directory);

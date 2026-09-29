@@ -141,6 +141,7 @@ public sealed partial class MainWindow
         ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
         RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
+        RenderShadowPreviews(Capture, CapturePane);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)

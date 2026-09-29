@@ -60,6 +60,9 @@ public static partial class ProjectStore
         public MaterialFillInfo? Material { get; set; }
         public AdjustmentSpec? Adjustment { get; set; }
         public WarpQuad? Warp { get; set; }
+        // Optional and written only for shadow layers: older readers ignore it and keep the rendered pixels.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public ShadowSpec? Shadow { get; set; }
         public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()) };
     }
     public sealed record VectorInfo(VectorFormat Format, int Width, int Height, int Page);
@@ -94,6 +97,7 @@ public static partial class ProjectStore
             manifest.Layers!.Add(new LayerInfo { Id = l.Id, Name = l.Name, Visible = l.Visible, Locked = l.Locked, Opacity = l.Opacity, Blend = l.Blend, X = l.X, Y = l.Y, Scale = l.Scale, Rotation = l.Rotation, FlipX = l.FlipX, FlipY = l.FlipY, HasMask = l.Mask != null, Kind = l.Kind, ParentId = l.ParentId, Clipped = l.Clipped, ScaleX = l.ScaleX, ScaleY = l.ScaleY, Shape = l.Shape, Text = l.Text, Adjustment = l.Adjustment, Warp = l.Warp,
                 Category = l.Category, SourceLayerName = l.SourceLayerName, Material = MaterialFillInfo.From(l.Material),
                 Vector = l.Vector is { } vector ? new(vector.Format, vector.Width, vector.Height, vector.Page) : null, SharedGroupPixelsIndex = sharedGroupIndex });
+            manifest.Layers[^1]!.Shadow = l.Shadow;
         }
         if (doc.Artboards.Count > 0 || doc.Layers.Any(l => l.Category != LayerCategory.Automatic || l.SourceLayerName != null)) manifest.Version = 5;
         if (materials.Count > 0 || doc.MaterialRegions.Count > 0) manifest.Version = 6;
@@ -177,7 +181,8 @@ public static partial class ProjectStore
                 mask = new byte[maskEntry.Length]; using var s = maskEntry.Open(); s.ReadExactly(mask);
             }
             var layer = l.ToLayer(pixels, mask, materials);
-            pixelBytes += Document.StorageBytes(layer, groupPixels);
+            layer.Shadow = l.Shadow;
+            pixelBytes +=Document.StorageBytes(layer, groupPixels);
             if (pixelBytes > Document.MaxLayerBytes) throw new InvalidDataException("레이어 메모리 한도를 초과합니다.");
             if (l.Vector is { } info)
             {

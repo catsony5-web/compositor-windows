@@ -177,6 +177,7 @@ public sealed partial class MainWindow
         properties.Children.Add(PropertyRows.Inline("불투명도 · %", opacityBox, margin: new Thickness(2, 0, 2, 4)));
         if (layer.Kind == LayerKind.Raster)
             properties.Children.Add(InspectorAction("레벨 보정", Levels, "선택한 이미지 레이어의 검정·흰색·감마 값을 보정합니다.", layer, Theme.Glyphs.Levels));
+        AddShadowActions(layer);
 
         properties.Children.Add(Theme.Section("위치와 변형"));
         properties.Children.Add(TransformRow(layer, ("X", layer.X, -100000, 100000, "X 위치", (l, v) => l.X = v),
