@@ -45,6 +45,7 @@ internal sealed partial class CompatibilityDialog
         hatchMode.Margin = new Thickness(3, 4, 3, 4); System.Windows.Automation.AutomationProperties.SetName(hatchMode, "해치 처리");
         panel.Children.Add(hatchMode); panel.Children.Add(hatchSummary);
         roleExpander.SetResourceReference(StyleProperty, "ImportDetailsExpander");
+        Grid.SetIsSharedSizeScope(roleRows, true);
         roleExpander.Content = new ScrollViewer { Content = roleRows, MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         roleExpander.Visibility = Visibility.Collapsed;
         panel.Children.Add(roleExpander);
@@ -76,12 +77,14 @@ internal sealed partial class CompatibilityDialog
         drawingInfo = info; roleRows.Children.Clear(); rolePickers.Clear();
         foreach (var layer in info.Layers.Take(MaxRoleRows))
         {
+            // The role column sizes to the longest shown role (shared by all rows) so a longer
+            // translation widens every picker together instead of being cut off; names trim.
             var row = new Grid { Margin = new Thickness(3, 2, 3, 2) };
-            row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { MinWidth = 60 }); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "CadRole" });
             var name = Loc.Keep(new TextBlock { Text = layer.Name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, FontSize = Theme.CaptionSize,
                 ToolTip = $"{layer.Name} · 객체 {layer.Objects:N0}개" + (layer.Hatches > 0 ? $" · 해치 {layer.Hatches:N0}개" : "") });
             row.Children.Add(name);
-            var picker = new ComboBox { ItemsSource = Enum.GetValues<DrawingRole>().Select(r => new RoleChoice(r)).ToArray(), MinHeight = 26, FontSize = Theme.CaptionSize };
+            var picker = new ComboBox { ItemsSource = Enum.GetValues<DrawingRole>().Select(r => new RoleChoice(r)).ToArray(), MinHeight = 26, MinWidth = 150, Margin = new Thickness(6, 0, 0, 0), FontSize = Theme.CaptionSize };
             // A role the user chose for a layer of this name before is chosen again.
             picker.SelectedIndex = (int)(remembered.CadRoles is { } roles && roles.TryGetValue(layer.Name, out var role) ? role : layer.Role);
             System.Windows.Automation.AutomationProperties.SetName(picker, "레이어 역할: " + layer.Name);
@@ -165,6 +168,34 @@ internal sealed partial class CompatibilityDialog
                 Check(dialog.ReadCleanup() == null, "Turning cleanup off still sent settings");
             }
             finally { dialog.Close(); }
+        });
+        test("CAD import role pickers show whole English role names and the refresh button keeps its gap", () =>
+        {
+            string previous = Loc.Language;
+            CompatibilityDialog? dialog = null;
+            try
+            {
+                Loc.Use("en");
+                dialog = CleanupPreview("평면.dxf");
+                var host = DialogLayoutTests.Themed(OffscreenPreview.Host(dialog));
+                DialogLayoutTests.Layout(host, 940, 700); Loc.PrepareOffscreen(host);
+                // Every role, including the longest, fits its picker.
+                var sample = dialog.rolePickers["A-FURN-SOFA"];
+                foreach (int index in new[] { (int)DrawingRole.Structure, (int)DrawingRole.Furniture })
+                {
+                    sample.SelectedIndex = index; host.UpdateLayout(); Loc.PrepareOffscreen(host);
+                    foreach (var (layer, picker) in dialog.rolePickers)
+                    {
+                        var text = DialogLayoutTests.SelectionText(picker);
+                        Check(!text.Text.Any(c => c is >= '가' and <= '힣'), "Role name is not translated in the test: " + text.Text);
+                        Check(!DialogLayoutTests.Clipped(text, dialog.roleRows), $"Role \"{text.Text}\" is cut off for {layer} (picker {picker.ActualWidth:0.#} DIP)");
+                    }
+                    Check(dialog.rolePickers.Values.Select(p => Math.Round(p.ActualWidth)).Distinct().Count() == 1, "Role pickers have different widths");
+                }
+                var refresh = DialogLayoutTests.Bounds(dialog.render, host); var import = DialogLayoutTests.Bounds(dialog.accept, host);
+                Check(import.Top - refresh.Bottom >= 6, $"Refresh preview sits {import.Top - refresh.Bottom:0.#} DIP above Cancel/Import");
+            }
+            finally { dialog?.Close(); Loc.Use(previous); }
         });
     }
 

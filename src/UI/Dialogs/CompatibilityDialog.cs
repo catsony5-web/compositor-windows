@@ -96,7 +96,9 @@ internal sealed partial class CompatibilityDialog : Window
             skipDialog.Checked += (_, _) => skipHint.Visibility = Visibility.Visible; skipDialog.Unchecked += (_, _) => skipHint.Visibility = Visibility.Collapsed;
         }
         render.Margin = new Thickness(0, 8, 0, 0); bottom.Children.Add(render);
-        var actions = new Grid(); actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); actions.ColumnDefinitions.Add(new ColumnDefinition());
+        // The refresh button and the cancel/import pair are separate rows with the dialog's usual 8 DIP gap.
+        var actions = new Grid { Margin = new Thickness(0, 8, 0, 0) }; actions.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); actions.ColumnDefinitions.Add(new ColumnDefinition());
+        cancel.MinWidth = 100;
         actions.Children.Add(cancel); Grid.SetColumn(accept, 1); actions.Children.Add(accept); bottom.Children.Add(actions);
         var content = new StackPanel(); contentScroll.Content = content; side.Children.Add(contentScroll);
         content.Children.Add(Loc.Keep(new TextBlock { Text = Path.GetFileName(path), FontSize = Theme.TitleSize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 0, 3, files.Count > 1 ? 2 : 10) }));
