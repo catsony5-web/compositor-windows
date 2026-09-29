@@ -27,8 +27,8 @@ public sealed class ChoiceList<T> : StackPanel
             var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(glyph == null ? 0 : 30) }); row.ColumnDefinitions.Add(new ColumnDefinition());
             if (glyph != null) { var icon = Theme.Glyph(glyph, 18, Theme.Muted); icon.VerticalAlignment = VerticalAlignment.Top; icon.Margin = new Thickness(0, 1, 0, 0); icon.HorizontalAlignment = HorizontalAlignment.Left; row.Children.Add(icon); }
             var text = new StackPanel(); Grid.SetColumn(text, 1); row.Children.Add(text);
-            var name = new TextBlock { Text = title, FontSize = Theme.BodySize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
-            var note = new TextBlock { Text = description, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) };
+            var name = new KeepWordsTextBlock { Text = title, FontSize = Theme.BodySize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
+            var note = new KeepWordsTextBlock { Text = description, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) };
             text.Children.Add(name); text.Children.Add(note);
             button.Content = row; button.ToolTip = description;
             AutomationProperties.SetName(button, title); AutomationProperties.SetHelpText(button, description);

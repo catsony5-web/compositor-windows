@@ -175,7 +175,7 @@ public sealed partial class MainWindow
         {
             var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
             var icon = Theme.Glyph(glyph, 22, Theme.Text); icon.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(icon);
-            content.Children.Add(new TextBlock { Text = Loc.T(label).TrimEnd('…'), FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 76, Margin = new Thickness(0, 4, 0, 0) });
+            content.Children.Add(new KeepWordsTextBlock { Text = Loc.T(label).TrimEnd('…'), FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 76, Margin = new Thickness(0, 4, 0, 0) });
             button.Content = content; button.MinWidth = 58; button.MinHeight = 66; button.Padding = new Thickness(6, 6, 6, 4);
         }
         else
