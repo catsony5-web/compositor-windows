@@ -87,7 +87,7 @@ public sealed partial class MainWindow
         SetHistogramVisible(layout.ShowHistogram);
         ribbonMode = layout.RibbonMode; ribbonCollapsed = layout.RibbonCollapsed;
         if (layout.RibbonTab != null && RibbonTabNames().Contains(layout.RibbonTab)) ribbonTab = layout.RibbonTab;
-        if (layout.RibbonFavorites != null) ribbonFavorites = [.. layout.RibbonFavorites];
+        if (layout.RibbonFavorites != null) ribbonFavorites = MigrateFavorites(layout.RibbonFavorites);
         RebuildRibbon();
     }
 
