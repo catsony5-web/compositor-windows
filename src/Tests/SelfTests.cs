@@ -119,6 +119,8 @@ public static class SelfTests
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);
+        LayeredExportTests.Run(Test, directory);
+        MainWindow.RunCompatibilityExportTests(Test);
         CadObjectImportTests.Run(Test, directory);
         CompatibilityDialog.RunStructureTests(Test, directory);
         NativePdfLifetimeTests.Run(Test, directory);

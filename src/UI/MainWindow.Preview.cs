@@ -35,6 +35,8 @@ public sealed partial class MainWindow
             try
             {
                 host.Measure(new Size(width, double.PositiveInfinity));
+                // Translate before sizing so a longer language gets the height it needs.
+                Loc.PrepareOffscreen(host); host.Measure(new Size(width, double.PositiveInfinity));
                 int height = (int)Math.Ceiling(host.DesiredSize.Height);
                 host.Measure(new Size(width, height)); host.Arrange(new Rect(0, 0, width, height)); host.UpdateLayout();
                 var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(host); image.Render(host);
@@ -55,7 +57,9 @@ public sealed partial class MainWindow
         var paletteSearch = new CommandPalette(null, BuildCommandRegistry(), recentCommands.ToArray()); paletteSearch.SetQuery("브러시");
         CaptureFit(paletteSearch, "command-palette-search", 600);
         recentCommands.Clear();
-        CaptureFit(new CompatibilityExportDialog(null!, doc), "compat-export", 510);
+        CaptureFit(new CompatibilityExportDialog(null, doc), "compat-export", 580);
+        CaptureFit(new CompatibilityExportDialog(null, doc, CompatibilityExportFormat.PsdLayers), "compat-export-psd", 580);
+        CaptureFit(new CompatibilityExportDialog(null, doc, CompatibilityExportFormat.AiLayers), "compat-export-ai", 580);
         var export = ExportDialog.Create(null, doc); ExportDialog.WaitForPreview(export, TimeSpan.FromSeconds(20)); Capture(export, "export", 1040, 680);
         Capture(new ColorPickerDialog(null!, foreground), "color-picker", 560, 470);
         Capture(new CmykExportDialog(null!, doc), "cmyk-export", 990, 710);
@@ -97,7 +101,8 @@ public sealed partial class MainWindow
         foreach (var (width, height) in new[] { (1280, 720), (1366, 768), (1920, 1080) }) Capture(this, $"window-{width}x{height}", width, height);
         // Ribbon layout: the favorites tab and a dense menu tab, then back to the menu bar.
         SetRibbonMode(true); SelectRibbonTab(FavoritesTab); Capture(this, "ribbon", 1480, 920);
-        SelectRibbonTab("레이어"); Capture(this, "ribbon-layer-1280x720", 1280, 720); SetRibbonMode(false);
+        SelectRibbonTab("레이어"); Capture(this, "ribbon-layer-1280x720", 1280, 720);
+        SelectRibbonTab("파일"); Capture(this, "ribbon-file-1480x920", 1480, 920); SetRibbonMode(false);
         void CapturePane(FrameworkElement pane, string name, int width, int height)
         {
             if (pane is StudioPane movable) RemovePane(movable);

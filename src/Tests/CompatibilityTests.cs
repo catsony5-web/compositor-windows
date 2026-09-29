@@ -69,7 +69,8 @@ public static class CompatibilityTests
         });
         test("PSD unsupported layered export does not replace existing destination", () =>
         {
-            var doc = Single(); doc.Add(new Layer { Name = "그룹", Kind = LayerKind.Group, Pixels = new Raster(1, 1) });
+            // Groups are now kept as PSD folders; a canvas beyond the PSD size limit still fails.
+            var doc = new Document { Width = 30_001, Height = 1, Name = "넓은 문서" }; doc.Add(new Layer { Name = "그룹", Kind = LayerKind.Group, Pixels = new Raster(1, 1) });
             string path = PathFor("preserved.psd"); File.WriteAllText(path, "preserve"); Throws(() => ProjectStore.AtomicWrite(path, s => PsdCompatibility.Write(doc, s, true))); Assert(File.ReadAllText(path) == "preserve");
         });
         test("PSD real external two layer PSD reads composite and pixel layers", () =>

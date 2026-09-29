@@ -23,10 +23,12 @@ public static class CapacityFormatTests
 
         test("PSD v1 rejects a signed section overflow before allocating a render", () =>
         {
+            // Layers are cropped to what they can cover, so the two tiny rasters are scaled
+            // over the whole canvas: together they could need more than 2 GB of channel data.
             var document = new Document { Width = 24_000, Height = 16_000 };
-            var pixel = new Raster(1, 1);
-            document.Add(new Layer { Name = "First", Pixels = pixel });
-            document.Add(new Layer { Name = "Second", Pixels = pixel });
+            var pixel = new Raster(64, 48);
+            document.Add(new Layer { Name = "First", Pixels = pixel, Scale = 20, ScaleX = 20, ScaleY = 20 });
+            document.Add(new Layer { Name = "Second", Pixels = pixel, Scale = 20, ScaleX = 20, ScaleY = 20 });
             RejectBeforeOutput(document, "PSD 레이어 섹션");
         });
     }

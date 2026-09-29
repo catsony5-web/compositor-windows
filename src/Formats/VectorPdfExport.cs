@@ -29,22 +29,27 @@ public static class VectorPdfExport
                 var saved = graphics.Save(); Transform(graphics, layer.Matrix);
                 graphics.IntersectClip(new XRect(0, 0, layer.Pixels.Width, layer.Pixels.Height));
                 if (layer.Kind == LayerKind.Group) foreach (var child in children.GetValueOrDefault(layer.Id) ?? []) Layer(child);
-                else if (layer.Vector is { Format: VectorFormat.Pdf } vector)
-                {
-                    using var input = vector.Open(); using var form = XPdfForm.FromStream(input); form.PageNumber = vector.Page;
-                    graphics.DrawImage(form, 0, 0, vector.Width, vector.Height);
-                }
-                else if (layer.Vector != null) Drawing(graphics, layer.Vector.Drawing, token);
-                else if (layer.Kind == LayerKind.Text) Drawing(graphics, DesignRenderer.TextDrawing(layer.Text!), token);
-                else if (layer.Kind == LayerKind.Shape) Drawing(graphics, ShapeDrawing(layer.Shape!), token);
-                else { using var input = new MemoryStream(); layer.Pixels.WritePng(input); input.Position = 0; using var image = XImage.FromStream(input); graphics.DrawImage(image, 0, 0, layer.Pixels.Width, layer.Pixels.Height); }
+                else DrawContent(graphics, layer, token);
                 graphics.Restore(saved);
             }
             foreach (var layer in doc.Layers.Where(l => l.ParentId == null)) Layer(layer);
         }
         pdf.Save(output, false);
     }
-    static void Transform(XGraphics graphics, Matrix matrix) => graphics.MultiplyTransform(new XMatrix(matrix.M11, matrix.M12, matrix.M21, matrix.M22, matrix.OffsetX, matrix.OffsetY), XMatrixOrder.Prepend);
+    // One layer's own content in its local coordinates: PDF vectors, paths, glyph outlines or its pixels.
+    internal static void DrawContent(XGraphics graphics, Layer layer, CancellationToken token)
+    {
+        if (layer.Vector is { Format: VectorFormat.Pdf } vector)
+        {
+            using var input = vector.Open(); using var form = XPdfForm.FromStream(input); form.PageNumber = vector.Page;
+            graphics.DrawImage(form, 0, 0, vector.Width, vector.Height);
+        }
+        else if (layer.Vector != null) Drawing(graphics, layer.Vector.Drawing, token);
+        else if (layer.Kind == LayerKind.Text) Drawing(graphics, DesignRenderer.TextDrawing(layer.Text!), token);
+        else if (layer.Kind == LayerKind.Shape) Drawing(graphics, ShapeDrawing(layer.Shape!), token);
+        else { using var input = new MemoryStream(); layer.Pixels.WritePng(input); input.Position = 0; using var image = XImage.FromStream(input); graphics.DrawImage(image, 0, 0, layer.Pixels.Width, layer.Pixels.Height); }
+    }
+    internal static void Transform(XGraphics graphics, Matrix matrix) => graphics.MultiplyTransform(new XMatrix(matrix.M11, matrix.M12, matrix.M21, matrix.M22, matrix.OffsetX, matrix.OffsetY), XMatrixOrder.Prepend);
     static XColor Color(System.Windows.Media.Color color) => XColor.FromArgb(color.A, color.R, color.G, color.B);
     static void Drawing(XGraphics graphics, System.Windows.Media.Drawing drawing, CancellationToken token)
     {

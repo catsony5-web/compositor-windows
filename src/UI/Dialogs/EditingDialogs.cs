@@ -445,6 +445,19 @@ public static class ExportDialog
             catch (Exception e) { if (!closed) MessageDialog.Show(window, e.Message, "내보내지 못했습니다", NoticeKind.Error); }
             finally { saving = false; if (!closed) { window.IsEnabled = true; Update(); } }
         }
+        // Layered .psd / .ai and PDF live in their own dialog; this one stays for PNG, JPEG and TIFF.
+        var otherFormats = Theme.Styled(Theme.Button("PDF · PSD · AI로 내보내기…", () =>
+        {
+            if (saving || closed) return;
+            var source = snapshot; window.Close();
+            window.Dispatcher.InvokeAsync(() => new CompatibilityExportDialog(owner, source).ShowDialog());
+        }, "레이어를 유지하는 .psd·.ai 또는 PDF로 저장합니다."), "GhostButton");
+        var otherContent = new StackPanel { Orientation = Orientation.Horizontal };
+        var otherIcon = Theme.Glyph(Theme.Glyphs.LayerStack, 15, Theme.Muted); otherIcon.VerticalAlignment = VerticalAlignment.Center; otherContent.Children.Add(otherIcon);
+        otherContent.Children.Add(new TextBlock { Text = "PDF · PSD · AI로 내보내기…", FontSize = Theme.CaptionSize, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) });
+        otherFormats.Content = otherContent; System.Windows.Automation.AutomationProperties.SetName(otherFormats, "PDF · PSD · AI로 내보내기…");
+        otherFormats.HorizontalAlignment = HorizontalAlignment.Left; otherFormats.Margin = new Thickness(-8, 2, 0, 2); otherFormats.Padding = new Thickness(8, 4, 10, 4);
+        side.Children.Insert(side.Children.IndexOf(formatNote) + 1, otherFormats);
         var saveButton = DialogShell.Primary("파일로 저장…", Save); saveButton.IsDefault = true; saveButton.Margin = new Thickness(0, 12, 0, 0);
         var cancel = DialogShell.Secondary("닫기", window.Close); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0);
         var footer = new StackPanel(); footer.Children.Add(saveButton); footer.Children.Add(cancel); Grid.SetRow(footer, 1); sideGrid.Children.Add(footer);
