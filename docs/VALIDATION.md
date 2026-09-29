@@ -1,3 +1,11 @@
+# Preview 35 AI import settings and artboard batch validation
+
+- Source self-tests: **547/547 passed** on Windows x64. Added checks cover CAD layer roles and hatch-material counts from `inspect_file`, cleanup options rejected without `cadCleanup`, a cleanup import that fills the hatch with a material, a role override that thins the wall with hatches kept, an unknown role rejected, PSD import as one composite versus separate layers, batches that add two artboards and a text layer as one undo step, dry runs that create nothing and return no ids, and rollback when an artboard step fails.
+- Batch step count (12) and contract version (5) updated in the self-tests and `tools/qa/automation-smoke.cjs`.
+- `tools/i18n/extract.py` reports 0 missing keys; Korean and English offscreen captures were reviewed (no visible UI changes).
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: real office DWG files with many layers; batch steps cannot yet refer to an artboard created earlier in the same batch.
+
 # Preview 34 AI artboards, export options and import options validation
 
 - Source self-tests: **545/545 passed** on Windows x64. Added checks cover artboard add/update/delete with undo, the last-artboard and unknown-id errors, artboard export with 2× scale and flattening, rejected layerId+artboardId and JPEG keepTransparency, `inspect_file` for a two-page PDF and a DXF, `open_document` page 2 at 72 DPI, an out-of-range page, CAD structure/long edge/layout and an unknown layout, saving and restoring recent colors and opened default-folded sections, the export preview filling offscreen, one undo step per opacity drag, and the connection-test button over the real local pipe.

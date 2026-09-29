@@ -50,7 +50,7 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 4); assert.equal(capabilities.commands.length, 33);
+  assert.equal(capabilities.contractVersion, 5); assert.equal(capabilities.commands.length, 33);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
   let state = data(await call('get_state')); assert.equal(state.documents.length, 0);

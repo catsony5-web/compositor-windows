@@ -323,8 +323,25 @@ public sealed partial class MainWindow
                 else if (CompatibilityImport.Supports(source))
                 {
                     var structure = AString(args, "cadStructure", "objects") switch { "layers" => CadImportStructure.Layers, "combined" => CadImportStructure.Combined, _ => CadImportStructure.Objects };
+                    CadCleanup? cleanup = null;
+                    if (ABool(args, "cadCleanup"))
+                    {
+                        var hatches = AString(args, "cadHatches", "suggest") switch { "keep" => HatchTreatment.Keep, "image" => HatchTreatment.Image, _ => HatchTreatment.Suggest };
+                        string? material = null;
+                        if (hatches == HatchTreatment.Image)
+                        {
+                            if (!args.ContainsKey("cadMaterialImage")) throw new AutomationFault("invalid_arguments", "cadHatches=image에는 cadMaterialImage가 필요합니다.");
+                            material = AutomationPath(args, "cadMaterialImage");
+                            if (!File.Exists(material)) throw new FileNotFoundException("재질 이미지를 찾을 수 없습니다.", material);
+                        }
+                        cleanup = new CadCleanup(ABool(args, "cadLineWeights", true), hatches, material,
+                            args["cadLayerRoles"] is JsonArray roles ? AutomationCatalog.LayerRoles(roles) : null);
+                    }
+                    else if (args.ContainsKey("cadLineWeights") || args.ContainsKey("cadHatches") || args.ContainsKey("cadMaterialImage") || args.ContainsKey("cadLayerRoles"))
+                        throw new AutomationFault("invalid_arguments", "도면 정리 옵션은 cadCleanup=true와 함께 사용하세요.");
                     var options = new CompatibilityOptions(Page: (int)ANumber(args, "page", 1), Dpi: ANumber(args, "dpi", 150), CadLongEdge: (int)ANumber(args, "cadLongEdge", 2400),
-                        CadLayout: args.ContainsKey("cadLayout") ? AString(args, "cadLayout") : null, CadStructure: structure, GroupDrawingObjects: structure == CadImportStructure.Objects);
+                        SeparateLayers: ABool(args, "separateLayers"),
+                        CadLayout: args.ContainsKey("cadLayout") ? AString(args, "cadLayout") : null, CadStructure: structure, GroupDrawingObjects: structure == CadImportStructure.Objects, Cleanup: cleanup);
                     CompatibilityResult imported;
                     try { imported = await CompatibilityImport.ReadAsync(source, options, token); }
                     catch (ArgumentOutOfRangeException e) { throw new AutomationFault("invalid_arguments", e.Message.Split('(')[0].Trim()); }
@@ -362,26 +379,7 @@ public sealed partial class MainWindow
         if (command is "add_artboard" or "update_artboard" or "delete_artboard")
         {
             Recheck();
-            Guid boardId = command == "add_artboard" ? Guid.Empty : Guid.Parse(AString(args, "artboardId"));
-            var existing = ArtboardEditing.Visible(candidate).FirstOrDefault(b => b.Id == boardId && b.Id != Guid.Empty);
-            if (command != "add_artboard" && existing == null) throw new AutomationFault("artboard_not_found", "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.");
-            try
-            {
-                if (command == "delete_artboard") ArtboardEditing.Remove(candidate, boardId);
-                else
-                {
-                    var bounds = ArtboardEditing.Bounds(candidate);
-                    var basis = existing ?? new Artboard(Guid.Empty, AString(args, "name", $"대지 {ArtboardEditing.Visible(candidate).Count + 1}"), bounds.Right + 40, bounds.Top, 1, 1);
-                    var board = basis with
-                    {
-                        Name = args.ContainsKey("name") ? AString(args, "name") : basis.Name,
-                        X = ANumber(args, "x", basis.X), Y = ANumber(args, "y", basis.Y),
-                        Width = ANumber(args, "width", basis.Width), Height = ANumber(args, "height", basis.Height)
-                    };
-                    boardId = ArtboardEditing.Set(candidate, board, command == "add_artboard").Id;
-                }
-            }
-            catch (Exception e) when (e is InvalidOperationException or InvalidDataException or OverflowException) { throw new AutomationFault("artboard_invalid", e.Message); }
+            var boardId = ApplyArtboardEdit(candidate, command, args);
             candidate.Validate(); Recheck();
             CommitAutomationCandidate("AI · " + command, before, candidate, null);
             var boardResult = AutomationResult();
@@ -457,6 +455,28 @@ public sealed partial class MainWindow
         return AutomationResult(affected);
     }
 
+    /// <summary>Artboard add/update/delete on a candidate document; shared by single commands and apply_batch.</summary>
+    internal static Guid ApplyArtboardEdit(Document candidate, string command, JsonObject args)
+    {
+        Guid boardId = command == "add_artboard" ? Guid.Empty : Guid.Parse(AString(args, "artboardId"));
+        var existing = ArtboardEditing.Visible(candidate).FirstOrDefault(b => b.Id == boardId && b.Id != Guid.Empty);
+        if (command != "add_artboard" && existing == null) throw new AutomationFault("artboard_not_found", "대지를 찾을 수 없습니다. get_state의 artboardId를 사용하세요.");
+        try
+        {
+            if (command == "delete_artboard") { ArtboardEditing.Remove(candidate, boardId); return boardId; }
+            var bounds = ArtboardEditing.Bounds(candidate);
+            var basis = existing ?? new Artboard(Guid.Empty, AString(args, "name", $"대지 {ArtboardEditing.Visible(candidate).Count + 1}"), bounds.Right + 40, bounds.Top, 1, 1);
+            var board = basis with
+            {
+                Name = args.ContainsKey("name") ? AString(args, "name") : basis.Name,
+                X = ANumber(args, "x", basis.X), Y = ANumber(args, "y", basis.Y),
+                Width = ANumber(args, "width", basis.Width), Height = ANumber(args, "height", basis.Height)
+            };
+            return ArtboardEditing.Set(candidate, board, command == "add_artboard").Id;
+        }
+        catch (Exception e) when (e is InvalidOperationException or InvalidDataException or OverflowException) { throw new AutomationFault("artboard_invalid", e.Message); }
+    }
+
     async Task<JsonObject> AutomationInspectFileAsync(JsonObject args, CancellationToken token)
     {
         string source = AutomationPath(args);
@@ -474,6 +494,13 @@ public sealed partial class MainWindow
             var spaces = await Task.Run(() => CadCompatibility.Inspect(source), token);
             result["format"] = "cad";
             result["layouts"] = new JsonArray(spaces.Select(s => (JsonNode?)new JsonObject { ["key"] = s.Key, ["name"] = s.Name, ["model"] = s.Key == "*Model_Space" }).ToArray());
+            var drawing = await Task.Run(() => CadCompatibility.InspectLayers(source), token);
+            result["layers"] = new JsonArray(drawing.Layers.Take(512).Select(l => (JsonNode?)new JsonObject
+            {
+                ["layer"] = l.Name, ["role"] = AutomationCatalog.DrawingRoleNames[(int)l.Role], ["objects"] = l.Objects, ["hatches"] = l.Hatches
+            }).ToArray());
+            result["layersTruncated"] = drawing.Layers.Count > 512;
+            result["hatchMaterials"] = new JsonObject(drawing.HatchMaterials.Select(p => new KeyValuePair<string, JsonNode?>(p.Key.ToString().ToLowerInvariant(), JsonValue.Create(p.Value))));
         }
         else throw new NotSupportedException("inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.");
         return result;
@@ -600,9 +627,9 @@ public sealed partial class MainWindow
     static bool ABool(JsonObject args, string name, bool fallback = false) => args[name]?.GetValue<bool>() ?? fallback;
     static Color AColor(JsonObject args, string name, Color fallback) => args[name] is { } value
         ? value.GetValue<string>() == "transparent" ? Colors.Transparent : (Color)ColorConverter.ConvertFromString(value.GetValue<string>()) : fallback;
-    static string AutomationPath(JsonObject args)
+    static string AutomationPath(JsonObject args, string name = "path")
     {
-        string path = AString(args, "path");
+        string path = AString(args, name);
         if (!Path.IsPathFullyQualified(path)) throw new ArgumentException("절대 파일 경로를 지정하세요.");
         string full = Path.GetFullPath(path);
         if (!Directory.Exists(Path.GetDirectoryName(full))) throw new DirectoryNotFoundException("대상 폴더가 없습니다.");

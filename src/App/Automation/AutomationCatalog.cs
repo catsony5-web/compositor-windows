@@ -73,7 +73,7 @@ public static partial class AutomationCatalog
         Add("new_document", "Create and activate a document (maximum 16,777,216 pixels). Returns its identifiers and revision.", false,
             Fields(("name", Name), ("width", Integer(1, 8192)), ("height", Integer(1, 8192)), ("background", Color), ("dpi", Number(1, 9600)), ("includeLayers", IncludeLayers)),
             "name", "width", "height");
-        Add("inspect_file", "Read import choices of a local PDF/AI or DWG/DXF file without opening it: PDF page count, page size and layer count; CAD model space and paper-space layouts. Use the results as open_document page or cadLayout.", true,
+        Add("inspect_file", "Read import choices of a local PDF/AI or DWG/DXF file without opening it: PDF page count, page size and layer count; CAD layouts plus each layer's detected cleanup role, object and hatch counts. Use the results as open_document page, cadLayout or cadLayerRoles.", true,
             Fields(("path", Path)), "path");
         Add("open_document", "Open a supported local file as a new document; existing unsaved documents remain open. A .moruproj file that is already open is activated instead and the result has alreadyOpen=true; other formats are imported again as a new document. PDF/AI accept page and dpi; DWG/DXF accept cadLayout (from inspect_file), cadLongEdge and cadStructure.", false,
             Fields(("path", Path), ("includeLayers", IncludeLayers),
@@ -81,7 +81,13 @@ public static partial class AutomationCatalog
                 ("dpi", Number(36, 600, "PDF/AI render resolution; defaults to 150.")),
                 ("cadLayout", new("string", "CAD layout key or name from inspect_file; defaults to model space.", MaxLength: 256)),
                 ("cadLongEdge", Integer(512, 8192, "Long edge in pixels of the CAD preview; defaults to 2400.")),
-                ("cadStructure", Choice("objects", "layers", "combined"))), "path");
+                ("cadStructure", Choice("objects", "layers", "combined")),
+                ("separateLayers", Bool("PSD/PSB: import each layer separately instead of the composite image. Defaults to false.")),
+                ("cadCleanup", Bool("DWG/DXF: apply drawing cleanup (role line weights, hatch materials). Defaults to false.")),
+                ("cadLineWeights", Bool("With cadCleanup: heavier structure, lighter furniture and annotation. Defaults to true.")),
+                ("cadHatches", Choice("suggest", "keep", "image")),
+                ("cadMaterialImage", new("string", "With cadHatches=image: absolute path of the material image used for every hatch.", MaxLength: 32767)),
+                ("cadLayerRoles", new("array", "With cadCleanup: role overrides per CAD layer name, e.g. from inspect_file layers.", ArrayShape: "roles"))), "path");
         Add("activate_document", "Activate an existing document by its returned identifier before editing it.", false,
             Fields(("documentId", Id), ("includeLayers", IncludeLayers)), "documentId");
         Add("add_image", "Add a local image as a layer in the active document. Obtain a fresh revision first.", false,

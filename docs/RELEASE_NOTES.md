@@ -1,4 +1,13 @@
-# Morupixel 0.2.0 Preview 34 — artboards and import options for AI connection
+# Morupixel 0.2.0 Preview 35 — PSD layers, drawing cleanup and artboard batches for AI connection
+
+- **PSD layers.** `open_document` with `separateLayers: true` imports each PSD/PSB layer instead of the composite image.
+- **Drawing cleanup settings.** `cadCleanup: true` applies the same cleanup as the import window: role-based line weights, recommended hatch materials, boundaries only, or one material image. `cadLayerRoles` overrides the detected role of any CAD layer.
+- **Layer roles before opening.** `inspect_file` now lists each CAD layer's detected role with object and hatch counts, and how many hatches match each material.
+- **Artboards in one batch.** `apply_batch` accepts add, update and delete artboard steps together with layer edits; the whole batch is still one undo step and rolls back if any step fails.
+- **Compatibility.** Command contract 5; existing commands and defaults are unchanged.
+- **Validation.** 547 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 34 — artboards and import options for AI connection
 
 - **Artboards through AI connection.** New commands add, rename, move, resize and delete artboards; each step can be undone. A document without artboards turns its canvas into the first one.
 - **Export options match the export window.** `export_image` can export one artboard, scale the output (0.05–8×) and fill transparency with white for PNG/TIFF. The result reports the output size.
