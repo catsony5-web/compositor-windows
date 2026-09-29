@@ -18,6 +18,13 @@ public sealed partial class MainWindow
         "menu:파일/새 캔버스…", "menu:파일/열기…", "menu:파일/저장", "menu:파일/내보내기 미리보기…", "menu:편집/실행 취소", "menu:편집/다시 실행",
         "menu:레이어/레이어 복제", "menu:레이어/마스크 추가", "menu:필터/사진 현상…", "menu:보기/화면에 맞춤", "menu:보기/명령 찾기…"
     ];
+    // Favorites saved under a command id that a later version renamed or moved.
+    static readonly Dictionary<string, string> LegacyFavorites = new(StringComparer.Ordinal)
+    {
+        ["menu:파일/PDF / PSD 파일로 내보내기…"] = $"menu:파일/{CompatibilityExportMenu}/{CompatibilityExport.Choices[0].Title}…"
+    };
+    internal static List<string> MigrateFavorites(IEnumerable<string> saved) =>
+        saved.Select(id => LegacyFavorites.TryGetValue(id, out var current) ? current : id).Distinct(StringComparer.Ordinal).ToList();
     internal bool ribbonMode, ribbonCollapsed;
     internal string ribbonTab = FavoritesTab;
     internal List<string> ribbonFavorites = [.. DefaultFavorites];

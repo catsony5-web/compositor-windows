@@ -60,7 +60,10 @@ public sealed partial class MainWindow
         AddShadowMenuItems(layerMenu);
         var print = Find("인쇄"); menu.Items.Remove(print);
         var printItem = (MenuItem)print.Items[0]; print.Items.RemoveAt(0); printItem.Header = "인쇄용 CMYK 내보내기…";
-        Find("파일").Items.Insert(6, printItem);
+        // Beside the export preview, wherever other File items put it.
+        var fileMenu = Find("파일");
+        var exportPreview = fileMenu.Items.OfType<MenuItem>().First(x => Equals(x.Header, "내보내기 미리보기…"));
+        fileMenu.Items.Insert(fileMenu.Items.IndexOf(exportPreview) + 1, printItem);
         foreach (var (section, before) in new[] { ("파일", "저장"), ("파일", "내보내기 미리보기…"), ("파일", "Compositor .comp 가져오기…"), ("파일", "현재 문서 닫기"), ("편집", "합성 이미지 복사"), ("편집", "선택 픽셀 지우기"), ("레이어", "마스크 추가"), ("보기", "가이드 추가…"), ("보기", "명령 찾기…") })
         {
             var parent = Find(section); var item = parent.Items.OfType<MenuItem>().First(x => Equals(x.Header, before));
