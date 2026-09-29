@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
 
@@ -69,7 +70,7 @@ public static class SelectionMaterials
         if (!IsDrawing(doc) || bounds.IsEmpty || bounds.Width <= 0 || bounds.Height <= 0)
             return new(SurfaceHint.General, null, Order(SurfaceHint.General));
         string? layer = MatchingLayer(doc, bounds);
-        bool thin = Thin(SelectionContours.Create(selection, token), Math.Max(doc.Width, doc.Height));
+        bool thin = IsThin(selection, Math.Max(doc.Width, doc.Height), token);
         var named = Surface(layer);
         // Walls usually bound a picked room: a wide region inside wall lines is a floor.
         var surface = named switch
@@ -80,6 +81,19 @@ public static class SelectionMaterials
         // A wall that only bounds the region names neither the surface nor its material.
         if (named == SurfaceHint.Wall && surface != SurfaceHint.Wall) layer = null;
         return new(surface, layer, Order(surface, Named(layer)));
+    }
+
+    // The shape test depends only on the selection, so a selection's outline is traced once,
+    // not again after every edit of the document (a full-canvas inverted mask is costly).
+    static readonly ConditionalWeakTable<Selection, Tuple<double, bool>> thinness = new();
+    internal static int ContourTraces;
+    static bool IsThin(Selection selection, double documentSide, CancellationToken token)
+    {
+        if (thinness.TryGetValue(selection, out var known) && known.Item1 == documentSide) return known.Item2;
+        Interlocked.Increment(ref ContourTraces);
+        bool thin = Thin(SelectionContours.Create(selection, token), documentSide);
+        thinness.AddOrUpdate(selection, Tuple.Create(documentSide, thin));
+        return thin;
     }
 
     // Band-shaped regions (wall poché, a partition strip) have a small mean width 2A/P
@@ -149,23 +163,75 @@ public static class SelectionMaterials
 
     // Where a new material layer goes: directly below the lowest drawing linework, so it sits
     // above the paper and earlier fills. A folder that wraps a whole imported drawing (no
-    // CAD source layer name) is entered; CAD layer groups are not. Null: on top of the document.
-    public static (Guid? Parent, int Index)? Placement(Document doc)
+    // CAD source layer name) is entered; CAD layer groups and photo groups are not. With
+    // several drawings side by side, the one under <paramref name="bounds"/> (the selection,
+    // in document pixels) is used. Null: on top of the document.
+    public static (Guid? Parent, int Index)? Placement(Document doc, Rect bounds = default)
     {
         if (!IsDrawing(doc)) return null;
+        var categories = DrawingLayers.Categories(doc);
+        var parents = doc.Layers.Select(l => l.ParentId).OfType<Guid>().ToHashSet();
+        bool Linework(Layer l) => l.Kind is LayerKind.Vector or LayerKind.Group && categories.GetValueOrDefault(l.Id) == LayerCategory.Drawing;
+        bool Folder(Layer l) => DrawingLayers.IsContainer(l) && l.SourceLayerName == null && parents.Contains(l.Id);
         Guid? parent = null;
         for (int depth = 0; depth < 8; depth++)
         {
-            var first = doc.Layers.FirstOrDefault(l => l.ParentId == parent && l.Kind is LayerKind.Vector or LayerKind.Group);
-            if (first == null) return (parent, doc.Layers.Count);
-            if (DrawingLayers.IsContainer(first) && first.SourceLayerName == null && doc.Layers.Any(l => l.ParentId == first.Id))
+            var siblings = doc.Layers.Where(l => l.ParentId == parent && Linework(l)).ToArray();
+            if (siblings.Length == 0) return (parent, doc.Layers.Count);
+            var first = siblings[0];
+            if (Folder(first))
             {
+                if (!bounds.IsEmpty && bounds.Width > 0 && bounds.Height > 0)
+                {
+                    double best = 0;
+                    foreach (var folder in siblings.Where(Folder))
+                    {
+                        var overlap = Rect.Intersect(new MatrixTransform(World(doc, folder)).TransformBounds(new Rect(0, 0, folder.Pixels.Width, folder.Pixels.Height)), bounds);
+                        double shared = overlap.IsEmpty ? 0 : overlap.Width * overlap.Height;
+                        if (shared > best) { best = shared; first = folder; }
+                    }
+                }
                 if (first.Locked) return null;
                 parent = first.Id; continue;
             }
             return (parent, doc.Layers.IndexOf(first));
         }
         return null;
+    }
+
+    // Puts a material layer made in document pixels (X/Y, scale 1) at a placement from
+    // Placement. Parent group matrices compose when drawn, so inside a moved or scaled drawing
+    // folder the layer is expressed in that folder's space to stay over the selection. A folder
+    // that is rotated, flipped or scaled out of range cannot hold it upright: the layer then goes
+    // at the top level directly above that drawing, where multiply looks the same over white paper.
+    public static (Guid? Parent, int Index) Localize(Document doc, Layer layer, (Guid? Parent, int Index) place)
+    {
+        if (place.Parent is not { } id || doc.Layers.FirstOrDefault(l => l.Id == id) is not { } parent) return place;
+        var m = World(doc, parent);
+        static bool Near(double a, double b) => Math.Abs(a - b) <= 1e-9 * Math.Max(1, Math.Abs(b));
+        if (Near(m.M11, 1) && Near(m.M22, 1) && Near(m.M12, 0) && Near(m.M21, 0) && Near(m.OffsetX, 0) && Near(m.OffsetY, 0)) return place;
+        if (Near(m.M12, 0) && Near(m.M21, 0) && m.M11 > 0 && m.M22 > 0 && 1 / m.M11 is >= .01 and <= 20 && 1 / m.M22 is >= .01 and <= 20)
+        {
+            layer.X = (layer.X - m.OffsetX) / m.M11; layer.Y = (layer.Y - m.OffsetY) / m.M22;
+            if (Near(m.M11, m.M22)) layer.Scale = 1 / m.M11;
+            else { layer.ScaleX = 1 / m.M11; layer.ScaleY = 1 / m.M22; }
+            return place;
+        }
+        var byId = doc.Layers.ToDictionary(l => l.Id);
+        var top = parent; while (top.ParentId is { } up && byId.TryGetValue(up, out var next)) top = next;
+        bool Inside(Layer l) { for (var p = l.ParentId; p is { } pid && byId.TryGetValue(pid, out var g); p = g.ParentId) if (pid == top.Id) return true; return false; }
+        int end = doc.Layers.IndexOf(top);
+        for (int i = end + 1; i < doc.Layers.Count; i++) if (Inside(doc.Layers[i])) end = i;
+        return (null, end + 1);
+    }
+
+    // Where a layer's own pixels land: its matrix composed with every parent group's.
+    static Matrix World(Document doc, Layer layer)
+    {
+        var matrix = layer.Matrix; var seen = new HashSet<Guid> { layer.Id };
+        for (var parent = layer.ParentId; parent is { } id && seen.Add(id) && doc.Layers.FirstOrDefault(l => l.Id == id) is { } group; parent = group.ParentId)
+            matrix.Append(group.Matrix);
+        return matrix;
     }
 
     // The selection outline as a stored region: clipped to the canvas and, when a detailed
