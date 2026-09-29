@@ -121,22 +121,70 @@ public sealed partial class MainWindow
             (ToolIcons.PathData(Tool.Brush), "브러시 설정", () => ShowStudioPage(3), "크기와 경도, 브러시 프리셋", null));
     }
 
-    internal void ReapplyLineCleanup()
+    void ReapplyLineCleanup() => _ = ReapplyLineCleanupAsync();
+
+    // Restyling re-reads and redraws every line layer (up to tens of thousands for an object
+    // import), so it runs on an isolated STA like the import itself: the window stays responsive,
+    // Esc cancels, and the result becomes one undo step only if the document did not change.
+    // Only an explicit layer selection limits it; the active layer alone (e.g. the last object of a
+    // drawing just placed on the board) is not a selection. Roles follow the import dialog's
+    // remembered choices. True when lines were restyled.
+    internal async Task<bool> ReapplyLineCleanupAsync()
     {
-        if (!HasDocument) return;
-        CancelGesture();
+        if (!HasDocument) return false;
+        CancelGesture(); jobCts?.Cancel(); var cts = jobCts = new CancellationTokenSource();
+        var document = doc; var revision = doc.Revision; var historyAtStart = history;
+        // A newer run replaced this one: leave the status to it.
+        bool Shown() => ReferenceEquals(document, doc) && (jobCts == null || ReferenceEquals(jobCts, cts));
         var candidate = doc.Snapshot();
-        var result = DrawingLineCleanup.Apply(candidate, ExportSelectionIds());
-        if (result.Restyled == 0)
+        Guid[] scope = selectedLayers.Contains(doc.ActiveId) ? ExportSelectionIds() : [];
+        var roles = LoadImportSettings().CadRoles;
+        var progress = new Progress<(int Done, int Total)>(p => { if (ReferenceEquals(jobCts, cts)) status.Text = $"선 정리 다시 적용 중… {p.Done:N0} / {p.Total:N0}  Esc: 취소"; });
+        status.Text = "선 정리 다시 적용 중…  Esc: 취소";
+        try
         {
-            status.Text = result.Unchanged > 0 ? "도면 선이 이미 레이어 역할에 맞게 정리되어 있습니다."
-                : result.Locked > 0 ? "잠긴 도면 레이어입니다. 레이어와 부모 그룹의 잠금을 먼저 해제하세요."
-                : "정리할 도면 선이 없습니다. 벡터로 가져온 도면의 레이어 이름(WALL · DOOR · FURN · DIM · 벽 · 창호 등)으로 역할을 찾습니다.";
-            return;
+            var result = await CompatibilityImport.OnSta(() => DrawingLineCleanup.Apply(candidate, scope, roles, progress, cts.Token), cts.Token);
+            if (cts.IsCancellationRequested) { if (Shown()) status.Text = "선 정리를 취소했습니다."; return false; }
+            if (!ReferenceEquals(document, doc) || revision != doc.Revision || !ReferenceEquals(historyAtStart, history))
+            {
+                if (ReferenceEquals(historyAtStart, history) && (jobCts == null || ReferenceEquals(jobCts, cts))) status.Text = "정리하는 동안 문서가 바뀌어 선 정리를 적용하지 않았습니다. 다시 실행하세요.";
+                return false;
+            }
+            if (result.Restyled == 0)
+            {
+                status.Text = result.Unchanged > 0 ? "도면 선이 이미 레이어 역할에 맞게 정리되어 있습니다."
+                    : result.Locked > 0 ? "잠긴 도면 레이어입니다. 레이어와 부모 그룹의 잠금을 먼저 해제하세요."
+                    : "정리할 도면 선이 없습니다. 벡터로 가져온 도면의 레이어 이름(WALL · DOOR · FURN · DIM · 벽 · 창호 등)으로 역할을 찾습니다.";
+                return false;
+            }
+            Edit("선 정리 다시 적용", () => { doc = candidate; maskEditing = false; });
+            status.Text = result.Unknown > 0 ? $"선 정리를 다시 적용했습니다: 레이어 {result.Restyled:N0}개 · 역할을 알 수 없는 레이어 {result.Unknown:N0}개는 그대로 두었습니다"
+                : $"선 정리를 다시 적용했습니다: 레이어 {result.Restyled:N0}개";
+            return true;
         }
-        Edit("선 정리 다시 적용", () => { doc = candidate; maskEditing = false; });
-        status.Text = result.Unknown > 0 ? $"선 정리를 다시 적용했습니다: 레이어 {result.Restyled:N0}개 · 역할을 알 수 없는 레이어 {result.Unknown:N0}개는 그대로 두었습니다"
-            : $"선 정리를 다시 적용했습니다: 레이어 {result.Restyled:N0}개";
+        catch (OperationCanceledException) { if (Shown()) status.Text = "선 정리를 취소했습니다."; return false; }
+        catch (Exception error) { if (headlessTesting) throw; if (ReferenceEquals(document, doc)) MessageDialog.Show(this, error.Message, "선 정리 다시 적용"); return false; }
+        finally { if (ReferenceEquals(jobCts, cts)) jobCts = null; cts.Dispose(); }
+    }
+
+    // Offscreen renders and self-tests run a background step to completion on the calling
+    // dispatcher, the way the shown window would.
+    internal static T WaitOnDispatcher<T>(Func<Task<T>> start)
+    {
+        var previous = SynchronizationContext.Current; var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(dispatcher));
+        try
+        {
+            var task = start();
+            if (!task.IsCompleted)
+            {
+                var frame = new System.Windows.Threading.DispatcherFrame();
+                _ = task.ContinueWith(_ => dispatcher.BeginInvoke(new Action(() => frame.Continue = false)), TaskScheduler.Default);
+                System.Windows.Threading.Dispatcher.PushFrame(frame);
+            }
+            return task.GetAwaiter().GetResult();
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
     }
 
     const string DrawingFilter = "도면 (DWG / DXF / PDF)|*.dwg;*.dxf;*.pdf;*.ai|CAD 도면 (DWG / DXF)|*.dwg;*.dxf|PDF / AI (PDF 호환)|*.pdf;*.ai|모든 파일|*.*";
@@ -153,11 +201,12 @@ public sealed partial class MainWindow
         CommitFocusedInspectorField(); layerCategory = LayerCategory.Drawing; BuildLayers();
     }
 
-    void ToggleAnnotationLayers() => ToggleLayerVisibility(DrawingLineCleanup.RoleLayers(doc, DrawingRole.Annotation), "치수·문자 숨기기", "치수·문자 표시",
+    void ToggleAnnotationLayers() => ToggleLayerVisibility(DrawingLineCleanup.RoleLayers(doc, DrawingRole.Annotation, LoadImportSettings().CadRoles), "치수·문자 숨기기", "치수·문자 표시",
         n => $"치수·문자 레이어 {n:N0}개를 숨겼습니다.", n => $"치수·문자 레이어 {n:N0}개를 다시 표시했습니다.",
         "치수·문자 역할의 도면 레이어가 없습니다. 레이어 이름(DIM · TEXT · ANNO · 치수 · 문자 등)으로 찾습니다.");
 
-    void ToggleMaterialLayers() => ToggleLayerVisibility(doc.Layers.Where(l => l.Kind == LayerKind.Material).Select(l => l.Id).ToArray(), "해치 재질 숨기기", "해치 재질 표시",
+    // Only the hatch fills made on import; materials the user applied to selections stay as they are.
+    void ToggleMaterialLayers() => ToggleLayerVisibility(doc.Layers.Where(DrawingLineCleanup.IsHatchMaterial).Select(l => l.Id).ToArray(), "해치 재질 숨기기", "해치 재질 표시",
         n => $"해치 재질 레이어 {n:N0}개를 숨겼습니다.", n => $"해치 재질 레이어 {n:N0}개를 다시 표시했습니다.",
         "해치 재질 레이어가 없습니다. 도면을 가져올 때 ‘재질 추천으로 채우기’를 고르면 만들어집니다.");
 
@@ -238,7 +287,7 @@ public sealed partial class MainWindow
             var drawing = CompatibilityImport.ReadAsync(plan, new(CadLongEdge: 1400, CadLayout: "*Model_Space", CadStructure: CadImportStructure.Objects, GroupDrawingObjects: true)).GetAwaiter().GetResult().Document;
             editor.AddTab(drawing, null);
             editor.RenderPreview(Path.Combine(directory, "profile-architecture-editor.png"));
-            editor.ReapplyLineCleanup();
+            WaitOnDispatcher(editor.ReapplyLineCleanupAsync);
             editor.RenderPreview(Path.Combine(directory, "profile-architecture-cleanup.png"));
             editor.RenderPane(editor.studioPanes[0], Path.Combine(directory, "profile-architecture-actions.png"), 360, 1320);
             editor.SetWorkspaceMode(false);

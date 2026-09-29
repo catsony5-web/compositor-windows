@@ -237,6 +237,8 @@ public sealed partial class MainWindow
         static Layer[] Lines(Document doc, string cadLayer) => doc.Layers.Where(l => l.Kind == LayerKind.Vector
             && (l.Name == cadLayer || doc.Layers.FirstOrDefault(p => p.Id == l.ParentId)?.SourceLayerName == cadLayer)).ToArray();
         static bool Same(Document a, Document b, string cadLayer) { var x = Lines(a, cadLayer); var y = Lines(b, cadLayer); return x.Length > 0 && x.Length == y.Length && x.Zip(y).All(p => Payload(p.First).SequenceEqual(Payload(p.Second))); }
+        // The command works in the background; run it to the end on this dispatcher.
+        static void Reapply(MainWindow w) => WaitOnDispatcher(w.ReapplyLineCleanupAsync);
 
         test("선 정리 다시 적용 restyles an imported plan by layer role like import cleanup, in one undo", () =>
         {
@@ -251,25 +253,25 @@ public sealed partial class MainWindow
                     w.AddTab(plain.Snapshot(), null);
                     Check(!Same(w.doc, cleaned, "A-WALL"), $"{structure}: the plain import was already cleaned");
                     w.selectedLayers.Clear(); w.doc.ActiveId = w.doc.Layers.First(l => l.Kind == LayerKind.Raster || l.Kind == LayerKind.Shape).Id;
-                    w.ReapplyLineCleanup();
+                    Reapply(w);
                     foreach (var layer in new[] { "A-WALL", "A-FURN", "A-ANNO-DIMS" })
                         Check(Same(w.doc, cleaned, layer), $"{structure}: {layer} does not match the import cleanup");
                     Check(Same(w.doc, plain, "0"), $"{structure}: a layer without a role was restyled");
                     var wall = Lines(w.doc, "A-WALL")[0]; var furniture = Lines(w.doc, "A-FURN")[0];
                     Check(wall.Pixels.Data.Where((_, i) => i % 4 == 3).Count(a => a > 40) > furniture.Pixels.Data.Where((_, i) => i % 4 == 3).Count(a => a > 40), $"{structure}: the preview pixels were not redrawn");
                     w.Undo(); Check(Same(w.doc, plain, "A-WALL") && Same(w.doc, plain, "A-FURN") && !w.history.CanUndo, $"{structure}: line cleanup was not one undo step");
-                    w.Redo(); w.ReapplyLineCleanup(); w.Undo();
+                    w.Redo(); Reapply(w); w.Undo();
                     Check(Same(w.doc, plain, "A-WALL") && !w.history.CanUndo, $"{structure}: re-applying a cleaned drawing added a step");
                     // Scope: the selected CAD layer only; locked layers stay as they are.
                     var target = Lines(w.doc, "A-FURN")[0];
                     var scope = structure == CadImportStructure.Objects ? w.doc.Layers.Single(l => l.Id == target.ParentId) : target;
                     w.selectedLayers.Clear(); w.selectedLayers.Add(scope.Id); w.doc.ActiveId = scope.Id;
-                    w.ReapplyLineCleanup();
+                    Reapply(w);
                     Check(Same(w.doc, cleaned, "A-FURN") && Same(w.doc, plain, "A-WALL"), $"{structure}: the selection did not limit line cleanup");
                     w.Undo();
                     foreach (var layer in Lines(w.doc, "A-WALL")) layer.Locked = true;
                     w.selectedLayers.Clear(); w.doc.ActiveId = w.doc.Layers[0].Id;
-                    w.ReapplyLineCleanup();
+                    Reapply(w);
                     Check(Same(w.doc, plain, "A-WALL") && Same(w.doc, cleaned, "A-FURN"), $"{structure}: a locked layer was restyled");
                     foreach (var tab in w.tabs) tab.History.MarkSaved(tab.Document);
                 }
@@ -303,6 +305,194 @@ public sealed partial class MainWindow
                 Check(!photo.history.CanUndo && photo.status.Text.Contains("없습니다"), "Toggles without drawing layers changed history or stayed silent");
             }
             finally { w.StopRenderingForShutdown(); photo.StopRenderingForShutdown(); }
+        });
+
+        // A CAD layer as the panels show it: its folder (object imports) or its one vector layer (layer imports).
+        static Layer CadNode(Document doc, string cadLayer) => doc.Layers.First(l => l.Kind == LayerKind.Group && l.SourceLayerName == cadLayer
+            || l.Kind == LayerKind.Vector && l.Name == cadLayer && doc.Layers.FirstOrDefault(p => p.Id == l.ParentId)?.SourceLayerName == null);
+        static void Settle(MainWindow w) { foreach (var tab in w.tabs) tab.History.MarkSaved(tab.Document); }
+
+        test("선 정리 다시 적용 after placing a drawing on a board restyles the whole drawing, not only the last placed layer", () =>
+        {
+            string file = Plan("배치 평면.dxf", false);
+            foreach (var structure in new[] { CadImportStructure.Layers, CadImportStructure.Objects })
+            {
+                var plain = Import(file, structure, null);
+                var cleaned = Import(file, structure, new CadCleanup(Hatches: HatchTreatment.Keep));
+                var w = new MainWindow(null) { headlessTesting = true };
+                try
+                {
+                    w.AddTab(NewDocumentDialog.CreateDocument("보드", "900", "700", 1), null);
+                    // What 도면 가져오기 does on an open board: one step, the selection left as it was.
+                    var candidate = w.doc.Snapshot();
+                    CompatibilityImport.Place(candidate, plain.Snapshot(), false, w.doc.Width, w.doc.Height);
+                    w.Edit("이미지 가져오기", () => { w.doc = candidate; });
+                    Check(!w.selectedLayers.Contains(w.doc.ActiveId), $"{structure}: placing the drawing selected its last layer explicitly");
+                    Reapply(w);
+                    foreach (var layer in new[] { "A-WALL", "A-FURN", "A-ANNO-DIMS" })
+                        Check(Same(w.doc, cleaned, layer), $"{structure}: {layer} was not cleaned; only the implicit active layer was the scope");
+                    Settle(w);
+                }
+                finally { w.StopRenderingForShutdown(); }
+            }
+        });
+
+        test("선 정리 다시 적용 after switching tabs still restyles the whole placed drawing", () =>
+        {
+            string file = Plan("탭 전환 평면.dxf", false);
+            var plain = Import(file, CadImportStructure.Objects, null);
+            var cleaned = Import(file, CadImportStructure.Objects, new CadCleanup(Hatches: HatchTreatment.Keep));
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(NewDocumentDialog.CreateDocument("보드", "900", "700", 1), null);
+                var candidate = w.doc.Snapshot();
+                CompatibilityImport.Place(candidate, plain.Snapshot(), false, w.doc.Width, w.doc.Height);
+                w.Edit("이미지 가져오기", () => { w.doc = candidate; });
+                w.AddTab(NewDocumentDialog.CreateDocument("다른 보드", "100", "100", 1), null);
+                w.SwitchTab(0);
+                // Returning to the tab restores its layer selection; the last placed object stays implicit.
+                Check(!w.selectedLayers.Contains(w.doc.ActiveId), "A tab switch turned the active layer into an explicit selection");
+                Reapply(w);
+                foreach (var layer in new[] { "A-WALL", "A-FURN", "A-ANNO-DIMS" })
+                    Check(Same(w.doc, cleaned, layer), $"{layer} was not cleaned after a tab switch; only the restored active layer was the scope");
+                Settle(w);
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("해치 재질 표시 전환 hides import hatch materials only, not materials applied to selections", () =>
+        {
+            string file = Plan("재질 평면 표시.dxf", true);
+            var w = new MainWindow(null) { headlessTesting = true };
+            var photo = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(Import(file, CadImportStructure.Objects, new CadCleanup()), null);
+                var hatches = w.doc.Layers.Where(l => l.Kind == LayerKind.Material).ToArray();
+                Check(hatches.Length > 0, "The cleanup import made no hatch material");
+                w.selection = new Selection(new Rect(30, 30, 60, 60)); w.Refresh(false);
+                var mine = w.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Wood), DrawingCleanup.MaterialName(MaterialKind.Wood));
+                Check(mine is { Kind: LayerKind.Material, Visible: true }, "The selection material was not made");
+                w.ToggleMaterialLayers();
+                Check(hatches.All(h => !w.doc.Layers.Single(l => l.Id == h.Id).Visible), "Import hatch materials were not hidden");
+                Check(w.doc.Layers.Single(l => l.Id == mine!.Id).Visible, "The material the user applied to a selection was hidden with the hatches");
+                Check(w.status.Text.Contains(hatches.Length.ToString("N0")) && !w.status.Text.Contains((hatches.Length + 1).ToString("N0")), "The status counted the selection material: " + w.status.Text);
+                w.ToggleMaterialLayers();
+                Check(hatches.All(h => w.doc.Layers.Single(l => l.Id == h.Id).Visible), "Hatch materials were not shown again");
+                Settle(w);
+                photo.AddTab(NewDocumentDialog.CreateDocument("사진", "64", "64", 1), null);
+                photo.selection = new Selection(new Rect(8, 8, 32, 32)); photo.Refresh(false);
+                var own = photo.ApplySelectionMaterial(MaterialPresets.Create(MaterialKind.Tile), DrawingCleanup.MaterialName(MaterialKind.Tile));
+                Check(own != null, "The photo selection material was not made");
+                photo.ToggleMaterialLayers();
+                Check(photo.doc.Layers.Single(l => l.Id == own!.Id).Visible && photo.history.UndoLabel == "선택 영역 재질" && photo.status.Text.Contains("없습니다"),
+                    "A document without import hatches toggled the user's material");
+                Settle(photo);
+            }
+            finally { w.StopRenderingForShutdown(); photo.StopRenderingForShutdown(); }
+        });
+
+        test("선 정리 다시 적용 and 치수·문자 표시 전환 follow the role choices remembered from the import dialog", () =>
+        {
+            string file = Plan("역할 지정 평면.dxf", false);
+            // Remembered choices are case-insensitive, as ImportSettings keeps them.
+            var roles = new Dictionary<string, DrawingRole>(StringComparer.OrdinalIgnoreCase)
+                { ["a-wall"] = DrawingRole.Furniture, ["A-FURN"] = DrawingRole.Structure, ["0"] = DrawingRole.Annotation };
+            foreach (var structure in new[] { CadImportStructure.Layers, CadImportStructure.Objects })
+            {
+                var plain = Import(file, structure, null);
+                var chosen = Import(file, structure, new CadCleanup(Hatches: HatchTreatment.Keep, Roles: roles));
+                var w = new MainWindow(null) { headlessTesting = true };
+                try
+                {
+                    w.SaveImportSettings(new ImportSettings { CadRoles = roles });
+                    w.AddTab(plain.Snapshot(), null);
+                    w.selectedLayers.Clear(); w.doc.ActiveId = w.doc.Layers.First(l => l.Kind == LayerKind.Raster || l.Kind == LayerKind.Shape).Id;
+                    Reapply(w);
+                    foreach (var layer in new[] { "A-WALL", "A-FURN", "0", "A-ANNO-DIMS" })
+                        Check(Same(w.doc, chosen, layer), $"{structure}: {layer} does not match the import with the user's role choices");
+                    w.ToggleAnnotationLayers();
+                    Check(!CadNode(w.doc, "0").Visible && !CadNode(w.doc, "A-ANNO-DIMS").Visible && CadNode(w.doc, "A-WALL").Visible,
+                        $"{structure}: the 치수·문자 toggle ignored the remembered role of layer 0");
+                    Settle(w);
+                }
+                finally { w.StopRenderingForShutdown(); }
+            }
+        });
+
+        test("선 정리 다시 적용 finds the CAD layer of objects grouped inside its folder", () =>
+        {
+            string file = Plan("그룹 평면.dxf", false);
+            var plain = Import(file, CadImportStructure.Objects, null);
+            var cleaned = Import(file, CadImportStructure.Objects, new CadCleanup(Hatches: HatchTreatment.Keep));
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(plain.Snapshot(), null);
+                var walls = Lines(w.doc, "A-WALL").Select(l => l.Id).ToArray();
+                Check(walls.Length == 2, "The plan has no two wall objects to group");
+                w.selectedLayers.Clear(); foreach (var id in walls) w.selectedLayers.Add(id); w.doc.ActiveId = walls[0];
+                w.GroupSelected();
+                var group = w.doc.Layers.Single(l => l.Id == w.doc.Layers.Single(x => x.Id == walls[0]).ParentId);
+                Check(group.SourceLayerName == null && w.doc.Layers.Single(l => l.Id == group.ParentId).SourceLayerName == "A-WALL", "The walls were not grouped inside their CAD-layer folder");
+                w.selectedLayers.Clear(); w.doc.ActiveId = w.doc.Layers.First(l => l.Kind == LayerKind.Raster || l.Kind == LayerKind.Shape).Id;
+                Reapply(w);
+                var expected = Lines(cleaned, "A-WALL");
+                Check(walls.Zip(expected).All(p => Payload(w.doc.Layers.Single(l => l.Id == p.First)).SequenceEqual(Payload(p.Second))), "Grouped wall objects were not restyled as walls");
+                Check(w.status.Text.Contains("역할을 알 수 없는 레이어 1개"), "Grouped walls were counted as unknown: " + w.status.Text);
+                Settle(w);
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("선 정리 다시 적용 leaves text and hatches on a layer without a role alone, like import cleanup", () =>
+        {
+            var cad = new CadDocument();
+            var wall = new ACadSharp.Tables.Layer("A-WALL"); cad.Layers.Add(wall);
+            cad.Entities.Add(new Line { StartPoint = new XYZ(0, 0, 0), EndPoint = new XYZ(200, 0, 0), Layer = wall });
+            cad.Entities.Add(new TextEntity { Value = "거실", InsertPoint = new XYZ(60, 40, 0), Height = 14 });
+            var fill = new Hatch { Pattern = new HatchPattern("ANSI31") };
+            var boundary = new Hatch.BoundaryPath(); boundary.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 70, 0), new XYZ(180, 70, 0), new XYZ(180, 110, 0), new XYZ(20, 110, 0) }, true));
+            fill.Paths.Add(boundary); cad.Entities.Add(fill);
+            string file = Path.Combine(root, "이름 없는 층 평면.dxf"); DxfWriter.Write(file, cad);
+            var plain = Import(file, CadImportStructure.Objects, null);
+            var objects = Lines(plain, "0");
+            Check(objects.Any(l => l.Name.StartsWith("문자", StringComparison.Ordinal)) && objects.Any(l => l.Name.StartsWith("해치", StringComparison.Ordinal)), "The plan has no text and hatch objects on layer 0: " + string.Join(", ", objects.Select(l => l.Name)));
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(plain.Snapshot(), null);
+                w.selectedLayers.Clear(); w.doc.ActiveId = w.doc.Layers.First(l => l.Kind == LayerKind.Raster || l.Kind == LayerKind.Shape).Id;
+                Reapply(w);
+                Check(w.history.CanUndo, "The wall was not restyled");
+                Check(Same(w.doc, plain, "0"), "Objects on layer 0 were restyled by their generated names");
+                Settle(w);
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("선 정리 다시 적용 runs off the UI thread, Esc cancels it without a step, and a changed document is left alone", () =>
+        {
+            string file = Plan("백그라운드 평면.dxf", false);
+            var plain = Import(file, CadImportStructure.Objects, null);
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                w.AddTab(plain.Snapshot(), null);
+                bool pending = false;
+                // Esc cancels the running job (Shortcuts: jobCts).
+                bool applied = WaitOnDispatcher(() => { var task = w.ReapplyLineCleanupAsync(); pending = !task.IsCompleted && w.jobCts != null; w.jobCts?.Cancel(); return task; });
+                Check(pending, "Line cleanup finished before returning to the window: it ran on the UI thread");
+                Check(!applied && !w.history.CanUndo && Same(w.doc, plain, "A-WALL") && w.jobCts == null && w.status.Text.Contains("취소"), "Cancelling line cleanup still changed the drawing");
+                // An edit made while it runs wins; the stale result is dropped.
+                applied = WaitOnDispatcher(() => { var task = w.ReapplyLineCleanupAsync(); w.Edit("레이어 이름", () => w.doc.Layers[^1].Name = "바뀐 이름"); return task; });
+                Check(!applied && w.history.UndoLabel == "레이어 이름" && Same(w.doc, plain, "A-WALL"), "A result computed for an older document was applied");
+                w.Undo();
+                Check(WaitOnDispatcher(w.ReapplyLineCleanupAsync) && w.history.UndoLabel == "선 정리 다시 적용" && !Same(w.doc, plain, "A-WALL") && w.jobCts == null, "Line cleanup did not finish as one step");
+                Settle(w);
+            }
+            finally { w.StopRenderingForShutdown(); }
         });
     }
 }
