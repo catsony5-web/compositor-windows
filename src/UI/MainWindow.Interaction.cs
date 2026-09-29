@@ -378,7 +378,7 @@ public sealed partial class MainWindow
             }, cts.Token);
             if (cts.IsCancellationRequested || !ReferenceEquals(document, doc) || revision != doc.Revision || !ReferenceEquals(selection, previous) ||
                 !ReferenceEquals(historyAtStart, history) || tabAtStart != activeTab) return false;
-            selection = result; Refresh(false); ShowInteractionHint(); return true;
+            selection = result; Refresh(false); ShowInteractionHint(); RevealSelectionMaterials(); return true;
         }
         catch (OperationCanceledException) { if (ReferenceEquals(document, doc) && ReferenceEquals(jobCts, cts)) status.Text = "선택 계산을 취소했습니다."; return false; }
         catch (Exception error) { if (headlessTesting) throw; if (ReferenceEquals(document, doc)) status.Text = "마술봉 선택 실패: " + error.Message; return false; }
