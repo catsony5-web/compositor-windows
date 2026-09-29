@@ -126,7 +126,7 @@ public sealed partial class MainWindow
             ("실행 취소", "기록"), ("합성 이미지 복사", "클립보드"), ("선택 픽셀 지우기", "채우기·지우기"), ("대지 편집", "캔버스"),
             ("레이어 복제", "레이어"), ("마스크 추가", "마스크"), ("선택 레이어 그룹화", "그룹·합성"), ("전체 선택", "선택"),
             ("레벨", "보정"), ("사진 현상", "필터"), ("화면에 맞춤", "화면"), ("가이드 추가", "가이드·격자"), ("명령 찾기", "도움·작업 공간"),
-            ("샘플 작업", "배우기"), ("로컬 연결", "AI 연결"), ("선택 레이어 이미지로", "내보내기")
+            ("샘플 작업", "배우기"), ("로컬 연결", "AI 연결"), ("선택 레이어 이미지로", "내보내기"), ("그림자", "그림자")
         ];
         foreach (var (key, title) in titles) if (header.StartsWith(key, StringComparison.Ordinal)) return title;
         return tab;
@@ -223,7 +223,8 @@ public sealed partial class MainWindow
             ("화면에 맞춤", Theme.Glyphs.Fit), ("실제 크기", Theme.Glyphs.Search), ("확대", Theme.Glyphs.Plus), ("가이드", Theme.Glyphs.AlignLeft), ("스냅", Theme.Glyphs.Pin),
             ("픽셀 격자", Theme.Glyphs.Grain), ("명령 찾기", Theme.Glyphs.Search), ("도움말", Theme.Glyphs.Info), ("사진 편집 작업 공간", Theme.Glyphs.Camera), ("디자인 작업 공간", Theme.Glyphs.Shape),
             ("RGB / CMYK", Theme.Glyphs.Palette), ("CMYK ICC", Theme.Glyphs.Palette), ("Windows 기본 CMYK", Theme.Glyphs.Palette), ("패널 배치", Theme.Glyphs.Reset), ("히스토그램", Theme.Glyphs.Levels),
-            ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders)
+            ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders),
+            ("그림자", Theme.Glyphs.Shadow)
         ];
         if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
         foreach (var (key, glyph) in map) if (label.StartsWith(key, StringComparison.Ordinal)) return glyph;

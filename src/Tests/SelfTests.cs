@@ -110,6 +110,8 @@ public static class SelfTests
         MainWindow.RunBrushTipIntegrationTests(Test);
         PhotoDevelopTests.Run(Test, directory);
         SelectedLayerExportTests.Run(Test, directory);
+        ShadowTests.Run(Test, directory);
+        MainWindow.RunShadowCommandTests(Test);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
         VectorContentTests.Run(Test, directory);
