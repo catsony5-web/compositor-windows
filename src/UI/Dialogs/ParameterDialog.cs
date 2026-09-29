@@ -59,8 +59,9 @@ public sealed class ParameterDialog : Window
             parameter.Changed += _ => SetError("");
             controls.Add(parameter); body.Children.Add(parameter);
             string range = field.Minimum.ToString("0.####", CultureInfo.InvariantCulture) + " ~ " + field.Maximum.ToString("0.####", CultureInfo.InvariantCulture);
-            var bounds = Theme.Label("범위 " + range, Theme.CaptionSize, Theme.Subtle); bounds.Margin = new Thickness(2, -2, 2, 10);
-            System.Windows.Automation.AutomationProperties.SetName(bounds, field.Label + " 범위"); body.Children.Add(bounds);
+            // One sentence per hint so the display language can reorder "범위" and the numbers.
+            var bounds = Theme.Label($"범위 {range}", Theme.CaptionSize, Theme.Subtle); bounds.Margin = new Thickness(2, -2, 2, 10);
+            System.Windows.Automation.AutomationProperties.SetName(bounds, $"{field.Label} 범위"); body.Children.Add(bounds);
         }
 
         var footer = new StackPanel { Margin = new Thickness(0, 12, 0, 0) }; Grid.SetRow(footer, 2); root.Children.Add(footer);

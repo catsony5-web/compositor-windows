@@ -25,6 +25,7 @@ public static class Loc
     static (Regex Pattern, string Template, int Holes)[] patterns = [];
     static Regex? fragmentPattern;
     static Dictionary<string, string> fragments = new(StringComparer.Ordinal);
+    static Dictionary<string, string> templates = new(StringComparer.Ordinal);
     static readonly ConcurrentDictionary<string, string> cache = new(StringComparer.Ordinal);
     const int MinFragment = 4, MaxCache = 50_000;
 
@@ -61,8 +62,8 @@ public static class Loc
     internal static void Use(string code, IReadOnlyDictionary<string, string>? table)
     {
         Language = IsKnown(code) ? code : "ko"; cache.Clear();
-        exact = new(StringComparer.Ordinal); fragments = new(StringComparer.Ordinal);
-        var dynamic = new List<(Regex, string, int)>();
+        exact = new(StringComparer.Ordinal); fragments = new(StringComparer.Ordinal); templates = new(StringComparer.Ordinal);
+        var dynamic = new List<(Regex Pattern, string Template, int Holes, int Literal)>();
         foreach (var (key, value) in table ?? new Dictionary<string, string>())
         {
             if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value)) continue;
@@ -70,7 +71,8 @@ public static class Loc
             {
                 int holes = 0;
                 string pattern = "^" + Regex.Replace(Regex.Escape(key).Replace(@"\{", "{"), @"\{(\d+)}", m => { holes = Math.Max(holes, int.Parse(m.Groups[1].Value) + 1); return $"(?<h{m.Groups[1].Value}>.*?)"; }) + "$";
-                dynamic.Add((new Regex(pattern, RegexOptions.Singleline | RegexOptions.CultureInvariant), value, holes));
+                dynamic.Add((new Regex(pattern, RegexOptions.Singleline | RegexOptions.CultureInvariant), value, holes, Regex.Replace(key, @"\{\d+\}", "").Length));
+                templates[key] = value;
             }
             else
             {
@@ -78,8 +80,9 @@ public static class Loc
                 if (key.Length >= MinFragment) fragments[key] = value;
             }
         }
-        // More specific templates (more literal text) win.
-        patterns = dynamic.OrderByDescending(p => p.Item1.ToString().Length).ToArray();
+        // More specific templates (more literal text) win. Counting the pattern's own length let
+        // every extra hole outweigh real text, so "{0} {1}개" beat "레이어 {0}개".
+        patterns = dynamic.OrderByDescending(p => p.Literal).ThenBy(p => p.Holes).Select(p => (p.Pattern, p.Template, p.Holes)).ToArray();
         fragmentPattern = fragments.Count == 0 ? null
             : new Regex(string.Join("|", fragments.Keys.OrderByDescending(k => k.Length).Select(Regex.Escape)), RegexOptions.CultureInvariant);
     }
@@ -121,6 +124,28 @@ public static class Loc
         // " · " joins independent parts (kind · opacity, name · shortcut); translate each part.
         if (text.Contains(" · ")) return string.Join(" · ", text.Split(" · ").Select(T));
         return fragmentPattern == null ? text : fragmentPattern.Replace(text, m => fragments[m.Value]);
+    }
+
+    // A sentence whose holes carry user data (file or layer names): the template is translated
+    // as a whole and the values are inserted as they are, so a name is never partly translated.
+    public static string Format(string template, params object?[] values) =>
+        string.Format(CultureInfo.CurrentCulture, Active && templates.TryGetValue(template, out var translated) ? translated : template, values);
+
+    // The same for a TextBlock that the display layer translates: the translated template becomes
+    // plain runs and every value its own kept run, so later translation passes leave the values alone.
+    public static void SetText(TextBlock block, string template, params object?[] values)
+    {
+        string text = Active && templates.TryGetValue(template, out var translated) ? translated : template;
+        block.Inlines.Clear();
+        int last = 0;
+        foreach (Match hole in Regex.Matches(text, @"\{(\d+)\}"))
+        {
+            if (hole.Index > last) block.Inlines.Add(new Run(text[last..hole.Index]));
+            int index = int.Parse(hole.Groups[1].Value, CultureInfo.InvariantCulture);
+            block.Inlines.Add(Keep(new Run(index < values.Length ? Convert.ToString(values[index], CultureInfo.CurrentCulture) ?? "" : hole.Value)));
+            last = hole.Index + hole.Length;
+        }
+        if (last < text.Length) block.Inlines.Add(new Run(text[last..]));
     }
 
     // ---- Applying translations to WPF elements ------------------------------------------
@@ -181,9 +206,12 @@ public static class Loc
         try
         {
             // Runs keep their own formatting; a plain TextBlock keeps any binding through SetCurrentValue.
-            if (block.Inlines.Count > 1 || block.Inlines.FirstInline is not Run and not null)
+            // A block built from Inlines reports an empty Text, even with a single run, so the runs
+            // are translated one by one; runs marked Keep hold user data and stay as they are.
+            var first = block.Inlines.FirstInline;
+            if (block.Inlines.Count > 1 || first is not Run and not null || first is Run single && single.Text != block.Text)
             {
-                foreach (var run in block.Inlines.OfType<Run>().ToArray()) { string next = T(run.Text); if (next != run.Text) run.Text = next; }
+                foreach (var run in block.Inlines.OfType<Run>().ToArray()) { if (Kept(run)) continue; string next = T(run.Text); if (next != run.Text) run.Text = next; }
                 return;
             }
             string text = block.Text, translated = T(text);

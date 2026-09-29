@@ -28,7 +28,7 @@ public sealed partial class MainWindow
         artboardHandle = forceNew ? -1 : CanvasView.ArtboardHandleAt(selected.Bounds, point, canvas.Zoom);
         var hit = artboardHandle >= 0 ? selected : forceNew ? null : boards.Reverse().FirstOrDefault(b => b.Bounds.Contains(point));
         addingArtboard = hit == null;
-        artboardStart = hit ?? new Artboard(Guid.Empty, $"대지 {boards.Count + 1}", Math.Round(point.X), Math.Round(point.Y), 1, 1);
+        artboardStart = hit ?? new Artboard(Guid.Empty, Loc.T($"대지 {boards.Count + 1}"), Math.Round(point.X), Math.Round(point.Y), 1, 1);
         if (hit != null) selectedArtboard = hit.Id;
         start = point; screenStart = screen; beforeGesture = null; dragging = true;
         canvas.SelectedArtboardId = selectedArtboard; canvas.ArtboardDraft = null;
@@ -72,7 +72,7 @@ public sealed partial class MainWindow
     void AddArtboard()
     {
         var current = CurrentArtboard; var bounds = ArtboardEditing.Bounds(doc);
-        ApplyArtboard(current with { Name = $"대지 {ArtboardEditing.Visible(doc).Count + 1}", X = bounds.Right + 40, Y = current.Y }, true);
+        ApplyArtboard(current with { Name = Loc.T($"대지 {ArtboardEditing.Visible(doc).Count + 1}"), X = bounds.Right + 40, Y = current.Y }, true);
         canvas.Fit();
     }
     void RemoveArtboard()

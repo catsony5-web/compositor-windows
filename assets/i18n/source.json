@@ -152,7 +152,7 @@
   "file": "Core/BrushTip.cs"
  },
  {
-  "ko": "사각형",
+  "ko": "정사각형",
   "file": "Core/BrushTip.cs"
  },
  {
@@ -801,6 +801,10 @@
  },
  {
   "ko": "타원",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "사각형",
   "file": "Core/VectorShapes.cs"
  },
  {
@@ -2916,10 +2920,6 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
-  "ko": "레이어 역할 ({0}) · {1}",
-  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
- },
- {
   "ko": "처음 {0}개 레이어만 표시합니다. 나머지는 이름으로 자동 분류합니다.",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
@@ -2948,6 +2948,10 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
+  "ko": "해치 {0}개를 ‘{1}’ 이미지로 채워요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
   "ko": "도면을 확인하면 해치 재질을 추천해요.",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
@@ -2957,10 +2961,6 @@
  },
  {
   "ko": "해치 {0}개 추천: {1}",
-  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
- },
- {
-  "ko": "해치 {0}개를 ‘{1}’ 이미지로 채워요.",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -2984,15 +2984,11 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
-  "ko": "가져오는 중 {0}/{1} · {2}",
-  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
- },
- {
   "ko": "평면.dxf",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
-  "ko": "콘크리트 4",
+  "ko": "콘크리트 4",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -3133,6 +3129,10 @@
  },
  {
   "ko": "미리보기를 준비하고 있어요…",
+  "file": "UI/Dialogs/CompatibilityDialog.cs"
+ },
+ {
+  "ko": "가져오는 중 {0}/{1} · {2}",
   "file": "UI/Dialogs/CompatibilityDialog.cs"
  },
  {
@@ -3784,11 +3784,11 @@
   "file": "UI/Dialogs/ParameterDialog.cs"
  },
  {
-  "ko": "범위 ",
+  "ko": "범위 {0}",
   "file": "UI/Dialogs/ParameterDialog.cs"
  },
  {
-  "ko": " 범위",
+  "ko": "{0} 범위",
   "file": "UI/Dialogs/ParameterDialog.cs"
  },
  {
@@ -4912,7 +4912,7 @@
   "file": "UI/MainWindow.Commands.cs"
  },
  {
-  "ko": " 패널 열기",
+  "ko": "{0} 패널 열기",
   "file": "UI/MainWindow.Commands.cs"
  },
  {
@@ -5274,10 +5274,6 @@
  {
   "ko": "도면 그룹 순서",
   "file": "UI/MainWindow.DrawingLayers.cs"
- },
- {
-  "ko": "정사각형",
-  "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
   "ko": "와이드 16:9",

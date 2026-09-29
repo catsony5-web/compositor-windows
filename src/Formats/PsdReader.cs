@@ -118,7 +118,7 @@ internal sealed class PsdReader : IDisposable
             return channel != null && record.HasMask && (record.MaskFlags & 2) == 0 && record.MaskWidth > 0 && record.MaskHeight > 0
                 ? DecodePlane(channel.Offset, channel.Length, record.MaskWidth, record.MaskHeight) : null;
         }
-        string Name(Record record, string fallback) => string.IsNullOrWhiteSpace(record.Name) ? fallback : record.Name;
+        string Name(Record record, string fallback) => string.IsNullOrWhiteSpace(record.Name) ? Loc.T(fallback) : record.Name;
         if (LegacyTopFirst(mergedOffset))
         {
             records.Reverse();

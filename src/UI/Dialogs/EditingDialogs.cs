@@ -269,7 +269,7 @@ public sealed class AdjustmentDialog : Window
         }
         else if (show)
         {
-            var layer = DocumentFeatures.CreateAdjustment(document, spec); layer.Mask = selectionMask; document.Add(layer);
+            var layer = DocumentFeatures.CreateAdjustment(document, spec); layer.Name = Loc.T(layer.Name); layer.Mask = selectionMask; document.Add(layer);
         }
         return document;
     }

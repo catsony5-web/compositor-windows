@@ -162,7 +162,9 @@ public sealed partial class MainWindow
         var library = MaterialEditing.Assets(doc);
         bool known = library.Any(a => a.Id == asset.Id);
         if (!known && library.Count >= MaterialEditing.MaxAssets) { status.Text = "재료 라이브러리가 가득 찼습니다. 쓰지 않는 재질 레이어를 정리하세요."; return null; }
-        string layerName = "재질 · " + displayName;
+        // Built-in swatches are named in the display language; the user's own image keeps its name.
+        bool preset = asset.Source.StartsWith("morupixel:preset/", StringComparison.Ordinal);
+        string layerName = Loc.T("재질 · ") + (preset ? Loc.T(displayName) : displayName);
         if (SelectionMaterialLayer() is { Material: { } fill } existing)
         {
             if (fill.Asset.Id == asset.Id) { status.Text = "이미 이 재질이 적용되어 있습니다."; return existing; }

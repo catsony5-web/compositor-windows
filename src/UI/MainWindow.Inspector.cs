@@ -105,7 +105,7 @@ public sealed partial class MainWindow
         var footer = new Border { BorderBrush = Theme.Line, BorderThickness = new Thickness(0, 1, 0, 0), Child = actions };
         Button ActionButton(string glyph, string tip, Action action) => Theme.IconButton(glyph, () => Guard(action), tip, 30, 16);
         var delete = ActionButton(Theme.Glyphs.Delete, "선택 레이어 삭제", DeleteLayer); DockPanel.SetDock(delete, Dock.Right); actions.Children.Add(delete);
-        actions.Children.Add(ActionButton(Theme.Glyphs.Plus, "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = $"레이어 {doc.Layers.Count + 1}", Pixels = new Raster(doc.Width, doc.Height) }))));
+        actions.Children.Add(ActionButton(Theme.Glyphs.Plus, "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = Loc.T($"레이어 {doc.Layers.Count + 1}"), Pixels = new Raster(doc.Width, doc.Height) }))));
         actions.Children.Add(ActionButton(Theme.Glyphs.Duplicate, "선택 레이어 복제 · Ctrl+J", Duplicate));
         Border Divider() => new() { Width = 1, Height = 16, Background = Theme.Line, Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
         actions.Children.Add(Divider());

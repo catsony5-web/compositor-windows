@@ -84,7 +84,7 @@ internal static class PdfLayerImport
         if ((long)info.Width * info.Height * 4 * count > Document.MaxLayerBytes)
             throw new InvalidDataException("PDF 레이어 이미지의 메모리 한도를 초과합니다. DPI를 낮춰 주세요.");
         var document = new Document { Name = Path.GetFileNameWithoutExtension(path), Width = info.Width, Height = info.Height, Dpi = options.Dpi };
-        var paper = VectorShapes.Create(new ShapeSpec { Width = info.Width, Height = info.Height, FillArgb = 0xFFFFFFFF }); paper.Name = "PDF 용지"; paper.Locked = true; document.Add(paper);
+        var paper = VectorShapes.Create(new ShapeSpec { Width = info.Width, Height = info.Height, FillArgb = 0xFFFFFFFF }); paper.Name = Loc.T("PDF 용지"); paper.Locked = true; document.Add(paper);
         bool originalOrder = runs.All(r => r.Key.Length > 0) && definitions.Where(d => used.Contains(d.Key)).Select(d => d.Key).SequenceEqual(runs.Select(r => r.Key));
         var pendingEmpty = definitions.Where(d => !used.Contains(d.Key)).ToList();
         void AddEmpty(Definition definition) => document.Add(new Layer { Name = definition.Name, Pixels = new Raster(1, 1), Visible = definition.Visible, Locked = definition.Locked });

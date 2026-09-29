@@ -44,6 +44,16 @@ public static class DrawingCleanup
         DrawingRole.Annotation => "치수·문자", DrawingRole.Hatch => "해치·마감", _ => "기타"
     };
 
+    // "구조·벽 3, 창호·문 1": roles are separated by commas (role names themselves contain "·")
+    // and each count is tied to its role with a no-break space. For text shown as it is, unbreakable
+    // also joins every character with a word joiner, so a line wraps only between roles.
+    public static string RoleSummary(IEnumerable<DrawingRole> roles, Func<string, string>? translate = null, bool unbreakable = false) =>
+        string.Join(", ", roles.GroupBy(r => r).OrderBy(g => g.Key).Select(g =>
+        {
+            string item = (translate ?? (s => s))(RoleName(g.Key).Split(' ')[0]).Replace(' ', '\u00A0') + "\u00A0" + g.Count().ToString("N0", System.Globalization.CultureInfo.CurrentCulture);
+            return unbreakable ? string.Join("\u2060", item.EnumerateRunes()) : item;
+        }));
+
     public static string MaterialName(MaterialKind kind) => kind switch
     {
         MaterialKind.Concrete => "콘크리트", MaterialKind.Brick => "벽돌", MaterialKind.Wood => "목재 마루", MaterialKind.Tile => "타일",

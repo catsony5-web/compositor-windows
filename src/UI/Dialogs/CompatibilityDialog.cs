@@ -186,6 +186,13 @@ internal sealed partial class CompatibilityDialog : Window
         text.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
         return new DataTemplate(typeof(string)) { VisualTree = text };
     }
+    // "Importing 2/3 · <file>": the sentence follows the display language, the file name never does.
+    void ShowProgress(int index, IReadOnlyList<string> batch)
+    {
+        if (batch.Count > 1) Loc.SetText(messages, "가져오는 중 {0}/{1} · {2}", index + 1, batch.Count, Path.GetFileName(batch[index]));
+        else messages.Text = "가져오는 중…";
+    }
+
     void DescribeAccept() => accept.Content = direct ? "가져오는 중…"
         : CanSkip ? (applyAll.IsChecked == true ? $"이 파일 빼고 {files.Count - 1}개 가져오기" : "이 파일 건너뛰기")
         : files.Count > 1 && applyAll.IsChecked == true ? $"{files.Count}개 모두 가져오기" : "가져오기";
@@ -339,7 +346,7 @@ internal sealed partial class CompatibilityDialog : Window
             for (int i = 0; i < batch.Count; i++)
             {
                 messages.Foreground = Theme.Muted;
-                messages.Text = batch.Count > 1 ? $"가져오는 중 {i + 1}/{batch.Count} · {Path.GetFileName(batch[i])}" : "가져오는 중…";
+                ShowProgress(i, batch);
                 if (i == 0 && !direct) { results.Add(skip ? new(batch[0], null, [], previewFailure) : new(batch[0], prepared!.Document, prepared.Warnings)); continue; }
                 try
                 {
