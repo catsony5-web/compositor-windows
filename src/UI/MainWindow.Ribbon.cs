@@ -228,6 +228,8 @@ public sealed partial class MainWindow
         ];
         if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
         if (UserProfiles.All.FirstOrDefault(p => p.Name == label) is { } profile) return profile.Glyph;
+        // PDF · PSD · AI export entries share the icons of the export dialog's list.
+        if (CompatibilityExport.Choices.FirstOrDefault(c => label.StartsWith(c.Title, StringComparison.Ordinal)) is { } export) return CompatibilityExportDialog.Glyph(export.Format);
         foreach (var (key, glyph) in map) if (label.StartsWith(key, StringComparison.Ordinal)) return glyph;
         return Theme.Glyphs.More;
     }

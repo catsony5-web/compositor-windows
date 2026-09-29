@@ -97,10 +97,10 @@ AI 배경 제거에는 [Microsoft Visual C++ x64 재배포 런타임](https://le
 | 필터 | 가우시안·모션 흐림, 노이즈·렌즈 왜곡 등 |
 | 배경 제거 | 번들 U²-NetP 모델을 Microsoft ONNX Runtime CPU로 실행, 결과를 수정 가능한 마스크로 적용 |
 | 이미지 파일 | PNG/JPEG/BMP/TIFF/GIF, EXIF 방향 보정, 내장 ICC→sRGB 변환, Windows 코덱이 설치된 HEIC/HEIF |
-| 호환 파일 | PDF·PDF 호환 AI의 페이지 이미지, RGB/회색조 8비트 PSD/PSB의 합성 이미지 또는 기본 픽셀 레이어, DWG/DXF의 2D 모델 공간 이미지 |
+| 호환 파일 | PDF·PDF 호환 AI의 페이지 이미지, RGB/회색조 8비트 PSD/PSB의 합성 이미지 또는 픽셀 레이어·그룹, DWG/DXF의 2D 모델 공간 이미지 |
 | 내보내기 | 전체 문서 또는 선택 레이어를 PNG·TIFF·품질 조절 JPEG로 출력, 내용에 맞게 자르기/전체 캔버스, 파일 크기·이미지 미리보기 |
 | 인쇄용 출력 | ICC 프로필을 포함한 CMYK TIFF, 프로필 변환 미리보기·DPI 설정 ([사용 안내](CMYK.md)) |
-| PDF / PSD 출력 | 문서 DPI의 한 페이지 이미지 PDF, 합성 PSD 또는 기본 픽셀 레이어 PSD ([지원 범위](FILE_COMPATIBILITY.md)) |
+| PDF · PSD · AI 출력 | **PDF · 한 장으로 합치기 (인쇄·공유용)**, **PDF · 레이어 나누기 (레이어별 켜고 끄기)**, **.psd · 레이어 유지**(그룹·마스크·클리핑), **.psd · 한 장으로 합치기**, **.ai · 레이어 유지 (PDF 호환)** ([지원 범위](FILE_COMPATIBILITY.md)) |
 | 작업 저장 | `.moruproj` 버전 2, 이전 `.cwproj` 버전 1/2 읽기, 원본 `.comp` 일부 기능 가져오기/내보내기 |
 
 ## 브러시와 색상

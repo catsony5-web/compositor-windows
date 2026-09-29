@@ -45,8 +45,7 @@ public sealed partial class MainWindow
         Add("배우기", ("샘플 작업 열기", "", OpenLearningSample));
         MenuItem Find(string name) => menu.Items.Cast<MenuItem>().Single(item => Equals(item.Header, name));
         var layerMenu = Find("레이어");
-        var compatibilityExport = DocumentControl(new MenuItem { Header = "PDF / PSD 파일로 내보내기…" });
-        compatibilityExport.Click += (_, _) => { if (HasDocument) Guard(ExportCompatibility); }; Find("파일").Items.Add(compatibilityExport);
+        Find("파일").Items.Add(BuildCompatibilityExportMenu());
         foreach (var target in new[] { Find("파일"), layerMenu })
         {
             var selectedExport = DocumentControl(new MenuItem { Header = "선택 레이어 이미지로 내보내기…" });

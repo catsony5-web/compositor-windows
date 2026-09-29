@@ -31,7 +31,7 @@ internal static class Program
         }
         var exportType = typeof(MainWindow).Assembly.GetType("Compositor.Windows.CompatibilityExportDialog")!;
         var export = (Window)Activator.CreateInstance(exportType, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, new object?[] { null, Demo.Create() }, null)!;
-        Capture(export, Path.Combine(output, "export.png"), 510, 410);
+        Capture(export, Path.Combine(output, "export.png"), 580, 720);
         app.Shutdown(); Console.WriteLine("Offscreen compatibility previews: " + output);
     }
     static void Capture(Window window, string path, int width, int height)
