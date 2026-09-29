@@ -108,6 +108,11 @@ public sealed partial class MainWindow
             if (mode == CompareMode.Toggle) compare.ToggleCompareState();
             Capture(compare, name, width, height); compare.Close();
         }
+        // A "before" render that failed: the empty cell and the info line say so and offer the retry.
+        var failedBefore = new AdjustmentDialog(null, doc, developSpec);
+        failedBefore.SetDesignPreview(developAfter); failedBefore.SelectCompareMode(CompareMode.SideBySide);
+        failedBefore.SetDesignBeforeFailure(new OutOfMemoryException().Message);
+        Capture(failedBefore, "photo-develop-before-failed", 1040, 760); failedBefore.Close();
         ShowStudioPage(2); Capture(this, "colors", 1480, 920);
         ShowStudioPage(3); Capture(this, "brush", 1480, 920);
         ShowStudioPage(0); Capture(this, "compact", 1200, 750);

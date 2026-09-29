@@ -23,12 +23,12 @@ public sealed class BeforeAfterView : FrameworkElement
     /// <summary>Space between the two side-by-side cells.</summary>
     public const double Gap = 12;
     const double HandleRadius = 13, BadgeInset = 8;
-    internal const string BeforeText = "보정 전", AfterText = "보정 후", PendingText = "미리보기 계산 중…";
+    internal const string BeforeText = "보정 전", AfterText = "보정 후", PendingText = "미리보기 계산 중…", BeforeFailedText = "보정 전 이미지를 만들지 못했습니다";
 
     BitmapSource? before, after;
     CompareMode mode;
     double divider = .5;
-    bool showBefore, holdBefore, dragging, clickArmed, keyboardCue;
+    bool showBefore, holdBefore, dragging, clickArmed, keyboardCue, beforeFailed;
 
     /// <summary>Raised when the viewer clicks the image (or presses Space/Enter) in <see cref="CompareMode.Toggle"/>.</summary>
     public event Action? ToggleRequested;
@@ -42,6 +42,8 @@ public sealed class BeforeAfterView : FrameworkElement
 
     public BitmapSource? Before { get => before; set { before = value; InvalidateVisual(); } }
     public BitmapSource? After { get => after; set { after = value; InvalidateVisual(); } }
+    /// <summary>The "before" image could not be rendered; its cell says so instead of showing the calculating caption.</summary>
+    public bool BeforeFailed { get => beforeFailed; set { if (beforeFailed == value) return; beforeFailed = value; InvalidateVisual(); } }
 
     public CompareMode Mode
     {
@@ -197,8 +199,8 @@ public sealed class BeforeAfterView : FrameworkElement
             case CompareMode.Split:
             {
                 var image = rects[0]; double x = DividerX(image);
-                DrawClipped(dc, before, image, new Rect(image.X, image.Y, x - image.X, image.Height));
-                DrawClipped(dc, after, image, new Rect(x, image.Y, image.Right - x, image.Height));
+                DrawClipped(dc, before, image, new Rect(image.X, image.Y, x - image.X, image.Height), true);
+                DrawClipped(dc, after, image, new Rect(x, image.Y, image.Right - x, image.Height), false);
                 DrawDivider(dc, image, x);
                 var left = Badge(BeforeText); var right = Badge(AfterText);
                 if (x - image.X >= left.Width + 3 * BadgeInset) DrawBadge(dc, left, new Point(image.X + BadgeInset, image.Y + BadgeInset));
@@ -206,34 +208,37 @@ public sealed class BeforeAfterView : FrameworkElement
                 break;
             }
             case CompareMode.SideBySide:
-                DrawImage(dc, before, rects[0]); DrawImage(dc, after, rects[1]);
+                DrawImage(dc, before, rects[0], true); DrawImage(dc, after, rects[1], false);
                 DrawBadge(dc, Badge(BeforeText), new Point(rects[0].X + BadgeInset, rects[0].Y + BadgeInset));
                 DrawBadge(dc, Badge(AfterText), new Point(rects[1].X + BadgeInset, rects[1].Y + BadgeInset));
                 break;
             default:
-                DrawImage(dc, DisplaysBefore ? before : after, rects[0]);
+                DrawImage(dc, DisplaysBefore ? before : after, rects[0], DisplaysBefore);
                 if (StateLabel is { } label) DrawBadge(dc, Badge(label), new Point(rects[0].X + BadgeInset, rects[0].Y + BadgeInset));
                 if (mode == CompareMode.Toggle && keyboardCue && IsKeyboardFocused) dc.DrawRoundedRectangle(null, new Pen(Theme.Accent, 2), Rect.Inflate(rects[0], 3, 3), 4, 4);
                 break;
         }
     }
 
-    void DrawImage(DrawingContext dc, BitmapSource? image, Rect rect)
+    // The caption for a state that has no image: still rendering, or a "before" render that failed.
+    string MissingText(bool isBefore) => isBefore && beforeFailed ? BeforeFailedText : PendingText;
+
+    void DrawImage(DrawingContext dc, BitmapSource? image, Rect rect, bool isBefore)
     {
         if (image != null) { dc.DrawImage(image, rect); return; }
-        // The other state is still rendering; say so instead of showing a blank cell.
-        var text = Text(PendingText, Theme.Muted);
+        // The other state is still rendering (or failed); say so instead of showing a blank cell.
+        var text = Text(MissingText(isBefore), Theme.Muted);
         if (text.Width <= rect.Width) dc.DrawText(text, new Point(rect.X + (rect.Width - text.Width) / 2, rect.Y + (rect.Height - text.Height) / 2));
     }
 
-    void DrawClipped(DrawingContext dc, BitmapSource? image, Rect imageRect, Rect clip)
+    void DrawClipped(DrawingContext dc, BitmapSource? image, Rect imageRect, Rect clip, bool isBefore)
     {
         if (clip.Width <= 0) return;
         dc.PushClip(new RectangleGeometry(clip));
         if (image != null) dc.DrawImage(image, imageRect);
         else
         {
-            var text = Text(PendingText, Theme.Muted);
+            var text = Text(MissingText(isBefore), Theme.Muted);
             if (text.Width + 2 * BadgeInset <= clip.Width) dc.DrawText(text, new Point(clip.X + (clip.Width - text.Width) / 2, clip.Y + (clip.Height - text.Height) / 2));
         }
         dc.Pop();

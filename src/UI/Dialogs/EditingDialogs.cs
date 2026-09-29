@@ -29,7 +29,11 @@ public sealed class AdjustmentDialog : Window
     readonly TextBlock info = Theme.Label("", Theme.CaptionSize, Theme.Muted);
     // "Before" (the document without this adjustment) is rendered once per dialog and reused; only "after" follows the sliders.
     Raster? beforePreview, afterPreview;
-    object? histogramSource;
+    // Histogram bins of each state, taken from the full-resolution render (the stage copies are box-averaged and lose the tails).
+    double[][]? beforeBins, afterBins;
+    // Why the last "before" render failed, and the settings generation it failed at; a later settings change retries it.
+    string? beforeFailure;
+    long beforeFailedAt;
     long version;
     int afterPending;
     bool closed, synchronizing, preservePendingInputs, beforePending;
@@ -41,8 +45,18 @@ public sealed class AdjustmentDialog : Window
     internal HoldButton HoldBeforeButton => holdButton;
     internal Raster? BeforePreview => beforePreview;
     internal Raster? AfterPreview => afterPreview;
-    internal void SetDesignPreview(Raster raster) { afterPreview = PreviewScaling.Fit(raster, PreviewMaxSide); preview.After = afterPreview.Bitmap(); histogram.Update(raster); histogramSource = afterPreview; }
-    internal void SetDesignBefore(Raster raster) { beforePreview = PreviewScaling.Fit(raster, PreviewMaxSide); preview.Before = beforePreview.Bitmap(); }
+    internal HistogramView HistogramPanel => histogram;
+    internal string InfoText => info.Text;
+    /// <summary>Renders a preview document; self-tests replace it to simulate failures.</summary>
+    internal Func<Document, CancellationToken, Raster> Renderer { get; set; } = Imaging.Render;
+    internal void SetDesignPreview(Raster raster) { afterPreview = PreviewScaling.Fit(raster, PreviewMaxSide); afterBins = HistogramView.Compute(raster); preview.After = afterPreview.Bitmap(); UpdateHistogram(); }
+    internal void SetDesignBefore(Raster raster) { beforePreview = PreviewScaling.Fit(raster, PreviewMaxSide); beforeBins = HistogramView.Compute(raster); preview.Before = beforePreview.Bitmap(); UpdateHistogram(); }
+    /// <summary>Offscreen capture hook: shows the state after a failed "before" render without rendering.</summary>
+    internal void SetDesignBeforeFailure(string message)
+    {
+        beforeCts?.Cancel(); beforePending = false; beforePreview = null; preview.Before = null;
+        beforeFailure = message; beforeFailedAt = version; preview.BeforeFailed = true; UpdateInfo();
+    }
     internal void SelectCompareMode(CompareMode mode) => compareModes.Select(mode);
     internal void ToggleCompareState() => TogglePreviewState();
     /// <summary>Starts the preview the way <see cref="FrameworkElement.Loaded"/> does, for self-tests without a window.</summary>
@@ -185,17 +199,19 @@ public sealed class AdjustmentDialog : Window
         preview.HoldBefore = held;
         if (held) EnsureBefore();
     }
+    // Switches between the bins cached with each render, so the histogram does not depend on how the view got to a state.
     void UpdateHistogram()
     {
-        var source = ShowingBeforeImage ? beforePreview : afterPreview;
-        if (source == null || ReferenceEquals(source, histogramSource)) return;
-        histogram.Update(source); histogramSource = source;
+        var bins = ShowingBeforeImage ? beforeBins : afterBins;
+        if (bins == null || ReferenceEquals(bins, histogram.Bins)) return;
+        histogram.Show(bins);
     }
     void UpdateInfo()
     {
         if (closed) return;
         if (afterPending > 0) { info.Text = "미리보기 계산 중…"; return; }
         if (NeedsBefore && beforePreview == null && beforePending) { info.Text = "보정 전 이미지 계산 중…"; return; }
+        if (NeedsBefore && beforePreview == null && beforeFailure != null) { info.Text = $"보정 전 이미지를 만들지 못했습니다: {beforeFailure}\n설정을 바꾸면 다시 시도합니다."; return; }
         if (afterPreview == null) return;
         info.Text = $"{original.Width} × {original.Height} px · " + (preview.ShowsBoth ? "보정 전후 비교" : ShowingBeforeImage ? "이 조정 없이 보기" : "조정 미리보기");
     }
@@ -260,19 +276,21 @@ public sealed class AdjustmentDialog : Window
     async Task<Raster> Render(Document document, CancellationToken token)
     {
         await renderGate.WaitAsync(token);
-        try { return await Task.Run(() => Imaging.Render(document, token), token); }
+        var render = Renderer;
+        try { return await Task.Run(() => render(document, token), token); }
         finally { renderGate.Release(); }
     }
-    // Full-resolution render (detail settings keep their real radius), then a screen-size copy for the stage.
-    async Task<(Raster Full, Raster Preview, System.Windows.Media.Imaging.BitmapSource Bitmap)> RenderPreview(Document document, CancellationToken token)
+    // Full-resolution render (detail settings keep their real radius) and its histogram, then a screen-size copy for the stage.
+    async Task<(double[][] Bins, Raster Preview, System.Windows.Media.Imaging.BitmapSource Bitmap)> RenderPreview(Document document, CancellationToken token)
     {
         await renderGate.WaitAsync(token);
+        var render = Renderer;
         try
         {
             return await Task.Run(() =>
             {
-                var full = Imaging.Render(document, token); var small = PreviewScaling.Fit(full, PreviewMaxSide, token);
-                return (full, small, small.Bitmap());
+                var full = render(document, token); var bins = HistogramView.Compute(full); var small = PreviewScaling.Fit(full, PreviewMaxSide, token);
+                return (bins, small, small.Bitmap());
             }, token);
         }
         finally { renderGate.Release(); }
@@ -291,15 +309,20 @@ public sealed class AdjustmentDialog : Window
             AfterRenderCount++;
             var result = await RenderPreview(d, cts.Token);
             if (!Current(generation)) return;
-            afterPreview = result.Preview; preview.After = result.Bitmap;
-            if (!ShowingBeforeImage) { histogram.Update(result.Full); histogramSource = result.Preview; }
+            afterPreview = result.Preview; afterBins = result.Bins; preview.After = result.Bitmap;
+            UpdateHistogram();
         }
         catch (OperationCanceledException) { }
         catch (Exception e) { failure = e.Message; }
         finally
         {
             afterPending--; if (ReferenceEquals(previewCts, cts)) previewCts = null; cts.Dispose();
-            if (Current(generation)) { if (failure != null) info.Text = failure; else UpdateInfo(); }
+            if (Current(generation))
+            {
+                // A settings change made after "before" failed is the retry the info line offers.
+                if (failure == null && beforeFailure != null && generation > beforeFailedAt && NeedsBefore) EnsureBefore();
+                if (failure != null) info.Text = failure; else UpdateInfo();
+            }
         }
     }
     // "Before" does not depend on the settings, so it is rendered at most once per dialog and only when first shown.
@@ -307,19 +330,25 @@ public sealed class AdjustmentDialog : Window
     {
         if (closed || beforePreview != null || beforePending) return;
         beforePending = true; BeforeRenderCount++; string? failure = null;
+        beforeFailure = null; preview.BeforeFailed = false;
         var cts = beforeCts = new CancellationTokenSource();
         try
         {
             var result = await RenderPreview(PreviewDocument(original, editingId, Spec, false, selectionMask), cts.Token);
             if (closed || !Dispatcher.CheckAccess()) return;
-            beforePreview = result.Preview; preview.Before = result.Bitmap;
+            beforePreview = result.Preview; beforeBins = result.Bins; preview.Before = result.Bitmap;
         }
         catch (OperationCanceledException) { }
         catch (Exception e) { failure = e.Message; }
         finally
         {
             beforePending = false; if (ReferenceEquals(beforeCts, cts)) beforeCts = null; cts.Dispose();
-            if (!closed && Dispatcher.CheckAccess()) { if (failure != null) info.Text = failure; else { UpdateHistogram(); UpdateInfo(); } }
+            if (!closed && Dispatcher.CheckAccess())
+            {
+                // Keep the failure visible (stage caption and info line) instead of a "calculating" placeholder that never resolves.
+                if (failure != null) { beforeFailure = failure; beforeFailedAt = version; preview.BeforeFailed = true; }
+                UpdateHistogram(); UpdateInfo();
+            }
         }
     }
     async void AutoLevels()
