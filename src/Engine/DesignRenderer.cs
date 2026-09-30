@@ -114,11 +114,14 @@ public static partial class DesignRenderer
             pdf = PdfCompatibility.RenderRegionAsync(source, visible, w, h, token).GetAwaiter().GetResult();
         }
         token.ThrowIfCancellationRequested();
+        // A hatch pattern is redrawn for the device scale; chunked output reuses the cached tile.
+        var material = layer.Material is { } fill && pdf == null
+            ? MaterialRenderer.Drawing(fill, Math.Max(Math.Sqrt(map.M11 * map.M11 + map.M12 * map.M12), Math.Sqrt(map.M21 * map.M21 + map.M22 * map.M22)), token) : null;
         return Imaging.Draw(width, height, dc =>
         {
             dc.PushTransform(new MatrixTransform(map)); dc.PushClip(new RectangleGeometry(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height)));
             if (pdf != null) dc.DrawImage(pdf.Bitmap(), visible);
-            else if (layer.Material != null) dc.DrawDrawing(MaterialRenderer.Drawing(layer.Material));
+            else if (material != null) dc.DrawDrawing(material);
             else if (layer.Vector != null) dc.DrawDrawing(layer.Vector.Drawing);
             else dc.DrawDrawing(TextDrawing(layer.Text!));
             dc.Pop(); dc.Pop();

@@ -299,7 +299,7 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 6 && capabilities["commands"]!.AsArray().Count == 33,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 7 && capabilities["commands"]!.AsArray().Count == 34,
                 "Running editor did not advertise its command contract");
             Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
                 "Supported 2D mapping must remain distinct from unsupported 3D operations");
@@ -547,6 +547,41 @@ public sealed partial class MainWindow
                 Check(Text(error, "code") == "file_not_found" && Text(error, "message") == "파일을 찾을 수 없습니다.", command + " exposed a raw runtime message: " + error.ToJsonString());
             }
             Check(SameDocument(window.doc, before), "Rejected references changed the document");
+        });
+
+        Case("built-in hatch patterns are listed by surface, registered on use and tuned with ink and line weight", window =>
+        {
+            var all = Success(Call(window, "query_patterns"));
+            var keys = all["patterns"]!.AsArray().Select(p => Text(p!.AsObject(), "patternId")).ToArray();
+            Check(all["count"]!.GetValue<int>() == 19 && keys.SequenceEqual(HatchPatterns.All.Select(HatchPatterns.Key)), "query_patterns did not list every pattern in catalog order");
+            var ground = Success(Call(window, "query_patterns", new JsonObject { ["surface"] = "ground" }))["patterns"]!.AsArray().Select(p => Text(p!.AsObject(), "patternId"));
+            Check(ground.SequenceEqual(SelectionMaterials.PatternOrder(SurfaceHint.Ground).Select(HatchPatterns.Key)), "Ground order differs from the palette");
+            var wall = Success(Call(window, "query_patterns", new JsonObject { ["surface"] = "wall" }))["patterns"]![0]!.AsObject();
+            Check(Text(wall, "patternId") == "concrete" && Text(wall, "materialId") == HatchPatterns.StableId(HatchPattern.Concrete).ToString() && Text(wall, "defaultInk") == "#FF262626"
+                && wall["cadKeywords"]!.AsArray().Any(k => k!.GetValue<string>() == "CONC"), "Pattern entry lacks its ID, ink or CAD keywords: " + wall.ToJsonString());
+            Check(Success(Call(window, "query_patterns", new JsonObject { ["nameContains"] = "모래" }))["count"]!.GetValue<int>() == 1, "Name filter failed");
+            New(window, "Pattern plan", 96, 64);
+            JsonArray Points() => new(new JsonObject { ["x"] = 4, ["y"] = 4 }, new JsonObject { ["x"] = 90, ["y"] = 4 }, new JsonObject { ["x"] = 90, ["y"] = 60 }, new JsonObject { ["x"] = 4, ["y"] = 60 });
+            string regionId = Text(Success(Call(window, "define_region", Write(window, ("source", "polygon"), ("name", "Yard"), ("points", Points())))), "regionId");
+            string sand = HatchPatterns.StableId(HatchPattern.Sand).ToString();
+            var created = Success(Call(window, "apply_material", Write(window, ("materialId", sand), ("regionId", regionId), ("tileWidth", 32), ("tileHeight", 32))));
+            var id = LayerId(created); Layer Mapped() => window.doc.Layers.Single(l => l.Id == id);
+            Check(ReferenceEquals(Mapped().Material!.Asset, HatchPatternRenderer.Create(HatchPattern.Sand)) && window.doc.Materials.Any(m => m.Id.ToString() == sand),
+                "An unregistered pattern was not added to the library on apply");
+            var listed = Success(Call(window, "query_materials", new JsonObject { ["documentId"] = Text(created, "documentId") }))["materials"]![0]!.AsObject();
+            Check(Text(listed, "kind") == "pattern" && Text(listed, "patternId") == "sand", "query_materials does not identify the pattern");
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("ink", "#FF3366AA"), ("lineWeight", 1.5))));
+            var fill = AutomationMaterials.Fill(Mapped().Material!);
+            Check(Mapped().Material!.Ink == 0xFF3366AA && Text(fill, "ink") == "#FF3366AA" && fill["lineWeight"]!.GetValue<double>() == 1.5 && Text(fill, "rendering") == "pattern_redrawn",
+                "Ink or line weight did not round-trip: " + fill.ToJsonString());
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("ink", "default"))));
+            Check(Mapped().Material!.Ink == 0 && Mapped().Material!.LineWeight == 1.5, "ink=default did not reset or an omitted field changed");
+            Failure(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("lineWeight", 20))), "invalid_arguments");
+            Failure(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("ink", "red"))), "invalid_arguments");
+            string brick = HatchPatterns.StableId(HatchPattern.Brick).ToString();
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("materialId", brick))));
+            Check(Mapped().Material!.Asset.Id.ToString() == brick && window.doc.Materials.Any(m => m.Id.ToString() == brick), "update_material did not register a new pattern");
+            AutomationCatalog.Validate("open_document", new JsonObject { ["path"] = @"C:\plan.dxf", ["cadCleanup"] = true, ["cadHatches"] = "pattern" });
         });
 
         Case("cancelled requests cannot create documents edit history or write output files", window =>

@@ -41,7 +41,7 @@ public static class CadCompatibility
     {
         CompatibilityImport.ValidateFile(path); EncodingRegister(); var cad = Load(path);
         var objects = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); var hatches = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var materials = new Dictionary<MaterialKind, int>();
+        var materials = new Dictionary<MaterialKind, int>(); var patterns = new Dictionary<HatchPattern, int>();
         int visited = 0;
         void Count(IEnumerable<Entity> entities, string? inherited, int depth)
         {
@@ -55,6 +55,8 @@ public static class CadCompatibility
                     hatches[layer] = hatches.GetValueOrDefault(layer) + 1;
                     var kind = DrawingCleanup.Suggest(hatch.Pattern?.Name ?? "", layer, DrawingCleanup.Classify(layer));
                     materials[kind] = materials.GetValueOrDefault(kind) + 1;
+                    if (DrawingCleanup.SuggestPattern(hatch.Pattern?.Name ?? "", layer, DrawingCleanup.Classify(layer)) is { } pattern)
+                        patterns[pattern] = patterns.GetValueOrDefault(pattern) + 1;
                 }
                 else if (entity is Insert { Block: { } block } && (block.BlockEntity.Flags & (BlockTypeFlags.XRef | BlockTypeFlags.XRefOverlay)) == 0)
                     Count(block.Entities, layer, depth + 1);
@@ -63,7 +65,7 @@ public static class CadCompatibility
         Count(cad.Entities, null, 0);
         var layers = objects.Keys.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
             .Select(name => new CadLayerInfo(name, DrawingCleanup.Classify(name), objects[name], hatches.GetValueOrDefault(name))).ToArray();
-        return new(layers, materials);
+        return new(layers, materials, patterns);
     }
     public static CompatibilityResult Read(string path, CompatibilityOptions options, CancellationToken token = default)
     {
@@ -450,14 +452,24 @@ public static class CadCompatibility
             custom = new MaterialAsset(Guid.NewGuid(), Path.GetFileNameWithoutExtension(cleanup.MaterialImage), MaterialTextures.Load(cleanup.MaterialImage), Path.GetFileName(cleanup.MaterialImage), false);
         }
         var canvas = new RectangleGeometry(new Rect(0, 0, width, height)); canvas.Freeze();
-        double tile = Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
+        double tile = MaterialEditing.DefaultTile(width, height);
         int insertAt = 1, skipped = 0, unusable = 0; var counts = new Dictionary<string, int>();
-        var groups = hatches.GroupBy(h => custom != null ? MaterialKind.Solid : DrawingCleanup.Suggest(h.Pattern, h.Layer, role(h.Layer))).OrderBy(g => g.Key);
+        bool lines = cleanup.Hatches == HatchTreatment.Pattern;
+        // A group is a preset kind, or with line patterns a pattern (SOLID keeps the solid preset).
+        (MaterialKind Kind, HatchPattern? Pattern) Group(HatchMark hatch)
+        {
+            if (custom != null) return (MaterialKind.Solid, null);
+            if (!lines) return (DrawingCleanup.Suggest(hatch.Pattern, hatch.Layer, role(hatch.Layer)), null);
+            var pattern = DrawingCleanup.SuggestPattern(hatch.Pattern, hatch.Layer, role(hatch.Layer));
+            return pattern is { } p ? (MaterialKind.Diagonal, p) : (MaterialKind.Solid, null);
+        }
+        var groups = hatches.GroupBy(Group).OrderBy(g => g.Key.Pattern.HasValue ? 1 : 0).ThenBy(g => g.Key.Pattern ?? default).ThenBy(g => g.Key.Kind);
         foreach (var group in groups)
         {
-            var asset = custom ?? MaterialPresets.Create(group.Key);
+            var asset = custom ?? (group.Key.Pattern is { } pattern ? HatchPatternRenderer.Create(pattern) : MaterialPresets.Create(group.Key.Kind));
             if (!doc.Materials.Any(m => m.Id == asset.Id)) doc.Materials.Add(asset);
-            string label = custom != null ? asset.Name : DrawingCleanup.MaterialName(group.Key);
+            string label = custom != null ? asset.Name : group.Key.Pattern is { } named ? HatchPatterns.Name(named) : DrawingCleanup.MaterialName(group.Key.Kind);
+            string prefix = group.Key.Pattern.HasValue ? "패턴 · " : "재질 · ";
             var chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; int chunkBytes = 0, part = 0;
             void Flush()
             {
@@ -485,7 +497,7 @@ public static class CadCompatibility
                     return;
                 }
                 // Layer names are made in the display language; a user's material image keeps its file name.
-                layer.Name = Loc.T("재질 · ") + (custom != null ? label : Loc.T(label)) + (part == 1 ? "" : $" {part}");
+                layer.Name = Loc.T(prefix) + (custom != null ? label : Loc.T(label)) + (part == 1 ? "" : $" {part}");
                 doc.Layers.Insert(insertAt++, layer);
                 chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
             }
@@ -505,7 +517,7 @@ public static class CadCompatibility
             Flush();
         }
         if (counts.Count > 0)
-            warnings.Add((custom != null ? "해치에 선택한 재질 이미지를 적용했습니다: " : "해치 재질을 추천해 채웠습니다: ") + string.Join(" · ", counts.Select(p => $"{p.Key} {p.Value}개"))
+            warnings.Add((custom != null ? "해치에 선택한 재질 이미지를 적용했습니다: " : lines ? "해치를 선 패턴으로 채웠습니다: " : "해치 재질을 추천해 채웠습니다: ") + string.Join(" · ", counts.Select(p => $"{p.Key} {p.Value}개"))
                 + ". 재질 레이어는 선 아래에 곱하기로 놓이며 사진 레이어 탭에서 편집할 수 있습니다. 숨기거나 삭제하면 원래 해치로 돌아갑니다.");
         if (skipped > 0) warnings.Add($"복잡하거나 너무 많은 해치 {skipped}개는 경계선만 가져왔습니다.");
         if (unusable > 0) warnings.Add($"면적을 계산할 수 없는 해치 {unusable}개는 재질 없이 경계선만 가져왔습니다.");

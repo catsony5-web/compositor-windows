@@ -57,6 +57,23 @@ public static class SelectionMaterials
         return first is { } lead && Presets.Contains(lead) ? [lead, .. order.Where(k => k != lead)] : order.ToArray();
     }
 
+    // Hatch patterns for a surface: its likely patterns first, then every other pattern in catalog order.
+    public static IReadOnlyList<HatchPattern> PatternOrder(SurfaceHint surface)
+    {
+        var lead = LeadPatterns(surface);
+        return [.. lead, .. HatchPatterns.All.Where(p => !lead.Contains(p))];
+    }
+
+    // The patterns a surface typically takes, most likely first (none for a general region).
+    public static IReadOnlyList<HatchPattern> LeadPatterns(SurfaceHint surface) => surface switch
+    {
+        SurfaceHint.Ground => [HatchPattern.GrassSparse, HatchPattern.Meadow, HatchPattern.Sand, HatchPattern.Gravel, HatchPattern.Flagstone,
+            HatchPattern.Cobble, HatchPattern.PavingSmall, HatchPattern.DotsSparse, HatchPattern.Dots, HatchPattern.Stipple],
+        SurfaceHint.Floor => [HatchPattern.PavingSmall, HatchPattern.Flagstone, HatchPattern.Grid, HatchPattern.Lines, HatchPattern.Cobble],
+        SurfaceHint.Wall => [HatchPattern.Concrete, HatchPattern.Brick, HatchPattern.Diagonal, HatchPattern.Crosshatch, HatchPattern.Insulation],
+        _ => []
+    };
+
     // Order for a layer name alone: its surface's order, with a material the name spells out first.
     public static MaterialKind[] Recommend(string? layer) => Order(Surface(layer), Named(layer));
 

@@ -27,13 +27,13 @@ public static partial class ProjectStore
 {
     public sealed record MaterialInfo(Guid Id, string Name, string Source, bool Tileable, int Width, int Height);
     public sealed record MaterialFillInfo(Guid MaterialId, Guid SourceRegionId, string RegionName, RegionPath Boundary,
-        int Width, int Height, double TileWidth, double TileHeight, double Angle, double OffsetX, double OffsetY)
+        int Width, int Height, double TileWidth, double TileHeight, double Angle, double OffsetX, double OffsetY, uint Ink = 0, double LineWeight = 1)
     {
         public static MaterialFillInfo? From(MaterialFill? fill) => fill == null ? null : new(fill.Asset.Id, fill.SourceRegionId, fill.RegionName,
-            fill.Boundary, fill.Width, fill.Height, fill.TileWidth, fill.TileHeight, fill.Angle, fill.OffsetX, fill.OffsetY);
+            fill.Boundary, fill.Width, fill.Height, fill.TileWidth, fill.TileHeight, fill.Angle, fill.OffsetX, fill.OffsetY, fill.Ink, fill.LineWeight);
         public MaterialFill Fill(IReadOnlyDictionary<Guid, MaterialAsset> assets) => new(
             assets.TryGetValue(MaterialId, out var asset) ? asset : throw new InvalidDataException("재료 원본 참조가 없습니다."),
-            SourceRegionId, RegionName, Boundary, Width, Height, TileWidth, TileHeight, Angle, OffsetX, OffsetY);
+            SourceRegionId, RegionName, Boundary, Width, Height, TileWidth, TileHeight, Angle, OffsetX, OffsetY, Ink, LineWeight);
     }
     static Dictionary<Guid, MaterialAsset> ValidateMaterials(Manifest manifest)
     {
@@ -63,7 +63,9 @@ public static partial class ProjectStore
             if (entry.Length > MaterialTextures.MaxEncodedBytes) throw new InvalidDataException("재료 원본 파일이 너무 큽니다.");
             using var stream = entry.Open(); using var buffer = new MemoryStream(); stream.CopyTo(buffer); buffer.Position = 0;
             var pixels = MaterialTextures.Read(buffer, info.Width, info.Height);
-            result.Add(info.Id, new MaterialAsset(info.Id, info.Name, pixels, info.Source, info.Tileable));
+            // A built-in pattern (reserved ID and Source) loads as the shared canonical instance and is redrawn from geometry.
+            var asset = new MaterialAsset(info.Id, info.Name, pixels, info.Source, info.Tileable);
+            result.Add(info.Id, HatchPatterns.TryGet(asset, out var pattern) ? HatchPatternRenderer.Create(pattern) : asset);
         }
         return result;
     }

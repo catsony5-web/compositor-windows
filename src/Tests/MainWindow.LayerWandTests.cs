@@ -163,7 +163,7 @@ public sealed partial class MainWindow
                 var names = Tiles(panel!).Select(AutomationProperties.GetName).ToArray();
                 Check(names.Length == SelectionMaterials.Presets.Length && names[0] == DrawingCleanup.MaterialName(MaterialKind.Wood), "Swatches are missing or not in floor order: " + string.Join(", ", names));
                 Check(Tiles(panel!).All(t => t.Content is StackPanel { Children.Count: 2 } c && c.Children[0] is Border { Background: ImageBrush { ImageSource: not null } } && double.IsNaN(t.Width)), "A swatch lacks its image or uses a fixed width");
-                Check(panel!.Children.OfType<Button>().Any(b => AutomationProperties.GetName(b) == "이미지로 재질 추가…"), "The own-image option is missing");
+                Check(Descendants(panel!).OfType<Button>().Any(b => AutomationProperties.GetName(b) == "이미지로 재질 추가…"), "The own-image option is missing");
                 w.doc.ActiveId = Guid.Empty; w.selectedLayers.Clear(); w.Refresh(false);
                 Check(w.selectionMaterialPanel != null, "Swatches disappeared when no layer was active");
                 w.selection = null; w.Refresh(false);
@@ -417,7 +417,17 @@ public sealed partial class MainWindow
     }
 
     static string? Header(StackPanel panel) => panel.Children.OfType<SectionHeader>().FirstOrDefault()?.Key;
-    static Button[] Tiles(StackPanel panel) => panel.Children.OfType<UniformGrid>().SelectMany(g => g.Children.OfType<Button>()).ToArray();
+    // Swatch buttons only (Tag is their choice); the palette's tab row is not counted.
+    internal static Button[] Tiles(StackPanel panel) => Descendants(panel).OfType<Button>().Where(b => b.Tag is SelectionMaterialChoice).ToArray();
+    internal static IEnumerable<UIElement> Descendants(Panel panel)
+    {
+        foreach (UIElement child in panel.Children)
+        {
+            yield return child;
+            var inner = child switch { Panel p => p, Border { Child: Panel p } => p, _ => null };
+            if (inner != null) foreach (var nested in Descendants(inner)) yield return nested;
+        }
+    }
 
     // A 200×160 plan: paper, a wall ring (10–190 × 10–150, 10 px thick) and a floor hatch in the left room.
     static Document Plan()

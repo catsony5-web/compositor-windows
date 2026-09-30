@@ -38,7 +38,7 @@ public sealed class LayerRow : Grid
 
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 4, 4, 4) };
         labels.Children.Add(Loc.Keep(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = layer.Name }));
-        var kind = layer.Kind switch { LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group => "그룹", _ => "이미지" };
+        var kind = layer.Kind switch { LayerKind.Material when HatchPatterns.TryGet(layer.Material?.Asset, out _) => "해치 패턴", LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group => "그룹", _ => "이미지" };
         var detail = description ?? $"{kind} · {layer.Opacity * 100:0}%";
         if (layer.Clipped) detail += " · 클리핑";
         if (layer.Mask != null) detail += " · 마스크";
@@ -89,7 +89,8 @@ public sealed class LayerRow : Grid
     }
 
     // Drawing line work is mostly dark; it sits on paper as it does on the canvas.
-    internal static Brush ThumbnailBacking(Layer layer) => layer.Kind == LayerKind.Vector || layer.Vector != null ? Theme.Paper : Theme.Input;
+    // Linework and transparent hatch patterns show on paper.
+    internal static Brush ThumbnailBacking(Layer layer) => layer.Kind == LayerKind.Vector || layer.Vector != null || HatchPatterns.TryGet(layer.Material?.Asset, out _) ? Theme.Paper : Theme.Input;
 
     static Button IconButton(UIElement icon, string tooltip, Action click)
     {

@@ -54,6 +54,7 @@ public sealed partial class MainWindow
         CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
         CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
         Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf")), "import-cad-cleanup", 940, 700);
+        Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf"), HatchTreatment.Pattern), "import-cad-cleanup-patterns", 940, 700);
         Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg")), "import-cad-batch", 940, 700);
         Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), quick: true), "import-cad-quick", 940, 700);
         Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), failed: true), "import-cad-skip", 940, 700);
@@ -158,6 +159,7 @@ public sealed partial class MainWindow
         Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
         ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
         RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
+        RenderHatchPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
         RenderShadowPreviews(Capture, CapturePane);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.

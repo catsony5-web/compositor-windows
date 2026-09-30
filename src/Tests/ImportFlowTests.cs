@@ -25,7 +25,7 @@ public static class ImportFlowFixtures
         cad.Entities.Add(new Line { StartPoint = new XYZ(0, 0, 0), EndPoint = new XYZ(200, 0, 0), Layer = wall });
         cad.Entities.Add(new Line { StartPoint = new XYZ(0, 140, 0), EndPoint = new XYZ(200, 140, 0), Layer = wall });
         cad.Entities.Add(new Line { StartPoint = new XYZ(0, 60, 0), EndPoint = new XYZ(200, 60, 0), Layer = furn });
-        var hatch = new Hatch { Pattern = new HatchPattern("AR-CONC"), Layer = hatches };
+        var hatch = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern("AR-CONC"), Layer = hatches };
         var loop = new Hatch.BoundaryPath(); loop.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 100, 0), new XYZ(180, 100, 0), new XYZ(180, 180, 0), new XYZ(20, 180, 0) }, true));
         hatch.Paths.Add(loop); cad.Entities.Add(hatch);
         string file = Path.Combine(directory, name); DxfWriter.Write(file, cad); return file;

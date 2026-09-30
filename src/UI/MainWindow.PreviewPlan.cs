@@ -21,7 +21,7 @@ public sealed partial class MainWindow
             Add(new LwPolyline(new XY[] { new(x, y), new(x + w, y), new(x + w, y + h), new(x, y + h) }) { IsClosed = true }, layer);
         void Fill(string pattern, params XYZ[] points)
         {
-            var fill = new Hatch { Pattern = new HatchPattern(pattern) }; var loop = new Hatch.BoundaryPath();
+            var fill = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern(pattern) }; var loop = new Hatch.BoundaryPath();
             loop.Edges.Add(new Hatch.BoundaryPath.Polyline(points, true)); fill.Paths.Add(loop); Add(fill, hatch);
         }
         Box(0, 0, 600, 400, wall); Box(20, 20, 560, 360, wall); Box(300, 20, 20, 250, wall);
@@ -35,7 +35,7 @@ public sealed partial class MainWindow
         Add(new Line { StartPoint = new XYZ(0, 430, 0), EndPoint = new XYZ(600, 430, 0) }, dims);
         Add(new TextEntity { Value = "6000", InsertPoint = new XYZ(280, 438, 0), Height = 16 }, dims);
         string path = Path.Combine(directory, "평면 예시.dxf"); DxfWriter.Write(path, cad);
-        foreach (var (name, cleanup) in new[] { ("cad-cleanup-before", (CadCleanup?)null), ("cad-cleanup-after", new CadCleanup()) })
+        foreach (var (name, cleanup) in new[] { ("cad-cleanup-before", (CadCleanup?)null), ("cad-cleanup-after", new CadCleanup()), ("cad-cleanup-after-patterns", new CadCleanup(Hatches: HatchTreatment.Pattern)) })
         {
             var result = CompatibilityImport.ReadAsync(path, new(CadLongEdge: 900, CadLayout: "*Model_Space", CadStructure: CadImportStructure.Layers, SeparateLayers: true, Cleanup: cleanup)).GetAwaiter().GetResult();
             var image = Imaging.Render(result.Document);

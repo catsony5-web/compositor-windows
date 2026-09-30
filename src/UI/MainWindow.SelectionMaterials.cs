@@ -20,6 +20,10 @@ public sealed partial class MainWindow
     // AddedAsset: the library entry this flow registered for the layer's current material, if any.
     sealed record SelectionMaterialTarget(Document Document, Selection Selection, Guid LayerId, Guid? AddedAsset);
     internal sealed record SelectionMaterialChoice(MaterialAsset Asset, string Name, bool Preset);
+    // The palette's two kinds of swatches: material images (presets and the document's own) and line hatch patterns.
+    internal enum MaterialPaletteTab { Images, Patterns }
+    // Remembered for the session; a target layer that already holds a pattern opens on patterns.
+    internal MaterialPaletteTab materialPaletteTab = MaterialPaletteTab.Images;
     SelectionMaterialCache? selectionMaterialCache;
     SelectionMaterialTarget? selectionMaterialTarget;
     internal StackPanel? selectionMaterialPanel;
@@ -56,7 +60,8 @@ public sealed partial class MainWindow
         var presetIds = presets.Select(choice => choice.Asset.Id).ToHashSet();
         IReadOnlyList<MaterialAsset> assets;
         try { assets = MaterialEditing.Assets(doc); } catch (InvalidDataException) { assets = []; }
-        var custom = assets.Where(asset => !presetIds.Contains(asset.Id) && !asset.Source.StartsWith("morupixel:preset/", StringComparison.Ordinal))
+        var custom = assets.Where(asset => !presetIds.Contains(asset.Id) && !asset.Source.StartsWith("morupixel:preset/", StringComparison.Ordinal)
+                && !asset.Source.StartsWith(HatchPatterns.SourcePrefix, StringComparison.Ordinal))
             .Select(asset => (Asset: asset, Rank: SelectionMaterials.Named(asset.Name) is { } kind ? Array.IndexOf(suggestion.Order.ToArray(), kind) : -1)).ToArray();
         var result = custom.Where(c => c.Rank < 0).Select(c => new SelectionMaterialChoice(c.Asset, c.Asset.Name, false)).ToList();
         for (int i = 0; i < presets.Length; i++)
@@ -103,21 +108,71 @@ public sealed partial class MainWindow
             Theme.CaptionSize, Theme.Subtle);
         hint.Margin = new Thickness(2, 0, 2, 6); panel.Children.Add(hint);
         var current = target?.Material?.Asset.Id;
-        var tiles = SelectionMaterialChoices(suggestion).Select(choice => MaterialTile(choice, choice.Asset.Id == current, target != null));
-        panel.Children.Add(QuickActions.Grid(4, tiles, 76));
-        panel.Children.Add(Theme.ActionRow("이미지로 재질 추가…", () => Guard(() => { CommitFocusedInspectorField(); ChooseSelectionMaterialImage(); }),
-            "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다.", Theme.Glyphs.Image));
+        var tab = target?.Material?.Asset is { } held && HatchPatterns.TryGet(held, out _) ? MaterialPaletteTab.Patterns : materialPaletteTab;
+        panel.Children.Add(MaterialPalette(tab, current, target != null, (asset, name) => ApplySelectionMaterial(asset, name),
+            SelectionMaterialChoices(suggestion), SelectionMaterials.PatternOrder(suggestion.Surface),
+            () => ChooseSelectionMaterialImage(), "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다."));
         properties.Children.Add(panel);
     }
 
-    Button MaterialTile(SelectionMaterialChoice choice, bool current, bool swapping)
+    internal static SelectionMaterialChoice PatternChoice(HatchPattern pattern) => new(HatchPatternRenderer.Create(pattern), HatchPatterns.Name(pattern), true);
+
+    // Tabs [재질 이미지 | 해치 패턴] above the swatch grid. Shared by the selection section and the
+    // material layer's properties; switching tabs only replaces the grid below.
+    internal FrameworkElement MaterialPalette(MaterialPaletteTab tab, Guid? currentAssetId, bool swapping, Action<MaterialAsset, string> apply,
+        IReadOnlyList<SelectionMaterialChoice> imageChoices, IReadOnlyList<HatchPattern> patternOrder, Action? addImage = null, string? addImageTip = null)
     {
-        var button = Theme.Button("", () => Guard(() => ApplySelectionMaterial(choice.Asset, choice.Name)),
+        var palette = new StackPanel();
+        var tabs = new SegmentedChoice<MaterialPaletteTab>([(MaterialPaletteTab.Images, "재질 이미지"), (MaterialPaletteTab.Patterns, "해치 패턴")], tab) { Margin = new Thickness(2, 0, 2, 8) };
+        foreach (var button in tabs.Buttons)
+        {
+            button.MinWidth = 0; button.Padding = new Thickness(10, 5, 10, 5);
+            if (button.Content is string caption) button.Content = new KeepWordsTextBlock { Text = caption, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
+        }
+        palette.Children.Add(tabs);
+        var body = new StackPanel(); palette.Children.Add(body);
+        void Show(MaterialPaletteTab shown)
+        {
+            body.Children.Clear();
+            if (shown == MaterialPaletteTab.Patterns)
+            {
+                var tiles = patternOrder.Select(PatternChoice).Select(choice => MaterialTile(choice, choice.Asset.Id == currentAssetId, swapping, apply));
+                body.Children.Add(QuickActions.Grid(4, tiles, 76));
+                var note = Theme.Label("도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.", Theme.CaptionSize, Theme.Subtle); note.Margin = new Thickness(2, 0, 2, 4);
+                body.Children.Add(note);
+                return;
+            }
+            body.Children.Add(QuickActions.Grid(4, imageChoices.Select(choice => MaterialTile(choice, choice.Asset.Id == currentAssetId, swapping, apply)), 76));
+            if (addImage != null)
+                body.Children.Add(Theme.ActionRow("이미지로 재질 추가…", () => Guard(() => { CommitFocusedInspectorField(); addImage(); }), addImageTip, Theme.Glyphs.Image));
+        }
+        tabs.Changed += shown => { materialPaletteTab = shown; Show(shown); };
+        Show(tab);
+        return palette;
+    }
+
+    Button MaterialTile(SelectionMaterialChoice choice, bool current, bool swapping, Action<MaterialAsset, string>? apply = null)
+    {
+        apply ??= (asset, name) => ApplySelectionMaterial(asset, name);
+        var button = Theme.Button("", () => Guard(() => apply(choice.Asset, choice.Name)),
             swapping ? "방금 만든 재질 레이어를 이 재질로 바꾸기" : "선택 영역에 이 재질로 레이어 만들기");
+        button.Tag = choice;
         var content = new StackPanel();
-        // The swatch stretches with its column; the texture fills it without distortion.
-        var texture = new ImageBrush(MaterialThumbnail(choice.Asset)) { Stretch = Stretch.UniformToFill }; texture.Freeze();
-        var swatch = new Border { Height = 46, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = current ? Theme.Accent : Theme.Stroke, Background = texture };
+        Border swatch;
+        if (HatchPatterns.TryGet(choice.Asset, out var pattern))
+        {
+            // Patterns show on paper (white, also in the dark theme), repeated at a fixed scale so they stay crisp and seamless.
+            var tiled = new ImageBrush(HatchPatternRenderer.Swatch(pattern, 96)) { TileMode = TileMode.Tile, Viewport = new Rect(0, 0, 48, 48), ViewportUnits = BrushMappingMode.Absolute, Stretch = Stretch.Fill };
+            tiled.Freeze();
+            swatch = new Border { Height = 46, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = current ? Theme.Accent : Theme.Stroke, Background = Brushes.White,
+                Child = new System.Windows.Shapes.Rectangle { Fill = tiled, RadiusX = 4, RadiusY = 4 } };
+        }
+        else
+        {
+            // The swatch stretches with its column; the texture fills it without distortion.
+            var texture = new ImageBrush(MaterialThumbnail(choice.Asset)) { Stretch = Stretch.UniformToFill }; texture.Freeze();
+            swatch = new Border { Height = 46, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = current ? Theme.Accent : Theme.Stroke, Background = texture };
+        }
         content.Children.Add(swatch);
         var label = new TextBlock
         {
@@ -133,7 +188,13 @@ public sealed partial class MainWindow
         return button;
     }
 
-    static BitmapSource MaterialThumbnail(MaterialAsset asset) => materialThumbnails.GetValue(asset.Pixels, pixels => pixels.Thumbnail(96));
+    static BitmapSource MaterialThumbnail(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern) ? HatchPatternRenderer.Swatch(pattern, 96)
+        : materialThumbnails.GetValue(asset.Pixels, pixels => pixels.Thumbnail(96));
+
+    // Layer name for a material: built-in swatches in the display language, a user's image by its own name.
+    static string MaterialLayerName(MaterialAsset asset, string displayName) => HatchPatterns.TryGet(asset, out _)
+        ? Loc.T("패턴 · ") + Loc.T(displayName)
+        : Loc.T("재질 · ") + (HatchPatterns.IsBuiltInMaterial(asset) ? Loc.T(displayName) : displayName);
 
     void ChooseSelectionMaterialImage()
     {
@@ -163,8 +224,7 @@ public sealed partial class MainWindow
         bool known = library.Any(a => a.Id == asset.Id);
         if (!known && library.Count >= MaterialEditing.MaxAssets) { status.Text = "재료 라이브러리가 가득 찼습니다. 쓰지 않는 재질 레이어를 정리하세요."; return null; }
         // Built-in swatches are named in the display language; the user's own image keeps its name.
-        bool preset = asset.Source.StartsWith("morupixel:preset/", StringComparison.Ordinal);
-        string layerName = Loc.T("재질 · ") + (preset ? Loc.T(displayName) : displayName);
+        string layerName = MaterialLayerName(asset, displayName);
         if (SelectionMaterialLayer() is { Material: { } fill } existing)
         {
             if (fill.Asset.Id == asset.Id) { status.Text = "이미 이 재질이 적용되어 있습니다."; return existing; }
@@ -173,7 +233,8 @@ public sealed partial class MainWindow
             {
                 if (!known) doc.Materials.Add(asset);
                 var layer = doc.Layers.Single(l => l.Id == id);
-                var replacement = fill with { Asset = asset, TileHeight = fill.TileWidth * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width) };
+                // Size, the user's vertical ratio, direction, ink and line weight carry over.
+                var replacement = MaterialEditing.Swap(fill, asset);
                 MaterialEditing.ValidateFill(replacement, layer.Pixels);
                 layer.Pixels = MaterialRenderer.Render(replacement); layer.Material = replacement; layer.Name = layerName;
                 // An entry this flow registered for the material swapped away leaves with it once no layer uses it.
@@ -203,8 +264,8 @@ public sealed partial class MainWindow
             }
             var area = MaterialEditing.Region(doc, "선택 영역", boundary, "selection");
             doc.MaterialRegions.Add(area);
-            double tile = Math.Clamp(Math.Max(doc.Width, doc.Height) / 14d, 40, 320);
-            var layer = MaterialEditing.Apply(doc, asset.Id, area.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
+            double tile = MaterialEditing.DefaultTile(doc.Width, doc.Height);
+            var layer = MaterialEditing.Apply(doc, asset.Id, area.Id, tile, tile * MaterialEditing.Aspect(asset));
             layer.Name = layerName;
             var place = SelectionMaterials.Placement(doc, boundary.Bounds);
             if (place == null) layer.Category = LayerCategory.Photo;

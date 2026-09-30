@@ -36,7 +36,7 @@ public sealed record RegionPath(string Data, double M11 = 1, double M12 = 0, dou
 }
 public sealed record MaterialRegion(Guid Id, string Name, RegionPath Path, string Source, Guid? SourceLayerId = null);
 public sealed record MaterialFill(MaterialAsset Asset, Guid SourceRegionId, string RegionName, RegionPath Boundary, int Width, int Height,
-    double TileWidth, double TileHeight, double Angle = 0, double OffsetX = 0, double OffsetY = 0);
+    double TileWidth, double TileHeight, double Angle = 0, double OffsetX = 0, double OffsetY = 0, uint Ink = 0, double LineWeight = 1);
 
 public static class MaterialEditing
 {
@@ -93,8 +93,8 @@ public static class MaterialEditing
     {
         if (fill == null || fill.SourceRegionId == Guid.Empty || fill.Boundary == null) throw new InvalidDataException("재료 맵핑 정보가 없습니다.");
         Name(fill.RegionName); ValidateAsset(fill.Asset); ValidateSize(fill.Width, fill.Height);
-        if (!new[] { fill.TileWidth, fill.TileHeight, fill.Angle, fill.OffsetX, fill.OffsetY }.All(double.IsFinite) ||
-            fill.TileWidth < 1 || fill.TileHeight < 1 || fill.TileWidth > 100_000 || fill.TileHeight > 100_000 ||
+        if (!new[] { fill.TileWidth, fill.TileHeight, fill.Angle, fill.OffsetX, fill.OffsetY, fill.LineWeight }.All(double.IsFinite) ||
+            fill.TileWidth < 1 || fill.TileHeight < 1 || fill.TileWidth > 100_000 || fill.TileHeight > 100_000 || fill.LineWeight < .1 || fill.LineWeight > 8 ||
             Math.Abs(fill.Angle) > 36000 || Math.Abs(fill.OffsetX) > 100_000 || Math.Abs(fill.OffsetY) > 100_000)
             throw new InvalidDataException("재료의 반복 크기·방향·위치를 확인하세요.");
         var bounds = fill.Boundary.Geometry.Bounds;
@@ -114,6 +114,9 @@ public static class MaterialEditing
             ValidateAsset(asset);
             if (result.TryGetValue(asset.Id, out var previous))
             {
+                // Built-in patterns are redrawn from geometry; copies made by other builds may carry
+                // slightly different fallback pixels and still name the same pattern.
+                if (HatchPatterns.TryGet(previous, out var kept) && HatchPatterns.TryGet(asset, out var next) && kept == next) continue;
                 if (!ReferenceEquals(previous, asset) && (previous.Name != asset.Name || previous.Source != asset.Source || previous.Tileable != asset.Tileable ||
                     previous.Pixels.Width != asset.Pixels.Width || previous.Pixels.Height != asset.Pixels.Height || !previous.Pixels.Data.AsSpan().SequenceEqual(asset.Pixels.Data)))
                     throw new InvalidDataException("같은 재료 ID에 다른 원본이 있습니다.");
@@ -213,6 +216,15 @@ public static class MaterialEditing
         ValidateFill(fill, layer.Pixels, false);
         layer.Pixels = MaterialRenderer.Render(fill); return layer;
     }
+    // Default repeat width for a new material in a document of this size (document pixels).
+    public static double DefaultTile(int width, int height) => Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
+    // Height / width of the asset's pixels.
+    public static double Aspect(MaterialAsset asset) => asset.Pixels.Height / (double)Math.Max(1, asset.Pixels.Width);
+    // The user's vertical ratio: 1 keeps the asset's own proportions.
+    public static double Stretch(MaterialFill fill) => fill.TileHeight / (fill.TileWidth * Aspect(fill.Asset));
+    // Another asset with the same size, ratio, direction, offset, ink and line weight.
+    public static MaterialFill Swap(MaterialFill fill, MaterialAsset asset) => fill with { Asset = asset, TileHeight = fill.TileWidth * Aspect(asset) * Stretch(fill) };
+    public static MaterialFill Sized(MaterialFill fill, double tileWidth, double stretch) => fill with { TileWidth = tileWidth, TileHeight = tileWidth * Aspect(fill.Asset) * stretch };
     public static void TranslateRegions(Document doc, double x, double y)
         => doc.MaterialRegions = doc.MaterialRegions.Select(r => r with { Path = r.Path.Translate(x, y) }).ToList();
 }

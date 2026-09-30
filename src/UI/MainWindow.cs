@@ -475,6 +475,8 @@ public sealed partial class MainWindow : Window
     void OnUp(object sender, MouseButtonEventArgs e) => InteractionUp(sender, e);
     void CancelGesture()
     {
+        // A pending material slider change becomes its own undo step before anything else happens.
+        CommitMaterialPreview(true);
         if (resizingBrush) EndBrushResize(true);
         ResetInteractionTransient();
         if (CancelTransformHandle()) return;

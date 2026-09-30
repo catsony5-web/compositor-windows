@@ -8,7 +8,8 @@ public enum DrawingRole { Structure, Opening, Furniture, Annotation, Hatch, Othe
 
 // How hatches are treated on import: boundaries only, a recommended material per
 // hatch, or one user-supplied material image for every hatch.
-public enum HatchTreatment { Keep, Suggest, Image }
+// Pattern: each hatch becomes the matching built-in line pattern (sand, lawn, brick, …).
+public enum HatchTreatment { Keep, Suggest, Image, Pattern }
 
 public enum MaterialKind { Concrete, Brick, Wood, Tile, Stone, Insulation, Gravel, Diagonal, Solid }
 
@@ -20,7 +21,8 @@ public sealed record CadCleanup(bool LineWeights = true, HatchTreatment Hatches 
 }
 
 public sealed record CadLayerInfo(string Name, DrawingRole Role, int Objects, int Hatches);
-public sealed record CadDrawingInfo(IReadOnlyList<CadLayerInfo> Layers, IReadOnlyDictionary<MaterialKind, int> HatchMaterials);
+public sealed record CadDrawingInfo(IReadOnlyList<CadLayerInfo> Layers, IReadOnlyDictionary<MaterialKind, int> HatchMaterials,
+    IReadOnlyDictionary<HatchPattern, int>? HatchPatternCounts = null);
 
 public static class DrawingCleanup
 {
@@ -100,6 +102,40 @@ public static class DrawingCleanup
             if (keys.Any(key => l.Contains(key, StringComparison.Ordinal))) return kind;
         return role == DrawingRole.Structure ? MaterialKind.Concrete : MaterialKind.Diagonal;
     }
+
+    // Line pattern for a hatch: the pattern name first, then the layer name. SOLID stays a solid fill (null).
+    public static HatchPattern? SuggestPattern(string pattern, string layer, DrawingRole role)
+    {
+        string p = pattern.ToUpperInvariant(), l = layer.ToUpperInvariant();
+        if (p == "SOLID") return null;
+        foreach (var (kind, keys) in patternRules)
+            if (keys.Any(key => p.Contains(key, StringComparison.Ordinal))) return kind;
+        foreach (var (kind, keys) in patternRules)
+            if (keys.Any(key => l.Contains(key, StringComparison.Ordinal))) return kind;
+        return role == DrawingRole.Structure ? HatchPattern.Concrete : HatchPattern.Diagonal;
+    }
+
+    // Pattern and layer name keywords that choose this pattern on CAD import.
+    public static IReadOnlyList<string> PatternKeywords(HatchPattern pattern) => patternRules.Where(r => r.Kind == pattern).SelectMany(r => r.Keys).ToArray();
+
+    static readonly (HatchPattern Kind, string[] Keys)[] patternRules =
+    [
+        (HatchPattern.Concrete, ["CONC", "콘크리트", "몰탈", "MORTAR"]),
+        (HatchPattern.Sand, ["SAND", "모래"]),
+        (HatchPattern.Gravel, ["GRAVEL", "EARTH", "자갈", "토사", "흙"]),
+        (HatchPattern.GrassSparse, ["GRASS", "LAWN", "TURF", "잔디", "PLNT", "조경"]),
+        (HatchPattern.Meadow, ["MEADOW", "풀밭"]),
+        (HatchPattern.Brick, ["BRICK", "BRSTD", "B816", "B88", "벽돌", "조적", "MASN"]),
+        (HatchPattern.Cobble, ["COBBLE", "자연석"]),
+        (HatchPattern.Flagstone, ["STONE", "RSHKE", "FLAG", "석재", "판석"]),
+        (HatchPattern.PavingSmall, ["PAVE", "PAVING", "포장", "보도"]),
+        (HatchPattern.Dots, ["DOTS", "점"]),
+        (HatchPattern.Lines, ["WOOD", "목재", "마루", "LINE"]),
+        (HatchPattern.Crosshatch, ["ANSI37", "CROSS", "NET", "교차"]),
+        (HatchPattern.Grid, ["TILE", "SQUARE", "BOX", "GRID", "타일"]),
+        (HatchPattern.Insulation, ["INSUL", "BATT", "단열"]),
+        (HatchPattern.Diagonal, ["ANSI31", "DIAG", "사선"])
+    ];
 
     static readonly (MaterialKind Kind, string[] Keys)[] materialRules =
     [

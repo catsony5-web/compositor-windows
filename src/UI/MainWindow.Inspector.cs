@@ -142,6 +142,7 @@ public sealed partial class MainWindow
             LayerKind.Text => (Theme.Glyphs.Text, "텍스트 레이어"),
             LayerKind.Adjustment => (Theme.Glyphs.Adjustment, "조정 레이어"),
             LayerKind.Group => (Theme.Glyphs.Folder, "그룹"),
+            LayerKind.Material when HatchPatterns.TryGet(layer.Material?.Asset, out _) => (Theme.Glyphs.Hatch, "해치 패턴 레이어"),
             LayerKind.Material => (Theme.Glyphs.Image, "재료 맵핑 레이어"),
             _ => (Theme.Glyphs.Image, "이미지 레이어")
         };
@@ -154,6 +155,7 @@ public sealed partial class MainWindow
         AddSelectionMaterials();
         AddTextProperties(layer);
         AddShapeProperties(layer);
+        AddMaterialProperties(layer);
 
         properties.Children.Add(Theme.Section("외형"));
 

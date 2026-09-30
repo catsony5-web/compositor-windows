@@ -8,7 +8,7 @@ namespace Compositor.Windows;
 public static partial class AutomationCatalog
 {
     sealed record Field(string Type, string Description, double? Minimum = null, double? Maximum = null,
-        int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null)
+        int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null, bool Ink = false)
     {
         /// <summary>Inside apply_batch an ID field may also name an earlier step's ref as "@name".</summary>
         public JsonObject BatchSchema()
@@ -33,6 +33,7 @@ public static partial class AutomationCatalog
             if (Choices != null) schema["enum"] = new JsonArray(Choices.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
             if (GuidValue) schema["format"] = "uuid";
             if (Color) schema["pattern"] = "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|transparent)$";
+            if (Ink) schema["pattern"] = InkPattern;
             return schema;
         }
     }
@@ -41,6 +42,8 @@ public static partial class AutomationCatalog
     static readonly Field Name = new("string", "Display name.", MaxLength: 4096);
     static readonly Field Path = new("string", "Absolute Windows file path on the computer running Morupixel.", MaxLength: 32767);
     static readonly Field Color = new("string", "#RRGGBB, #AARRGGBB, or transparent.", MaxLength: 11, Color: true);
+    const string InkPattern = "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|default)$";
+    static readonly Field InkColor = new("string", "Hatch pattern ink: #RRGGBB, #AARRGGBB, or default (dark grey). Ignored for image materials.", MaxLength: 9, Ink: true);
     static readonly Field Coordinate = Number(-100_000, 100_000, "Position in parent-layer pixels; document pixels for root layers. See get_capabilities for coordinate conventions.");
     static readonly Dictionary<string, Command> Commands = CreateCommands();
 
@@ -98,7 +101,7 @@ public static partial class AutomationCatalog
                 ("separateLayers", Bool("PSD/PSB: import each layer separately instead of the composite image. Defaults to false.")),
                 ("cadCleanup", Bool("DWG/DXF: apply drawing cleanup (role line weights, hatch materials). Defaults to false.")),
                 ("cadLineWeights", Bool("With cadCleanup: heavier structure, lighter furniture and annotation. Defaults to true.")),
-                ("cadHatches", Choice("suggest", "keep", "image")),
+                ("cadHatches", Choice("suggest", "keep", "image", "pattern")),
                 ("cadMaterialImage", new("string", "With cadHatches=image: absolute path of the material image used for every hatch.", MaxLength: 32767)),
                 ("cadLayerRoles", new("array", "With cadCleanup: role overrides per CAD layer name, e.g. from inspect_file layers.", ArrayShape: "roles"))), "path");
         Add("activate_document", "Activate an existing document by its returned identifier before editing it.", false,
@@ -164,10 +167,14 @@ public static partial class AutomationCatalog
                 ("holes", new("array", "Optional inner contours; at most 2048 points across all contours.", ArrayShape: "holes"))), WriteRequired("name", "source"));
         var pattern = Fields(("materialId", Id), ("tileWidth", Number(1, 100000, "One texture repeat width in layer-local pixels, not millimeters.")),
             ("tileHeight", Number(1, 100000, "One texture repeat height in layer-local pixels.")), ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
-            ("offsetX", Coordinate), ("offsetY", Coordinate), ("name", Name));
-        Add("apply_material", "Create an editable material layer from a registered image and region. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId; can be included in apply_batch.", false,
+            ("offsetX", Coordinate), ("offsetY", Coordinate), ("name", Name), ("ink", InkColor),
+            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Ignored for image materials.")));
+        Add("query_patterns", "List the built-in line hatch patterns (lawn, sand, pavers, brick, …) with their materialId, ordered for a surface. No document is needed; apply_material registers a pattern automatically.", true,
+            Fields(("nameContains", new("string", "Case-insensitive literal substring of patternId, Korean name or display name.", MaxLength: 256)),
+                ("surface", Choice("general", "wall", "floor", "ground"))));
+        Add("apply_material", "Create an editable material layer from a registered image or a built-in hatch pattern (query_patterns) and a region. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId; can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id), ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())) }).ToArray()), WriteRequired("materialId", "regionId", "tileWidth", "tileHeight"));
-        Add("update_material", "Change the source material or repeat size, direction and offset of an existing material layer, preserving its boundary and layer transform. Can be included in apply_batch.", false,
+        Add("update_material", "Change the source material (a registered image or a built-in hatch pattern) or repeat size, direction, offset, pattern ink and line weight of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         return commands;
     }
@@ -217,6 +224,8 @@ public static partial class AutomationCatalog
                 if (field.GuidValue && (!Guid.TryParseExact(text, "D", out var id) || id == Guid.Empty)) throw new ArgumentException($"{key} must be a nonempty GUID returned by Morupixel.");
                 if (field.Color && !Regex.IsMatch(text, "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|transparent)$", RegexOptions.CultureInvariant))
                     throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB, or transparent.");
+                if (field.Ink && !Regex.IsMatch(text, InkPattern, RegexOptions.CultureInvariant))
+                    throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB, or default.");
             }
             else
             {

@@ -48,7 +48,7 @@ public sealed partial class MainWindow
             foreach (var layer in new[] { wall, furniture, hatches }) cad.Layers.Add(layer);
             cad.Entities.Add(new Line { StartPoint = new XYZ(0, 0, 0), EndPoint = new XYZ(200, 0, 0), Layer = wall });
             cad.Entities.Add(new Line { StartPoint = new XYZ(0, 60, 0), EndPoint = new XYZ(200, 60, 0), Layer = furniture });
-            var hatch = new Hatch { Pattern = new HatchPattern("AR-CONC"), Layer = hatches };
+            var hatch = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern("AR-CONC"), Layer = hatches };
             var path = new Hatch.BoundaryPath(); path.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 100, 0), new XYZ(180, 100, 0), new XYZ(180, 180, 0), new XYZ(20, 180, 0) }, true));
             hatch.Paths.Add(path); cad.Entities.Add(hatch);
             string file = Path.Combine(root, name); DxfWriter.Write(file, cad); return file;
