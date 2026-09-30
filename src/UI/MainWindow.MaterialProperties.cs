@@ -59,17 +59,17 @@ public sealed partial class MainWindow
         }
 
         properties.Children.Add(Theme.Section("패턴 크기와 방향"));
-        double baseTile = MaterialEditing.DefaultTile(doc.Width, doc.Height);
-        ParameterSlider Slider(string label, double min, double max, double value, double reset, string? tip, string history, Func<MaterialFill, double, MaterialFill> change)
+        double baseTile = MaterialEditing.DefaultTile(doc.Width, doc.Height, fill.Asset);
+        ParameterSlider Slider(string label, double min, double max, double value, double reset, string? tip, string history, Func<MaterialFill, double, MaterialFill> change, bool logarithmic = false)
         {
-            var slider = new ParameterSlider(label, min, max, value, reset) { ToolTip = tip, IsEnabled = !locked };
+            var slider = new ParameterSlider(label, min, max, value, reset, logarithmic: logarithmic) { ToolTip = tip, IsEnabled = !locked };
             slider.Changed += v => { if (Current()) PreviewMaterialEdit(history, f => change(f, v)); };
             properties.Children.Add(Control(slider)); return slider;
         }
         Slider("크기 %", 10, 1000, fill.TileWidth / baseTile * 100, 100, "100%는 새 재질의 기본 크기입니다. 무늬 간격과 길이가 함께 바뀝니다.", "재질 크기",
-            (f, v) => MaterialEditing.Sized(f, baseTile * v / 100, MaterialEditing.Stretch(f)));
+            (f, v) => MaterialEditing.Sized(f, baseTile * v / 100, MaterialEditing.Stretch(f)), logarithmic: true);
         Slider("세로 비율 %", 25, 400, MaterialEditing.Stretch(fill) * 100, 100, "100%는 원래 비율입니다. 해치 패턴은 무늬 모양을 유지한 채 세로 간격만, 재질 이미지는 이미지를 세로로 늘입니다.", "재질 비율",
-            (f, v) => MaterialEditing.Sized(f, f.TileWidth, v / 100));
+            (f, v) => MaterialEditing.Sized(f, f.TileWidth, v / 100), logarithmic: true);
         Slider("회전 °", -180, 180, NormalizeAngle(fill.Angle), 0, null, "재질 회전", (f, v) => f with { Angle = v });
         if (pattern)
         {
@@ -115,7 +115,9 @@ public sealed partial class MainWindow
     internal void PreviewMaterialEdit(string label, Func<MaterialFill, MaterialFill> change)
     {
         if (!HasDocument) return;
-        if (materialPreview is { } pending && (!ReferenceEquals(pending.Document, doc) || pending.Label != label)) CommitMaterialPreview(true);
+        // Another slider of this panel: record the previous change as its own step, but keep the panel,
+        // so the slider now under the pointer stays bound for the rest of its drag.
+        if (materialPreview is { } pending && (!ReferenceEquals(pending.Document, doc) || pending.Label != label)) CommitMaterialPreview(true, rebuildInspector: false);
         if (materialPreview == null)
         {
             var targets = MaterialTargets();
@@ -145,13 +147,21 @@ public sealed partial class MainWindow
 
     void CommitMaterialPreview() => CommitMaterialPreview(false);
 
+    // A press held inside the properties panel (a slider thumb) postpones the commit; a press anywhere
+    // else (the canvas) does not, so a pending change is never recorded after a later gesture.
+    bool InspectorHoldsPointer() => Mouse.LeftButton == MouseButtonState.Pressed && Mouse.Captured is Visual held && (ReferenceEquals(held, properties) || properties.IsAncestorOf(held));
+
+    // A canvas gesture starts: record a pending material change first, so its undo step comes before the gesture's.
+    void SettleMaterialPreview() { if (materialPreview != null) CommitMaterialPreview(true); }
+
     // Re-renders the pixels once and records one undo step. While the slider is still held the
-    // commit waits, so the inspector is not rebuilt under the pointer.
-    void CommitMaterialPreview(bool force)
+    // commit waits, so the inspector is not rebuilt under the pointer; a forced commit from another
+    // slider of the panel keeps the panel (rebuildInspector false).
+    void CommitMaterialPreview(bool force, bool rebuildInspector = true)
     {
         materialPreviewTimer?.Stop();
         if (materialPreview is not { } preview) return;
-        if (!force && Mouse.LeftButton == MouseButtonState.Pressed) { materialPreviewTimer?.Start(); pendingInspectorCommit = CommitMaterialPreview; return; }
+        if (!force && InspectorHoldsPointer()) { materialPreviewTimer?.Start(); pendingInspectorCommit = CommitMaterialPreview; return; }
         materialPreview = null;
         if (pendingInspectorCommit is { } commit && commit.Target == this && commit.Method.Name == nameof(CommitMaterialPreview)) pendingInspectorCommit = null;
         if (!ReferenceEquals(preview.Document, doc))
@@ -164,7 +174,7 @@ public sealed partial class MainWindow
         {
             foreach (var id in preview.Fills.Keys)
                 if (doc.Layers.FirstOrDefault(l => l.Id == id) is { Material: { } fill } layer) layer.Pixels = MaterialRenderer.Render(fill);
-            doc.Validate(); history.Commit(preview.Label, preview.Before, doc); Refresh();
+            doc.Validate(); history.Commit(preview.Label, preview.Before, doc); Refresh(rebuildProperties: rebuildInspector);
         }
         catch (Exception error) { doc = preview.Before; Refresh(); if (headlessTesting) throw; MessageDialog.Show(this, error.Message); }
     }

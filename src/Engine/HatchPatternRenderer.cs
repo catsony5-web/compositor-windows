@@ -42,16 +42,23 @@ public static class HatchPatternRenderer
     // The frozen fallback tile stored in documents. Once released, a generator version's output must not change.
     internal static Raster Canonical(HatchPattern p) => Raster.FromBitmap(Draw(p, CanonicalSize, CanonicalSize, CanonicalPenScale, HatchPatterns.DefaultInk, default, true));
 
-    // Tile pixel size for a repeat of tileWidth×tileHeight document px shown at deviceScale: the width
-    // is rounded up to steps of 2^(1/8) so nearby zooms and sizes share a tile.
+    // Tile pixel size for a repeat of tileWidth×tileHeight document px shown at deviceScale: the nearest
+    // whole device pixels, so the brush maps the tile (almost) 1:1 and thin lines are not resampled.
+    // Repeats smaller than MinTileSide are drawn at that size; larger than MaxTileSide use Vector.
     public static (int Width, int Height) TileSize(double tileWidth, double tileHeight, double deviceScale)
     {
         if (!double.IsFinite(deviceScale) || deviceScale <= 0) deviceScale = 1;
-        double wanted = Math.Max(1e-6, tileWidth * deviceScale);
-        double stepped = Math.Pow(2, Math.Ceiling(8 * Math.Log2(wanted) - 1e-9) / 8);
-        int width = (int)Math.Clamp(Math.Ceiling(stepped - 1e-9), MinTileSide, MaxTileSide);
-        int height = (int)Math.Max(1, Math.Round(width * tileHeight / tileWidth));
-        return Fit(width, height);
+        double w = Math.Max(1e-6, tileWidth * deviceScale), h = Math.Max(1e-6, tileHeight * deviceScale);
+        double clamp = w < MinTileSide ? MinTileSide / w : w > MaxTileSide ? MaxTileSide / w : 1;
+        return Fit((int)Math.Max(1, Math.Round(w * clamp)), (int)Math.Max(1, Math.Round(Math.Min(h * clamp, int.MaxValue / 2d))));
+    }
+
+    // A repeat this large on the device is drawn from vector marks instead of an upscaled bitmap tile.
+    public static bool NeedsVector(double tileWidth, double tileHeight, double deviceScale)
+    {
+        if (!double.IsFinite(deviceScale) || deviceScale <= 0) deviceScale = 1;
+        double w = tileWidth * deviceScale, h = tileHeight * deviceScale;
+        return w > MaxTileSide || h > MaxTileSide || w * h > MaxTilePixels;
     }
 
     static (int Width, int Height) Fit(int width, int height)
@@ -149,21 +156,39 @@ public static class HatchPatternRenderer
         return bitmap;
     }
 
+    // Marks thinner or smaller than this in device px are drawn at the minimum with their ink thinned
+    // in proportion, so a zoomed-out view keeps the same tone as 100% and the exported pixels.
+    const double MinStroke = .35, MinDot = .8;
+    // Fill slots: dots by pen class (4–6), filled blobs in slot 7.
+    const int BlobSlot = 7;
+
+    static SolidColorBrush Ink(uint ink, double alpha)
+    {
+        var brush = new SolidColorBrush(Color.FromArgb((byte)Math.Clamp(Math.Round(alpha), 0, 255), (byte)(ink >> 16), (byte)(ink >> 8), (byte)ink)); brush.Freeze();
+        return brush;
+    }
+
+    // A thin horizontal or vertical line is centred on a pixel row (odd widths) or edge (even widths),
+    // so at 1:1 it is one crisp row of ink rather than two half-grey rows.
+    static void Snap(List<Point> points, double pen)
+    {
+        if (points.Count != 2) return;
+        bool centre = pen <= 1.5 || (int)Math.Round(pen) % 2 == 1;
+        double Snapped(double c) => centre ? Math.Floor(c) + .5 : Math.Round(c);
+        var a = points[0]; var b = points[1];
+        if (Math.Abs(a.Y - b.Y) < 1e-9) { double y = Snapped(a.Y); points[0] = new Point(a.X, y); points[1] = new Point(b.X, y); }
+        else if (Math.Abs(a.X - b.X) < 1e-9) { double x = Snapped(a.X); points[0] = new Point(x, a.Y); points[1] = new Point(x, b.Y); }
+    }
+
     // Draws the marks on a transparent width×height tile. Every mark whose pixel bounds (with the pen)
     // cross an edge is drawn again shifted by one tile, so the tile repeats without seams.
     static BitmapSource Draw(HatchPattern p, int width, int height, double penScale, uint ink, CancellationToken token, bool reference)
     {
         var geometry = Geometry(p);
-        uint alpha = (ink >> 24 & 0xFF) * geometry.InkAlphaScale / 255;
-        var brush = new SolidColorBrush(Color.FromArgb((byte)alpha, (byte)(ink >> 16), (byte)(ink >> 8), (byte)ink)); brush.Freeze();
+        double alpha = (ink >> 24 & 0xFF) * geometry.InkAlphaScale / 255d;
         var widths = geometry.PenDoc.Select(d => d * penScale).ToArray();
-        var strokes = new StreamGeometry[4]; var contexts = new StreamGeometryContext?[4];
-        var filled = new StreamGeometry { FillRule = FillRule.Nonzero }; var fill = filled.Open();
-        StreamGeometryContext Stroke(byte pen)
-        {
-            if (contexts[pen] is { } open) return open;
-            strokes[pen] = new StreamGeometry(); return contexts[pen] = strokes[pen].Open();
-        }
+        var strokes = new StreamGeometry?[4]; var strokeContexts = new StreamGeometryContext?[4];
+        var fills = new StreamGeometry?[8]; var fillContexts = new StreamGeometryContext?[8];
         var points = new List<Point>(64);
         var xs = new double[3]; var ys = new double[3];
         try
@@ -176,8 +201,9 @@ public static class HatchPatternRenderer
                 foreach (var offset in mark.Points)
                     points.Add(new Point((mark.Anchor.X + offset.X) * width, mark.Anchor.Y * height + offset.Y * (mark.StretchLocal ? height : width)));
                 bool dot = mark.Filled && points.Count == 1 && IsDot(mark.Pen);
-                double radius = dot ? Math.Max(.8, widths[mark.Pen]) / 2 : 0;
-                double pad = dot ? radius : mark.Filled ? .75 : Math.Max(.35, widths[mark.Pen]) / 2 + .75;
+                double radius = dot ? Math.Max(MinDot, widths[mark.Pen]) / 2 : 0;
+                if (!mark.Filled && mark.StretchLocal) Snap(points, Math.Max(MinStroke, widths[mark.Pen]));
+                double pad = dot ? radius : mark.Filled ? .75 : Math.Max(MinStroke, widths[mark.Pen]) / 2 + .75;
                 double left = double.MaxValue, top = double.MaxValue, right = double.MinValue, bottom = double.MinValue;
                 foreach (var point in points) { left = Math.Min(left, point.X); right = Math.Max(right, point.X); top = Math.Min(top, point.Y); bottom = Math.Max(bottom, point.Y); }
                 left -= pad; right += pad; top -= pad; bottom += pad;
@@ -191,44 +217,98 @@ public static class HatchPatternRenderer
                     if (top < 0) ys[ny++] = height;
                     if (bottom > height) ys[ny++] = -height;
                 }
+                var context = dot ? Open(fills, fillContexts, mark.Pen) : mark.Filled ? Open(fills, fillContexts, BlobSlot) : Open(strokes, strokeContexts, mark.Pen);
                 for (int ix = 0; ix < nx; ix++) for (int iy = 0; iy < ny; iy++)
                 {
                     var shift = new Vector(xs[ix], ys[iy]);
-                    if (dot)
-                    {
-                        var center = points[0] + shift;
-                        fill.BeginFigure(new Point(center.X + radius, center.Y), true, true);
-                        fill.ArcTo(new Point(center.X - radius, center.Y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, false, false);
-                        fill.ArcTo(new Point(center.X + radius, center.Y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, false, false);
-                        continue;
-                    }
-                    var context = mark.Filled ? fill : Stroke(mark.Pen);
+                    if (dot) { Circle(context, points[0] + shift, radius); continue; }
                     context.BeginFigure(points[0] + shift, mark.Filled, mark.Closed);
                     for (int k = 1; k < points.Count; k++) context.LineTo(points[k] + shift, !mark.Filled, true);
                 }
             }
         }
-        finally
-        {
-            fill.Close();
-            foreach (var context in contexts) context?.Close();
-        }
+        finally { Close(fillContexts); Close(strokeContexts); }
         token.ThrowIfCancellationRequested();
-        filled.Freeze();
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
             for (byte pen = 0; pen < strokes.Length; pen++)
             {
                 if (strokes[pen] is not { } stroke) continue;
-                stroke.Freeze();
-                var line = new Pen(brush, Math.Max(.35, widths[pen])) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }; line.Freeze();
+                stroke.Freeze(); double drawn = Math.Max(MinStroke, widths[pen]);
+                var line = new Pen(Ink(ink, alpha * widths[pen] / drawn), drawn) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }; line.Freeze();
                 dc.DrawGeometry(null, line, stroke);
             }
-            dc.DrawGeometry(brush, null, filled);
+            for (int slot = 0; slot < fills.Length; slot++)
+            {
+                if (fills[slot] is not { } filled) continue;
+                filled.Freeze();
+                double tone = slot == BlobSlot ? 1 : Math.Pow(Math.Min(1, widths[slot] / MinDot), 2);
+                dc.DrawGeometry(Ink(ink, alpha * tone), null, filled);
+            }
         }
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual); bitmap.Freeze();
         return bitmap;
+    }
+
+    static StreamGeometryContext Open(StreamGeometry?[] set, StreamGeometryContext?[] contexts, int slot)
+    {
+        if (contexts[slot] is { } open) return open;
+        set[slot] = new StreamGeometry { FillRule = FillRule.Nonzero }; return contexts[slot] = set[slot]!.Open();
+    }
+    static void Close(StreamGeometryContext?[] contexts) { foreach (var context in contexts) context?.Close(); }
+
+    static void Circle(StreamGeometryContext context, Point center, double radius)
+    {
+        context.BeginFigure(new Point(center.X + radius, center.Y), true, true);
+        context.ArcTo(new Point(center.X - radius, center.Y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, false, false);
+        context.ArcTo(new Point(center.X + radius, center.Y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, false, false);
+    }
+
+    public const int MaxVectorTiles = 256;
+
+    // The marks of every repeat that meets `region` (layer px, in the unrotated brush space; tile is the
+    // brush viewport) as vector geometry, for repeats too large for a tile bitmap. WPF rasterises it at
+    // device resolution, so lines stay sharp at any size or zoom. Null when the region spans too many repeats.
+    internal static Drawing? VectorMarks(HatchPattern p, Rect tile, double lineWeight, uint ink, Rect region, CancellationToken token = default)
+    {
+        var geometry = Geometry(p);
+        if (tile.Width <= 0 || tile.Height <= 0 || region.IsEmpty || !double.IsFinite(region.Width + region.Height)) return null;
+        double fi0 = Math.Floor((region.Left - tile.X) / tile.Width) - 1, fi1 = Math.Floor((region.Right - tile.X) / tile.Width) + 1;
+        double fj0 = Math.Floor((region.Top - tile.Y) / tile.Height) - 1, fj1 = Math.Floor((region.Bottom - tile.Y) / tile.Height) + 1;
+        if ((fi1 - fi0 + 1) * (fj1 - fj0 + 1) > MaxVectorTiles) return null;
+        long i0 = (long)fi0, i1 = (long)fi1, j0 = (long)fj0, j1 = (long)fj1;
+        if (ink == 0) ink = HatchPatterns.DefaultInk;
+        double alpha = (ink >> 24 & 0xFF) * geometry.InkAlphaScale / 255d;
+        var strokes = new StreamGeometry?[4]; var strokeContexts = new StreamGeometryContext?[4];
+        var fills = new StreamGeometry?[8]; var fillContexts = new StreamGeometryContext?[8];
+        try
+        {
+            for (long j = j0; j <= j1; j++) for (long i = i0; i <= i1; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                double ox = tile.X + i * tile.Width, oy = tile.Y + j * tile.Height;
+                foreach (var mark in geometry.Marks)
+                {
+                    Point At(Vector offset) => new(ox + (mark.Anchor.X + offset.X) * tile.Width, oy + mark.Anchor.Y * tile.Height + offset.Y * (mark.StretchLocal ? tile.Height : tile.Width));
+                    if (mark.Filled && mark.Points.Length == 1 && IsDot(mark.Pen)) { Circle(Open(fills, fillContexts, mark.Pen), At(mark.Points[0]), geometry.PenDoc[mark.Pen] * lineWeight / 2); continue; }
+                    var context = mark.Filled ? Open(fills, fillContexts, BlobSlot) : Open(strokes, strokeContexts, mark.Pen);
+                    context.BeginFigure(At(mark.Points[0]), mark.Filled, mark.Closed);
+                    for (int k = 1; k < mark.Points.Length; k++) context.LineTo(At(mark.Points[k]), !mark.Filled, true);
+                }
+            }
+        }
+        finally { Close(fillContexts); Close(strokeContexts); }
+        var brush = Ink(ink, alpha); var group = new DrawingGroup();
+        for (int pen = 0; pen < strokes.Length; pen++)
+        {
+            if (strokes[pen] is not { } stroke) continue;
+            stroke.Freeze();
+            var line = new Pen(brush, geometry.PenDoc[pen] * lineWeight) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }; line.Freeze();
+            group.Children.Add(new GeometryDrawing(null, line, stroke));
+        }
+        foreach (var filled in fills) if (filled != null) { filled.Freeze(); group.Children.Add(new GeometryDrawing(brush, null, filled)); }
+        group.Freeze(); return group;
     }
 
     // Same tile with every mark repeated at all nine neighbouring positions: what a seamless tile must equal.
@@ -367,10 +447,12 @@ public static class HatchPatternRenderer
                 });
                 break;
             case HatchPattern.Flagstone:
-                Voronoi(m, 4, 5, 3, Bold);
+                // Drawn at twice the base repeat (HatchPatterns.RepeatScale) with four times the cells, so
+                // the large stones keep their size and the repeat does not read as a lattice.
+                Voronoi(m, 8, 20, 3, Bold);
                 break;
             case HatchPattern.Cobble:
-                Voronoi(m, 6, 6, 3, Medium);
+                Voronoi(m, 12, 24, 3, Medium);
                 break;
             case HatchPattern.Gravel:
                 m.Scatter(13, 13, .95, 0, (at, i, j) =>

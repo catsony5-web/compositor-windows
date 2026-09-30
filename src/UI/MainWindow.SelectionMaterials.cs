@@ -264,7 +264,7 @@ public sealed partial class MainWindow
             }
             var area = MaterialEditing.Region(doc, "선택 영역", boundary, "selection");
             doc.MaterialRegions.Add(area);
-            double tile = MaterialEditing.DefaultTile(doc.Width, doc.Height);
+            double tile = MaterialEditing.DefaultTile(doc.Width, doc.Height, asset);
             var layer = MaterialEditing.Apply(doc, asset.Id, area.Id, tile, tile * MaterialEditing.Aspect(asset));
             layer.Name = layerName;
             var place = SelectionMaterials.Placement(doc, boundary.Bounds);

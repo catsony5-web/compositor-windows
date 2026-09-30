@@ -248,8 +248,9 @@ public static class HatchPatternTests
             int start = Builds(); DesignRenderer.Render(doc, new Rect(0, 0, 256, 256), 263, 263);
             int first = Builds(); DesignRenderer.Render(doc, new Rect(0, 0, 256, 256), 263, 263);
             Check(first > start && Builds() == first, "Rendering the same view twice built the tile again");
+            // Another zoom draws one tile at its own exact pixel size (a shared, resampled tile softened thin lines).
             DesignRenderer.Render(doc, new Rect(0, 0, 256, 256), 268, 268);
-            Check(Builds() == first, "A zoom within one size step built a new tile");
+            Check(Builds() == first + 1 && HatchPatternRenderer.LargestCachedSide == 67, "A new zoom did not build one exact-size tile");
             for (int i = 0; i < 10; i++) HatchPatternRenderer.Tile(HatchPattern.Lines, 2048, 2048 - i, 1, 0);
             Check(HatchPatternRenderer.CacheStats.Bytes <= HatchPatternRenderer.CacheBudgetBytes, "The tile cache exceeded its budget");
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();

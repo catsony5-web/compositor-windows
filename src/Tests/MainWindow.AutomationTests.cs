@@ -535,7 +535,9 @@ public sealed partial class MainWindow
             string regionId = Text(Success(Call(window, "define_region", Write(window, ("source", "polygon"), ("name", "Tri"), ("points", Points())))), "regionId");
             var before = window.doc.Snapshot();
             string unknown = Guid.NewGuid().ToString();
-            Failure(Call(window, "apply_material", Write(window, ("materialId", unknown), ("regionId", regionId), ("tileWidth", 4), ("tileHeight", 4))), "material_not_found");
+            var missingMaterial = FailureError(Call(window, "apply_material", Write(window, ("materialId", unknown), ("regionId", regionId), ("tileWidth", 4), ("tileHeight", 4))));
+            Check(Text(missingMaterial, "code") == "material_not_found" && Text(missingMaterial, "suggestedAction").Contains("query_materials") && Text(missingMaterial, "suggestedAction").Contains("query_patterns"),
+                "A missing material does not point to both material and pattern queries: " + missingMaterial.ToJsonString());
             Failure(Call(window, "apply_material", Write(window, ("materialId", materialId), ("regionId", unknown), ("tileWidth", 4), ("tileHeight", 4))), "region_not_found");
             var batch = FailureError(Call(window, "apply_batch", Batch(window, Step("apply_material", ("materialId", materialId), ("regionId", unknown), ("tileWidth", 4), ("tileHeight", 4)))));
             Check(Text(batch, "code") == "region_not_found" && batch["details"]!["stepIndex"]!.GetValue<int>() == 0, "Batch lost the specific missing-region code: " + batch.ToJsonString());
@@ -578,6 +580,14 @@ public sealed partial class MainWindow
             Check(Mapped().Material!.Ink == 0 && Mapped().Material!.LineWeight == 1.5, "ink=default did not reset or an omitted field changed");
             Failure(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("lineWeight", 20))), "invalid_arguments");
             Failure(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("ink", "red"))), "invalid_arguments");
+            // A fully transparent ink is refused: #00000000 would otherwise read as the default dark grey and #00RRGGBB draw nothing.
+            foreach (var invisible in new[] { "#00000000", "#00FF0000" })
+                Failure(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("ink", invisible))), "invalid_arguments");
+            Check(Mapped().Material!.Ink == 0, "A refused ink changed the fill");
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("ink", "#80FF0000"))));
+            Check(Mapped().Material!.Ink == 0x80FF0000, "A translucent ink was not kept");
+            bool refused = false; try { AutomationMaterials.ParseInk("#00000000"); } catch (ArgumentException) { refused = true; }
+            Check(refused, "ParseInk read a zero-alpha ink as the default");
             string brick = HatchPatterns.StableId(HatchPattern.Brick).ToString();
             Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("materialId", brick))));
             Check(Mapped().Material!.Asset.Id.ToString() == brick && window.doc.Materials.Any(m => m.Id.ToString() == brick), "update_material did not register a new pattern");

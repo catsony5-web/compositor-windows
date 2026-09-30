@@ -111,7 +111,8 @@ public sealed partial class MainWindow
                 for (int c = 0; c < 3; c++)
                 {
                     double z = zooms[c], area = cell / z, x = x0 + c * (cell + pad);
-                    var drawing = MaterialRenderer.Drawing(PreviewFill(HatchPatternRenderer.Create(p), area, area, tile, tile), z);
+                    double repeat = tile * HatchPatterns.RepeatScale(p);
+                    var drawing = MaterialRenderer.Drawing(PreviewFill(HatchPatternRenderer.Create(p), area, area, repeat, repeat), z);
                     dc.PushClip(new RectangleGeometry(new Rect(x, y, cell, cell))); dc.PushTransform(new MatrixTransform(z, 0, 0, z, x, y)); dc.DrawDrawing(drawing); dc.Pop(); dc.Pop();
                     dc.DrawRectangle(null, new Pen(Brushes.Silver, 1), new Rect(x + .5, y + .5, cell - 1, cell - 1));
                     dc.DrawRectangle(Brushes.White, null, new Rect(x + cell - 36, y + cell - 17, 35, 16)); SheetLabel(dc, $"{z * 100:0}%", new Point(x + cell - 33, y + cell - 16), 10);
@@ -132,7 +133,8 @@ public sealed partial class MainWindow
                 for (int c = 0; c < 6; c++)
                 {
                     bool ratio = c < 3; double v = values[c % 3];
-                    var fill = PreviewFill(HatchPatternRenderer.Create(patterns[r]), cell, cell, tile, ratio ? tile * v : tile) with { LineWeight = ratio ? 1 : v };
+                    double repeat = tile * HatchPatterns.RepeatScale(patterns[r]);
+                    var fill = PreviewFill(HatchPatternRenderer.Create(patterns[r]), cell, cell, repeat, ratio ? repeat * v : repeat) with { LineWeight = ratio ? 1 : v };
                     double x = pad + c * (cell + pad) + (ratio ? 0 : pad), y = pad + r * (cell + label + pad) + label;
                     SheetLabel(dc, $"{Loc.T(HatchPatterns.Name(patterns[r]))} · {Loc.T(ratio ? "세로 비율 %" : "선 굵기 %")} {v * 100:0}", new Point(x, y - label + 2), 10);
                     dc.PushTransform(new TranslateTransform(x, y)); dc.DrawDrawing(MaterialRenderer.Drawing(fill, 1)); dc.Pop();
@@ -162,7 +164,7 @@ public sealed partial class MainWindow
         {
             foreach (var (pattern, area) in regions)
             {
-                var fill = new MaterialFill(HatchPatternRenderer.Create(pattern), Guid.NewGuid(), "Site", new RegionPath(PathGeometry.CreateFromGeometry(area).ToString(System.Globalization.CultureInfo.InvariantCulture)), width, height, tile, tile);
+                var fill = new MaterialFill(HatchPatternRenderer.Create(pattern), Guid.NewGuid(), "Site", new RegionPath(PathGeometry.CreateFromGeometry(area).ToString(System.Globalization.CultureInfo.InvariantCulture)), width, height, tile * HatchPatterns.RepeatScale(pattern), tile * HatchPatterns.RepeatScale(pattern));
                 dc.DrawDrawing(MaterialRenderer.Drawing(fill, 1));
             }
             var outline = new Pen(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)), 1.2); outline.Freeze();

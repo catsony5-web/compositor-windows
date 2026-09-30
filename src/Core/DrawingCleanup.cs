@@ -104,6 +104,7 @@ public static class DrawingCleanup
     }
 
     // Line pattern for a hatch: the pattern name first, then the layer name. SOLID stays a solid fill (null).
+    // Layer names match whole tokens (OUTLINE is not LINE), like layer roles.
     public static HatchPattern? SuggestPattern(string pattern, string layer, DrawingRole role)
     {
         string p = pattern.ToUpperInvariant(), l = layer.ToUpperInvariant();
@@ -111,7 +112,7 @@ public static class DrawingCleanup
         foreach (var (kind, keys) in patternRules)
             if (keys.Any(key => p.Contains(key, StringComparison.Ordinal))) return kind;
         foreach (var (kind, keys) in patternRules)
-            if (keys.Any(key => l.Contains(key, StringComparison.Ordinal))) return kind;
+            if (keys.Any(key => Matches(l, key))) return kind;
         return role == DrawingRole.Structure ? HatchPattern.Concrete : HatchPattern.Diagonal;
     }
 
@@ -127,10 +128,10 @@ public static class DrawingCleanup
         (HatchPattern.Meadow, ["MEADOW", "풀밭"]),
         (HatchPattern.Brick, ["BRICK", "BRSTD", "B816", "B88", "벽돌", "조적", "MASN"]),
         (HatchPattern.Cobble, ["COBBLE", "자연석"]),
-        (HatchPattern.Flagstone, ["STONE", "RSHKE", "FLAG", "석재", "판석"]),
+        (HatchPattern.Flagstone, ["STONE", "MARBLE", "GRANITE", "RSHKE", "FLAG", "석재", "판석", "대리석", "화강"]),
         (HatchPattern.PavingSmall, ["PAVE", "PAVING", "포장", "보도"]),
-        (HatchPattern.Dots, ["DOTS", "점"]),
-        (HatchPattern.Lines, ["WOOD", "목재", "마루", "LINE"]),
+        (HatchPattern.Dots, ["DOTS", "점무늬"]),
+        (HatchPattern.Lines, ["WOOD", "PARQ", "HBONE", "FLOOR", "목재", "마루", "원목", "합판", "LINE"]),
         (HatchPattern.Crosshatch, ["ANSI37", "CROSS", "NET", "교차"]),
         (HatchPattern.Grid, ["TILE", "SQUARE", "BOX", "GRID", "타일"]),
         (HatchPattern.Insulation, ["INSUL", "BATT", "단열"]),

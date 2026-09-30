@@ -480,6 +480,14 @@
   "file": "Core/DrawingCleanup.cs"
  },
  {
+  "ko": "대리석",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "화강",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
   "ko": "포장",
   "file": "Core/DrawingCleanup.cs"
  },
@@ -488,7 +496,7 @@
   "file": "Core/DrawingCleanup.cs"
  },
  {
-  "ko": "점",
+  "ko": "점무늬",
   "file": "Core/DrawingCleanup.cs"
  },
  {
@@ -497,6 +505,14 @@
  },
  {
   "ko": "마루",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "원목",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "합판",
   "file": "Core/DrawingCleanup.cs"
  },
  {
@@ -509,22 +525,6 @@
  },
  {
   "ko": "사선",
-  "file": "Core/DrawingCleanup.cs"
- },
- {
-  "ko": "원목",
-  "file": "Core/DrawingCleanup.cs"
- },
- {
-  "ko": "합판",
-  "file": "Core/DrawingCleanup.cs"
- },
- {
-  "ko": "대리석",
-  "file": "Core/DrawingCleanup.cs"
- },
- {
-  "ko": "화강",
   "file": "Core/DrawingCleanup.cs"
  },
  {
@@ -1357,6 +1357,10 @@
  },
  {
   "ko": "면",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "점",
   "file": "Formats/CadCompatibility.cs"
  },
  {
@@ -2496,6 +2500,10 @@
   "file": "UI/Controls/HistogramView.cs"
  },
  {
+  "ko": "해치 패턴",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
   "ko": "재료 맵핑",
   "file": "UI/Controls/LayerRow.cs"
  },
@@ -3040,11 +3048,19 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
+  "ko": "해치 {0}개를 경계선으로만 가져와요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 {0}개는 모두 단색 채움으로 가져와요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
   "ko": "해치 {0}개를 선 패턴으로: {1}",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
-  "ko": "해치 {0}개를 경계선으로만 가져와요.",
+  "ko": "해치 {0}개를 선 패턴으로: {1} · 단색 채움 {2}개",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -5476,6 +5492,22 @@
   "file": "UI/MainWindow.Fill.cs"
  },
  {
+  "ko": "평면 예시.dxf",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "다른 재질로 바꾸기",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "세로 비율 %",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "선 굵기 %",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
   "ko": "패널 너비 조절 · 두 번 클릭하면 기본 너비",
   "file": "UI/MainWindow.Inspector.cs"
  },
@@ -5992,10 +6024,6 @@
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
  {
-  "ko": "다른 재질로 바꾸기",
-  "file": "UI/MainWindow.MaterialProperties.cs"
- },
- {
   "ko": "내 재질 이미지를 문서에 등록하고 이 레이어의 재질로 바꿉니다.",
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
@@ -6012,10 +6040,6 @@
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
  {
-  "ko": "세로 비율 %",
-  "file": "UI/MainWindow.MaterialProperties.cs"
- },
- {
   "ko": "100%는 원래 비율입니다. 해치 패턴은 무늬 모양을 유지한 채 세로 간격만, 재질 이미지는 이미지를 세로로 늘입니다.",
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
@@ -6025,10 +6049,6 @@
  },
  {
   "ko": "재질 회전",
-  "file": "UI/MainWindow.MaterialProperties.cs"
- },
- {
-  "ko": "선 굵기 %",
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
  {
@@ -6486,10 +6506,6 @@
  {
   "ko": "픽셀 레이어 또는 편집할 마스크를 선택하세요.",
   "file": "UI/MainWindow.PixelCommands.cs"
- },
- {
-  "ko": "평면 예시.dxf",
-  "file": "UI/MainWindow.Preview.cs"
  },
  {
   "ko": "2층 평면도.dwg",
@@ -6981,10 +6997,6 @@
  },
  {
   "ko": "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다.",
-  "file": "UI/MainWindow.SelectionMaterials.cs"
- },
- {
-  "ko": "해치 패턴",
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {

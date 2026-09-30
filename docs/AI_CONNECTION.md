@@ -81,7 +81,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 적용 영역 등록·조회 | `morupixel_define_region`, `morupixel_query_regions` |
 | 재료 적용·패턴 변경 | `morupixel_apply_material`, `morupixel_update_material` |
 
-기본 해치 패턴 19종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, `#AARRGGBB`, `default`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그립니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
+기본 해치 패턴 19종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, 알파 01~FF의 `#AARRGGBB`, `default`; 완전히 투명한 잉크는 `invalid_arguments`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그리며, `export_image`의 `scale`이 1이 아니면 출력 크기로 다시 그려 내보냅니다. 없는 패턴 ID는 `material_not_found`이며 `query_patterns`로 올바른 ID를 찾습니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
 
 재료 작업은 **이미지 준비 → 원본 등록 → 영역 지정 → 적용 → 미리보기** 순서입니다. 닫힌 도형·CAD 경로, 현재 선택 영역, 직접 지정한 다각형을 사용할 수 있습니다. 재료와 경계를 저장하고 반복 크기·회전·위치·원본 교체를 지원합니다. [재료 맵핑 안내와 요청 예시](MATERIAL_MAPPING.md)
 

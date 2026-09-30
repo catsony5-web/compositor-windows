@@ -25,7 +25,8 @@ internal sealed partial class CompatibilityDialog
         new HatchChoice(HatchTreatment.Keep, "그대로 두기 (경계선만)"),
         new HatchChoice(HatchTreatment.Image, "내 재질 이미지로 채우기…"),
         new HatchChoice(HatchTreatment.Pattern, "선 해치 패턴으로 채우기") }, SelectedIndex = 0 };
-    readonly TextBlock hatchSummary = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Subtle, FontSize = Theme.CaptionSize, Margin = new Thickness(3, 0, 3, 10) };
+    // Keeps pattern names whole when the summary wraps ("가로줄 2", not "가로" / "줄 2").
+    readonly TextBlock hatchSummary = new KeepWordsTextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Subtle, FontSize = Theme.CaptionSize, Margin = new Thickness(3, 0, 3, 10) };
     readonly Expander roleExpander = new() { Header = "레이어 역할", Margin = new Thickness(0, 4, 0, 0) };
     // Collapsed by default so the beginner view fits; the header states what will be applied.
     readonly Expander cleanupExpander = new() { Margin = new Thickness(0, 8, 0, 0) };
@@ -119,9 +120,18 @@ internal sealed partial class CompatibilityDialog
             {
                 // Each material keeps its count on the same line (no-break space).
                 HatchTreatment.Suggest => $"해치 {total:N0}개 추천: {string.Join(" · ", drawingInfo.HatchMaterials.OrderByDescending(p => p.Value).Select(p => $"{Loc.T(DrawingCleanup.MaterialName(p.Key))}\u00A0{p.Value}"))}",
-                HatchTreatment.Pattern => $"해치 {total:N0}개를 선 패턴으로: {string.Join(" · ", (drawingInfo.HatchPatternCounts ?? new Dictionary<HatchPattern, int>()).OrderByDescending(p => p.Value).Select(p => $"{Loc.T(HatchPatterns.Name(p.Key))}\u00A0{p.Value}"))}",
+                HatchTreatment.Pattern => PatternSummary(total, drawingInfo.HatchPatternCounts ?? new Dictionary<HatchPattern, int>()),
                 _ => $"해치 {total:N0}개를 경계선으로만 가져와요."
             };
+    }
+
+    // SOLID hatches stay solid fills: they are counted apart from the line patterns.
+    internal static string PatternSummary(int total, IReadOnlyDictionary<HatchPattern, int> patterns)
+    {
+        int lines = patterns.Values.Sum(), solid = Math.Max(0, total - lines);
+        string list = string.Join(" · ", patterns.OrderByDescending(p => p.Value).Select(p => $"{Loc.T(HatchPatterns.Name(p.Key))}\u00A0{p.Value}"));
+        if (lines == 0) return $"해치 {total:N0}개는 모두 단색 채움으로 가져와요.";
+        return solid == 0 ? $"해치 {lines:N0}개를 선 패턴으로: {list}" : $"해치 {lines:N0}개를 선 패턴으로: {list} · 단색 채움 {solid:N0}개";
     }
 
     internal static CadDrawingInfo SampleDrawing => new(

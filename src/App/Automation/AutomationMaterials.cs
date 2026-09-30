@@ -17,13 +17,15 @@ public static class AutomationMaterials
         };
     }
     public static string Ink(uint ink) => ink == 0 ? "default" : $"#{ink:X8}";
-    /// <summary>"default" → 0; "#RRGGBB" (opaque) or "#AARRGGBB" → ARGB.</summary>
+    /// <summary>"default" → 0; "#RRGGBB" (opaque) or "#AARRGGBB" → ARGB. A zero alpha is refused: 0 means default ink.</summary>
     public static uint ParseInk(string text)
     {
         if (text == "default") return 0;
         string hex = text.TrimStart('#');
         uint value = uint.Parse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
-        return hex.Length == 6 ? 0xFF000000 | value : value;
+        value = hex.Length == 6 ? 0xFF000000 | value : value;
+        if (value >> 24 == 0) throw new ArgumentException("Invalid ink: a fully transparent ink draws nothing; use a nonzero alpha or default.");
+        return value;
     }
     // Built-in hatch patterns in the order suited to a surface (general: catalog order).
     public static JsonObject Patterns(string? nameContains, string surface)

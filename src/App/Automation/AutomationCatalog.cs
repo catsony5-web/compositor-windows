@@ -42,8 +42,9 @@ public static partial class AutomationCatalog
     static readonly Field Name = new("string", "Display name.", MaxLength: 4096);
     static readonly Field Path = new("string", "Absolute Windows file path on the computer running Morupixel.", MaxLength: 32767);
     static readonly Field Color = new("string", "#RRGGBB, #AARRGGBB, or transparent.", MaxLength: 11, Color: true);
-    const string InkPattern = "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|default)$";
-    static readonly Field InkColor = new("string", "Hatch pattern ink: #RRGGBB, #AARRGGBB, or default (dark grey). Ignored for image materials.", MaxLength: 9, Ink: true);
+    // Alpha 00 is refused: an invisible ink is no pattern, and 0 is the stored "default" marker.
+    const string InkPattern = "^(#[0-9a-fA-F]{6}|#(?!00)[0-9a-fA-F]{8}|default)$";
+    static readonly Field InkColor = new("string", "Hatch pattern ink: #RRGGBB, #AARRGGBB with alpha 01-FF, or default (dark grey). Ignored for image materials.", MaxLength: 9, Ink: true);
     static readonly Field Coordinate = Number(-100_000, 100_000, "Position in parent-layer pixels; document pixels for root layers. See get_capabilities for coordinate conventions.");
     static readonly Dictionary<string, Command> Commands = CreateCommands();
 
@@ -225,7 +226,7 @@ public static partial class AutomationCatalog
                 if (field.Color && !Regex.IsMatch(text, "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|transparent)$", RegexOptions.CultureInvariant))
                     throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB, or transparent.");
                 if (field.Ink && !Regex.IsMatch(text, InkPattern, RegexOptions.CultureInvariant))
-                    throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB, or default.");
+                    throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB with a nonzero alpha, or default.");
             }
             else
             {

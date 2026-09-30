@@ -482,7 +482,8 @@ public static class CadCompatibility
                 {
                     region = MaterialEditing.Region(doc, regionName, chunk, "polygon");
                     doc.MaterialRegions.Add(region);
-                    layer = MaterialEditing.Apply(doc, asset.Id, region.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
+                    double repeat = tile * MaterialEditing.RepeatScale(asset);
+                    layer = MaterialEditing.Apply(doc, asset.Id, region.Id, repeat, repeat * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
                 }
                 catch (InvalidDataException)
                 {

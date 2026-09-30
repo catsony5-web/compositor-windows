@@ -218,12 +218,19 @@ public static class MaterialEditing
     }
     // Default repeat width for a new material in a document of this size (document pixels).
     public static double DefaultTile(int width, int height) => Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
+    // Default repeat width for this asset: large-cell patterns repeat over a longer distance.
+    public static double DefaultTile(int width, int height, MaterialAsset asset) => DefaultTile(width, height) * RepeatScale(asset);
+    public static double RepeatScale(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern) ? HatchPatterns.RepeatScale(pattern) : 1;
     // Height / width of the asset's pixels.
     public static double Aspect(MaterialAsset asset) => asset.Pixels.Height / (double)Math.Max(1, asset.Pixels.Width);
     // The user's vertical ratio: 1 keeps the asset's own proportions.
     public static double Stretch(MaterialFill fill) => fill.TileHeight / (fill.TileWidth * Aspect(fill.Asset));
-    // Another asset with the same size, ratio, direction, offset, ink and line weight.
-    public static MaterialFill Swap(MaterialFill fill, MaterialAsset asset) => fill with { Asset = asset, TileHeight = fill.TileWidth * Aspect(asset) * Stretch(fill) };
+    // Another asset at the same relative size (크기 %), with the same ratio, direction, offset, ink and line weight.
+    public static MaterialFill Swap(MaterialFill fill, MaterialAsset asset)
+    {
+        double width = fill.TileWidth * RepeatScale(asset) / RepeatScale(fill.Asset);
+        return fill with { Asset = asset, TileWidth = width, TileHeight = width * Aspect(asset) * Stretch(fill) };
+    }
     public static MaterialFill Sized(MaterialFill fill, double tileWidth, double stretch) => fill with { TileWidth = tileWidth, TileHeight = tileWidth * Aspect(fill.Asset) * stretch };
     public static void TranslateRegions(Document doc, double x, double y)
         => doc.MaterialRegions = doc.MaterialRegions.Select(r => r with { Path = r.Path.Translate(x, y) }).ToList();

@@ -426,14 +426,20 @@ public sealed partial class MainWindow
                     if (command == "save_project") ProjectStore.Save(candidate, staging);
                     else
                     {
+                        // Rendered at the output size: a scale above 1 redraws drawings and hatch patterns.
                         Raster image;
                         if (selected.HasValue)
                         {
-                            var rendered = SelectedLayerExport.Render(candidate, [selected.Value], true, token);
+                            var rendered = SelectedLayerExport.Render(candidate, [selected.Value], true, token, exportSettings);
                             image = rendered.Image; detached = rendered.IndependentClippingCount;
                         }
-                        else image = Imaging.Render(board.HasValue ? ArtboardEditing.ExportDocument(candidate, board.Value) : candidate, token);
-                        var output = exportSettings.Prepare(image); outputWidth = output.Width; outputHeight = output.Height;
+                        else
+                        {
+                            var target = board.HasValue ? ArtboardEditing.ExportDocument(candidate, board.Value) : candidate;
+                            image = exportSettings.OutputSize(target.Width, target.Height) == (target.Width, target.Height)
+                                ? Imaging.Render(target, token) : exportSettings.Render(target, token);
+                        }
+                        var output = exportSettings.Prepare(image, atOutputSize: true); outputWidth = output.Width; outputHeight = output.Height;
                         using var stream = new FileStream(staging, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                         ImportExport.Write(output, stream, extension, exportSettings.Quality, candidate.Dpi);
                     }

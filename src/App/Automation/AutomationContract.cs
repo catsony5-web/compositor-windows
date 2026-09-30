@@ -59,7 +59,7 @@ public static partial class AutomationCatalog
             {
                 ["count"] = HatchPatterns.All.Count, ["query"] = "query_patterns", ["autoRegister"] = true,
                 ["parameters"] = Strings(["tileWidth", "tileHeight", "angle", "offsetX", "offsetY", "ink", "lineWeight"]),
-                ["meaning"] = "Transparent line-art hatches redrawn from vector geometry at display and export resolution; tileWidth scales spacing and mark length, tileHeight changes vertical spacing only, lineWeight scales pen width."
+                ["meaning"] = "Transparent line-art hatches redrawn from vector geometry at display and export resolution (export_image scale included); tileWidth scales spacing and mark length, tileHeight changes vertical spacing only, lineWeight scales pen width."
             }
         },
         ["unsupportedViaMcp"] = Strings(["image_generation", "3d_uv_mapping", "automatic_room_detection", "physical_cad_scale", "artboard_editing", "vector_path_editing", "group_creation", "pdf_psd_cmyk_export"]),
@@ -181,7 +181,7 @@ public static class AutomationErrors
                 "stale_revision" or "workspace_changed" => "Read get_state with includeLayers=false, inspect affected layers, then build a new plan against the current revision.",
                 "inactive_document" => "Confirm the target document, activate_document, then read its current revision.",
                 "layer_not_found" or "document_not_found" => "Query the current document inventory; use returned identifiers only.",
-                "material_not_found" => "Use query_materials to find a registered materialId.",
+                "material_not_found" => "Use query_materials for registered images, or query_patterns for built-in hatch pattern materialIds.",
                 "region_not_found" => "Use query_regions to find a captured regionId, or define_region first.",
                 "selection_required" => "Ask the user to select the intended area or define an explicit polygon/closed layer boundary.",
                 "layer_locked" => "Inspect get_layer and its lockedAncestorIds. Change locks only when the user intended that change.",

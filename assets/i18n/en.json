@@ -1946,7 +1946,10 @@
     "크기 100%, 세로 비율 100%, 회전 0°로 되돌립니다.": "Resets to size 100%, vertical ratio 100% and rotation 0°.",
     "재질 바꾸기": "Change material",
     "레이어에 채울 재질 이미지": "Material image for the layer",
-    "해치 패턴": "Hatch patterns",
-    "도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.": "Line patterns for drawings. Their background is transparent, so the colors and lines below show through."
+    "해치 패턴": "Hatch pattern",
+    "도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.": "Line patterns for drawings. Their background is transparent, so the colors and lines below show through.",
+    "점무늬": "Dot pattern",
+    "해치 {0}개는 모두 단색 채움으로 가져와요.": "All {0} hatches come in as solid fills.",
+    "해치 {0}개를 선 패턴으로: {1} · 단색 채움 {2}개": "Hatches ({0}) as line patterns: {1} · solid fills: {2}"
   }
 }

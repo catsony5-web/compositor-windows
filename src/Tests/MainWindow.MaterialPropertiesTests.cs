@@ -147,6 +147,76 @@ public sealed partial class MainWindow
             finally { w.StopRenderingForShutdown(); }
         });
 
+        test("material properties: moving to another slider records the first change and keeps the panel for the drag", () =>
+        {
+            var w = Open(out var layer);
+            try
+            {
+                double tile = MaterialEditing.DefaultTile(w.doc.Width, w.doc.Height);
+                var size = Slider(w, "크기 %")!; var ratio = Slider(w, "세로 비율 %")!;
+                size.SetValue(150, true);
+                long version = w.inspectorVersion;
+                // The first tick of the second slider records the size change without rebuilding the panel.
+                ratio.SetValue(150, true);
+                Check(w.history.UndoLabel == "재질 크기" && w.inspectorVersion == version && w.properties.Children.Contains(ratio),
+                    "Switching sliders rebuilt the panel under the pointer or lost the size step");
+                // Later ticks of the same drag still apply.
+                ratio.SetValue(200, true);
+                var live = w.doc.Layers.Single(l => l.Id == layer.Id).Material!;
+                Check(Math.Abs(MaterialEditing.Stretch(live) - 2) < 1e-9 && Math.Abs(live.TileWidth - tile * 1.5) < 1e-9, "The rest of the second slider's drag was ignored: " + live);
+                w.CommitFocusedInspectorField();
+                Check(w.history.UndoLabel == "재질 비율" && w.inspectorVersion != version, "The ratio was not its own step or the panel was not refreshed after it");
+                w.Undo();
+                var undone = w.doc.Layers.Single(l => l.Id == layer.Id).Material!;
+                Check(Math.Abs(MaterialEditing.Stretch(undone) - 1) < 1e-9 && Math.Abs(undone.TileWidth - tile * 1.5) < 1e-9 && w.history.UndoLabel == "재질 크기", "Undo did not step back one slider at a time");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("material properties: a pending slider change is recorded before a canvas gesture starts", () =>
+        {
+            var w = Open(out var layer);
+            try
+            {
+                double tile = MaterialEditing.DefaultTile(w.doc.Width, w.doc.Height), x = layer.X;
+                Slider(w, "크기 %")!.SetValue(150, true);
+                // No press held in the properties panel: the commit does not wait for another button.
+                Check(!w.InspectorHoldsPointer() && w.materialPreview != null, "The preview state is unexpected");
+                w.SettleMaterialPreview();
+                Check(w.materialPreview == null && w.history.UndoLabel == "재질 크기", "The pending size change was not recorded before the gesture");
+                w.EditLayer("레이어 이동", l => l.X += 10);
+                w.Undo();
+                var moved = w.doc.Layers.Single(l => l.Id == layer.Id);
+                Check(moved.X == x && Math.Abs(moved.Material!.TileWidth - tile * 1.5) < 1e-9, "The first undo did not revert only the move");
+                w.Undo();
+                Check(Math.Abs(w.doc.Layers.Single(l => l.Id == layer.Id).Material!.TileWidth - tile) < 1e-9, "The second undo did not revert the size");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("material properties: size and ratio sliders are logarithmic with 100% in the middle", () =>
+        {
+            var w = Open(out var layer);
+            try
+            {
+                double tile = MaterialEditing.DefaultTile(w.doc.Width, w.doc.Height);
+                var size = Slider(w, "크기 %")!; var ratio = Slider(w, "세로 비율 %")!;
+                Check(Math.Abs(size.TrackPosition - .5) < 1e-6 && Math.Abs(ratio.TrackPosition - .5) < 1e-6, $"100% is not in the middle ({size.TrackPosition:0.###}, {ratio.TrackPosition:0.###})");
+                var track = size.Children.OfType<Slider>().Single();
+                track.Value = track.Minimum + (track.Maximum - track.Minimum) * .75;
+                Check(size.Value == 316, "Three quarters of 10–1000% is not 316%: " + size.Value);
+                w.CommitFocusedInspectorField();
+                Check(Math.Abs(w.doc.Layers.Single(l => l.Id == layer.Id).Material!.TileWidth - tile * 3.16) < 1e-9, "The dragged size was not applied");
+                Check(new ParameterSlider("값", 0, 100, 25).TrackPosition == .25, "A plain slider is no longer linear");
+                var typed = new ParameterSlider("값", 10, 1000, 100, 100, logarithmic: true); typed.SetValue(137.5);
+                Check(typed.Value == 137.5, "A typed value on a logarithmic slider was rounded");
+                // Swapping to large stones keeps the size percentage.
+                w.SwapLayerMaterial(HatchPatternRenderer.Create(HatchPattern.Flagstone), HatchPatterns.Name(HatchPattern.Flagstone));
+                Check(Math.Abs(Slider(w, "크기 %")!.Value - 316) < .5, "Swapping to flagstones changed the size percentage: " + Slider(w, "크기 %")!.Value);
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
         test("material properties and palette are translated in English", () =>
         {
             string previous = Loc.Language;
@@ -160,6 +230,8 @@ public sealed partial class MainWindow
                 Check(layer.Name == "Pattern · Lawn", "The English pattern layer name is " + layer.Name);
                 foreach (var text in new[] { "재질 이미지", "해치 패턴", "크기 %", "세로 비율 %", "선 굵기 %", "잉크 색", "재질과 패턴", "패턴 크기와 방향", "다른 재질로 바꾸기" })
                     Check(Loc.T(text) != text && !Loc.T(text).Any(c => c is >= '가' and <= '힣'), "Not translated: " + text);
+                // One layer's kind caption and the palette tab are singular, like "Material image".
+                Check(Loc.T("해치 패턴") == "Hatch pattern", "The pattern layer caption reads " + Loc.T("해치 패턴"));
             }
             finally { Loc.Use(previous); w.StopRenderingForShutdown(); }
         });

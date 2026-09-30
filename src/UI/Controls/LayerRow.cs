@@ -33,7 +33,7 @@ public sealed class LayerRow : Grid
         };
         thumb.Child = layer.Kind is LayerKind.Group or LayerKind.Adjustment
             ? Theme.Glyph(layer.Kind == LayerKind.Group ? Theme.Glyphs.Folder : Theme.Glyphs.Adjustment, 16, Theme.Accent, 1.6)
-            : new Image { Source = layer.Pixels.Thumbnail(), Stretch = Stretch.Uniform, Margin = new Thickness(2) };
+            : new Image { Source = (layer.Material is { } fill ? MaterialRenderer.PatternThumbnail(fill) : null) ?? layer.Pixels.Thumbnail(), Stretch = Stretch.Uniform, Margin = new Thickness(2) };
         content.Children.Add(thumb);
 
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 4, 4, 4) };

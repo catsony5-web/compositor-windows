@@ -43,6 +43,10 @@ public static class HatchPatterns
         _ => throw new ArgumentOutOfRangeException(nameof(p))
     };
 
+    // Repeat size relative to the default material size. Large stones hold four times the cells in a
+    // repeat twice as wide, so the stones keep their size and the repeat does not read as a lattice.
+    public static double RepeatScale(HatchPattern p) => p is HatchPattern.Flagstone or HatchPattern.Cobble ? 2 : 1;
+
     public static string AssetName(HatchPattern p) => NamePrefix + Name(p);
     public static string Source(HatchPattern p) => SourcePrefix + Key(p) + "@" + GeneratorVersion;
     public static Guid StableId(HatchPattern p) =>
