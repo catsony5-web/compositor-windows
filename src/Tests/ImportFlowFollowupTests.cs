@@ -17,7 +17,8 @@ internal sealed partial class CompatibilityDialog
     internal static void RunImportFlowFollowupDialogTests(Action<string, Action> test, string directory)
     {
         static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
-        string root = Path.Combine(directory, "import-flow-followup"); Directory.CreateDirectory(root);
+        // Fixed file names inside; a fresh root per run keeps a reused report folder from feeding stale fixtures.
+        string root = Path.Combine(directory, "import-flow-followup-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
 
         test("the artboard choice is remembered per file kind and the older shared choice still loads", () =>
         {
@@ -90,7 +91,8 @@ public sealed partial class MainWindow
     internal static void RunImportFlowFollowupTests(Action<string, Action> test, string directory)
     {
         static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
-        string root = Path.Combine(directory, "import-flow-followup-window"); Directory.CreateDirectory(root);
+        // Fixed file names inside; a fresh root per run keeps a reused report folder from feeding stale fixtures.
+        string root = Path.Combine(directory, "import-flow-followup-window-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
         string Store() => Path.Combine(root, "import-settings-" + Guid.NewGuid().ToString("N") + ".json");
         // A rectangle of walls, w × h drawing units.
         static string Frame(string folder, string name, double w, double h)

@@ -129,9 +129,13 @@ public static class SelfTests
         VectorShapeTests.Run(Test, directory);
         VectorContentTests.Run(Test, directory);
         MaterialMappingTests.Run(Test, directory);
+        HatchPatternTests.Run(Test, directory);
+        HatchPatternQualityTests.Run(Test);
+        CompatibilityDialog.RunHatchSummaryTests(Test);
         PrecisionWandTests.Run(Test);
         MainWindow.RunWandCommandTests(Test);
         MainWindow.RunLayerWandTests(Test, directory);
+        MainWindow.RunMaterialPropertiesTests(Test);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Windows;
 
 namespace Compositor.Windows;
 
@@ -20,10 +21,29 @@ public sealed record ExportSettings(ExportFormat Format = ExportFormat.Png, doub
         return (Math.Max(1, (int)Math.Round(width * s)), Math.Max(1, (int)Math.Round(height * s)));
     }
 
-    /// <summary>Returns a raster ready for <see cref="ImportExport.Write"/>; never mutates the source.</summary>
-    public Raster Prepare(Raster source)
+    /// <summary>
+    /// The document at the output size. Drawings, text and hatch patterns are drawn at that resolution
+    /// rather than resampled from 1x pixels; a document of photo layers only is resized as before.
+    /// </summary>
+    public Raster Render(Document document, CancellationToken token = default)
     {
-        var (w, h) = OutputSize(source.Width, source.Height);
+        var (w, h) = OutputSize(document.Width, document.Height);
+        if (w == document.Width && h == document.Height) return DesignRenderer.RenderOutput(document, token);
+        return Scaled(document, new Rect(0, 0, document.Width, document.Height), w, h, () => DesignRenderer.RenderOutput(document, token), token);
+    }
+
+    /// <summary>An area of the document at width×height: redrawn when it holds drawings, otherwise the 1x pixels resized.</summary>
+    internal static Raster Scaled(Document document, Rect area, int width, int height, Func<Raster> pixels, CancellationToken token)
+        => DesignRenderer.HasRetainedContent(document) || document.Layers.Any(DrawingLayers.IsContainer)
+            ? DesignRenderer.RenderScaled(document, area, width, height, token) : ImportExport.Resize(pixels(), width, height);
+
+    /// <summary>
+    /// Returns a raster ready for <see cref="ImportExport.Write"/>; never mutates the source. A source
+    /// already rendered at the output size (<see cref="Render"/>) is not resized again.
+    /// </summary>
+    public Raster Prepare(Raster source, bool atOutputSize = false)
+    {
+        var (w, h) = atOutputSize ? (source.Width, source.Height) : OutputSize(source.Width, source.Height);
         var output = w == source.Width && h == source.Height ? source : ImportExport.Resize(source, w, h);
         if (SupportsTransparency && !KeepTransparency)
         {
@@ -38,7 +58,7 @@ public sealed record ExportSettings(ExportFormat Format = ExportFormat.Png, doub
         return output;
     }
 
-    public void Write(Raster source, Stream stream, double dpi) => ImportExport.Write(Prepare(source), stream, Extension, Quality, dpi);
+    public void Write(Raster source, Stream stream, double dpi, bool atOutputSize = false) => ImportExport.Write(Prepare(source, atOutputSize), stream, Extension, Quality, dpi);
 
     /// <summary>File name typed in the dialog, stripped of invalid characters and given this format's extension.</summary>
     public string FileName(string typed, string fallback)

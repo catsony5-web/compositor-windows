@@ -25,7 +25,7 @@ public static class ImportFlowFixtures
         cad.Entities.Add(new Line { StartPoint = new XYZ(0, 0, 0), EndPoint = new XYZ(200, 0, 0), Layer = wall });
         cad.Entities.Add(new Line { StartPoint = new XYZ(0, 140, 0), EndPoint = new XYZ(200, 140, 0), Layer = wall });
         cad.Entities.Add(new Line { StartPoint = new XYZ(0, 60, 0), EndPoint = new XYZ(200, 60, 0), Layer = furn });
-        var hatch = new Hatch { Pattern = new HatchPattern("AR-CONC"), Layer = hatches };
+        var hatch = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern("AR-CONC"), Layer = hatches };
         var loop = new Hatch.BoundaryPath(); loop.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 100, 0), new XYZ(180, 100, 0), new XYZ(180, 180, 0), new XYZ(20, 180, 0) }, true));
         hatch.Paths.Add(loop); cad.Entities.Add(hatch);
         string file = Path.Combine(directory, name); DxfWriter.Write(file, cad); return file;
@@ -58,7 +58,8 @@ public static class ImportSettingsTests
     public static void Run(Action<string, Action> test, string directory)
     {
         static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
-        string root = Path.Combine(directory, "import-flow"); Directory.CreateDirectory(root);
+        // Fixed file names inside; a fresh root per run keeps a reused report folder from feeding stale fixtures.
+        string root = Path.Combine(directory, "import-flow-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
         string Store() => Path.Combine(root, "import-settings-" + Guid.NewGuid().ToString("N") + ".json");
 
         test("import settings store round-trips, sanitizes values and ignores damaged files", () =>
@@ -245,7 +246,8 @@ public sealed partial class MainWindow
     internal static void RunImportFlowTests(Action<string, Action> test, string directory)
     {
         static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
-        string root = Path.Combine(directory, "import-flow-window"); Directory.CreateDirectory(root);
+        // Fixed file names inside; a fresh root per run keeps a reused report folder from feeding stale fixtures.
+        string root = Path.Combine(directory, "import-flow-window-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
 
         test("several drawings import with one dialog and the same settings, one tab each", () =>
         {

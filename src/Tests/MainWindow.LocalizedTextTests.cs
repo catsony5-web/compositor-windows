@@ -163,7 +163,7 @@ public sealed partial class MainWindow
             foreach (var layer in new[] { wall, door, hatches }) cad.Layers.Add(layer);
             cad.Entities.Add(new Line { StartPoint = new XYZ(0, 0, 0), EndPoint = new XYZ(200, 0, 0), Layer = wall });
             cad.Entities.Add(new Line { StartPoint = new XYZ(0, 60, 0), EndPoint = new XYZ(200, 60, 0), Layer = door });
-            var hatch = new Hatch { Pattern = new HatchPattern("AR-CONC"), Layer = hatches };
+            var hatch = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern("AR-CONC"), Layer = hatches };
             var boundary = new Hatch.BoundaryPath(); boundary.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 100, 0), new XYZ(180, 100, 0), new XYZ(180, 180, 0), new XYZ(20, 180, 0) }, true));
             hatch.Paths.Add(boundary); cad.Entities.Add(hatch);
             string file = Path.Combine(root, "3층 평면도.dxf"); DxfWriter.Write(file, cad);

@@ -286,6 +286,7 @@ public sealed partial class MainWindow
         automationResultLayers = ABool(args, "includeLayers", true);
         if (command == "list_sessions") return new JsonObject { ["sessions"] = AutomationBridge.ListSessions() };
         if (command == "get_capabilities") return AutomationCatalog.Capabilities();
+        if (command == "query_patterns") return AutomationMaterials.Patterns(args.ContainsKey("nameContains") ? AString(args, "nameContains") : null, AString(args, "surface", "general"));
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
         RequireAutomationIdle(token);
@@ -326,7 +327,7 @@ public sealed partial class MainWindow
                     CadCleanup? cleanup = null;
                     if (ABool(args, "cadCleanup"))
                     {
-                        var hatches = AString(args, "cadHatches", "suggest") switch { "keep" => HatchTreatment.Keep, "image" => HatchTreatment.Image, _ => HatchTreatment.Suggest };
+                        var hatches = AString(args, "cadHatches", "suggest") switch { "keep" => HatchTreatment.Keep, "image" => HatchTreatment.Image, "pattern" => HatchTreatment.Pattern, _ => HatchTreatment.Suggest };
                         string? material = null;
                         if (hatches == HatchTreatment.Image)
                         {
@@ -425,14 +426,20 @@ public sealed partial class MainWindow
                     if (command == "save_project") ProjectStore.Save(candidate, staging);
                     else
                     {
+                        // Rendered at the output size: a scale above 1 redraws drawings and hatch patterns.
                         Raster image;
                         if (selected.HasValue)
                         {
-                            var rendered = SelectedLayerExport.Render(candidate, [selected.Value], true, token);
+                            var rendered = SelectedLayerExport.Render(candidate, [selected.Value], true, token, exportSettings);
                             image = rendered.Image; detached = rendered.IndependentClippingCount;
                         }
-                        else image = Imaging.Render(board.HasValue ? ArtboardEditing.ExportDocument(candidate, board.Value) : candidate, token);
-                        var output = exportSettings.Prepare(image); outputWidth = output.Width; outputHeight = output.Height;
+                        else
+                        {
+                            var target = board.HasValue ? ArtboardEditing.ExportDocument(candidate, board.Value) : candidate;
+                            image = exportSettings.OutputSize(target.Width, target.Height) == (target.Width, target.Height)
+                                ? Imaging.Render(target, token) : exportSettings.Render(target, token);
+                        }
+                        var output = exportSettings.Prepare(image, atOutputSize: true); outputWidth = output.Width; outputHeight = output.Height;
                         using var stream = new FileStream(staging, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                         ImportExport.Write(output, stream, extension, exportSettings.Quality, candidate.Dpi);
                     }
@@ -501,9 +508,20 @@ public sealed partial class MainWindow
             }).ToArray());
             result["layersTruncated"] = drawing.Layers.Count > 512;
             result["hatchMaterials"] = new JsonObject(drawing.HatchMaterials.Select(p => new KeyValuePair<string, JsonNode?>(p.Key.ToString().ToLowerInvariant(), JsonValue.Create(p.Value))));
+            result["hatchPatterns"] = new JsonObject((drawing.HatchPatternCounts ?? new Dictionary<HatchPattern, int>()).Select(p => new KeyValuePair<string, JsonNode?>(HatchPatterns.Key(p.Key), JsonValue.Create(p.Value))));
         }
         else throw new NotSupportedException("inspect_file은 PDF/AI와 DWG/DXF 파일을 읽습니다.");
         return result;
+    }
+
+    // A built-in hatch pattern named by its materialId joins the library on first use.
+    static void RegisterAutomationPattern(Document candidate, Guid materialId)
+    {
+        if (!HatchPatterns.TryGet(materialId, out var pattern)) return;
+        var library = MaterialEditing.Assets(candidate);
+        if (library.Any(a => a.Id == materialId)) return;
+        if (library.Count >= MaterialEditing.MaxAssets) throw new AutomationFault("capacity_exceeded", "재료 라이브러리가 가득 찼습니다.");
+        candidate.Materials.Add(HatchPatternRenderer.Create(pattern));
     }
 
     static async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
@@ -525,22 +543,34 @@ public sealed partial class MainWindow
         switch (command)
         {
             case "apply_material":
+                RegisterAutomationPattern(candidate, Guid.Parse(AString(args, "materialId")));
                 if (!MaterialEditing.Assets(candidate).Any(a => a.Id == Guid.Parse(AString(args, "materialId"))))
                     throw new AutomationFault("material_not_found", "등록된 재료 ID가 없습니다.");
                 if (!candidate.MaterialRegions.Any(r => r.Id == Guid.Parse(AString(args, "regionId"))))
                     throw new AutomationFault("region_not_found", "등록된 영역 ID가 없습니다.");
-                var mapped = await CompatibilityImport.OnSta(() => MaterialEditing.Apply(candidate, Guid.Parse(AString(args, "materialId")), Guid.Parse(AString(args, "regionId")),
-                    ANumber(args, "tileWidth"), ANumber(args, "tileHeight"), ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY")), token);
+                var mapped = await CompatibilityImport.OnSta(() =>
+                {
+                    var created = MaterialEditing.Apply(candidate, Guid.Parse(AString(args, "materialId")), Guid.Parse(AString(args, "regionId")),
+                        ANumber(args, "tileWidth"), ANumber(args, "tileHeight"), ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY"));
+                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight"))
+                    {
+                        var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1) };
+                        MaterialEditing.ValidateFill(tuned, created.Pixels); created.Material = tuned; created.Pixels = MaterialRenderer.Render(tuned);
+                    }
+                    return created;
+                }, token);
                 mapped.Opacity = ANumber(args, "opacity", 1);
                 if (args.ContainsKey("blend")) mapped.Blend = Enum.Parse<BlendMode>(AString(args, "blend"));
                 Add(mapped); break;
             case "update_material":
                 var materialLayer = Target();
                 if (materialLayer.Material is not { } original) throw new AutomationFault("wrong_layer_kind", "재료 맵핑 레이어를 선택하세요.");
+                if (args.ContainsKey("materialId")) RegisterAutomationPattern(candidate, Guid.Parse(AString(args, "materialId")));
                 var material = args.ContainsKey("materialId") ? MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == Guid.Parse(AString(args, "materialId")))
                     ?? throw new AutomationFault("material_not_found", "등록된 재료가 없습니다.") : original.Asset;
                 var replacement = original with { Asset = material, TileWidth = ANumber(args, "tileWidth", original.TileWidth), TileHeight = ANumber(args, "tileHeight", original.TileHeight),
-                    Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY) };
+                    Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY),
+                    Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight) };
                 if (replacement != original)
                 {
                     MaterialEditing.ValidateFill(replacement, materialLayer.Pixels);

@@ -171,7 +171,7 @@ internal sealed partial class CompatibilityDialog : Window
             structure.SelectedIndex = Math.Max(0, structure.Items.Cast<StructureChoice>().ToList().FindIndex(c => c.Value == s.CadStructure));
             lineWeights.IsChecked = s.CadLineWeights;
             if (s.CadHatches == HatchTreatment.Image && s.CadMaterialImage is { } image && File.Exists(image)) UseMaterialImage(image);
-            else { hatchMode.SelectedIndex = s.CadHatches == HatchTreatment.Keep ? 1 : 0; lastHatchIndex = hatchMode.SelectedIndex; }
+            else { hatchMode.SelectedIndex = s.CadHatches switch { HatchTreatment.Keep => 1, HatchTreatment.Pattern => 3, _ => 0 }; lastHatchIndex = hatchMode.SelectedIndex; }
             edge.Text = s.CadLongEdge.ToString(CultureInfo.InvariantCulture); retain.IsChecked = s.CadRetainVectors;
             artboard.IsChecked = s.CadArtboard; skipDialog.IsChecked = s.CadSkipDialog;
         }

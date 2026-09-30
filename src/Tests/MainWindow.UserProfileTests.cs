@@ -224,7 +224,7 @@ public sealed partial class MainWindow
             cad.Entities.Add(new Line { StartPoint = new XYZ(0, 180, 0), EndPoint = new XYZ(200, 180, 0) });
             if (hatch)
             {
-                var fill = new Hatch { Pattern = new HatchPattern("AR-CONC"), Layer = hatches };
+                var fill = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern("AR-CONC"), Layer = hatches };
                 var path = new Hatch.BoundaryPath(); path.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 20, 0), new XYZ(180, 20, 0), new XYZ(180, 50, 0), new XYZ(20, 50, 0) }, true));
                 fill.Paths.Add(path); cad.Entities.Add(fill);
             }
@@ -452,7 +452,7 @@ public sealed partial class MainWindow
             var wall = new ACadSharp.Tables.Layer("A-WALL"); cad.Layers.Add(wall);
             cad.Entities.Add(new Line { StartPoint = new XYZ(0, 0, 0), EndPoint = new XYZ(200, 0, 0), Layer = wall });
             cad.Entities.Add(new TextEntity { Value = "거실", InsertPoint = new XYZ(60, 40, 0), Height = 14 });
-            var fill = new Hatch { Pattern = new HatchPattern("ANSI31") };
+            var fill = new Hatch { Pattern = new ACadSharp.Entities.HatchPattern("ANSI31") };
             var boundary = new Hatch.BoundaryPath(); boundary.Edges.Add(new Hatch.BoundaryPath.Polyline(new[] { new XYZ(20, 70, 0), new XYZ(180, 70, 0), new XYZ(180, 110, 0), new XYZ(20, 110, 0) }, true));
             fill.Paths.Add(boundary); cad.Entities.Add(fill);
             string file = Path.Combine(root, "이름 없는 층 평면.dxf"); DxfWriter.Write(file, cad);

@@ -23,8 +23,10 @@ internal sealed partial class CompatibilityDialog
     readonly ComboBox hatchMode = new() { ItemsSource = new[] {
         new HatchChoice(HatchTreatment.Suggest, "재질 추천으로 채우기 (추천)"),
         new HatchChoice(HatchTreatment.Keep, "그대로 두기 (경계선만)"),
-        new HatchChoice(HatchTreatment.Image, "내 재질 이미지로 채우기…") }, SelectedIndex = 0 };
-    readonly TextBlock hatchSummary = new() { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Subtle, FontSize = Theme.CaptionSize, Margin = new Thickness(3, 0, 3, 10) };
+        new HatchChoice(HatchTreatment.Image, "내 재질 이미지로 채우기…"),
+        new HatchChoice(HatchTreatment.Pattern, "선 해치 패턴으로 채우기") }, SelectedIndex = 0 };
+    // Keeps pattern names whole when the summary wraps ("가로줄 2", not "가로" / "줄 2").
+    readonly TextBlock hatchSummary = new KeepWordsTextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Subtle, FontSize = Theme.CaptionSize, Margin = new Thickness(3, 0, 3, 10) };
     readonly Expander roleExpander = new() { Header = "레이어 역할", Margin = new Thickness(0, 4, 0, 0) };
     // Collapsed by default so the beginner view fits; the header states what will be applied.
     readonly Expander cleanupExpander = new() { Margin = new Thickness(0, 8, 0, 0) };
@@ -102,7 +104,7 @@ internal sealed partial class CompatibilityDialog
     void DescribeCleanup() => cleanupExpander.Header = "도면 정리 · " + string.Join(" · ", new[]
     {
         lineWeights.IsChecked == true ? "선 굵기 정리" : "선 원본 유지",
-        SelectedHatches switch { HatchTreatment.Suggest => "해치 재질 추천", HatchTreatment.Image => "해치 내 재질", _ => "해치 그대로" }
+        SelectedHatches switch { HatchTreatment.Suggest => "해치 재질 추천", HatchTreatment.Image => "해치 내 재질", HatchTreatment.Pattern => "해치 선 패턴", _ => "해치 그대로" }
     });
 
     void DescribeHatches()
@@ -118,19 +120,31 @@ internal sealed partial class CompatibilityDialog
             {
                 // Each material keeps its count on the same line (no-break space).
                 HatchTreatment.Suggest => $"해치 {total:N0}개 추천: {string.Join(" · ", drawingInfo.HatchMaterials.OrderByDescending(p => p.Value).Select(p => $"{Loc.T(DrawingCleanup.MaterialName(p.Key))}\u00A0{p.Value}"))}",
+                HatchTreatment.Pattern => PatternSummary(total, drawingInfo.HatchPatternCounts ?? new Dictionary<HatchPattern, int>()),
                 _ => $"해치 {total:N0}개를 경계선으로만 가져와요."
             };
+    }
+
+    // SOLID hatches stay solid fills: they are counted apart from the line patterns.
+    internal static string PatternSummary(int total, IReadOnlyDictionary<HatchPattern, int> patterns)
+    {
+        int lines = patterns.Values.Sum(), solid = Math.Max(0, total - lines);
+        string list = string.Join(" · ", patterns.OrderByDescending(p => p.Value).Select(p => $"{Loc.T(HatchPatterns.Name(p.Key))}\u00A0{p.Value}"));
+        if (lines == 0) return $"해치 {total:N0}개는 모두 단색 채움으로 가져와요.";
+        return solid == 0 ? $"해치 {lines:N0}개를 선 패턴으로: {list}" : $"해치 {lines:N0}개를 선 패턴으로: {list} · 단색 채움 {solid:N0}개";
     }
 
     internal static CadDrawingInfo SampleDrawing => new(
         [new("A-WALL", DrawingRole.Structure, 42, 0), new("A-DOOR", DrawingRole.Opening, 12, 0), new("A-FURN-SOFA", DrawingRole.Furniture, 30, 0),
          new("A-ANNO-DIMS", DrawingRole.Annotation, 18, 0), new("A-FLOR-PATT", DrawingRole.Hatch, 9, 9)],
-        new Dictionary<MaterialKind, int> { [MaterialKind.Concrete] = 4, [MaterialKind.Tile] = 3, [MaterialKind.Wood] = 2 });
+        new Dictionary<MaterialKind, int> { [MaterialKind.Concrete] = 4, [MaterialKind.Tile] = 3, [MaterialKind.Wood] = 2 },
+        new Dictionary<HatchPattern, int> { [HatchPattern.Concrete] = 4, [HatchPattern.Grid] = 3, [HatchPattern.Lines] = 2 });
 
     // Offscreen preview of the settings with a sample drawing (no file is read).
-    internal static CompatibilityDialog CleanupPreview(string path)
+    internal static CompatibilityDialog CleanupPreview(string path, HatchTreatment? hatches = null)
     {
         var dialog = new CompatibilityDialog(null, path); dialog.ShowDrawingInfo(SampleDrawing);
+        if (hatches is { } choice) dialog.hatchMode.SelectedItem = dialog.hatchMode.Items.Cast<HatchChoice>().First(c => c.Value == choice);
         dialog.cleanupExpander.IsExpanded = true; dialog.roleExpander.IsExpanded = true; dialog.messages.Text = "미리보기를 확인하고 가져오세요.";
         return dialog;
     }
@@ -166,6 +180,20 @@ internal sealed partial class CompatibilityDialog
                 Check(dialog.ReadCleanup() is { Hatches: HatchTreatment.Image, MaterialImage: @"C:\재질\오크.png" } && dialog.cleanupExpander.Header.ToString()!.Contains("해치 내 재질"), "The material image choice was not applied");
                 dialog.lineWeights.IsChecked = false; dialog.hatchMode.SelectedIndex = 1;
                 Check(dialog.ReadCleanup() == null, "Turning cleanup off still sent settings");
+            }
+            finally { dialog.Close(); }
+        });
+        test("CAD import dialog offers line hatch patterns as a fourth choice and restores it", () =>
+        {
+            var dialog = new CompatibilityDialog(null, "평면.dxf", false, new ImportSettings { CadHatches = HatchTreatment.Pattern });
+            try
+            {
+                Check(dialog.hatchMode.Items.Count == 4 && dialog.hatchMode.SelectedIndex == 3 && dialog.ReadCleanup() is { Hatches: HatchTreatment.Pattern }, "The remembered pattern choice was not restored");
+                Check(((HatchChoice)dialog.hatchMode.Items[0]).Value == HatchTreatment.Suggest && ((HatchChoice)dialog.hatchMode.Items[1]).Value == HatchTreatment.Keep
+                    && ((HatchChoice)dialog.hatchMode.Items[2]).Value == HatchTreatment.Image, "Existing hatch choices moved");
+                dialog.ShowDrawingInfo(SampleDrawing);
+                Check(dialog.hatchSummary.Text.Contains("콘크리트\u00A04") && dialog.hatchSummary.Text.Contains("선 패턴") && dialog.cleanupExpander.Header.ToString()!.Contains("해치 선 패턴"),
+                    "The pattern summary is missing: " + dialog.hatchSummary.Text);
             }
             finally { dialog.Close(); }
         });

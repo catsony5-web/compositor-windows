@@ -1,4 +1,15 @@
-# Morupixel 0.2.0 Preview 37 — drawings, boards and presentation work
+# Morupixel 0.2.0 Preview 38 — hatch patterns you pick like images
+
+- **19 drawing-style hatch patterns.** The material palette now has two tabs, 재질 이미지 and 해치 패턴. The pattern tab offers 잔디, 풀밭, 모래, 성긴 점, 짧은 빗금, 짧은 가로선, 둥근 점, 작은 포장석, 가로줄, 고운 점, 판석, 자연석, 자갈, 콘크리트, 벽돌, 사선, 교차 사선, 사각 격자 and 단열재, shown as swatches on white paper and ordered for the surface under the selection (ground, floor or wall). Patterns have a transparent background, so the colors and lines underneath stay visible.
+- **Always crisp.** Patterns are redrawn from their geometry at the size they are shown, so lines stay sharp at 400% zoom and in PNG, .psd and PDF output, and large fills repeat without a visible seam or lattice.
+- **Size, ratio and direction per fill.** A material layer's properties gain 재질과 패턴, 다른 재질로 바꾸기 and 패턴 크기와 방향: 크기 % (spacing and mark length), 세로 비율 % (patterns keep their mark shapes and change only the vertical spacing; images stretch), 회전 °, and for patterns 선 굵기 % and 잉크 색, with 기본값으로 되돌리기. Sliders preview live and record one undo step when released. An existing fill can switch between a material image and a hatch pattern.
+- **Drawing import.** 도면 정리 gains 선 패턴으로 채우기: each CAD hatch becomes a matching line pattern from its pattern or layer name (AR-CONC → 콘크리트, ANSI37 → 교차 사선, ANSI31 → 사선, gravel → 자갈, …). The choice is remembered with the other import settings.
+- **AI connection.** Contract 7 (34 tools): `query_patterns` lists the built-in patterns; `apply_material` and `update_material` accept a built-in pattern id directly and the new `ink` and `lineWeight`; `open_document` accepts `cadHatches: "pattern"`.
+- **Compatibility.** Project files stay format 6. Older versions show a pattern as its embedded 256 px tile; newer versions redraw it.
+- **Checked before release.** An independent review (code, visuals against the reference sheet, compatibility) found 17 issues — soft double-pixel lines, blurry tiles at some zooms, a visible flagstone lattice, slider edits dropped mid-drag, undo order after a canvas drag, exports not redrawn at scale — all fixed with regression checks.
+- **Validation.** 708 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 37 — drawings, boards and presentation work
 
 - **Large drawings move smoothly.** In the design workspace, panning and wheel zoom show the last sharp view immediately and redraw once the wheel or drag pauses; outdated redraws are dropped, only objects in view are drawn, and returning to a view you already saw is instant. Hovering and clicking objects in a drawing with ~19,000 objects no longer rebuilds the object index on every mouse move (hover about 46 ms → 1 ms, pan 7 ms → 1 ms, wheel step 9 ms → 3 ms on a synthetic 19,000-object plan).
 - **Drawing import remembers your settings.** The import window opens with the last editing method, drawing cleanup, line weights, hatch treatment, material image, size, layout, layer roles and artboard choice. Choose or drop several drawings at once (for example the 2F, 3F and 4F plans) and the window opens once with "모든 파일에 같은 설정 적용"; a file that cannot be read can be skipped and the others still import. "다음부터 묻지 않고 이 설정으로 가져오기" imports DWG/DXF directly; hold Shift or use File › 도면 가져오기 설정 다시 묻기 to see the window again.

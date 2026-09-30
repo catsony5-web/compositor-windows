@@ -599,9 +599,12 @@ public static class ExportDialog
             saving = true; pending?.Cancel(); generation++; window.IsEnabled = false;
             try
             {
-                var raster = await render;
+                var raster = await render; var source = snapshot;
+                // Scaled output is drawn at its own resolution, so lines, text and hatch patterns stay sharp.
+                if (settings.OutputSize(source.Width, source.Height) != (source.Width, source.Height))
+                    raster = await CompatibilityImport.OnSta(() => settings.Render(source, lifetime.Token), lifetime.Token);
                 await encodeGate.WaitAsync(lifetime.Token);
-                try { await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => settings.Write(raster, stream, doc.Dpi)), lifetime.Token); }
+                try { await Task.Run(() => ProjectStore.AtomicWrite(picker.FileName, stream => settings.Write(raster, stream, doc.Dpi, atOutputSize: true)), lifetime.Token); }
                 finally { encodeGate.Release(); }
                 window.Close();
             }

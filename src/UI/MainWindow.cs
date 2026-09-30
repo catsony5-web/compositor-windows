@@ -193,7 +193,7 @@ public sealed partial class MainWindow : Window
         return true;
     }
     void SetTool(Tool next) => ChangeInteractionTool(next);
-    void Refresh(bool render = true)
+    void Refresh(bool render = true, bool rebuildProperties = true)
     {
         ClearPointerHover(); if (!HasDocument) pickCache.Clear();
         var existingIds = doc.Layers.Select(l => l.Id).ToHashSet(); selectedLayers.IntersectWith(existingIds);
@@ -207,7 +207,8 @@ public sealed partial class MainWindow : Window
         canvas.InvalidateVisual();
         documentTitle.Text = HasDocument ? $"{(history.Dirty(doc) ? "●  " : "")}{doc.Name}   ·   {doc.Width} × {doc.Height} px" : "";
         Title = HasDocument ? $"{(history.Dirty(doc) ? "* " : "")}{doc.Name} — Morupixel" : "Morupixel · 모루픽셀";
-        BuildProperties(); BuildLayers(); UpdateStatus(); RebuildTabs();
+        if (rebuildProperties) BuildProperties();
+        BuildLayers(); UpdateStatus(); RebuildTabs();
     }
     void RenderGesture()
     {
@@ -475,6 +476,8 @@ public sealed partial class MainWindow : Window
     void OnUp(object sender, MouseButtonEventArgs e) => InteractionUp(sender, e);
     void CancelGesture()
     {
+        // A pending material slider change becomes its own undo step before anything else happens.
+        CommitMaterialPreview(true);
         if (resizingBrush) EndBrushResize(true);
         ResetInteractionTransient();
         if (CancelTransformHandle()) return;

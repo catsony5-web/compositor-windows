@@ -13,8 +13,9 @@ public sealed record SelectedLayerImage(Raster Image, Int32Rect CanvasBounds, in
 /// </summary>
 public static class SelectedLayerExport
 {
+    /// <param name="output">When given, the image is returned at its output size, redrawn at that resolution.</param>
     public static SelectedLayerImage Render(Document document, IEnumerable<Guid> selectedIds,
-        bool trimTransparent = true, CancellationToken token = default)
+        bool trimTransparent = true, CancellationToken token = default, ExportSettings? output = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(selectedIds);
@@ -64,8 +65,13 @@ public static class SelectedLayerExport
         snapshot.ActiveId = selected.First();
         snapshot.Validate();
         var rendered = DesignRenderer.RenderOutput(snapshot, token);
-        return trimTransparent ? Trim(rendered, detached, token)
+        var result = trimTransparent ? Trim(rendered, detached, token)
             : new SelectedLayerImage(rendered, new Int32Rect(0, 0, rendered.Width, rendered.Height), detached);
+        if (output == null) return result;
+        var bounds = result.CanvasBounds; var (w, h) = output.OutputSize(bounds.Width, bounds.Height);
+        if (w == bounds.Width && h == bounds.Height) return result;
+        var image = result.Image;
+        return result with { Image = ExportSettings.Scaled(snapshot, new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height), w, h, () => image, token) };
     }
 
     public static SelectedLayerImage Trim(Raster source, int independentClippingCount = 0, CancellationToken token = default)

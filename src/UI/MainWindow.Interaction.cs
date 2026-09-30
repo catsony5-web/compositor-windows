@@ -81,7 +81,8 @@ public sealed partial class MainWindow
         if (!HasDocument) return;
         try
         {
-            canvas.Focus(); var screen = e.GetPosition(canvas); lastPointerScreen = screen; var point = canvas.ToDocument(screen);
+            // Focus commits a typed inspector value; a material slider preview it leaves pending is recorded now, before this gesture's snapshot.
+            canvas.Focus(); SettleMaterialPreview(); var screen = e.GetPosition(canvas); lastPointerScreen = screen; var point = canvas.ToDocument(screen);
             ClearPointerHover();
             if (BeginBrushResize(screen, point, e.ChangedButton, Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))) { e.Handled = true; return; }
             if (resizingBrush) { e.Handled = true; return; }

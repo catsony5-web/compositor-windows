@@ -448,6 +448,58 @@
   "file": "Core/DrawingCleanup.cs"
  },
  {
+  "ko": "모래",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "자갈",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "토사",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "흙",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "잔디",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "풀밭",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "자연석",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "판석",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "대리석",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "화강",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "포장",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "보도",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "점무늬",
+  "file": "Core/DrawingCleanup.cs"
+ },
+ {
   "ko": "목재",
   "file": "Core/DrawingCleanup.cs"
  },
@@ -464,11 +516,7 @@
   "file": "Core/DrawingCleanup.cs"
  },
  {
-  "ko": "대리석",
-  "file": "Core/DrawingCleanup.cs"
- },
- {
-  "ko": "화강",
+  "ko": "교차",
   "file": "Core/DrawingCleanup.cs"
  },
  {
@@ -476,20 +524,48 @@
   "file": "Core/DrawingCleanup.cs"
  },
  {
-  "ko": "자갈",
+  "ko": "사선",
   "file": "Core/DrawingCleanup.cs"
  },
  {
-  "ko": "토사",
-  "file": "Core/DrawingCleanup.cs"
+  "ko": "패턴 · ",
+  "file": "Core/HatchPatterns.cs"
  },
  {
-  "ko": "모래",
-  "file": "Core/DrawingCleanup.cs"
+  "ko": "성긴 점",
+  "file": "Core/HatchPatterns.cs"
  },
  {
-  "ko": "흙",
-  "file": "Core/DrawingCleanup.cs"
+  "ko": "짧은 빗금",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "짧은 가로선",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "둥근 점",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "작은 포장석",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "가로줄",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "고운 점",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "교차 사선",
+  "file": "Core/HatchPatterns.cs"
+ },
+ {
+  "ko": "사각 격자",
+  "file": "Core/HatchPatterns.cs"
  },
  {
   "ko": "영역 경로 또는 변환이 올바르지 않습니다.",
@@ -936,14 +1012,6 @@
   "file": "Engine/SelectionMaterials.cs"
  },
  {
-  "ko": "포장",
-  "file": "Engine/SelectionMaterials.cs"
- },
- {
-  "ko": "잔디",
-  "file": "Engine/SelectionMaterials.cs"
- },
- {
   "ko": "마당",
   "file": "Engine/SelectionMaterials.cs"
  },
@@ -1232,15 +1300,19 @@
   "file": "Formats/CadCompatibility.cs"
  },
  {
-  "ko": "해치 · {0} {1}",
-  "file": "Formats/CadCompatibility.cs"
- },
- {
   "ko": "재질 · ",
   "file": "Formats/CadCompatibility.cs"
  },
  {
+  "ko": "해치 · {0} {1}",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
   "ko": "해치에 선택한 재질 이미지를 적용했습니다: ",
+  "file": "Formats/CadCompatibility.cs"
+ },
+ {
+  "ko": "해치를 선 패턴으로 채웠습니다: ",
   "file": "Formats/CadCompatibility.cs"
  },
  {
@@ -2428,6 +2500,10 @@
   "file": "UI/Controls/HistogramView.cs"
  },
  {
+  "ko": "해치 패턴",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
   "ko": "재료 맵핑",
   "file": "UI/Controls/LayerRow.cs"
  },
@@ -2892,6 +2968,10 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
+  "ko": "선 해치 패턴으로 채우기",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
   "ko": "레이어 역할",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
@@ -2944,6 +3024,10 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
+  "ko": "해치 선 패턴",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
   "ko": "해치 그대로",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
@@ -2968,6 +3052,18 @@
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
+  "ko": "해치 {0}개는 모두 단색 채움으로 가져와요.",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 {0}개를 선 패턴으로: {1}",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "해치 {0}개를 선 패턴으로: {1} · 단색 채움 {2}개",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
   "ko": "미리보기를 확인하고 가져오세요.",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
@@ -2989,6 +3085,10 @@
  },
  {
   "ko": "콘크리트 4",
+  "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
+ },
+ {
+  "ko": "선 패턴",
   "file": "UI/Dialogs/CompatibilityDialog.Cleanup.cs"
  },
  {
@@ -4644,6 +4744,10 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": "재료 라이브러리가 가득 찼습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
   "ko": "레이어 또는 부모 그룹의 잠금을 먼저 해제하세요.",
   "file": "UI/MainWindow.Automation.cs"
  },
@@ -4693,10 +4797,6 @@
  },
  {
   "ko": "문서가 변경되었습니다. 목록을 다시 조회하세요.",
-  "file": "UI/MainWindow.AutomationMaterials.cs"
- },
- {
-  "ko": "재료 라이브러리가 가득 찼습니다.",
   "file": "UI/MainWindow.AutomationMaterials.cs"
  },
  {
@@ -5392,6 +5492,22 @@
   "file": "UI/MainWindow.Fill.cs"
  },
  {
+  "ko": "평면 예시.dxf",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "다른 재질로 바꾸기",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "세로 비율 %",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "선 굵기 %",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
   "ko": "패널 너비 조절 · 두 번 클릭하면 기본 너비",
   "file": "UI/MainWindow.Inspector.cs"
  },
@@ -5445,6 +5561,10 @@
  },
  {
   "ko": "텍스트 레이어",
+  "file": "UI/MainWindow.Inspector.cs"
+ },
+ {
+  "ko": "해치 패턴 레이어",
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
@@ -5892,6 +6012,110 @@
   "file": "UI/MainWindow.LayerVisibility.cs"
  },
  {
+  "ko": "재질과 패턴",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "해치 패턴 · 반복 {0}×{1}px",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 이미지 · 반복 {0}×{1}px",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "내 재질 이미지를 문서에 등록하고 이 레이어의 재질로 바꿉니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "패턴 크기와 방향",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "100%는 새 재질의 기본 크기입니다. 무늬 간격과 길이가 함께 바뀝니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 크기",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "100%는 원래 비율입니다. 해치 패턴은 무늬 모양을 유지한 채 세로 간격만, 재질 이미지는 이미지를 세로로 늘입니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 비율",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 회전",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "해치 패턴의 선과 점 굵기를 바꿉니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "패턴 선 굵기",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "패턴 잉크 색",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "잉크 색 기본값",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "잉크 색",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "잉크 색 변경",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "기본값으로 되돌리기",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 기본값",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "크기 100%, 세로 비율 100%, 회전 0°, 선 굵기 100%, 기본 잉크 색으로 되돌립니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "크기 100%, 세로 비율 100%, 회전 0°로 되돌립니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "이미 이 재질이 적용되어 있습니다.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재료 라이브러리가 가득 찼습니다. 쓰지 않는 재질 레이어를 정리하세요.",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 바꾸기",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질을 바꿨습니다: {0}",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "레이어에 채울 재질 이미지",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "재질 이미지",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
   "ko": "파일",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -6282,10 +6506,6 @@
  {
   "ko": "픽셀 레이어 또는 편집할 마스크를 선택하세요.",
   "file": "UI/MainWindow.PixelCommands.cs"
- },
- {
-  "ko": "평면 예시.dxf",
-  "file": "UI/MainWindow.Preview.cs"
  },
  {
   "ko": "2층 평면도.dwg",
@@ -6776,11 +6996,15 @@
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {
-  "ko": "이미지로 재질 추가…",
+  "ko": "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다.",
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {
-  "ko": "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다.",
+  "ko": "도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.",
+  "file": "UI/MainWindow.SelectionMaterials.cs"
+ },
+ {
+  "ko": "이미지로 재질 추가…",
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {
@@ -6800,23 +7024,7 @@
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {
-  "ko": "재질 이미지",
-  "file": "UI/MainWindow.SelectionMaterials.cs"
- },
- {
-  "ko": "재료 라이브러리가 가득 찼습니다. 쓰지 않는 재질 레이어를 정리하세요.",
-  "file": "UI/MainWindow.SelectionMaterials.cs"
- },
- {
-  "ko": "이미 이 재질이 적용되어 있습니다.",
-  "file": "UI/MainWindow.SelectionMaterials.cs"
- },
- {
   "ko": "선택 영역 재질 바꾸기",
-  "file": "UI/MainWindow.SelectionMaterials.cs"
- },
- {
-  "ko": "재질을 바꿨습니다: {0}",
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {

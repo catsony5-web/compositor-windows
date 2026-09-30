@@ -12,7 +12,10 @@ public sealed class ParameterSlider : StackPanel
 {
     readonly Slider slider;
     readonly TextBox number;
-    readonly double minimumStep;
+    readonly double minimumStep, min, max;
+    // A logarithmic track puts a wide positive range (10–1000%) evenly under the pointer: equal
+    // distances are equal ratios, so the middle of 10–1000 is 100.
+    readonly bool logarithmic;
     bool syncing, editingNumber, dragging;
     double value, selectedStep, dragValue;
     public double Value => value;
@@ -21,11 +24,12 @@ public sealed class ParameterSlider : StackPanel
     public event Action<double>? Changed;
 
     public ParameterSlider(string label, double min, double max, double value, double reset = 0,
-        bool showStepControls = false, double minimumStep = 0)
+        bool showStepControls = false, double minimumStep = 0, bool logarithmic = false)
     {
         if (!double.IsFinite(min) || !double.IsFinite(max) || min >= max) throw new ArgumentOutOfRangeException(nameof(max));
         if (!double.IsFinite(minimumStep) || minimumStep < 0) throw new ArgumentOutOfRangeException(nameof(minimumStep));
-        this.minimumStep = minimumStep;
+        if (logarithmic && (min <= 0 || showStepControls || minimumStep > 0)) throw new ArgumentOutOfRangeException(nameof(logarithmic));
+        this.minimumStep = minimumStep; this.min = min; this.max = max; this.logarithmic = logarithmic;
         Margin = new Thickness(0, 4, 0, 8);
         var row = new DockPanel();
         number = new TextBox { Width = 64, Padding = new Thickness(6, 3, 6, 3), MinHeight = 26, VerticalContentAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right, Margin = new Thickness(0) };
@@ -50,9 +54,9 @@ public sealed class ParameterSlider : StackPanel
         var caption = Theme.Label(label, Theme.BodySize, Theme.Muted); caption.Margin = new Thickness(1, 2, 2, 2); row.Children.Add(caption); Children.Add(row);
         bool precisionControls = showStepControls || minimumStep > 0;
         slider = precisionControls ? new PrecisionSlider(this) : new Slider();
-        slider.Minimum = min; slider.Maximum = max; slider.Margin = new Thickness(2, 4, 2, 0);
-        slider.SmallChange = precisionControls ? max - min <= 40 ? .01 : .1 : (max - min) / 200;
-        slider.LargeChange = (max - min) / 20; slider.IsMoveToPointEnabled = true;
+        slider.Minimum = Track(min); slider.Maximum = Track(max); slider.Margin = new Thickness(2, 4, 2, 0);
+        slider.SmallChange = precisionControls ? max - min <= 40 ? .01 : .1 : (slider.Maximum - slider.Minimum) / 200;
+        slider.LargeChange = (slider.Maximum - slider.Minimum) / 20; slider.IsMoveToPointEnabled = true;
         if (TryFindResource("SpectrumSlider") is Style style) slider.Style = style;
         var ramp = new LinearGradientBrush { StartPoint = new Point(0, .5), EndPoint = new Point(1, .5) };
         string[] rampColors = label == "색조" ? ["#EE6981", "#EBCB78", "#87C78D", "#77CEDC", "#8C96E7", "#D180D7", "#EE6981"] : label == "채도" ? ["#858992", "#D982B2"] : label == "명도" || label.Contains("노출") || label.Contains("검정") || label.Contains("흰색") ? ["#17191E", "#F2F4F8"] : ["#4B596B", "#BDDAF8"];
@@ -61,7 +65,7 @@ public sealed class ParameterSlider : StackPanel
         if (precisionControls) slider.ToolTip = "방향키: 미세 조절 · 연속 이동에서 Shift+드래그/방향키: 1/10 속도";
         AutomationProperties.SetName(slider, label);
         Children.Add(slider); SetValue(value);
-        slider.ValueChanged += (_, _) => { if (!syncing) ApplyValue(SnapUserValue(slider.Value), true); };
+        slider.ValueChanged += (_, _) => { if (!syncing) ApplyValue(SnapUserValue(Real(slider.Value)), true); };
         if (precisionControls) slider.PreviewKeyDown += (_, e) => { if (AdjustByKey(e.Key, e.KeyboardDevice.Modifiers.HasFlag(ModifierKeys.Shift))) e.Handled = true; };
         number.TextChanged += (_, _) => { if (!syncing) editingNumber = true; };
         number.LostKeyboardFocus += (_, _) => TryCommit();
@@ -83,11 +87,16 @@ public sealed class ParameterSlider : StackPanel
         }
     }
 
+    double Track(double real) => logarithmic ? Math.Log(real) : real;
+    double Real(double track) => logarithmic ? Math.Exp(track) : track;
+    // Where the thumb sits along the track, 0–1.
+    internal double TrackPosition => (slider.Value - slider.Minimum) / (slider.Maximum - slider.Minimum);
+
     bool TryReadNumber(out double parsed)
     {
         if (!editingNumber) { parsed = Value; return true; }
         return double.TryParse(number.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed)
-            && double.IsFinite(parsed) && parsed >= slider.Minimum && parsed <= slider.Maximum;
+            && double.IsFinite(parsed) && parsed >= min && parsed <= max;
     }
 
     public bool TryCommit()
@@ -95,7 +104,7 @@ public sealed class ParameterSlider : StackPanel
         if (!TryReadNumber(out double parsed))
         {
             number.BorderBrush = Theme.Danger;
-            number.ToolTip = $"{slider.Minimum} ~ {slider.Maximum} 사이의 숫자를 입력하세요.";
+            number.ToolTip = $"{min} ~ {max} 사이의 숫자를 입력하세요.";
             return false;
         }
         SetValue(parsed, true); return true;
@@ -105,7 +114,7 @@ public sealed class ParameterSlider : StackPanel
     {
         if (!double.IsFinite(value)) throw new ArgumentOutOfRangeException(nameof(value));
         // Model synchronization, direct typing and reset deliberately bypass the user's movement snap.
-        ApplyValue(minimumStep > 0 ? Snap(value, minimumStep) : Math.Clamp(value, slider.Minimum, slider.Maximum), notify);
+        ApplyValue(minimumStep > 0 ? Snap(value, minimumStep) : Math.Clamp(value, min, max), notify);
     }
 
     void ApplyValue(double next, bool notify)
@@ -114,7 +123,7 @@ public sealed class ParameterSlider : StackPanel
         syncing = true;
         try
         {
-            slider.Value = next; value = slider.Value;
+            slider.Value = Track(next); value = logarithmic ? Math.Clamp(next, min, max) : slider.Value;
             number.Text = value.ToString("0.########", CultureInfo.InvariantCulture);
             number.ClearValue(Control.BorderBrushProperty); number.ClearValue(ToolTipProperty);
             editingNumber = false;
@@ -125,23 +134,26 @@ public sealed class ParameterSlider : StackPanel
 
     double Snap(double candidate, double step)
     {
-        candidate = Math.Clamp(candidate, slider.Minimum, slider.Maximum);
+        candidate = Math.Clamp(candidate, min, max);
         // Both endpoints remain reachable, including a lower bound which is not a multiple of the step.
-        if (candidate <= slider.Minimum || candidate >= slider.Maximum) return candidate;
-        return Math.Clamp(Math.Round(candidate / step, MidpointRounding.AwayFromZero) * step, slider.Minimum, slider.Maximum);
+        if (candidate <= min || candidate >= max) return candidate;
+        return Math.Clamp(Math.Round(candidate / step, MidpointRounding.AwayFromZero) * step, min, max);
     }
 
     double SnapUserValue(double candidate)
     {
         double step = Math.Max(selectedStep, minimumStep);
-        return step > 0 ? Snap(candidate, step) : Math.Clamp(candidate, slider.Minimum, slider.Maximum);
+        if (step > 0) return Snap(candidate, step);
+        // A dragged logarithmic value keeps three significant digits (137, 12.3), not the raw exponential.
+        if (logarithmic && candidate > 0) candidate = Math.Round(candidate, Math.Clamp(2 - (int)Math.Floor(Math.Log10(candidate)), 0, 6));
+        return Math.Clamp(candidate, min, max);
     }
 
     internal bool AdjustByKey(Key key, bool shift = false)
     {
         if (!IsEnabled || !slider.IsEnabled) return false;
         int direction = key switch { Key.Left or Key.Down => -1, Key.Right or Key.Up => 1, Key.PageDown => -10, Key.PageUp => 10, _ => 0 };
-        if (key is Key.Home or Key.End) { ApplyValue(key == Key.Home ? slider.Minimum : slider.Maximum, true); return true; }
+        if (key is Key.Home or Key.End) { ApplyValue(key == Key.Home ? min : max, true); return true; }
         if (direction == 0) return false;
         double step = Math.Max(selectedStep, minimumStep);
         if (step > 0)
@@ -151,8 +163,8 @@ public sealed class ParameterSlider : StackPanel
         }
         else
         {
-            double fine = slider.Maximum - slider.Minimum <= 40 ? .01 : .1;
-            ApplyValue(Math.Clamp(Value + direction * fine * (shift ? .1 : 1), slider.Minimum, slider.Maximum), true);
+            double fine = max - min <= 40 ? .01 : .1;
+            ApplyValue(Math.Clamp(Value + direction * fine * (shift ? .1 : 1), min, max), true);
         }
         return true;
     }
@@ -162,7 +174,7 @@ public sealed class ParameterSlider : StackPanel
     {
         if (!dragging || !double.IsFinite(delta)) return;
         // Accumulate unsnapped positions: repeated small movements must eventually cross a step boundary.
-        dragValue = Math.Clamp(dragValue + delta * (selectedStep == 0 && minimumStep == 0 && shift ? .1 : 1), slider.Minimum, slider.Maximum);
+        dragValue = Math.Clamp(dragValue + delta * (selectedStep == 0 && minimumStep == 0 && shift ? .1 : 1), min, max);
         ApplyValue(SnapUserValue(dragValue), true);
     }
     internal void EndUserDrag() => dragging = false;

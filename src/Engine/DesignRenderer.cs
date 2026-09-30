@@ -17,6 +17,23 @@ public static partial class DesignRenderer
         => RenderCore(doc, area, width, height, true, token, new(passSize, passRendered));
     public static Raster RenderOutput(Document doc, CancellationToken token = default)
         => HasRetainedContent(doc) || doc.Layers.Any(DrawingLayers.IsContainer) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token, default) : Imaging.Render(doc, token);
+    // The document area drawn at width×height (any scale) in chunks of at most 4096 px: exports at 2x and
+    // more draw vectors, text and hatch patterns at the output resolution instead of resampling 1x pixels.
+    public static Raster RenderScaled(Document doc, Rect area, int width, int height, CancellationToken token = default)
+    {
+        const int chunk = 4096;
+        if ((long)width * height <= (long)chunk * chunk) return Render(doc, area, width, height, token);
+        Raster.ValidateSize(width, height);
+        var output = new Raster(width, height); double sx = area.Width / width, sy = area.Height / height;
+        for (int y = 0; y < height; y += chunk) for (int x = 0; x < width; x += chunk)
+        {
+            token.ThrowIfCancellationRequested();
+            int w = Math.Min(chunk, width - x), h = Math.Min(chunk, height - y);
+            var part = Render(doc, new Rect(area.X + x * sx, area.Y + y * sy, w * sx, h * sy), w, h, token);
+            for (int row = 0; row < h; row++) Buffer.BlockCopy(part.Data, row * w * 4, output.Data, ((y + row) * width + x) * 4, w * 4);
+        }
+        return output;
+    }
     readonly record struct PathPasses(int Size, Action? Rendered);
     static Raster RenderCore(Document doc, Rect area, int width, int height, bool screen, CancellationToken token, PathPasses passes)
     {
@@ -114,11 +131,15 @@ public static partial class DesignRenderer
             pdf = PdfCompatibility.RenderRegionAsync(source, visible, w, h, token).GetAwaiter().GetResult();
         }
         token.ThrowIfCancellationRequested();
+        // A hatch pattern is redrawn for the device scale; chunked output reuses the cached tile, and a
+        // repeat too large for a tile is drawn as vector marks over the visible part only.
+        var material = layer.Material is { } fill && pdf == null
+            ? MaterialRenderer.Drawing(fill, Math.Max(Math.Sqrt(map.M11 * map.M11 + map.M12 * map.M12), Math.Sqrt(map.M21 * map.M21 + map.M22 * map.M22)), token, visible) : null;
         return Imaging.Draw(width, height, dc =>
         {
             dc.PushTransform(new MatrixTransform(map)); dc.PushClip(new RectangleGeometry(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height)));
             if (pdf != null) dc.DrawImage(pdf.Bitmap(), visible);
-            else if (layer.Material != null) dc.DrawDrawing(MaterialRenderer.Drawing(layer.Material));
+            else if (material != null) dc.DrawDrawing(material);
             else if (layer.Vector != null) dc.DrawDrawing(layer.Vector.Drawing);
             else dc.DrawDrawing(TextDrawing(layer.Text!));
             dc.Pop(); dc.Pop();
