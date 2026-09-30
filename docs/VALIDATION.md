@@ -1,3 +1,15 @@
+# Preview 38 hatch patterns validation
+
+- Source self-tests: **708/708 passed** on Windows x64 (674 in Preview 37; +34: `HatchPatternTests`, `MainWindow.MaterialPropertiesTests`, CAD dialog, automation and review regression checks).
+  - Patterns: catalog ids and spoof guard, deterministic geometry, transparent background and ink color, seamless tiles (every pattern's tile equals a nine-copy reference within 4/255; seam-band density for dense patterns; line continuity), crisp 16× zoom versus the image path, thin lines centred on pixels (alpha ≥ 165), tile size rounded to whole device pixels, flagstone/cobble repeat without a lattice, ratio keeps dots round, line weight coverage and validation, save/reopen at format 6 (shared instance, identical pixels), Preview 37-shaped projects load, copy between documents, swap keeps ratio/angle/offset/ink/weight, cache reuse/budget/cancellation/size cap, 8000×6000 performance smoke, scaled exports redraw the pattern.
+  - Properties: pattern tab tiles and order, apply and swap in one undo step each, live preview → one step, several ticks → one step, switching sliders commits the previous one and keeps the panel for the drag, a pending preview is settled before a canvas edit, reset to defaults, locked layers disable controls, image↔pattern swaps, English names.
+  - Import and AI: 4th hatch choice remembered, pattern summary in Korean and English, `query_patterns` order/filters, unregistered pattern ids, `ink`/`lineWeight` round-trip and rejection (including fully transparent ink), `cadHatches: "pattern"`.
+- `tools/qa/automation-smoke.cjs` updated (34 tools, contract 7, query_patterns and an apply-pattern step) and passes.
+- `tools/i18n/extract.py` reports 0 missing keys (1,950 entries per language).
+- Offscreen captures in Korean and English reviewed against the reference sheet: hatch-pattern-library (19 patterns at 50/100/400%), hatch-site-plan, hatch-zoom-400, hatch-ratio-lineweight, selection-hatch-patterns (+narrow), selection-hatch-applied, material-properties-pattern/-image/-narrow, import-cad-cleanup-patterns, cad-cleanup-after-patterns.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered offscreen: real mouse drags on the size/ratio sliders, high-DPI scaling, and pattern fills on very large real-world DWG imports (synthetic plans only).
+
 # Preview 37 drawings, boards and presentation work validation
 
 - Source self-tests: **674/674 passed** on Windows x64 (548 in Preview 36; +1 batch references, +67 across the seven features, +33 regression checks for the review findings, +25 for the screen fixes), seven consecutive full runs including four in parallel under load.
