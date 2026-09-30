@@ -13,10 +13,14 @@ internal sealed class PsdReader : IDisposable
     {
         public int Left, Top, Width, Height; public string Name = "PSD 레이어", Blend = "norm"; public byte Opacity, Flags; public bool Clip, Complex;
         public int MaskLeft, MaskTop, MaskWidth, MaskHeight; public byte MaskDefault, MaskFlags; public bool HasMask;
+        // Section divider type: 0 = layer, 1/2 = group folder (open/closed), 3 = end of a group's children.
+        public int Section; public string? SectionBlend;
         public readonly List<Channel> Channels = [];
+        // Layout details only used to recognise files from earlier Morupixel versions.
+        public byte Filler; public long BlendingRanges; public readonly List<string> Keys = [];
     }
     readonly FileStream stream; readonly CancellationToken token; readonly List<string> warnings = [];
-    readonly List<Record> records = [];
+    readonly List<Record> records = []; readonly List<int> resources = [];
     int width, height, channels, mode; bool large, mergedAlpha; double dpi = 96;
     PsdReader(string path, CancellationToken token) { stream = File.OpenRead(path); this.token = token; }
     public void Dispose() => stream.Dispose();
@@ -62,8 +66,10 @@ internal sealed class PsdReader : IDisposable
             if (stream.Position < infoEnd)
             {
                 int count = I16(); mergedAlpha = count < 0; count = Math.Abs(count);
-                if (count > 4096 || layers && count > Document.MaxLayers) throw new InvalidDataException("PSD 레이어 수가 한도를 초과합니다. 레이어 수를 줄이거나 합성 이미지로 열어 주세요.");
+                if (count > 4096) throw new InvalidDataException("PSD 레이어 수가 한도를 초과합니다. 레이어 수를 줄이거나 합성 이미지로 열어 주세요.");
                 for (int i = 0; i < count; i++) { token.ThrowIfCancellationRequested(); records.Add(ReadRecord(infoEnd)); }
+                // Group folders and their end markers do not use image layer slots.
+                if (layers && records.Count(r => r.Section == 0) > Document.MaxLayers) throw new InvalidDataException("PSD 레이어 수가 한도를 초과합니다. 레이어 수를 줄이거나 합성 이미지로 열어 주세요.");
                 foreach (var record in records) foreach (var channel in record.Channels) { channel.Offset = stream.Position; Seek(End(channel.Length, infoEnd)); }
                 Seek(infoEnd);
             }
@@ -75,51 +81,129 @@ internal sealed class PsdReader : IDisposable
             var raster = DecodeMerged(mergedOffset); warnings.Add("파일에 저장된 합성 이미지를 가져왔습니다. 레이어·효과·문자는 하나의 이미지에 합쳐져 있습니다.");
             return new(CompatibilityImport.Single(path, raster, dpi, "PSD 합성 이미지"), warnings.Distinct().ToArray());
         }
-        long memory = 0;
+        long memory = 0; int folders = 0;
         foreach (var record in records)
         {
+            if (record.Section is 1 or 2)
+            {
+                string blend = record.SectionBlend ?? record.Blend;
+                if (record.Complex || blend != "pass" && !PsdCompatibility.Blends.ContainsKey(blend)) throw new NotSupportedException("그룹·조정 레이어 또는 지원하지 않는 혼합 모드가 있습니다. ‘합성 이미지’로 가져와 주세요.");
+                if (record.HasMask && (record.MaskFlags & 2) == 0) memory = checked(memory + (long)width * height);
+                folders++; continue;
+            }
+            if (record.Section == 3) continue;
             if (record.Complex || !PsdCompatibility.Blends.ContainsKey(record.Blend)) throw new NotSupportedException("그룹·조정 레이어 또는 지원하지 않는 혼합 모드가 있습니다. ‘합성 이미지’로 가져와 주세요.");
             if (record.Width == 0 || record.Height == 0) continue;
             Raster.ValidateSize(record.Width, record.Height); memory = checked(memory + (long)record.Width * record.Height * 5);
             if (memory > Document.MaxLayerBytes) throw new InvalidDataException($"PSD 레이어 메모리가 {Document.MaxLayerBytes / (1024L * 1024 * 1024):N0}GB를 초과합니다. 합성 이미지로 가져와 주세요.");
         }
+        // Every group shares one document-sized coordinate surface, like other folders.
+        if (folders > 0) memory = checked(memory + (long)width * height * 4);
+        if (memory > Document.MaxLayerBytes) throw new InvalidDataException($"PSD 레이어 메모리가 {Document.MaxLayerBytes / (1024L * 1024 * 1024):N0}GB를 초과합니다. 합성 이미지로 가져와 주세요.");
         var doc = new Document { Width = width, Height = height, Name = Path.GetFileNameWithoutExtension(path), Dpi = dpi };
-        foreach (var record in records.AsEnumerable().Reverse())
+        Raster? surface = null;
+        byte[]? Mask(Record record, byte[]? plane, int left, int top, int w, int h)
         {
-            token.ThrowIfCancellationRequested(); if (record.Width == 0 || record.Height == 0) continue;
+            if (!record.HasMask || (record.MaskFlags & 2) != 0) return null;
+            var result = new byte[checked(w * h)]; if (record.MaskDefault != 0) Array.Fill(result, record.MaskDefault);
+            if (plane == null) return result;
+            int dx = checked(record.MaskLeft - ((record.MaskFlags & 1) != 0 ? 0 : left)), dy = checked(record.MaskTop - ((record.MaskFlags & 1) != 0 ? 0 : top));
+            for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+            { long mx = (long)x - dx, my = (long)y - dy; if (mx >= 0 && my >= 0 && mx < record.MaskWidth && my < record.MaskHeight) result[y * w + x] = plane[(int)(my * record.MaskWidth + mx)]; }
+            return result;
+        }
+        byte[]? MaskPlane(Record record)
+        {
+            var channel = record.Channels.FirstOrDefault(c => c.Id == -2);
+            return channel != null && record.HasMask && (record.MaskFlags & 2) == 0 && record.MaskWidth > 0 && record.MaskHeight > 0
+                ? DecodePlane(channel.Offset, channel.Length, record.MaskWidth, record.MaskHeight) : null;
+        }
+        string Name(Record record, string fallback) => string.IsNullOrWhiteSpace(record.Name) ? Loc.T(fallback) : record.Name;
+        if (LegacyTopFirst(mergedOffset))
+        {
+            records.Reverse();
+            warnings.Add("이전 Morupixel(0.2.0 Preview 35 이하)이 저장한 레이어 PSD입니다. 그 버전의 저장 순서(위에서 아래로)에 맞춰 레이어를 쌓았습니다.");
+        }
+        // Records are stored bottom-first. A divider opens a group's children; the folder record closes it.
+        var open = new Stack<List<Layer>>(); var level = new List<Layer>();
+        foreach (var record in records)
+        {
+            token.ThrowIfCancellationRequested();
+            if (record.Section == 3)
+            {
+                if (open.Count >= 16) throw new InvalidDataException("PSD 그룹이 16단계보다 깊게 중첩되어 있습니다. 합성 이미지로 가져와 주세요.");
+                open.Push(level); level = []; continue;
+            }
+            if (record.Section is 1 or 2)
+            {
+                if (open.Count == 0) throw new InvalidDataException("PSD 그룹 구조가 올바르지 않습니다. 합성 이미지로 가져와 주세요.");
+                string blend = record.SectionBlend ?? record.Blend;
+                surface ??= new Raster(width, height);
+                var group = new Layer { Name = Name(record, "PSD 그룹"), Kind = LayerKind.Group, Pixels = surface, Visible = (record.Flags & 2) == 0,
+                    Opacity = record.Opacity / 255d, Clipped = record.Clip, Blend = blend == "pass" ? BlendMode.Normal : PsdCompatibility.Blends[blend] };
+                group.Mask = Mask(record, MaskPlane(record), 0, 0, width, height);
+                foreach (var child in level) child.ParentId ??= group.Id;
+                var parent = open.Pop(); parent.AddRange(level); parent.Add(group); level = parent;
+                continue;
+            }
+            if (record.Width == 0 || record.Height == 0)
+            {
+                // Keep empty layers so names and stacking order survive a round trip.
+                level.Add(new Layer { Name = Name(record, "PSD 레이어"), Pixels = new Raster(1, 1), X = record.Left, Y = record.Top, Visible = (record.Flags & 2) == 0,
+                    Opacity = record.Opacity / 255d, Clipped = record.Clip, Blend = PsdCompatibility.Blends[record.Blend] });
+                continue;
+            }
             var raster = new Raster(record.Width, record.Height); for (int i = 3; i < raster.Data.Length; i += 4) raster.Data[i] = 255;
-            var used = new HashSet<short>(); byte[]? mask = null;
+            var used = new HashSet<short>();
             foreach (var channel in record.Channels)
             {
                 if (!used.Add(channel.Id)) throw new InvalidDataException("PSD에 중복 채널이 있습니다.");
-                if (channel.Id == -2 && record.HasMask && (record.MaskFlags & 2) == 0)
-                {
-                    if (record.MaskWidth > 0 && record.MaskHeight > 0) mask = DecodePlane(channel.Offset, channel.Length, record.MaskWidth, record.MaskHeight);
-                }
-                else if (channel.Id is >= -1 and <= 2)
+                if (channel.Id is >= -1 and <= 2)
                 {
                     var plane = DecodePlane(channel.Offset, channel.Length, record.Width, record.Height);
                     Put(raster, plane, channel.Id);
                 }
             }
             if (!used.Contains(0) || mode == 3 && (!used.Contains(1) || !used.Contains(2))) throw new InvalidDataException("PSD 레이어에 필요한 색상 채널이 없습니다.");
-            var layer = new Layer { Name = string.IsNullOrWhiteSpace(record.Name) ? "PSD 레이어" : record.Name, Pixels = raster, X = record.Left, Y = record.Top,
+            var layer = new Layer { Name = Name(record, "PSD 레이어"), Pixels = raster, X = record.Left, Y = record.Top,
                 Visible = (record.Flags & 2) == 0, Locked = (record.Flags & 1) != 0, Opacity = record.Opacity / 255d, Clipped = record.Clip, Blend = PsdCompatibility.Blends[record.Blend] };
-            if (record.HasMask && (record.MaskFlags & 2) == 0)
-            {
-                layer.Mask = Enumerable.Repeat(record.MaskDefault, record.Width * record.Height).ToArray();
-                if (mask != null)
-                {
-                    int dx = checked(record.MaskLeft - ((record.MaskFlags & 1) != 0 ? 0 : record.Left)), dy = checked(record.MaskTop - ((record.MaskFlags & 1) != 0 ? 0 : record.Top));
-                    for (int y = 0; y < record.Height; y++) for (int x = 0; x < record.Width; x++)
-                    { long mx = (long)x - dx, my = (long)y - dy; if (mx >= 0 && my >= 0 && mx < record.MaskWidth && my < record.MaskHeight) layer.Mask[y * record.Width + x] = mask[(int)(my * record.MaskWidth + mx)]; }
-                }
-            }
-            doc.Add(layer);
+            layer.Mask = Mask(record, MaskPlane(record), record.Left, record.Top, record.Width, record.Height);
+            level.Add(layer);
         }
-        if (doc.Layers.Count == 0) throw new NotSupportedException("가져올 픽셀 레이어가 없습니다. 합성 이미지로 열어 주세요.");
+        // Tolerate a missing folder record: its children stay at the level above.
+        while (open.Count > 0) { var parent = open.Pop(); parent.AddRange(level); level = parent; }
+        foreach (var layer in level) doc.Add(layer);
+        if (!doc.Layers.Any(l => l.Kind != LayerKind.Group)) throw new NotSupportedException("가져올 픽셀 레이어가 없습니다. 합성 이미지로 열어 주세요.");
         warnings.Add("기본 픽셀 레이어·위치·표시·불투명도·마스크·지원 혼합 모드를 가져왔습니다. 문자·내장 개체는 저장된 픽셀로 읽으며 편집 속성은 유지되지 않습니다.");
+        if (folders > 0) warnings.Add($"PSD 그룹 {folders:N0}개의 이름·순서·표시·불투명도·마스크를 유지했습니다.");
         doc.Validate(); return new(doc, warnings.Distinct().ToArray());
+    }
+    /// <summary>
+    /// Layered files written by Morupixel 0.2.0 Preview 35 and earlier store their records top-first,
+    /// against the format. That writer had one fixed layout, used here as its fingerprint: only the
+    /// resolution resource (today's writer adds a 1057 version resource naming Morupixel), RGB with
+    /// a transparency composite, and two or more records that each cover the whole canvas with raw
+    /// R, G, B, A channels, no mask, clipping, flags other than "hidden", blending ranges or group
+    /// markers, and only a Unicode name block, followed by a raw composite.
+    /// </summary>
+    bool LegacyTopFirst(long mergedOffset)
+    {
+        if (resources is not [1005] || mode != 3 || channels != 4 || !mergedAlpha || large || records.Count < 2) return false;
+        long plane = (long)width * height + 2;
+        foreach (var r in records)
+        {
+            if (r.Section != 0 || r.Left != 0 || r.Top != 0 || r.Width != width || r.Height != height || r.Clip || r.HasMask
+                || (r.Flags & ~2) != 0 || r.Filler != 0 || r.BlendingRanges != 0 || r.Keys is not ["luni"]
+                || r.Channels.Count != 4 || r.Channels[0].Id != 0 || r.Channels[1].Id != 1 || r.Channels[2].Id != 2 || r.Channels[3].Id != -1
+                || r.Channels.Any(c => c.Length != plane)) return false;
+        }
+        long saved = stream.Position;
+        try
+        {
+            foreach (var channel in records.SelectMany(r => r.Channels)) { stream.Position = channel.Offset; if (U16() != 0) return false; }
+            stream.Position = mergedOffset; return stream.Length - mergedOffset >= 2 && U16() == 0;
+        }
+        finally { stream.Position = saved; }
     }
     void ReadResources()
     {
@@ -128,7 +212,7 @@ internal sealed class PsdReader : IDisposable
         {
             token.ThrowIfCancellationRequested(); if (end - stream.Position < 12) throw new InvalidDataException("잘린 PSD 이미지 리소스입니다.");
             string signature = Tag(); if (signature is not ("8BIM" or "MeSa")) throw new InvalidDataException("PSD 이미지 리소스 서명이 올바르지 않습니다.");
-            int id = U16(); Pascal(2); long length = Length(), resourceEnd = End(length, end);
+            int id = U16(); Pascal(2); long length = Length(), resourceEnd = End(length, end); resources.Add(id);
             if (id == 1005 && length >= 16)
             {
                 double value = U32() / 65536d; int units = U16(); if (units == 2) value *= 2.54; if (value >= 1 && value <= 9600) dpi = value;
@@ -144,7 +228,7 @@ internal sealed class PsdReader : IDisposable
         int count = U16(); if (count > 16) throw new NotSupportedException("레이어당 16개 이상의 PSD 채널은 지원하지 않습니다.");
         for (int i = 0; i < count; i++) r.Channels.Add(new Channel { Id = I16(), Length = Length(large) });
         if (Tag() != "8BIM") throw new InvalidDataException("PSD 레이어 서명이 올바르지 않습니다.");
-        r.Blend = Tag(); r.Opacity = Byte(); r.Clip = Byte() != 0; r.Flags = Byte(); Byte(); long extraEnd = End(Length(), limit);
+        r.Blend = Tag(); r.Opacity = Byte(); r.Clip = Byte() != 0; r.Flags = Byte(); r.Filler = Byte(); long extraEnd = End(Length(), limit);
         long maskLength = Length(), maskEnd = End(maskLength, extraEnd);
         if (maskLength != 0)
         {
@@ -153,14 +237,19 @@ internal sealed class PsdReader : IDisposable
             if (r.MaskWidth < 0 || r.MaskHeight < 0) throw new InvalidDataException("PSD 마스크 경계 오류입니다.");
             if ((r.MaskFlags & 16) != 0) warnings.Add("PSD 마스크의 추가 농도·페더 속성은 보존하지 않습니다.");
         }
-        Seek(maskEnd); Seek(End(Length(), extraEnd)); r.Name = Pascal(4);
+        Seek(maskEnd); r.BlendingRanges = Length(); Seek(End(r.BlendingRanges, extraEnd)); r.Name = Pascal(4);
         while (stream.Position + 12 <= extraEnd)
         {
             string signature = Tag(); if (signature is not ("8BIM" or "8B64")) throw new InvalidDataException("PSD 추가 레이어 정보가 올바르지 않습니다.");
             string key = Tag(); bool wide = large && (signature == "8B64" || key is "LMsk" or "Lr16" or "Lr32" or "Layr" or "Mt16" or "Mt32" or "Mtrn" or "Alph" or "FMsk" or "lnk2" or "FEid" or "FXid" or "PxSD");
-            long size = Length(wide), end = End(size, extraEnd);
+            long size = Length(wide), end = End(size, extraEnd); r.Keys.Add(key);
             if (key == "luni" && size >= 4) { uint n = U32(); if (n > 65536 || (long)n * 2 > end - stream.Position) throw new InvalidDataException("PSD 레이어 이름이 너무 깁니다."); r.Name = Encoding.BigEndianUnicode.GetString(Bytes((int)n * 2)); }
-            if (key is "lsct" or "lsdk" or "levl" or "curv" or "hue2" or "brit" or "blnc" or "SoCo" or "GdFl" or "PtFl" or "blwh" or "expA" or "vibA" or "clrL" or "selc" or "mixr" or "phfl" or "nvrt" or "post" or "thrs" or "grdm") r.Complex = true;
+            if ((key is "lsct" or "lsdk") && size >= 4)
+            {
+                uint type = U32(); r.Section = type <= 3 ? (int)type : 0;
+                if (size >= 12 && Tag() == "8BIM") r.SectionBlend = Tag();
+            }
+            if (key is "levl" or "curv" or "hue2" or "brit" or "blnc" or "SoCo" or "GdFl" or "PtFl" or "blwh" or "expA" or "vibA" or "clrL" or "selc" or "mixr" or "phfl" or "nvrt" or "post" or "thrs" or "grdm") r.Complex = true;
             if (key is "lrFX" or "lfx2" or "vmsk" or "vsms") warnings.Add("레이어 효과·벡터 마스크는 개별 레이어 모드에서 재현하지 않습니다. 외형이 중요하면 합성 이미지로 가져오세요.");
             Seek(end); if ((size & 1) != 0 && stream.Position < extraEnd) Byte();
         }

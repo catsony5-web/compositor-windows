@@ -128,6 +128,7 @@ public sealed class Layer
     public MaterialFill? Material { get; set; }
     public AdjustmentSpec? Adjustment { get; set; }
     public WarpQuad? Warp { get; set; }
+    public ShadowSpec? Shadow { get; set; }
     public Layer Snapshot()
     {
         var copy = (Layer)MemberwiseClone();
@@ -274,6 +275,7 @@ public sealed class Document
         else if (layer.Text != null) throw new InvalidDataException("텍스트 레이어 종류가 일치하지 않습니다.");
         if (layer.Kind == LayerKind.Adjustment) (layer.Adjustment ?? throw new InvalidDataException("조정 정보가 없습니다.")).Validate();
         else if (layer.Adjustment != null) throw new InvalidDataException("조정 레이어 종류가 일치하지 않습니다.");
+        ShadowSpec.ValidateLayer(layer);
         layer.Warp?.Validate();
     }
 }
@@ -338,6 +340,7 @@ public sealed class History
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
                 x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Material != y.Material || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
+            if (x.Shadow != y.Shadow) return false;
         }
         return true;
     }

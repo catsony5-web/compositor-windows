@@ -58,13 +58,16 @@ public sealed partial class MainWindow
             ShowHistogram = showHistogram,
             RibbonMode = ribbonMode, RibbonCollapsed = ribbonCollapsed, RibbonTab = ribbonTab, RibbonFavorites = ribbonFavorites.ToArray(),
             RecentColors = ColorPalettePanel.RecentColors.Select(c => $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}").ToArray(),
-            OpenedSections = SectionHeader.OpenedDefaultKeys
+            OpenedSections = SectionHeader.OpenedDefaultKeys,
+            Profile = userProfileChosen ? userProfile.Id : null
         };
     }
 
     internal void ApplyPaneLayout(WorkspaceLayout layout)
     {
         rightPanelColumn.Width = new GridLength(Math.Clamp(layout.RightPanelWidth, rightPanelColumn.MinWidth, rightPanelColumn.MaxWidth));
+        // The saved purpose first, without its default mode: the saved mode below wins.
+        if (UserProfiles.Find(layout.Profile) is { } profile) SetUserProfile(profile.Id, pickedByUser: false);
         if (layout.DesignWorkspace != designWorkspace) SetWorkspaceMode(layout.DesignWorkspace);
         foreach (var saved in layout.Panes)
         {
@@ -84,7 +87,7 @@ public sealed partial class MainWindow
         SetHistogramVisible(layout.ShowHistogram);
         ribbonMode = layout.RibbonMode; ribbonCollapsed = layout.RibbonCollapsed;
         if (layout.RibbonTab != null && RibbonTabNames().Contains(layout.RibbonTab)) ribbonTab = layout.RibbonTab;
-        if (layout.RibbonFavorites != null) ribbonFavorites = [.. layout.RibbonFavorites];
+        if (layout.RibbonFavorites != null) ribbonFavorites = MigrateFavorites(layout.RibbonFavorites);
         RebuildRibbon();
     }
 

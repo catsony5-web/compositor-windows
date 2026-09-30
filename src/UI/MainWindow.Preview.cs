@@ -19,9 +19,13 @@ public sealed partial class MainWindow
         void Capture(Window window, string name, int width, int height)
         {
             var content = (FrameworkElement)window.Content; var size = new Size(width, height);
-            if (content is System.Windows.Controls.Panel panel && panel.Background == null) panel.Background = window.Background;
+            // Dialogs are captured on their window background so the root margin (inner padding) shows.
+            if (!ReferenceEquals(window, this)) content = OffscreenPreview.Host(window);
+            else if (content is System.Windows.Controls.Panel panel && panel.Background == null) panel.Background = window.Background;
             if (ReferenceEquals(window, this)) studioScroll.Height = PreferredStudioHeight(height);
             content.Measure(size); content.Arrange(new Rect(size)); content.UpdateLayout();
+            // Fit raises canvas.ZoomChanged, which refreshes the zoom readout for this size. (UpdateStatus
+            // is not called: it would replace the status line some captures show.)
             if (ReferenceEquals(window, this)) { canvas.Fit(); canvas.InvalidateVisual(); content.UpdateLayout(); }
             var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(content); image.Render(content);
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
@@ -35,6 +39,8 @@ public sealed partial class MainWindow
             try
             {
                 host.Measure(new Size(width, double.PositiveInfinity));
+                // Translate before sizing so a longer language gets the height it needs.
+                Loc.PrepareOffscreen(host); host.Measure(new Size(width, double.PositiveInfinity));
                 int height = (int)Math.Ceiling(host.DesiredSize.Height);
                 host.Measure(new Size(width, height)); host.Arrange(new Rect(0, 0, width, height)); host.UpdateLayout();
                 var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); Loc.PrepareOffscreen(host); image.Render(host);
@@ -48,6 +54,9 @@ public sealed partial class MainWindow
         CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
         CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
         Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf")), "import-cad-cleanup", 940, 700);
+        Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg")), "import-cad-batch", 940, 700);
+        Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), quick: true), "import-cad-quick", 940, 700);
+        Capture(CompatibilityDialog.BatchPreview(Path.Combine(directory, "2층 평면도.dwg"), failed: true), "import-cad-skip", 940, 700);
         RenderCleanupPreviews(directory);
         // Palette states: recent commands first, then a ranked search.
         recentCommands.Clear(); recentCommands.AddRange(["menu:레이어/레이어 복제", "tool:Brush", "menu:보정/레벨…"]);
@@ -55,7 +64,9 @@ public sealed partial class MainWindow
         var paletteSearch = new CommandPalette(null, BuildCommandRegistry(), recentCommands.ToArray()); paletteSearch.SetQuery("브러시");
         CaptureFit(paletteSearch, "command-palette-search", 600);
         recentCommands.Clear();
-        CaptureFit(new CompatibilityExportDialog(null!, doc), "compat-export", 510);
+        CaptureFit(new CompatibilityExportDialog(null, doc), "compat-export", 580);
+        CaptureFit(new CompatibilityExportDialog(null, doc, CompatibilityExportFormat.PsdLayers), "compat-export-psd", 580);
+        CaptureFit(new CompatibilityExportDialog(null, doc, CompatibilityExportFormat.AiLayers), "compat-export-ai", 580);
         var export = ExportDialog.Create(null, doc); ExportDialog.WaitForPreview(export, TimeSpan.FromSeconds(20)); Capture(export, "export", 1040, 680);
         Capture(new ColorPickerDialog(null!, foreground), "color-picker", 560, 470);
         Capture(new CmykExportDialog(null!, doc), "cmyk-export", 990, 710);
@@ -88,8 +99,24 @@ public sealed partial class MainWindow
         var developSpec = new AdjustmentSpec { Kind = AdjustmentKind.PhotoDevelop, PhotoDevelop = new()
             { Exposure = .2, Highlights = -35, Shadows = 28, Temperature = 8, Vibrance = 20, Texture = 15 } };
         var develop = new AdjustmentDialog(null, doc, developSpec);
-        develop.SetDesignPreview(Imaging.Render(AdjustmentDialog.PreviewDocument(doc, null, developSpec, true, null)));
+        var developAfter = Imaging.Render(AdjustmentDialog.PreviewDocument(doc, null, developSpec, true, null));
+        develop.SetDesignPreview(developAfter);
         Capture(develop, "photo-develop", 1040, 760);
+        // Before/after views: split bar, side by side, and one image switched to "before" (also at the minimum width).
+        var developBefore = Imaging.Render(AdjustmentDialog.PreviewDocument(doc, null, developSpec, false, null));
+        foreach (var (mode, name, width, height) in new[] { (CompareMode.Split, "photo-develop-split", 1040, 760), (CompareMode.SideBySide, "photo-develop-side-by-side", 1040, 760),
+            (CompareMode.Toggle, "photo-develop-toggle", 1040, 760), (CompareMode.Toggle, "photo-develop-toggle-860", 860, 600) })
+        {
+            var compare = new AdjustmentDialog(null, doc, developSpec);
+            compare.SetDesignPreview(developAfter); compare.SetDesignBefore(developBefore); compare.SelectCompareMode(mode);
+            if (mode == CompareMode.Toggle) compare.ToggleCompareState();
+            Capture(compare, name, width, height); compare.Close();
+        }
+        // A "before" render that failed: the empty cell and the info line say so and offer the retry.
+        var failedBefore = new AdjustmentDialog(null, doc, developSpec);
+        failedBefore.SetDesignPreview(developAfter); failedBefore.SelectCompareMode(CompareMode.SideBySide);
+        failedBefore.SetDesignBeforeFailure(new OutOfMemoryException().Message);
+        Capture(failedBefore, "photo-develop-before-failed", 1040, 760); failedBefore.Close();
         ShowStudioPage(2); Capture(this, "colors", 1480, 920);
         ShowStudioPage(3); Capture(this, "brush", 1480, 920);
         ShowStudioPage(0); Capture(this, "compact", 1200, 750);
@@ -97,7 +124,8 @@ public sealed partial class MainWindow
         foreach (var (width, height) in new[] { (1280, 720), (1366, 768), (1920, 1080) }) Capture(this, $"window-{width}x{height}", width, height);
         // Ribbon layout: the favorites tab and a dense menu tab, then back to the menu bar.
         SetRibbonMode(true); SelectRibbonTab(FavoritesTab); Capture(this, "ribbon", 1480, 920);
-        SelectRibbonTab("레이어"); Capture(this, "ribbon-layer-1280x720", 1280, 720); SetRibbonMode(false);
+        SelectRibbonTab("레이어"); Capture(this, "ribbon-layer-1280x720", 1280, 720);
+        SelectRibbonTab("파일"); Capture(this, "ribbon-file-1480x920", 1480, 920); SetRibbonMode(false);
         void CapturePane(FrameworkElement pane, string name, int width, int height)
         {
             if (pane is StudioPane movable) RemovePane(movable);
@@ -125,9 +153,20 @@ public sealed partial class MainWindow
         var text = doc.Layers.First(l => l.Text != null); doc.ActiveId = text.Id; BuildProperties(); ShowStudioPage(1);
         CapturePane(studioPanes[1], "text-properties", 360, 1160);
         var shape = VectorShapes.Create(new ShapeSpec { Width = 360, Height = 150, CornerRadius = 28, FillArgb = 0xD92E4862, StrokeEnabled = true, StrokeArgb = 0xFFC0D9F2, StrokeWidth = 2 }, 100, 100);
+        shape.Name = Loc.T(shape.Name);
         doc.Add(shape); SetWorkspaceMode(true); Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
         ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
+        RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
+        RenderProfilePreviews(directory);
+        RenderShadowPreviews(Capture, CapturePane);
+        // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
+        string plan = Path.Combine(directory, "평면 예시.dxf");
+        var drawing = CompatibilityImport.ReadAsync(plan, new ImportSettings { CadLongEdge = 900 }.Options(plan)).GetAwaiter().GetResult().Document;
+        AddTab(drawing, null); var hatch = doc.Layers.First(l => l.Kind == LayerKind.Material);
+        doc.ActiveId = hatch.Id; selectedLayers.Clear(); selectedLayers.Add(hatch.Id); ShowStudioPage(1);
+        Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
+        Capture(this, "drawing-photo-layers", 1480, 920);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)
@@ -142,6 +181,7 @@ public sealed partial class MainWindow
         if (HasDocument)
         {
             canvas.Fit(); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap(); histogram.Update(composite);
+            UpdateStatus(); // the zoom readout must reflect the fit, not the unlaid-out canvas
         }
         else { composite = null; canvas.Composite = null; }
         canvas.InvalidateVisual();

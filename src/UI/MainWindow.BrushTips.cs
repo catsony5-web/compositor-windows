@@ -15,6 +15,7 @@ public sealed partial class MainWindow
     readonly List<BrushTip> customBrushTips = [];
     readonly Dictionary<BrushTip, Button> brushTipButtons = [];
     ComboBox? customBrushPicker;
+    TextBlock? customBrushPlaceholder;
     TextBlock? brushTipName;
     Image? selectedBrushPreview;
     readonly List<(Image Image, double Size, double Hardness)> brushPresetPreviews = [];
@@ -57,7 +58,12 @@ public sealed partial class MainWindow
         {
             if (!syncingBrushTips && customBrushPicker.SelectedItem is BrushTip tip) SelectBrushTip(tip);
         };
-        panel.Children.Add(customBrushPicker);
+        // A closed drop-down with nothing selected says why it is empty instead of showing a blank box.
+        customBrushPlaceholder = Theme.Label("", Theme.CaptionSize, Theme.Subtle);
+        customBrushPlaceholder.Margin = new Thickness(11, 3, 30, 5); customBrushPlaceholder.IsHitTestVisible = false;
+        customBrushPlaceholder.TextTrimming = TextTrimming.CharacterEllipsis; customBrushPlaceholder.TextWrapping = TextWrapping.NoWrap;
+        var pickerHost = new Grid(); pickerHost.Children.Add(customBrushPicker); pickerHost.Children.Add(customBrushPlaceholder);
+        panel.Children.Add(pickerHost);
         panel.Children.Add(Theme.Button("이미지로 브러시 추가", () => Guard(ImportBrushTip), "PNG · JPEG · BMP · TIFF\n투명 이미지는 불투명한 부분, 흰 배경 이미지는 어두운 부분을 모양으로 사용합니다."));
         UpdateBrushTipControls(); UpdateCustomBrushList();
         return panel;
@@ -100,6 +106,14 @@ public sealed partial class MainWindow
             customBrushPicker.ToolTip = customBrushTips.Count > 0 ? "저장한 이미지 모양 선택" : "이미지로 브러시를 추가하면 여기에 표시됩니다";
         }
         finally { syncingBrushTips = false; }
+        UpdateCustomBrushPlaceholder();
+    }
+
+    void UpdateCustomBrushPlaceholder()
+    {
+        if (customBrushPicker == null || customBrushPlaceholder == null) return;
+        customBrushPlaceholder.Text = customBrushTips.Count == 0 ? "저장한 브러시 없음" : "저장한 브러시 선택";
+        customBrushPlaceholder.Visibility = customBrushPicker.SelectedItem == null ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void SelectBrushTip(BrushTip tip)
@@ -124,6 +138,7 @@ public sealed partial class MainWindow
             syncingBrushTips = true;
             try { customBrushPicker.SelectedItem = brushTip.IsCustom ? customBrushTips.FirstOrDefault(t => t.Id == brushTip.Id) : null; }
             finally { syncingBrushTips = false; }
+            UpdateCustomBrushPlaceholder();
         }
         if (studioHardness != null) studioHardness.IsEnabled = !brushTip.IsCustom || IsRetouch(tool);
     }

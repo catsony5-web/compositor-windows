@@ -69,6 +69,40 @@ public sealed partial class MainWindow
         }
         for (int i = 0; i < studioTabs.Count; i++) { studioTabs[i].Background = Brushes.Transparent; studioTabs[i].BorderBrush = i == page ? Theme.Accent : Brushes.Transparent; studioTabs[i].Foreground = i == page ? Theme.Text : Theme.Muted; studioTabs[i].FontWeight = i == page ? FontWeights.SemiBold : FontWeights.Normal; }
     }
+    FrameworkElement? studioTopCard;
+    // The docked layer list keeps its header, tabs, blend row, toolbar and at least two rows.
+    internal const double LayersPanelChrome = 160, LayerRowReserve = 44, StudioMinimumHeight = 100;
+    internal static double LayersMinimumHeight => LayersPanelChrome + 2 * LayerRowReserve;
+
+    // The right column is as tall as the window allows (it does not grow with its content), so the
+    // studio card's height is capped to leave the layer panel usable, e.g. under the ribbon at 720px.
+    void LimitStudioHeight(Size constraint)
+    {
+        if (studioTopCard == null || !double.IsFinite(constraint.Height)) return;
+        bool layersDocked = layersPane != null && ReferenceEquals(layersSlot.Child, layersPane);
+        double reserve = layersDocked ? LayersMinimumHeight : 48;
+        studioTopCard.Measure(new Size(constraint.Width, double.PositiveInfinity));
+        double chrome = Math.Max(0, studioTopCard.DesiredSize.Height - studioScroll.DesiredSize.Height);
+        // 8px splitter and the layer slot's 8px bottom margin.
+        double limit = Math.Max(StudioMinimumHeight, constraint.Height - 16 - reserve - chrome);
+        if (Math.Abs(studioScroll.MaxHeight - limit) <= .5) return;
+        studioScroll.MaxHeight = limit;
+        // The trial measure above used the grid's own constraint; mark the card's chain dirty so the
+        // grid measures it again instead of reusing the size from before the cap.
+        for (var node = VisualTreeHelper.GetParent(studioScroll) as UIElement; node != null; node = VisualTreeHelper.GetParent(node) as UIElement)
+        {
+            node.InvalidateMeasure();
+            if (ReferenceEquals(node, studioTopCard)) break;
+        }
+    }
+
+    // A grid that lets its owner adjust children for the height it is about to be measured with.
+    sealed class MeasureHookGrid : Grid
+    {
+        public Action<Size>? BeforeMeasure;
+        protected override Size MeasureOverride(Size constraint) { BeforeMeasure?.Invoke(constraint); return base.MeasureOverride(constraint); }
+    }
+
     double PreferredStudioHeight(double height)
     {
         double available = Math.Max(380, height - (designWorkspace || !showHistogram ? 260 : 400));
@@ -76,16 +110,16 @@ public sealed partial class MainWindow
     }
     void ApplyWorkspaceStudio()
     {
-        if (studioPanes.Length > 0) studioPanes[0].SetCaption(designWorkspace ? "디자인" : "사진 보정");
+        if (studioPanes.Length > 0) studioPanes[0].SetCaption(userProfile.PaneCaption ?? (designWorkspace ? "디자인" : "사진 보정"));
         UpdateHistogramVisibility();
         if (studioTabs.Count == 4 && studioTabStrip != null)
         {
-            studioTabs[0].Content = designWorkspace ? "디자인" : "보정";
+            studioTabs[0].Content = userProfile.TabCaption ?? (designWorkspace ? "디자인" : "보정");
             studioTabStrip.Children.Clear();
             foreach (int page in designWorkspace ? new[] { 0, 1, 2, 3 } : new[] { 0, 3, 1, 2 }) studioTabStrip.Children.Add(studioTabs[page]);
         }
         studioContents[0].Children.Clear();
-        if (designWorkspace) BuildDesignActions(studioContents[0]); else BuildPhotoActions(studioContents[0]);
+        BuildFirstTab(studioContents[0]);
     }
     void UpdateHistogramVisibility()
     {

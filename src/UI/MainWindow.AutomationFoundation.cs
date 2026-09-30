@@ -51,23 +51,33 @@ public sealed partial class MainWindow
         var tab = AutomationTab(args, true);
         var before = doc.Snapshot(); var candidate = doc.Snapshot();
         var steps = args["steps"]!.AsArray(); var results = new JsonArray();
+        var refs = new Dictionary<string, Guid>(StringComparer.Ordinal);
         Guid? affected = null;
         for (int i = 0; i < steps.Count; i++)
         {
             token.ThrowIfCancellationRequested();
             var step = steps[i]!.AsObject(); string command = AString(step, "command");
-            var arguments = AutomationCatalog.BatchArguments(args, step["arguments"]!.AsObject());
+            string? reference = step.ContainsKey("ref") ? AutomationCatalog.StepRef(step, i) : null;
+            JsonObject arguments;
+            try { arguments = AutomationCatalog.BatchArguments(args, AutomationCatalog.ResolveBatchRefs(command, step["arguments"]!.AsObject(), refs, i)); }
+            catch (ArgumentException e) { throw new AutomationFault("invalid_arguments", e.Message, new JsonObject { ["stepIndex"] = i, ["command"] = command, ["committed"] = false }); }
             try
             {
                 if (command is "add_artboard" or "update_artboard" or "delete_artboard")
                 {
                     var board = ApplyArtboardEdit(candidate, command, arguments);
                     candidate.Validate();
-                    results.Add(new JsonObject { ["stepIndex"] = i, ["command"] = command, ["artboardId"] = dryRun || command == "delete_artboard" ? null : board.ToString() });
+                    if (reference != null) refs[reference] = board;
+                    results.Add(new JsonObject { ["stepIndex"] = i, ["command"] = command, ["ref"] = reference, ["artboardId"] = dryRun || command == "delete_artboard" ? null : board.ToString() });
                     continue;
                 }
                 affected = await ApplyAutomationEditAsync(candidate, command, arguments, token);
                 candidate.Validate();
+                if (reference != null)
+                {
+                    if (affected is not { } target) throw new AutomationFault("invalid_arguments", $"Batch step {i}: this command does not produce an object for ref '{reference}'.");
+                    refs[reference] = target;
+                }
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception error)
@@ -76,7 +86,7 @@ public sealed partial class MainWindow
                     new JsonObject { ["stepIndex"] = i, ["command"] = command, ["committed"] = false });
             }
             // IDs allocated during a dry run are not live document IDs and must not escape as editable targets.
-            results.Add(new JsonObject { ["stepIndex"] = i, ["command"] = command, ["layerId"] = dryRun ? null : affected?.ToString() });
+            results.Add(new JsonObject { ["stepIndex"] = i, ["command"] = command, ["ref"] = reference, ["layerId"] = dryRun ? null : affected?.ToString() });
         }
         RequireAutomationIdle(token); _ = AutomationTab(args, true);
         bool changed = !SameDocument(before, candidate);

@@ -7,7 +7,11 @@ public sealed class HistogramView : FrameworkElement
 {
     public double[][] Bins { get; private set; } = [new double[256], new double[256], new double[256]];
     public HistogramView() { Height = 90; MinWidth = 180; ToolTip = "현재 합성 이미지의 RGB 분포 · 투명 픽셀 제외"; }
-    public void Update(Raster raster)
+    public void Update(Raster raster) => Show(Compute(raster));
+    /// <summary>Shows bins computed earlier (for example off the UI thread by <see cref="Compute"/>).</summary>
+    public void Show(double[][] bins) { Bins = bins; InvalidateVisual(); }
+    /// <summary>Alpha-weighted RGB bins from about 65,536 evenly spaced pixels. Pure, so it can run on a worker thread.</summary>
+    public static double[][] Compute(Raster raster)
     {
         var bins = new[] { new double[256], new double[256], new double[256] };
         int pixels = raster.Width * raster.Height, step = Math.Max(1, (int)Math.Ceiling(pixels / 65536.0));
@@ -16,7 +20,7 @@ public sealed class HistogramView : FrameworkElement
             int i = p * 4; double a = raster.Data[i + 3] / 255.0;
             bins[0][raster.Data[i + 2]] += a; bins[1][raster.Data[i + 1]] += a; bins[2][raster.Data[i]] += a;
         }
-        Bins = bins; InvalidateVisual();
+        return bins;
     }
     protected override void OnRender(DrawingContext dc)
     {

@@ -23,6 +23,8 @@ public sealed partial class MainWindow
         public Vector Pan;
         public Guid ArtboardId;
         public List<(bool Vertical, double Position)> Guides = [];
+        /// <summary>The layer panel selection when the tab was left; null until the tab is first left.</summary>
+        public Guid[]? LayerSelection;
     }
     readonly List<WorkspaceTab> tabs = [];
     readonly StackPanel tabsBar = new() { Orientation = Orientation.Horizontal };
@@ -59,6 +61,7 @@ public sealed partial class MainWindow
         tab.Selection = selection; tab.Zoom = canvas.Zoom; tab.Pan = canvas.Pan;
         tab.Guides = canvas.Guides.ToList();
         tab.ArtboardId = selectedArtboard;
+        tab.LayerSelection = selectedLayers.ToArray();
     }
     void AddTab(Document document, string? path)
     {
@@ -71,10 +74,15 @@ public sealed partial class MainWindow
     void SwitchTab(int index) { if (index < 0 || index >= tabs.Count || index == activeTab) return; CancelGesture(); StoreTab(); LoadTab(index); }
     void LoadTab(int index)
     {
-        jobCts?.Cancel(); renderCts?.Cancel(); activeTab = index;
+        // The hover index references the previous tab's document (possibly just closed).
+        jobCts?.Cancel(); renderCts?.Cancel(); pickCache.Clear(); activeTab = index;
         var tab = tabs[index]; doc = tab.Document; history = tab.History; projectPath = tab.Path; selection = tab.Selection;
         selectedArtboard = tab.ArtboardId; sourceLayerSelection = null;
-        selectedLayers.Clear(); if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
+        // Returning to a tab restores its layer selection as it was, so a switch does not turn the
+        // active layer alone into an explicit selection (e.g. for 선 정리 다시 적용's scope).
+        selectedLayers.Clear();
+        if (tab.LayerSelection is { } saved) { var present = doc.Layers.Select(l => l.Id).ToHashSet(); selectedLayers.UnionWith(saved.Where(present.Contains)); }
+        else if (doc.ActiveId != Guid.Empty) selectedLayers.Add(doc.ActiveId);
         maskEditing = false; canvas.Document = doc; canvas.Composite = null; composite = null;
         canvas.Guides.Clear(); canvas.Guides.AddRange(tab.Guides);
         canvas.Zoom = tab.Zoom > 0 ? tab.Zoom : .65; canvas.Pan = tab.Pan; Refresh();
@@ -183,7 +191,7 @@ public sealed partial class MainWindow
     {
         var ids = selectedLayers.Where(id => doc.Layers.Any(l => l.Id == id)).ToArray();
         if (ids.Length == 0 && doc.ActiveId != Guid.Empty) ids = [doc.ActiveId];
-        Edit("그룹 만들기", () => { var g = ids.Length > 0 ? DocumentFeatures.Group(doc, ids, "새 그룹") : DocumentFeatures.CreateGroup(doc); if (ids.Length == 0) doc.Add(g); selectedLayers.Clear(); selectedLayers.Add(g.Id); });
+        Edit("그룹 만들기", () => { var g = ids.Length > 0 ? DocumentFeatures.Group(doc, ids, Loc.T("새 그룹")) : DocumentFeatures.CreateGroup(doc, Loc.T("그룹")); if (ids.Length == 0) doc.Add(g); selectedLayers.Clear(); selectedLayers.Add(g.Id); });
     }
     void UngroupSelected() { if (doc.Active?.Kind == LayerKind.Group) Edit("그룹 해제", () => { DocumentFeatures.Ungroup(doc, doc.ActiveId); selectedLayers.Clear(); }); }
     void MoveToGroup()
@@ -207,6 +215,16 @@ public sealed partial class MainWindow
     {
         if (moving == target) return;
         var source = doc.Layers.Single(l => l.Id == moving); var destination = doc.Layers.Single(l => l.Id == target);
+        // The photo tab lists hatch materials kept inside a drawing folder next to root photo layers.
+        // A layer dropped beside one goes beside that drawing, never into its linework; only a material
+        // of the same drawing is reordered inside it.
+        var categories = DrawingLayers.Categories(doc);
+        if (DrawingLayers.IsNestedPhoto(destination, categories))
+        {
+            var drawing = OuterDrawingFolder(destination, categories);
+            if (!DrawingLayers.IsNestedPhoto(source, categories) || OuterDrawingFolder(source, categories) != drawing)
+            { destination = drawing; intoGroup = false; if (destination.Id == moving) return; }
+        }
         Guid? parent = intoGroup && destination.Kind == LayerKind.Group ? destination.Id : destination.ParentId;
         if (IsLockedWithParents(source) || IsLockedWithParents(destination)) throw new InvalidOperationException("잠긴 레이어나 그룹으로는 이동할 수 없습니다.");
         for (Guid? ancestor = parent; ancestor != null; ancestor = doc.Layers.Single(l => l.Id == ancestor).ParentId)
@@ -218,6 +236,14 @@ public sealed partial class MainWindow
             doc.Layers.Insert(doc.Layers.IndexOf(destination) + (above ? 1 : 0), source);
             if (parent != null) collapsedGroups.Remove(parent.Value);
         });
+    }
+    // The outermost drawing folder that holds a layer (the layer itself when it is not inside one).
+    Layer OuterDrawingFolder(Layer layer, IReadOnlyDictionary<Guid, LayerCategory> categories)
+    {
+        var outer = layer;
+        for (int depth = 0; depth < 32 && outer.ParentId is { } id && categories.GetValueOrDefault(id) == LayerCategory.Drawing
+            && doc.Layers.FirstOrDefault(l => l.Id == id) is { } parent; depth++) outer = parent;
+        return outer;
     }
     void ToggleClipping() => EditLayer("클리핑 마스크", l => l.Clipped = !l.Clipped);
     void RasterizeActive() => EditLayer("픽셀 레이어로 변환", DocumentFeatures.Rasterize);
@@ -247,8 +273,15 @@ public sealed partial class MainWindow
         if (HasTransformedParent(l)) { status.Text = "변형된 그룹의 레이어는 먼저 선택 픽셀을 새 레이어로 추출한 뒤 복사하세요."; return; }
         var f = Dialogs.Fields(this, "다른 문서에 레이어 복사", (string.Join("\n", tabs.Select((t, i) => $"{i + 1}: {t.Document.Name}")), "1"));
         if (f == null) return; int index = (int)Dialogs.Number(f[0], 1, tabs.Count) - 1;
-        var copy = l.Snapshot(); copy.Id = Guid.NewGuid(); copy.ParentId = null; copy.Clipped = false;
-        SwitchTab(index); Edit("다른 문서의 레이어 추가", () => doc.Add(copy));
+        SwitchTab(index); Edit("다른 문서의 레이어 추가", () => doc.Add(CopyForDocument(l, doc)));
+    }
+    // A top-level copy of a layer for another document. A shadow's settings stay only when every
+    // source is in the target; otherwise the copy is a plain image that can cast its own shadow.
+    internal static Layer CopyForDocument(Layer layer, Document target)
+    {
+        var copy = layer.Snapshot(); copy.Id = Guid.NewGuid(); copy.ParentId = null; copy.Clipped = false;
+        if (copy.Shadow is { } spec && !spec.Sources.All(id => target.Layers.Any(l => l.Id == id))) copy.Shadow = null;
+        return copy;
     }
     void ShowAdjustment(AdjustmentKind kind)
     {
@@ -256,7 +289,7 @@ public sealed partial class MainWindow
         if (dialog.ShowDialog() != true) return;
         Edit("조정 레이어 추가", () =>
         {
-            var layer = DocumentFeatures.CreateAdjustment(doc, dialog.Spec);
+            var layer = DocumentFeatures.CreateAdjustment(doc, dialog.Spec); layer.Name = Loc.T(layer.Name);
             if (selection != null) layer.Mask = SelectionTools.Mask(selection, doc.Width, doc.Height);
             doc.Add(layer);
         });
@@ -315,7 +348,7 @@ public sealed partial class MainWindow
         if (layer.Kind == LayerKind.Adjustment) { status.Text = "조정 레이어는 독립 픽셀을 포함하지 않습니다."; return; }
         var pixels = Imaging.Render(LayerDocument(layer));
         for (int y = 0; y < doc.Height; y++) for (int x = 0; x < doc.Width; x++) { int i = (y * doc.Width + x) * 4; pixels.Data[i + 3] = Imaging.Byte(pixels.Data[i + 3] * selection.Weight(x + .5, y + .5)); }
-        Edit("선택 픽셀 복제", () => doc.Add(new Layer { Name = layer.Name + " 선택", Pixels = pixels })); SetTool(Tool.Move);
+        Edit("선택 픽셀 복제", () => doc.Add(new Layer { Name = layer.Name + Loc.T(" 선택"), Pixels = pixels })); SetTool(Tool.Move);
     }
     void ApplySelection(Selection incoming) { selection = SelectionTools.Combine(selection, incoming, doc.Width, doc.Height, selectionMode); Refresh(false); }
     void FillFromSurroundings()

@@ -25,6 +25,13 @@ public static class Program
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
         }
+        if (args.Length == 2 && args[0] == "--benchmark-drawing")
+        {
+            // Offscreen timing of large-drawing pan, zoom and hover work.
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+            try { return MainWindow.RunDrawingBenchmark(args[1]); }
+            finally { System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown(); }
+        }
         if (args.Length > 0 && args[0] is "--mcp" or "--automation-list" or "--automation-command")
         {
             // A Windows GUI executable may have redirected handles without a console.

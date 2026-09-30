@@ -9,7 +9,7 @@
 3. **파란색은 상태에만 쓴다.** 파우더 블루(Accent)는 선택·포커스·진행 표시, 블루(Primary)는 화면당 하나의 주 동작에만 쓴다. 장식에 쓰지 않는다.
 4. **실무 밀도.** 오래 작업하는 화면이므로 행 높이와 여백을 줄이되, 명령 이름은 줄이지 않는다(`이름…` 같은 축약 금지).
 5. **작은 글자는 선명하게.** UI 글꼴은 힌팅이 된 Segoe UI + 맑은 고딕을 정수 크기로 쓴다.
-7. **모든 문구는 번역표를 거친다.** 코드에는 한국어 원문을 쓰고, 화면에 표시될 때 `Loc`가 `assets/i18n/{en,ja,zh}.json`에서 바꾼다. 새 문구를 넣은 뒤 `python tools/i18n/extract.py --write`로 원문 목록을 갱신하고 세 번역표에 같은 키를 추가한다(자체 검사가 빠진 번역과 자리표시자 불일치를 막는다). 사용자 데이터를 보여 주는 TextBlock은 `Loc.Keep`으로 표시한다. 번역된 문장은 한국어보다 길 수 있으므로 버튼·라벨은 고정 폭 대신 줄바꿈과 최소 크기로 배치한다.
+7. **모든 문구는 번역표를 거친다.** 코드에는 한국어 원문을 쓰고, 화면에 표시될 때 `Loc`가 `assets/i18n/{en,ja,zh}.json`에서 바꾼다. 새 문구를 넣은 뒤 `python tools/i18n/extract.py --write`로 원문 목록을 갱신하고 세 번역표에 같은 키를 추가한다(자체 검사가 빠진 번역과 자리표시자 불일치를 막는다). 사용자 데이터를 보여 주는 TextBlock은 `Loc.Keep`으로 표시한다. 번역된 문장은 한국어보다 길 수 있으므로 버튼·라벨은 고정 폭 대신 줄바꿈과 최소 크기로 배치한다. 여러 줄로 감기는 한국어는 낱말 사이에서만 줄을 나눈다(“않습니” / “다.” 금지): `Theme.Label`, `DialogShell.Note`, `QuickActions`, 리본 큰 버튼, 버튼·체크박스의 문자열 내용은 `KeepWordsTextBlock`이 처리한다. `Text`는 원문 그대로이고 화면에 그리는 사본만 줄을 바꾼다. 감기는 설명문을 `new TextBlock`으로 직접 만들 때는 `new KeepWordsTextBlock`을 쓴다.
 6. **우리 말로 이름 짓는다.** 메뉴·패널·알림·툴팁·문서에 다른 회사의 제품명이나 상표인 기능명을 쓰지 않는다. 다른 제품과 같거나 비슷하다는 비교도 하지 않는다. 파일 형식은 확장자(PSD, AI, DWG/DXF)로 부르고, 형식 사양 출처 링크와 원작(Compositor) 표기처럼 꼭 필요한 인용만 남긴다. 예: 사진 레이어, 주변으로 채우기, 사진 현상, 내장 개체.
 
 ## 색 토큰
@@ -23,6 +23,7 @@
 | `Surface` | `#2D323A` | 버튼, 선택된 세그먼트 |
 | `Hover` / `Pressed` | `#373D46` / `#414853` | 상태 변화 |
 | `Input` | `#101216` | 입력칸, 세그먼트 트랙(패널보다 어둡게) |
+| `Paper` | `#F4F5F7` | 도면(벡터 원본) 레이어 썸네일 바탕. 캔버스처럼 밝은 종이 위에 선을 보여 줌 |
 | `Line` | `#2A2F37` | 영역 사이 가는 선, 카드 테두리 |
 | `Stroke` | `#3B414B` | 입력칸·컨트롤 외곽선 |
 | `Text` | `#E8EBF0` | 본문 (Panel 대비 약 14:1) |
@@ -68,6 +69,7 @@
 | 도구 버튼 | `StyleToolButton` | 아이콘 버튼 34px, 선택 시 Selected 바탕 + Accent 테두리 |
 | 패널 탭 | `"PanelTab"` | 글자만, 선택 시 Text SemiBold + 2px Accent 밑줄 |
 | 세그먼트 | `"SegmentButton"` + Input 트랙 | 선택 조각만 Surface로 올라옴. 레이어 분류, 사진 편집/디자인, RGB/CMYK |
+| 전후 비교 | `BeforeAfterView` + `CompareControls.ModeChoice` | 조정 미리보기 위 세그먼트(결과 · 좌우 분할 · 나란히 · 전후 전환, 16px 아이콘). 두 상태는 같은 맞춤 사각형을 써서 픽셀이 맞는다. 분할 막대는 2px Text 선 + 26px 원형 손잡이(포커스 시 Accent 링), 상태 표시는 Panel 86% 칩(모서리 5). 누르는 동안 보기는 `HoldButton` |
 | 입력칸·콤보 | `TextBox`, `ComboBox` 기본 스타일 | Input 바탕 + Stroke 외곽선, 포커스 시 Accent |
 | 체크박스 | `CheckBox` 기본 스타일 | 16px, 선택 시 Primary 바탕 + 흰 체크 |
 | 슬라이더 | `Slider`, `"SpectrumSlider"` | 4px 트랙, Accent 채움, 14px 밝은 손잡이와 호버 후광 |
@@ -141,6 +143,7 @@
 | `UI/MainWindow.Studio.cs`, `.Docking.cs`, `.WorkspaceActions.cs` | 오른쪽 탭 카드, 패널 도킹, 탭별 작업 버튼 |
 | `UI/MainWindow.Inspector.cs`, `.DrawingLayers.cs`, `.TextProperties.cs`, `.ShapeProperties.cs` | 속성 패널, 레이어 카드 |
 | `UI/MainWindow.EmptyWorkspace.cs` | 시작 화면(빠른 시작 크기, 문서가 없을 때의 집중 배치)과 최근 문서 목록 |
+| `App/UserProfiles.cs`, `UI/MainWindow.Profiles.cs` | 사용 목적(기본 · 건축학과): 도구막대 묶음, 오른쪽 첫 탭 묶음 순서, 시작 화면 빠른 시작을 표 한 곳에서 정한다. [PROFILES.md](PROFILES.md) |
 | `UI/MainWindow.Ribbon.cs` | 리본(메뉴 → 탭, 구분선 → 제목 묶음, 3개 이하 큰 버튼·그 이상 3줄 작은 버튼), ^ 접기, 내 탭 |
 | `UI/MainWindow.StatusBar.cs` | 상태 표시줄: 문서 정보, RGB/CMYK 전환, 배율 조절(단계·입력·목록) |
 | `UI/MainWindow.Preview.cs` | 오프스크린 검수 캡처(`--render-studio-previews`) |

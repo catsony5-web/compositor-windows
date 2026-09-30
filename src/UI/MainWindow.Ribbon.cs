@@ -18,6 +18,13 @@ public sealed partial class MainWindow
         "menu:파일/새 캔버스…", "menu:파일/열기…", "menu:파일/저장", "menu:파일/내보내기 미리보기…", "menu:편집/실행 취소", "menu:편집/다시 실행",
         "menu:레이어/레이어 복제", "menu:레이어/마스크 추가", "menu:필터/사진 현상…", "menu:보기/화면에 맞춤", "menu:보기/명령 찾기…"
     ];
+    // Favorites saved under a command id that a later version renamed or moved.
+    static readonly Dictionary<string, string> LegacyFavorites = new(StringComparer.Ordinal)
+    {
+        ["menu:파일/PDF / PSD 파일로 내보내기…"] = $"menu:파일/{CompatibilityExportMenu}/{CompatibilityExport.Choices[0].Title}…"
+    };
+    internal static List<string> MigrateFavorites(IEnumerable<string> saved) =>
+        saved.Select(id => LegacyFavorites.TryGetValue(id, out var current) ? current : id).Distinct(StringComparer.Ordinal).ToList();
     internal bool ribbonMode, ribbonCollapsed;
     internal string ribbonTab = FavoritesTab;
     internal List<string> ribbonFavorites = [.. DefaultFavorites];
@@ -126,7 +133,7 @@ public sealed partial class MainWindow
             ("실행 취소", "기록"), ("합성 이미지 복사", "클립보드"), ("선택 픽셀 지우기", "채우기·지우기"), ("대지 편집", "캔버스"),
             ("레이어 복제", "레이어"), ("마스크 추가", "마스크"), ("선택 레이어 그룹화", "그룹·합성"), ("전체 선택", "선택"),
             ("레벨", "보정"), ("사진 현상", "필터"), ("화면에 맞춤", "화면"), ("가이드 추가", "가이드·격자"), ("명령 찾기", "도움·작업 공간"),
-            ("샘플 작업", "배우기"), ("로컬 연결", "AI 연결"), ("선택 레이어 이미지로", "내보내기")
+            ("샘플 작업", "배우기"), ("로컬 연결", "AI 연결"), ("선택 레이어 이미지로", "내보내기"), ("그림자", "그림자")
         ];
         foreach (var (key, title) in titles) if (header.StartsWith(key, StringComparison.Ordinal)) return title;
         return tab;
@@ -166,10 +173,12 @@ public sealed partial class MainWindow
         string glyph = RibbonGlyph(label);
         if (large)
         {
-            var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+            // Icons share one top line across the ribbon however many lines the label takes.
+            var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
             var icon = Theme.Glyph(glyph, 22, Theme.Text); icon.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(icon);
-            content.Children.Add(new TextBlock { Text = Loc.T(label).TrimEnd('…'), FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, MaxWidth = 76, Margin = new Thickness(0, 4, 0, 0) });
+            content.Children.Add(LargeRibbonLabel(Loc.T(label).TrimEnd('…')));
             button.Content = content; button.MinWidth = 58; button.MinHeight = 66; button.Padding = new Thickness(6, 6, 6, 4);
+            button.VerticalAlignment = VerticalAlignment.Stretch; button.VerticalContentAlignment = VerticalAlignment.Top;
         }
         else
         {
@@ -199,19 +208,64 @@ public sealed partial class MainWindow
         return button;
     }
 
+    const double LargeRibbonLabelWidth = 76, LargeRibbonLabelMaxWidth = 104;
+
+    // Large button labels break only between words ("Compositor .comp" never splits inside ".comp").
+    // Text without spaces (Japanese, Chinese) keeps the normal character wrapping.
+    static TextBlock LargeRibbonLabel(string text)
+    {
+        var block = new TextBlock { FontSize = Theme.CaptionSize, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+        var lines = RibbonLabelLines(text, value => MeasureRibbonText(value, block.FontSize));
+        if (lines == null) { block.Text = text; block.TextWrapping = TextWrapping.Wrap; block.MaxWidth = LargeRibbonLabelWidth; }
+        else { block.Text = string.Join('\n', lines); block.TextWrapping = TextWrapping.NoWrap; }
+        return block;
+    }
+
+    static double MeasureRibbonText(string text, double size) =>
+        new FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+            new Typeface(Theme.UiFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), size, Brushes.White, 1).WidthIncludingTrailingWhitespace;
+
+    // One line when it fits, otherwise the most even two-line split, otherwise greedy lines of whole
+    // words. Null means the text has no word breaks and should wrap by character.
+    internal static string[]? RibbonLabelLines(string text, Func<string, double> measure)
+    {
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0) return [text];
+        if (measure(string.Join(' ', words)) <= LargeRibbonLabelWidth) return [string.Join(' ', words)];
+        if (words.Length == 1) return measure(words[0]) > LargeRibbonLabelMaxWidth ? null : words;
+        string[]? best = null; double bestWidth = double.MaxValue;
+        for (int split = 1; split < words.Length; split++)
+        {
+            string first = string.Join(' ', words[..split]), second = string.Join(' ', words[split..]);
+            double width = Math.Max(measure(first), measure(second));
+            if (width < bestWidth) { bestWidth = width; best = [first, second]; }
+        }
+        if (best != null && bestWidth <= LargeRibbonLabelMaxWidth) return best;
+        double limit = Math.Max(LargeRibbonLabelMaxWidth, words.Max(measure));
+        var lines = new List<string>(); string line = "";
+        foreach (var word in words)
+        {
+            string next = line.Length == 0 ? word : line + " " + word;
+            if (line.Length > 0 && measure(next) > limit) { lines.Add(line); line = word; }
+            else line = next;
+        }
+        lines.Add(line);
+        return lines.ToArray();
+    }
+
     // Icons by the start of the command name; unmatched commands share a neutral glyph.
     static string RibbonGlyph(string label)
     {
         (string Key, string Glyph)[] map =
         [
-            ("새 캔버스", Theme.Glyphs.NewFile), ("열기", Theme.Glyphs.Open), ("레이어로 가져오기", Theme.Glyphs.Import), ("Compositor .comp 가져오기", Theme.Glyphs.Import),
+            ("새 캔버스", Theme.Glyphs.NewFile), ("열기", Theme.Glyphs.Open), ("레이어로 가져오기", Theme.Glyphs.Import), ("도면 가져오기 설정", Theme.Glyphs.Import), ("Compositor .comp 가져오기", Theme.Glyphs.Import),
             ("저장", Theme.Glyphs.Save), ("다른 이름으로 저장", Theme.Glyphs.Save), ("내보내기", Theme.Glyphs.Export), ("인쇄용 CMYK", Theme.Glyphs.Palette), ("PDF", Theme.Glyphs.Document),
             ("Compositor .comp 내보내기", Theme.Glyphs.Export), ("선택 레이어 이미지로", Theme.Glyphs.Export), ("현재 문서 닫기", Theme.Glyphs.Close),
             ("실행 취소", Theme.Glyphs.Undo), ("다시 실행", Theme.Glyphs.Redo), ("합성 이미지 복사", Theme.Glyphs.Duplicate), ("이미지 붙여넣기", Theme.Glyphs.Paste),
             ("선택 픽셀 지우기", Theme.Glyphs.Delete), ("전경색으로", ToolIcons.PathData(Tool.Bucket)), ("배경색으로", ToolIcons.PathData(Tool.Bucket)), ("버킷", ToolIcons.PathData(Tool.Bucket)),
             ("대지", ToolIcons.PathData(Tool.Artboard)), ("캔버스 크기", Theme.Glyphs.Fit), ("이미지 크기", Theme.Glyphs.Transform), ("선택 영역으로 자르기", ToolIcons.PathData(Tool.Crop)),
-            ("레이어 복제", Theme.Glyphs.Duplicate), ("이름 변경", Theme.Glyphs.Rename), ("변형", Theme.Glyphs.Transform), ("가로 뒤집기", Theme.Glyphs.Swap), ("세로 뒤집기", Theme.Glyphs.Swap),
-            ("마스크", Theme.Glyphs.Mask), ("모든 레이어 병합", Theme.Glyphs.GroupRemove), ("레이어 삭제", Theme.Glyphs.Delete), ("선택 레이어 그룹화", Theme.Glyphs.GroupAdd),
+            ("레이어 복제", Theme.Glyphs.Duplicate), ("이름 변경", Theme.Glyphs.Rename), ("변형", Theme.Glyphs.Transform), ("가로 뒤집기", Theme.Glyphs.FlipHorizontal), ("세로 뒤집기", Theme.Glyphs.FlipVertical),
+            ("마스크 추가", Theme.Glyphs.MaskAdd), ("마스크 반전", Theme.Glyphs.MaskInvert), ("마스크 제거", Theme.Glyphs.MaskRemove), ("마스크", Theme.Glyphs.Mask), ("모든 레이어 병합", Theme.Glyphs.GroupRemove), ("레이어 삭제", Theme.Glyphs.Delete), ("선택 레이어 그룹화", Theme.Glyphs.GroupAdd),
             ("그룹 해제", Theme.Glyphs.GroupRemove), ("그룹으로 이동", Theme.Glyphs.Folder), ("클리핑", Theme.Glyphs.Clip), ("아래 레이어와 병합", Theme.Glyphs.Backward),
             ("텍스트", Theme.Glyphs.Text), ("픽셀 레이어로", Theme.Glyphs.Image), ("다른 문서로", Theme.Glyphs.Duplicate),
             ("전체 선택", ToolIcons.PathData(Tool.RectangleSelect)), ("선택 해제", Theme.Glyphs.Close), ("선택 반전", Theme.Glyphs.Adjustment), ("페더", Theme.Glyphs.Sparkle),
@@ -223,9 +277,13 @@ public sealed partial class MainWindow
             ("화면에 맞춤", Theme.Glyphs.Fit), ("실제 크기", Theme.Glyphs.Search), ("확대", Theme.Glyphs.Plus), ("가이드", Theme.Glyphs.AlignLeft), ("스냅", Theme.Glyphs.Pin),
             ("픽셀 격자", Theme.Glyphs.Grain), ("명령 찾기", Theme.Glyphs.Search), ("도움말", Theme.Glyphs.Info), ("사진 편집 작업 공간", Theme.Glyphs.Camera), ("디자인 작업 공간", Theme.Glyphs.Shape),
             ("RGB / CMYK", Theme.Glyphs.Palette), ("CMYK ICC", Theme.Glyphs.Palette), ("Windows 기본 CMYK", Theme.Glyphs.Palette), ("패널 배치", Theme.Glyphs.Reset), ("히스토그램", Theme.Glyphs.Levels),
-            ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders)
+            ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders),
+            ("그림자", Theme.Glyphs.Shadow)
         ];
         if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
+        if (UserProfiles.All.FirstOrDefault(p => p.Name == label) is { } profile) return profile.Glyph;
+        // PDF · PSD · AI export entries share the icons of the export dialog's list.
+        if (CompatibilityExport.Choices.FirstOrDefault(c => label.StartsWith(c.Title, StringComparison.Ordinal)) is { } export) return CompatibilityExportDialog.Glyph(export.Format);
         foreach (var (key, glyph) in map) if (label.StartsWith(key, StringComparison.Ordinal)) return glyph;
         return Theme.Glyphs.More;
     }

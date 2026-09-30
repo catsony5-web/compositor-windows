@@ -10,6 +10,19 @@ public static partial class AutomationCatalog
     sealed record Field(string Type, string Description, double? Minimum = null, double? Maximum = null,
         int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null)
     {
+        /// <summary>Inside apply_batch an ID field may also name an earlier step's ref as "@name".</summary>
+        public JsonObject BatchSchema()
+        {
+            var schema = Schema();
+            if (!GuidValue) return schema;
+            schema.Remove("maxLength"); schema.Remove("minLength");
+            return new JsonObject
+            {
+                ["description"] = Description + " In apply_batch, \"@name\" refers to the object created or targeted by an earlier step with that ref.",
+                ["anyOf"] = new JsonArray(schema, new JsonObject { ["type"] = "string", ["pattern"] = BatchRefPattern })
+            };
+        }
+
         public JsonObject Schema()
         {
             if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
@@ -64,7 +77,7 @@ public static partial class AutomationCatalog
             Fields(("documentId", Id), ("expectedRevision", Id), ("parentId", Id), ("rootsOnly", Bool("Only root layers; cannot be combined with parentId.")),
                 ("nameContains", new("string", "Case-insensitive literal substring of layer names, not a regular expression.", MaxLength: 256)),
                 ("kind", Choice(Enum.GetNames<LayerKind>())), ("visible", Bool("Filter the layer's own visibility flag.")),
-                ("category", new("string", "Effective workspace category, including inheritance from the root drawing/photo folder.", Choices: ["Drawing", "Photo"])),
+                ("category", new("string", "Effective workspace category, including inheritance from the root drawing/photo folder. Material layers (hatch fills, apply_material) are always Photo.", Choices: ["Drawing", "Photo"])),
                 ("selectedOnly", Bool("Only selected layers; an inactive document reports its active layer as selected.")),
                 ("locked", Bool("Filter the layer's own lock flag; inherited locks are reported separately.")),
                 ("offset", Integer(0, Document.MaxNodes)), ("limit", Integer(1, 200, "Page size; defaults to 50."))), "documentId");

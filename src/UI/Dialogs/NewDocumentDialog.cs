@@ -54,24 +54,33 @@ public sealed class NewDocumentDialog : Window
         Grid.SetRow(scroll, 1); left.Children.Add(scroll);
 
         foreach (var box in new[] { name, width, height, dpi }) box.Padding = new Thickness(9, 4, 9, 4);
+        // Drop-downs share the text boxes' outer margin and text inset so the column lines up
+        // (a text box draws its text 2 DIP inside its padding).
+        foreach (var box in new[] { units, background }) { box.Margin = new Thickness(2); box.Padding = new Thickness(11, 4, 9, 4); }
         var fields = new StackPanel { Margin = new Thickness(16) };
         var right = new Grid(); right.RowDefinitions.Add(new RowDefinition()); right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Grid.SetColumn(right, 1); body.Children.Add(right);
         var card = new GlassPanel { Background = Theme.Header, CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = fields, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } }; right.Children.Add(card);
         // Create/cancel stay visible below the scrolling settings.
         var actions = new StackPanel { Margin = new Thickness(0, 10, 0, 0) }; Grid.SetRow(actions, 1); right.Children.Add(actions);
         var settingsTitle = Theme.Label("문서 설정", Theme.HeadingSize); settingsTitle.FontWeight = FontWeights.SemiBold; settingsTitle.Margin = new Thickness(2, 0, 2, 6); fields.Children.Add(settingsTitle);
-        var ratioBox = new Grid { Height = 96, Margin = new Thickness(2, 4, 2, 2) }; ratioBox.Children.Add(ratioFrame);
+        var ratioBox = new Grid { Height = RatioBoxHeight, Margin = new Thickness(2, 4, 2, 2) }; ratioBox.Children.Add(ratioFrame);
         System.Windows.Automation.AutomationProperties.SetName(ratioBox, "비율 미리보기");
         fields.Children.Add(ratioBox);
         ratioLabel.HorizontalAlignment = HorizontalAlignment.Center; ratioLabel.Margin = new Thickness(0, 4, 0, 2); fields.Children.Add(ratioLabel);
-        void Field(string label, FrameworkElement input) { var caption = Theme.Label(label, Theme.CaptionSize, Theme.Muted); caption.Margin = new Thickness(2, 8, 2, 2); fields.Children.Add(caption); fields.Children.Add(input); }
-        Field("이름", name); Field("크기 단위", units); Field("너비", width); Field("높이", height);
-        var swap = Theme.Styled(Theme.Button("가로 / 세로 바꾸기", () => (width.Text, height.Text) = (height.Text, width.Text)), "GhostButton"); swap.Margin = new Thickness(2, 6, 2, 2); fields.Children.Add(swap);
+        static TextBlock Caption(string label) { var caption = Theme.Label(label, Theme.CaptionSize, Theme.Muted); caption.Margin = new Thickness(2, 6, 2, 2); return caption; }
+        void Field(string label, FrameworkElement input) { fields.Children.Add(Caption(label)); fields.Children.Add(input); }
+        Field("이름", name); Field("크기 단위", units);
+        // Width and height share one row with the swap between them, so every setting fits the card at the default size.
+        var sizeRow = new Grid();
+        sizeRow.ColumnDefinitions.Add(new ColumnDefinition()); sizeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); sizeRow.ColumnDefinitions.Add(new ColumnDefinition());
+        sizeRow.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); sizeRow.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var heightCaption = Caption("높이"); Grid.SetColumn(heightCaption, 2);
+        var swap = Theme.IconButton(Theme.Glyphs.Swap, () => (width.Text, height.Text) = (height.Text, width.Text), "가로 / 세로 바꾸기");
+        swap.Margin = new Thickness(2); swap.VerticalAlignment = VerticalAlignment.Center; System.Windows.Automation.AutomationProperties.SetName(swap, "가로 / 세로 바꾸기");
+        Grid.SetRow(width, 1); Grid.SetRow(swap, 1); Grid.SetColumn(swap, 1); Grid.SetRow(height, 1); Grid.SetColumn(height, 2);
+        foreach (var part in new UIElement[] { Caption("너비"), heightCaption, width, swap, height }) sizeRow.Children.Add(part);
+        fields.Children.Add(sizeRow);
         Field("해상도 · DPI", dpi); Field("배경", background);
-        summary.TextWrapping = TextWrapping.Wrap; fields.Children.Add(summary);
-        var colorMode = Theme.Label("RGB · 8 bit · sRGB", Theme.CaptionSize, Theme.Subtle);
-        colorMode.ToolTip = "CMYK 미리보기는 상단에서 전환"; fields.Children.Add(colorMode);
-        error.TextWrapping = TextWrapping.Wrap; fields.Children.Add(error);
         var savePreset = Theme.Styled(Theme.Button("현재 크기를 내 프리셋으로 저장", SaveCustomPreset, "이름 칸의 이름으로 저장합니다. 최근 탭에 표시됩니다."), "GhostButton"); savePreset.Margin = new Thickness(2, 8, 2, 2); fields.Children.Add(savePreset);
         var create = Theme.Button("문서 만들기  →", () =>
         {
@@ -81,8 +90,13 @@ public sealed class NewDocumentDialog : Window
                 if (CurrentSize(Loc.T("최근 크기")) is { } recent) NewDocumentPresetStore.AddRecent(recent, store);
                 DialogResult = true;
             }
-            catch (Exception ex) { error.Text = ex.Message; }
-        }); Theme.Styled(create, "PrimaryButton"); create.IsDefault = true; create.MinHeight = 34; create.Margin = new Thickness(0); actions.Children.Add(create);
+            catch (Exception ex) { ShowError(ex.Message); }
+        }); Theme.Styled(create, "PrimaryButton"); create.IsDefault = true; create.MinHeight = 34; create.Margin = new Thickness(0);
+        // The size that "Create document" will make sits with that button, outside the scrolling settings.
+        // An input error shows there too and takes no room while there is none.
+        summary.TextWrapping = TextWrapping.Wrap; summary.Margin = new Thickness(2, 0, 2, 6); summary.ToolTip = "CMYK 미리보기는 상단에서 전환"; actions.Children.Add(summary);
+        error.TextWrapping = TextWrapping.Wrap; error.Margin = new Thickness(2, 0, 2, 6); error.Visibility = Visibility.Collapsed; actions.Children.Add(error);
+        actions.Children.Add(create);
         var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0); actions.Children.Add(cancel);
         foreach (var box in new[] { width, height, dpi }) box.TextChanged += (_, _) => UpdateSummary();
         units.SelectionChanged += (_, e) =>
@@ -105,6 +119,8 @@ public sealed class NewDocumentDialog : Window
     internal string Group => groups.Selected;
     internal IReadOnlyList<Button> Cards => cards.Children.OfType<Button>().ToArray();
     internal void ShowGroupForTest(string group) => groups.Select(group);
+    internal TextBlock SummaryForTest => summary;
+    internal IReadOnlyList<Control> SettingInputsForTest => [name, units, width, height, dpi, background];
 
     void ShowGroup(bool selectFirst)
     {
@@ -134,7 +150,10 @@ public sealed class NewDocumentDialog : Window
     {
         var content = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         double scale = 44d / Math.Max(size.Width, size.Height);
-        content.Children.Add(new Border { Width = Math.Max(3, size.Width * scale), Height = Math.Max(3, size.Height * scale), BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Center });
+        // Icons of different ratios share one 44 px slot, so every card's title starts at the same height.
+        var slot = new Grid { Height = 44, Margin = new Thickness(0, 0, 0, 10) };
+        slot.Children.Add(new Border { Width = Math.Max(3, size.Width * scale), Height = Math.Max(3, size.Height * scale), BorderBrush = Theme.Accent, BorderThickness = new Thickness(1.3), CornerRadius = new CornerRadius(3), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center });
+        content.Children.Add(slot);
         label.FontWeight = FontWeights.SemiBold; label.HorizontalAlignment = HorizontalAlignment.Center; label.TextAlignment = TextAlignment.Center; label.TextWrapping = TextWrapping.Wrap; content.Children.Add(label);
         var detail = Theme.Label(Describe(size), Theme.CaptionSize, Theme.Subtle); detail.HorizontalAlignment = HorizontalAlignment.Center; detail.TextAlignment = TextAlignment.Center; detail.TextWrapping = TextWrapping.Wrap; content.Children.Add(detail);
         var button = Theme.Button("", () => { }); button.Content = content; button.Margin = new Thickness(4); button.Padding = new Thickness(5, 12, 5, 10); button.BorderThickness = new Thickness(1.5); button.MinHeight = 128;
@@ -150,9 +169,12 @@ public sealed class NewDocumentDialog : Window
         cards.Children.Add(button); return button;
     }
 
-    static string Describe(SavedDocumentSize size) => size.Millimeters
+    // Pixel sizes use the same digit grouping as the summary and the status bar ("4,480 × 1,440 px").
+    internal static string Describe(SavedDocumentSize size) => size.Millimeters
         ? $"{size.Width.ToString("0.###", CultureInfo.InvariantCulture)} × {size.Height.ToString("0.###", CultureInfo.InvariantCulture)} mm · {size.Dpi:0.##} DPI"
-        : $"{size.Width:0} × {size.Height:0} px";
+        : PixelSize(size.Width, size.Height);
+    internal static string PixelSize(double width, double height) => $"{width:N0} × {height:N0} px";
+    const double RatioBoxHeight = 76;
 
     void Apply(SavedDocumentSize size, Button button)
     {
@@ -177,7 +199,7 @@ public sealed class NewDocumentDialog : Window
     {
         string label = string.IsNullOrWhiteSpace(name.Text) ? Loc.T("내 프리셋") : name.Text.Trim();
         if (label.Length > 80) label = label[..80];
-        if (CurrentSize(label) is not { } size) { error.Text = Loc.T("크기 또는 DPI를 확인하세요"); return; }
+        if (CurrentSize(label) is not { } size) { ShowError(Loc.T("크기 또는 DPI를 확인하세요")); return; }
         NewDocumentPresetStore.AddCustom(size, store);
         groups.Select(RecentGroup); ShowGroup(false);
     }
@@ -187,13 +209,15 @@ public sealed class NewDocumentDialog : Window
         try
         {
             var size = Dimensions(width.Text, height.Text, units.SelectedIndex == 1, dpi.Text);
-            summary.Text = $"{size.Width:N0} × {size.Height:N0} px · {size.Dpi:0.##} DPI"; error.Text = "";
-            double scale = 88d / Math.Max(size.Width, size.Height);
+            summary.Text = $"{PixelSize(size.Width, size.Height)} · {size.Dpi:0.##} DPI · RGB · 8 bit · sRGB"; ShowError("");
+            double scale = (RatioBoxHeight - 8) / Math.Max(size.Width, size.Height);
             ratioFrame.Width = Math.Max(4, size.Width * scale); ratioFrame.Height = Math.Max(4, size.Height * scale);
             ratioLabel.Text = Ratio(size.Width, size.Height);
         }
-        catch (Exception ex) { summary.Text = "크기 또는 DPI를 확인하세요"; error.Text = ex.Message; ratioLabel.Text = ""; }
+        catch (Exception ex) { summary.Text = "크기 또는 DPI를 확인하세요"; ShowError(ex.Message); ratioLabel.Text = ""; }
     }
+
+    void ShowError(string message) { error.Text = message; error.Visibility = message.Length == 0 ? Visibility.Collapsed : Visibility.Visible; }
 
     /// <summary>Reduced aspect ratio ("16:9"); falls back to a decimal for sizes that do not reduce to small numbers.</summary>
     internal static string Ratio(int w, int h)

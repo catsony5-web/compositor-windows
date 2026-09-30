@@ -72,6 +72,52 @@ public sealed partial class MainWindow
             finally { w.StopRenderingForShutdown(); target.StopRenderingForShutdown(); }
         });
 
+        test("file menu keeps the print export beside the export preview in the menu and the ribbon", () =>
+        {
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                var file = w.mainMenu!.Items.OfType<MenuItem>().Single(m => Equals(m.Header, "파일"));
+                var entries = file.Items.Cast<object>().ToList();
+                int preview = entries.FindIndex(e => e is MenuItem m && Equals(m.Header, "내보내기 미리보기…"));
+                int print = entries.FindIndex(e => e is MenuItem m && Equals(m.Header, "인쇄용 CMYK 내보내기…"));
+                Check(preview >= 0 && print == preview + 1, "인쇄용 CMYK 내보내기… does not directly follow 내보내기 미리보기…");
+                int save = entries.FindIndex(e => e is MenuItem m && Equals(m.Header, "저장"));
+                Check(save > 0 && entries[save - 1] is Separator && entries[preview - 1] is Separator, "The Save and Export groups lost their separators");
+                Check(entries[save + 1] is MenuItem saveAs && Equals(saveAs.Header, "다른 이름으로 저장…") && entries[save + 2] is Separator, "The Save group holds more than 저장 and 다른 이름으로 저장…");
+                var group = w.RibbonGroups("파일").Single(g => g.Items.Any(i => Equals(i.Header, "내보내기 미리보기…")));
+                Check(group.Items.Any(i => Equals(i.Header, "인쇄용 CMYK 내보내기…")), "The ribbon split the print export from the export group");
+                Check(!w.RibbonGroups("파일").Single(g => g.Items.Any(i => Equals(i.Header, "저장"))).Items.Any(i => Equals(i.Header, "인쇄용 CMYK 내보내기…")), "The print export sits in the ribbon's Save group");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
+        test("ribbon favorites saved under a renamed command id move to its new id", () =>
+        {
+            var w = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                const string old = "menu:파일/PDF / PSD 파일로 내보내기…";
+                string replacement = $"menu:파일/{CompatibilityExportMenu}/{CompatibilityExport.Choices[0].Title}…";
+                w.SetRibbonMode(true);
+                Check(w.ribbonItems.ContainsKey(replacement), "The replacement export command is missing: " + replacement);
+                // Same as the current layout, only with the favorites a saved workspace.json holds.
+                WorkspaceLayout Saved(params string[] favorites)
+                {
+                    var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(w.CaptureLayout()))!;
+                    node[nameof(WorkspaceLayout.RibbonFavorites)] = new System.Text.Json.Nodes.JsonArray(favorites.Select(f => (System.Text.Json.Nodes.JsonNode?)f).ToArray());
+                    return WorkspaceLayoutStore.Sanitize(System.Text.Json.JsonSerializer.Deserialize<WorkspaceLayout>(node)!)!;
+                }
+                w.ApplyPaneLayout(Saved("menu:파일/열기…", old, "menu:보기/화면에 맞춤"));
+                Check(w.ribbonFavorites.SequenceEqual(["menu:파일/열기…", replacement, "menu:보기/화면에 맞춤"]), "The old export favorite was not mapped: " + string.Join(", ", w.ribbonFavorites));
+                Check(w.RibbonGroups(FavoritesTab).Single().Items.Length == 3, "내 탭 dropped the renamed export favorite");
+                Check(!w.CaptureLayout().RibbonFavorites!.Contains(old), "The stale id is written back to the layout");
+                w.ApplyPaneLayout(Saved(replacement, old));
+                Check(w.ribbonFavorites.SequenceEqual([replacement]), "Mapping an old id duplicated a favorite that was already there");
+            }
+            finally { w.StopRenderingForShutdown(); }
+        });
+
         test("windows and dialogs are fitted inside the screen work area", () =>
         {
             var area = SystemParameters.WorkArea;

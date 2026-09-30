@@ -11,10 +11,14 @@ public static partial class DesignRenderer
     static readonly ConditionalWeakTable<TextSpec, DrawingGroup> textDrawings = new();
     public static bool HasRetainedContent(Document doc) => doc.Layers.Any(l => l.Kind is LayerKind.Vector or LayerKind.Text or LayerKind.Shape or LayerKind.Material);
     public static Raster Render(Document doc, Rect area, int width, int height, CancellationToken token = default)
-        => RenderCore(doc, area, width, height, true, token);
+        => RenderCore(doc, area, width, height, true, token, default);
+    // Checks vary the path pass size and observe each finished pass.
+    internal static Raster Render(Document doc, Rect area, int width, int height, CancellationToken token, int passSize, Action? passRendered = null)
+        => RenderCore(doc, area, width, height, true, token, new(passSize, passRendered));
     public static Raster RenderOutput(Document doc, CancellationToken token = default)
-        => HasRetainedContent(doc) || doc.Layers.Any(DrawingLayers.IsContainer) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token) : Imaging.Render(doc, token);
-    static Raster RenderCore(Document doc, Rect area, int width, int height, bool screen, CancellationToken token)
+        => HasRetainedContent(doc) || doc.Layers.Any(DrawingLayers.IsContainer) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token, default) : Imaging.Render(doc, token);
+    readonly record struct PathPasses(int Size, Action? Rendered);
+    static Raster RenderCore(Document doc, Rect area, int width, int height, bool screen, CancellationToken token, PathPasses passes)
     {
         Raster.ValidateSize(width, height);
         if (area.IsEmpty || area.Width <= 0 || area.Height <= 0 || !double.IsFinite(area.X + area.Y + area.Width + area.Height)) throw new ArgumentException("표시 영역이 올바르지 않습니다.");
@@ -60,7 +64,7 @@ public static partial class DesignRenderer
                     // compatible run in one surface instead of one per object.
                     while (end < stack.Length && !stack[end].Clipped &&
                         (end + 1 == stack.Length || !stack[end + 1].Clipped) && CanBatchPaths(stack[end], children, depth, token)) end++;
-                    var batch = DrawPathRun(stack, index, end, children, parent, width, height, token);
+                    var batch = DrawPathRun(stack, index, end, children, parent, width, height, passes, token);
                     Imaging.Merge(output, batch, 1, BlendMode.Normal, false, token);
                 }
                 else if (layer.Kind == LayerKind.Adjustment) Imaging.ApplyAdjustment(output, layer, token, World(layer, parent));

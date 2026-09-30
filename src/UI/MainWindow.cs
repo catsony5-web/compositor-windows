@@ -80,7 +80,7 @@ public sealed partial class MainWindow : Window
         autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
         var body = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 3); root.Children.Add(body);
-        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(84) }); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
+        body.ColumnDefinitions.Add(toolRailColumn); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
         var tools = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(4, 8, 4, 8) };
         var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
         foreach (var def in toolDefs)
@@ -91,11 +91,13 @@ public sealed partial class MainWindow : Window
         {
             var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; toolShortcuts[def.Tool] = (def.Name, def.Key); tools.Children.Add(b);
         }
-        var toolColumn = new StackPanel(); toolColumn.Children.Add(tools);
+        var toolColumn = toolRailContent; toolColumn.Children.Add(tools);
         workspaceTools = tools; photoToolOrder = toolButtons.Keys.ToArray();
         toolColumn.Children.Add(new Border { Height = 1, Background = Theme.Line, Margin = new Thickness(10, 4, 10, 0) });
         colorSwatches = new ColorSwatches(() => ChooseColor(false), () => ChooseColor(true), SwapColors, ResetColors); toolColumn.Children.Add(colorSwatches);
-        toolRail = new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+        toolRailScroll = new ScrollViewer { Content = toolColumn, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        toolRailScroll.SizeChanged += (_, e) => { if (e.HeightChanged) FitToolRail(); };
+        toolRail = new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = toolRailScroll };
         body.Children.Add(toolRail);
         // The document stage: tabs merge into the canvas, clipped to the card's rounded corners.
         var workspace = new Grid { Background = Theme.Panel }; workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) }); workspace.RowDefinitions.Add(new RowDefinition());
@@ -122,12 +124,14 @@ public sealed partial class MainWindow : Window
         PreviewKeyUp += (_, e) => { var key = e.Key == Key.System ? e.SystemKey : e.Key; if (suppressAltMenu && key is Key.LeftAlt or Key.RightAlt) { suppressAltMenu = false; e.Handled = true; } if (key is Key.Space or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift) UpdatePointerModifiers(); };
         Deactivated += (_, _) => { if (resizingBrush) EndBrushResize(true); suppressAltMenu = false; ClearPointerHover(); };
         DragOver += (_, e) => { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
-        Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Guard(() => { foreach (var file in files) { var ext = Path.GetExtension(file).ToLowerInvariant(); if (ext is ".moruproj" or ".cwproj" or ".comp" || CompatibilityImport.Supports(file)) OpenPath(file); else ImportFiles([file]); } }); };
+        Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Guard(() => DropFiles(files)); };
         Closing += (_, e) => { CancelGesture(); if (!ConfirmAllTabs()) e.Cancel = true; else { SaveWorkspace(); CloseFloatingPanels(); StopRenderingForShutdown(); } };
         Loaded += (_, _) => InitializeStartup();
         canvas.MouseLeave += (_, _) => { if (!resizingBrush) canvas.BrushPoint = null; ClearPointerHover(); if (!dragging && !panning) lastPointerScreen = null; canvas.InvalidateVisual(); };
         history.Reset(doc); UpdateColor(); UpdateBrushLabel(); UpdateToolOptions(); UpdateDocumentAvailability(); UpdateStatus();
         SizeChanged += (_, _) => studioScroll.Height = PreferredStudioHeight(ActualHeight);
+        // Refits (open, crop, canvas size, artboards, offscreen captures) change the scale without a status refresh.
+        canvas.ZoomChanged += UpdateZoomBox;
     }
 
     static void StyleToolButton(Button button)
@@ -183,6 +187,7 @@ public sealed partial class MainWindow : Window
         {
             var x = a.Layers[i]; var y = b.Layers[i];
             if (x.Material != y.Material) return false;
+            if (x.Shadow != y.Shadow) return false;
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend || x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY || x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.Warp != y.Warp || x.Shape != y.Shape || x.Text != y.Text || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) || !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;
@@ -190,7 +195,7 @@ public sealed partial class MainWindow : Window
     void SetTool(Tool next) => ChangeInteractionTool(next);
     void Refresh(bool render = true)
     {
-        ClearPointerHover();
+        ClearPointerHover(); if (!HasDocument) pickCache.Clear();
         var existingIds = doc.Layers.Select(l => l.Id).ToHashSet(); selectedLayers.IntersectWith(existingIds);
         canvas.Document = HasDocument ? doc : null; canvas.Selection = HasDocument ? selection : null;
         canvas.SelectedObjectIds = selectedLayers.ToHashSet();
@@ -256,7 +261,7 @@ public sealed partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog { Filter = CompatibilityImport.Filter, Multiselect = true };
         if (dialog.ShowDialog(this) != true) return;
-        foreach (var path in dialog.FileNames) OpenPath(path);
+        OpenPaths(dialog.FileNames);
     }
     void OpenProject(string path)
     {
@@ -267,7 +272,7 @@ public sealed partial class MainWindow : Window
     void OpenImage(string path)
     {
         var pixels = ImportExport.LoadImage(path); var next = new Document { Width = pixels.Width, Height = pixels.Height, Name = Path.GetFileNameWithoutExtension(path) };
-        next.Add(new Layer { Name = "원본", Pixels = pixels }); AddTab(next, null);
+        next.Add(new Layer { Name = Loc.T("원본"), Pixels = pixels }); AddTab(next, null);
     }
     void Import()
     {
@@ -276,25 +281,41 @@ public sealed partial class MainWindow : Window
     }
     void ImportFiles(string[] paths)
     {
-        if (!HasDocument) { foreach (var path in paths) OpenPath(path); return; }
-        var layers = new List<Layer>();
+        if (!HasDocument) { OpenPaths(paths); return; }
+        // Drawings share one settings dialog; each is placed as its own group, on a new artboard
+        // beside the existing ones when the document uses artboards and the option is on.
+        var imported = new List<ImportedFile>();
+        var drawings = paths.Where(CompatibilityImport.Supports).ToArray();
+        if (drawings.Length > 0 && !ReadCompatibilityDocuments(drawings, true, imported, out _)) return;
+        var queue = imported.ToLookup(i => i.Path).ToDictionary(g => g.Key, g => new Queue<ImportedFile>(g));
+        int width = doc.Width, height = doc.Height;
+        var candidate = doc.Snapshot(); var layers = new List<Layer>();
+        // Every drawing in this import is sized against the document's own last artboard, not the one added for the drawing before it.
+        var reference = candidate.Artboards.LastOrDefault();
         foreach (var path in paths)
         {
             if (CompatibilityImport.Supports(path))
             {
-                var imported = ReadCompatibilityDocument(path, placeAsLayer: true); if (imported == null) return;
-                layers.AddRange(CompatibilityImport.PlacementLayers(imported, doc.Width, doc.Height));
+                if (!queue.TryGetValue(path, out var pending) || pending.Count == 0 || pending.Dequeue().Document is not { } drawing) continue;
+                layers.AddRange(CompatibilityImport.Place(candidate, drawing, drawing.Artboards.Count > 0, width, height, reference));
             }
             else
             {
                 var layer = new Layer { Name = Path.GetFileNameWithoutExtension(path), Pixels = ImportExport.LoadImage(path) };
-                layer.Scale = Math.Min(1, Math.Min(doc.Width / (double)layer.Pixels.Width, doc.Height / (double)layer.Pixels.Height));
-                layer.X = (doc.Width - layer.Pixels.Width * layer.Scale) / 2; layer.Y = (doc.Height - layer.Pixels.Height * layer.Scale) / 2; layers.Add(layer);
+                layer.Scale = Math.Min(1, Math.Min(width / (double)layer.Pixels.Width, height / (double)layer.Pixels.Height));
+                layer.X = (width - layer.Pixels.Width * layer.Scale) / 2; layer.Y = (height - layer.Pixels.Height * layer.Scale) / 2; layers.Add(layer);
+                candidate.Add(layer);
             }
         }
-        var candidate = doc.Snapshot(); foreach (var layer in layers) candidate.Add(layer); candidate.Validate();
-        Edit("이미지 가져오기", () => { doc = candidate; maskEditing = false; });
-        if (layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
+        if (layers.Count > 0)
+        {
+            candidate.Validate();
+            bool grew = candidate.Width != width || candidate.Height != height;
+            Edit("이미지 가져오기", () => { doc = candidate; maskEditing = false; });
+            if (layers.Any(l => l.Vector != null)) SetWorkspaceMode(true);
+            if (grew) canvas.Fit();
+        }
+        ReportImportProblems(imported, 0);
     }
     bool Save(bool saveAs)
     {
@@ -336,6 +357,15 @@ public sealed partial class MainWindow : Window
                 if (roots.Contains(original.Id)) { copy.Name += " 복사"; if (copy.SourceLayerName != null) copy.SourceLayerName += " 복사"; }
                 return copy;
             }).ToArray();
+            // A shadow copied together with its sources follows the copies; a shadow copied alone
+            // (or whose sources would then sit in different groups) keeps the original sources.
+            var parents = doc.Layers.Concat(copies).ToDictionary(l => l.Id, l => l.ParentId);
+            foreach (var copy in copies)
+            {
+                if (copy.Shadow is not { } spec || !spec.Sources.Any(map.ContainsKey)) continue;
+                var sources = spec.Sources.Select(id => map.TryGetValue(id, out var mapped) ? mapped : id).ToArray();
+                if (sources.Where(parents.ContainsKey).Select(id => parents[id]).Distinct().Count() <= 1) copy.Shadow = spec with { Sources = sources };
+            }
             doc.Layers.AddRange(copies); doc.Validate();
             selectedLayers.Clear(); selectedLayers.UnionWith(roots.Select(id => map[id])); doc.ActiveId = selectedLayers.Last();
             sourceLayerSelection = sourceLayerSelection?.Where(map.ContainsKey).Select(id => map[id]).ToArray();
@@ -351,7 +381,19 @@ public sealed partial class MainWindow : Window
         CancelGesture();
         if (sourceLayerSelection is { Length: > 1 }) { ReorderSourceLayer(delta); return; }
         if (doc.Active is not { } active) return;
-        var siblings = doc.Layers.Where(l => l.ParentId == active.ParentId).ToList(); int next = siblings.IndexOf(active) + delta;
+        var siblings = doc.Layers.Where(l => l.ParentId == active.ParentId).ToList();
+        var categories = DrawingLayers.Categories(doc);
+        if (DrawingLayers.IsNestedPhoto(active, categories))
+        {
+            // The photo tab shows only the materials of a drawing folder: step among those and swap
+            // places, so the linework the photo tab does not list stays above them.
+            var materials = siblings.Where(l => categories.GetValueOrDefault(l.Id) == LayerCategory.Photo).ToList(); int step = materials.IndexOf(active) + delta;
+            if (step < 0 || step >= materials.Count) return;
+            var other = materials[step];
+            Edit("레이어 순서", () => { int a = doc.Layers.IndexOf(active), b = doc.Layers.IndexOf(other); doc.Layers[a] = other; doc.Layers[b] = active; });
+            return;
+        }
+        int next = siblings.IndexOf(active) + delta;
         if (next < 0 || next >= siblings.Count) return;
         Edit("레이어 순서", () => { int target = doc.Layers.IndexOf(siblings[next]); doc.Layers.Remove(active); doc.Layers.Insert(Math.Min(target, doc.Layers.Count), active); });
     }
@@ -371,7 +413,7 @@ public sealed partial class MainWindow : Window
     }
     void AddMask() => EditLayer("마스크 추가", l => { if (l.Mask != null) return; l.Mask = new byte[l.Pixels.Width * l.Pixels.Height]; for (int y = 0; y < l.Pixels.Height; y++) for (int x = 0; x < l.Pixels.Width; x++) { var p = DocumentFeatures.ToDocumentSpace(doc, l, new Point(x + .5, y + .5)); l.Mask[y * l.Pixels.Width + x] = Imaging.Byte((selection?.Weight(p.X, p.Y) ?? 1) * 255); } maskEditing = true; });
     void InvertMask() => EditLayer("마스크 반전", l => { if (l.Mask != null) l.Mask = l.Mask.Select(v => (byte)(255 - v)).ToArray(); });
-    void Flatten() => Edit("모든 레이어 병합", () => { var rendered = Imaging.Render(doc); doc.Layers.Clear(); doc.Add(new Layer { Name = "합성 이미지", Pixels = rendered }); maskEditing = false; });
+    void Flatten() => Edit("모든 레이어 병합", () => { var rendered = Imaging.Render(doc); doc.Layers.Clear(); doc.Add(new Layer { Name = Loc.T("합성 이미지"), Pixels = rendered }); maskEditing = false; });
     void Adjust(string kind, double a = 0, double b = 255, double c = 1) => RunRasterJob("색상 보정", (l, s, ct) => Imaging.Adjust(l, s, kind, a, b, c));
     void Levels() => QuickAdjustment("levels");
     void Exposure() => QuickAdjustment("exposure");
@@ -421,10 +463,10 @@ public sealed partial class MainWindow : Window
     {
         if (!HasDocument)
         {
-            var document = new Document { Width = raster.Width, Height = raster.Height, Name = "붙여넣은 이미지" };
-            document.Add(new Layer { Name = "붙여넣은 이미지", Pixels = raster }); AddTab(document, null); return;
+            var document = new Document { Width = raster.Width, Height = raster.Height, Name = Loc.T("붙여넣은 이미지") };
+            document.Add(new Layer { Name = Loc.T("붙여넣은 이미지"), Pixels = raster }); AddTab(document, null); return;
         }
-        Edit("붙여넣기", () => { doc.Add(new Layer { Name = "붙여넣은 이미지", Pixels = raster }); maskEditing = false; });
+        Edit("붙여넣기", () => { doc.Add(new Layer { Name = Loc.T("붙여넣은 이미지"), Pixels = raster }); maskEditing = false; });
     }
     void TextAt(Point p) => EditTextAt(p);
     void OnDown(object sender, MouseButtonEventArgs e) => InteractionDown(sender, e);

@@ -29,7 +29,7 @@ public sealed class LayerRow : Grid
         var thumb = new Border
         {
             Width = 28, Height = 28, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = Theme.Stroke,
-            Background = Theme.Input, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+            Background = ThumbnailBacking(layer), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
         };
         thumb.Child = layer.Kind is LayerKind.Group or LayerKind.Adjustment
             ? Theme.Glyph(layer.Kind == LayerKind.Group ? Theme.Glyphs.Folder : Theme.Glyphs.Adjustment, 16, Theme.Accent, 1.6)
@@ -68,7 +68,8 @@ public sealed class LayerRow : Grid
             MouseLeave += (_, _) => Background = Brushes.Transparent;
         }
 
-        var visible = IconButton(EyeIcon(layer.Visible), (layer.Visible ? "레이어 숨기기" : "레이어 표시") + " · Alt+클릭: 이 레이어만 보기", () => setVisible(!layer.Visible));
+        var visible = IconButton(EyeIcon(layer.Visible), string.Join(" · ", layer.Visible ? "레이어 숨기기" : "레이어 표시",
+            "Shift+클릭: 마지막으로 누른 눈(없으면 맨 위 레이어)의 상태를 여기까지 적용", "Alt+클릭: 이 레이어만 보기"), () => setVisible(!layer.Visible));
         AutomationProperties.SetName(visible, $"레이어 표시: {layer.Name}, {(layer.Visible ? "표시됨" : "숨김")}");
         Children.Add(visible);
 
@@ -86,6 +87,9 @@ public sealed class LayerRow : Grid
         AutomationProperties.SetName(locked, $"레이어 잠금: {layer.Name}, {(layer.Locked ? "잠김" : "잠금 해제")}");
         SetColumn(locked, 4); Children.Add(locked);
     }
+
+    // Drawing line work is mostly dark; it sits on paper as it does on the canvas.
+    internal static Brush ThumbnailBacking(Layer layer) => layer.Kind == LayerKind.Vector || layer.Vector != null ? Theme.Paper : Theme.Input;
 
     static Button IconButton(UIElement icon, string tooltip, Action click)
     {

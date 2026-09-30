@@ -45,8 +45,8 @@ public sealed partial class MainWindow
         Add("배우기", ("샘플 작업 열기", "", OpenLearningSample));
         MenuItem Find(string name) => menu.Items.Cast<MenuItem>().Single(item => Equals(item.Header, name));
         var layerMenu = Find("레이어");
-        var compatibilityExport = DocumentControl(new MenuItem { Header = "PDF / PSD 파일로 내보내기…" });
-        compatibilityExport.Click += (_, _) => { if (HasDocument) Guard(ExportCompatibility); }; Find("파일").Items.Add(compatibilityExport);
+        Find("파일").Items.Add(BuildCompatibilityExportMenu());
+        AddImportSettingsMenu(Find("파일"));
         foreach (var target in new[] { Find("파일"), layerMenu })
         {
             var selectedExport = DocumentControl(new MenuItem { Header = "선택 레이어 이미지로 내보내기…" });
@@ -57,9 +57,13 @@ public sealed partial class MainWindow
         while (compositeMenu.Items.Count > 0) { var item = compositeMenu.Items[0]; compositeMenu.Items.RemoveAt(0); layerMenu.Items.Add(item); }
         var adjustments = Find("조정 레이어"); menu.Items.Remove(adjustments); adjustments.Header = "새 조정 레이어";
         layerMenu.Items.Add(new Separator()); layerMenu.Items.Add(adjustments);
+        AddShadowMenuItems(layerMenu);
         var print = Find("인쇄"); menu.Items.Remove(print);
         var printItem = (MenuItem)print.Items[0]; print.Items.RemoveAt(0); printItem.Header = "인쇄용 CMYK 내보내기…";
-        Find("파일").Items.Insert(6, printItem);
+        // Beside the export preview, wherever other File items put it.
+        var fileMenu = Find("파일");
+        var exportPreview = fileMenu.Items.OfType<MenuItem>().First(x => Equals(x.Header, "내보내기 미리보기…"));
+        fileMenu.Items.Insert(fileMenu.Items.IndexOf(exportPreview) + 1, printItem);
         foreach (var (section, before) in new[] { ("파일", "저장"), ("파일", "내보내기 미리보기…"), ("파일", "Compositor .comp 가져오기…"), ("파일", "현재 문서 닫기"), ("편집", "합성 이미지 복사"), ("편집", "선택 픽셀 지우기"), ("레이어", "마스크 추가"), ("보기", "가이드 추가…"), ("보기", "명령 찾기…") })
         {
             var parent = Find(section); var item = parent.Items.OfType<MenuItem>().First(x => Equals(x.Header, before));
@@ -90,7 +94,7 @@ public sealed partial class MainWindow
             };
             languages.Items.Add(choice);
         }
-        view.Items.Add(new Separator()); view.Items.Add(languages);
+        view.Items.Add(new Separator()); view.Items.Add(BuildProfileMenu()); view.Items.Add(languages);
         ribbonToggle = new MenuItem { Header = "리본 메뉴로 보기", IsCheckable = true, IsChecked = ribbonMode, ToolTip = "메뉴를 탭과 아이콘 버튼으로 표시합니다. ^로 접을 수 있습니다." };
         ribbonToggle.Click += (_, _) => SetRibbonMode(ribbonToggle.IsChecked);
         view.Items.Add(new Separator()); view.Items.Add(ribbonToggle);

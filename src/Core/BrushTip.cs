@@ -19,7 +19,7 @@ public sealed class BrushTip
     }).ToArray();
 
     public static BrushTip Round { get; } = new("round", "원형", Shape.Round);
-    public static BrushTip Square { get; } = new("square", "사각형", Shape.Square);
+    public static BrushTip Square { get; } = new("square", "정사각형", Shape.Square);
     public static BrushTip Diamond { get; } = new("diamond", "마름모", Shape.Diamond);
     public static BrushTip Star { get; } = new("star", "별", Shape.Star);
     public static IReadOnlyList<BrushTip> BuiltIns { get; } = Array.AsReadOnly(new[] { Round, Square, Diamond, Star });

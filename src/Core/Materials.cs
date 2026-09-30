@@ -19,7 +19,7 @@ public sealed record RegionPath(string Data, double M11 = 1, double M12 = 0, dou
         var geometry = System.Windows.Media.Geometry.Parse(value.Data).CloneCurrentValue();
         if (geometry.GetFlattenedPathGeometry().Figures.Any(f => !f.IsClosed)) throw new InvalidDataException("영역은 닫힌 경로여야 합니다.");
         geometry.Transform = new MatrixTransform(value.M11, value.M12, value.M21, value.M22, value.OffsetX, value.OffsetY);
-        var bounds = geometry.Bounds; double area = geometry.GetArea();
+        var bounds = geometry.Bounds; double area = MaterialEditing.Area(geometry);
         if (bounds.IsEmpty || !double.IsFinite(bounds.X + bounds.Y + bounds.Width + bounds.Height) ||
             Math.Abs(bounds.X) > 100_000 || Math.Abs(bounds.Y) > 100_000 || bounds.Width <= 0 || bounds.Height <= 0 ||
             bounds.Width > 100_000 || bounds.Height > 100_000 || !double.IsFinite(area) || area <= .000001)
@@ -58,6 +58,31 @@ public static class MaterialEditing
             throw new InvalidDataException("재료 원본 정보가 올바르지 않습니다.");
         Name(asset.Name); ValidateSize(asset.Pixels.Width, asset.Pixels.Height);
     }
+    /// <summary>Filled area in transformed coordinates. WPF's GetArea can report 0 for a thin shape
+    /// once its transform moves it near the origin, so a zero result is re-measured on the flattened,
+    /// transform-applied outline before a region is rejected.</summary>
+    public static double Area(Geometry geometry)
+    {
+        double area = geometry.GetArea();
+        if (double.IsFinite(area) && area > .000001) return area;
+        var flat = geometry.GetFlattenedPathGeometry();
+        double measured = flat.GetArea();
+        if (double.IsFinite(measured) && measured > .000001) return measured;
+        // Last resort: shoelace over the flattened figures (nonzero fill of simple hatch outlines).
+        double sum = 0;
+        foreach (var figure in flat.Figures)
+        {
+            var points = new List<Point> { figure.StartPoint };
+            foreach (var segment in figure.Segments)
+                if (segment is PolyLineSegment poly) points.AddRange(poly.Points);
+                else if (segment is LineSegment line) points.Add(line.Point);
+            double twice = 0;
+            for (int i = 0; i < points.Count; i++) { var a = points[i]; var b = points[(i + 1) % points.Count]; twice += a.X * b.Y - b.X * a.Y; }
+            sum += Math.Abs(twice) / 2;
+        }
+        return double.IsFinite(sum) ? sum : 0;
+    }
+
     public static void ValidateRegion(MaterialRegion region)
     {
         if (region == null || region.Id == Guid.Empty || region.Path == null || region.Source is not ("polygon" or "selection" or "closed_layer"))
@@ -182,7 +207,8 @@ public static class MaterialEditing
         int width = checked((int)Math.Ceiling(bounds.Right - left)), height = checked((int)Math.Ceiling(bounds.Bottom - top));
         ValidateSize(width, height);
         var fill = new MaterialFill(asset, region.Id, region.Name, region.Path.Translate(-left, -top), width, height, tileWidth, tileHeight, angle, offsetX, offsetY);
-        var layer = new Layer { Name = "재료 · " + asset.Name + " · " + region.Name, Kind = LayerKind.Material, Category = LayerCategory.Drawing,
+        // Material layers are photo layers (DrawingLayers.Categories), wherever they sit.
+        var layer = new Layer { Name = "재료 · " + asset.Name + " · " + region.Name, Kind = LayerKind.Material, Category = LayerCategory.Photo,
             Material = fill, X = left, Y = top, Pixels = new Raster(1, 1), Blend = BlendMode.Multiply };
         ValidateFill(fill, layer.Pixels, false);
         layer.Pixels = MaterialRenderer.Render(fill); return layer;

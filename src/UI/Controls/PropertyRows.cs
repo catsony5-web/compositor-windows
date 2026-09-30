@@ -44,12 +44,13 @@ public static class PropertyRows
         return grid;
     }
 
-    // Body-size label on the left, compact value on the right.
+    // Caption on the left, compact value on the right. The caption matches the other rows'
+    // captions (12 Muted, no extra inset) so the labels of one section line up.
     public static Grid Inline(string caption, FrameworkElement value, double valueWidth = 78, Thickness? margin = null)
     {
         var grid = new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) };
         grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(valueWidth) });
-        var label = Theme.Label(caption, Theme.BodySize); label.VerticalAlignment = VerticalAlignment.Center; label.TextWrapping = TextWrapping.Wrap;
+        var label = Caption(caption); label.Margin = new Thickness(0, 0, Gap, 0); label.VerticalAlignment = VerticalAlignment.Center;
         grid.Children.Add(label);
         value.Margin = new Thickness(0); Grid.SetColumn(value, 1); grid.Children.Add(value);
         return grid;

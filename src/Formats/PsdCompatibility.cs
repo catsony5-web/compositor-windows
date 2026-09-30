@@ -16,23 +16,21 @@ public static class PsdCompatibility
     };
     public static CompatibilityResult Read(string path, bool layers, CancellationToken token = default) => PsdReader.Read(path, layers, token);
 
-    public static bool CanWriteLayers(Document doc) => doc.Layers.Count <= Document.MaxLayers && doc.Layers.All(l => l.Kind != LayerKind.Group && l.Kind != LayerKind.Adjustment && l.ParentId == null && !l.Clipped);
-    // PSD v1, RGB/8, raw planar channels. Independent reader tests verify the file layout.
+    /// <summary>Whether a layered .psd keeps this document's layers (possibly merging deep groups to fit).</summary>
+    public static bool CanWriteLayers(Document doc) => PsdLayerExport.CanWrite(doc);
+    // PSD v1, RGB/8. Layered files keep groups, masks and blend modes (PsdLayerExport); the
+    // single-image form below stores raw planar channels. Independent readers verify both layouts.
     public static void Write(Document document, Stream output, bool layers, CancellationToken token = default)
     {
+        if (layers) { PsdLayerExport.Write(document, output, null, token); return; }
         document.Validate();
-        if (layers && document.Layers.Count > Document.MaxLayers)
-            throw new InvalidDataException($"PSD 픽셀 레이어는 {Document.MaxLayers}개까지 내보낼 수 있습니다. 합성 PSD를 선택하고 객체 구조는 .moruproj로 저장해 주세요.");
-        if (layers && !CanWriteLayers(document)) throw new NotSupportedException("그룹·조정·클리핑이 있는 문서는 합성 PSD로 내보내 주세요.");
         if (document.Width > 30_000 || document.Height > 30_000)
             throw new InvalidDataException("PSD 내보내기는 한 변 30,000px까지 지원합니다. 더 큰 이미지는 PNG 또는 TIFF로 저장해 주세요.");
-        long layerBytes = (long)document.Width * document.Height * 4 * document.Layers.Count;
-        if (layers && layerBytes > Document.MaxLayerBytes) throw new InvalidDataException($"PSD 레이어 출력이 {Document.MaxLayerBytes / (1024L * 1024 * 1024):N0}GB를 초과합니다. 합성 이미지로 출력해 주세요.");
         // The v1 writer below stores signed 32-bit section lengths. Check the
         // outer layer section, including names and channel headers, before rendering.
         long sectionBytes = 10; // inner section length, layer count, global mask length
-        foreach (string name in layers ? document.Layers.Select(l => l.Name) : [document.Name])
         {
+            string name = document.Name;
             int asciiBytes = Encoding.ASCII.GetByteCount(name.Length > 255 ? name[..255] : name);
             int pascalBytes = (asciiBytes + 4) / 4 * 4;
             sectionBytes += (long)document.Width * document.Height * 4 + 90 + pascalBytes + (long)name.Length * 2;
@@ -54,7 +52,7 @@ public static class PsdCompatibility
             Section(() =>
             {
                 // Negative count marks the first extra merged channel as transparency.
-                var selected = layers ? document.Layers.AsEnumerable().Reverse().ToArray() : [new Layer { Name = document.Name, Pixels = merged }];
+                Layer[] selected = [new Layer { Name = document.Name, Pixels = merged }];
                 I16((short)-selected.Length);
                 int planeBytes = checked(document.Width * document.Height);
                 foreach (var layer in selected)

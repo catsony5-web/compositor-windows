@@ -1,11 +1,12 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Compositor.Windows;
 
 public static partial class AutomationCatalog
 {
-    public const int ContractVersion = 5;
+    public const int ContractVersion = 6;
     public const int MaximumBatchSteps = 64;
     public const int MaximumBatchReceipts = 128;
     static readonly string[] BatchCommands = ["add_text", "update_text", "add_shape", "set_layer", "delete_layer", "reorder_layer", "add_adjustment", "apply_material", "update_material", "add_artboard", "update_artboard", "delete_artboard"];
@@ -77,13 +78,15 @@ public static partial class AutomationCatalog
         {
             var command = Commands[name]; var properties = new JsonObject();
             foreach (var field in command.Fields.Where(f => f.Key is not ("documentId" or "expectedRevision")))
-                properties[field.Key] = field.Value.Schema();
+                properties[field.Key] = field.Value.BatchSchema();
             alternatives.Add(new JsonObject
             {
                 ["type"] = "object", ["additionalProperties"] = false, ["required"] = Strings(["command", "arguments"]),
                 ["properties"] = new JsonObject
                 {
                     ["command"] = new JsonObject { ["type"] = "string", ["enum"] = Strings([name]) },
+                    ["ref"] = new JsonObject { ["type"] = "string", ["pattern"] = BatchRefNamePattern,
+                        ["description"] = "Optional name for the layer or artboard this step creates or targets; later steps use it as \"@name\"." },
                     ["arguments"] = new JsonObject
                     {
                         ["type"] = "object", ["additionalProperties"] = false, ["properties"] = properties,
@@ -95,20 +98,60 @@ public static partial class AutomationCatalog
         return new JsonObject { ["type"] = "array", ["minItems"] = 1, ["maxItems"] = MaximumBatchSteps, ["items"] = new JsonObject { ["oneOf"] = alternatives } };
     }
 
+    public const string BatchRefNamePattern = "^[A-Za-z][A-Za-z0-9_-]{0,63}$";
+    const string BatchRefPattern = "^@[A-Za-z][A-Za-z0-9_-]{0,63}$";
+
     static void ValidateBatchSteps(JsonArray steps, JsonObject batch)
     {
         if (steps.Count is < 1 or > MaximumBatchSteps) throw new ArgumentException($"steps must contain 1..{MaximumBatchSteps} edits.");
+        var defined = new Dictionary<string, Guid>(StringComparer.Ordinal);
         for (int i = 0; i < steps.Count; i++)
         {
-            if (steps[i] is not JsonObject step || step.Count != 2 ||
+            if (steps[i] is not JsonObject step || step.Count is < 2 or > 3 || step.Any(p => p.Key is not ("command" or "arguments" or "ref")) ||
                 step["command"] is not JsonValue value || !value.TryGetValue<string>(out var name) ||
                 !BatchCommands.Contains(name, StringComparer.Ordinal) || step["arguments"] is not JsonObject args)
                 throw new ArgumentException($"Invalid batch step {i}. Use a supported command and arguments object.");
             if (args.ContainsKey("documentId") || args.ContainsKey("expectedRevision"))
                 throw new ArgumentException($"Batch step {i} cannot override documentId or expectedRevision.");
-            try { Validate(name, BatchArguments(batch, args)); }
+            try
+            {
+                // Validate with placeholder IDs for references; the executor substitutes the real ones.
+                var resolved = ResolveBatchRefs(name, args, defined, i);
+                Validate(name, BatchArguments(batch, resolved));
+            }
             catch (ArgumentException e) { throw new ArgumentException($"Batch step {i}: {e.Message}", e); }
+            if (step.ContainsKey("ref"))
+            {
+                string reference = StepRef(step, i);
+                if (!defined.TryAdd(reference, Guid.NewGuid())) throw new ArgumentException($"Batch step {i}: ref '{reference}' is already used by an earlier step.");
+            }
         }
+    }
+
+    /// <summary>The step's optional ref name, validated.</summary>
+    public static string StepRef(JsonObject step, int index)
+    {
+        if (step["ref"] is not JsonValue value || !value.TryGetValue<string>(out var reference) || !Regex.IsMatch(reference, BatchRefNamePattern))
+            throw new ArgumentException($"Batch step {index}: ref must be a letter followed by up to 63 letters, digits, '_' or '-'.");
+        return reference;
+    }
+
+    /// <summary>Copies step arguments with every "@name" in an ID field replaced by the object that earlier step produced.</summary>
+    public static JsonObject ResolveBatchRefs(string command, JsonObject args, IReadOnlyDictionary<string, Guid> refs, int index)
+    {
+        var result = (JsonObject)args.DeepClone();
+        var definition = Commands[command];
+        foreach (var (key, node) in args)
+        {
+            if (node is not JsonValue v || !v.TryGetValue<string>(out var text) || !text.StartsWith('@')) continue;
+            // Only ID fields resolve references; text that happens to start with '@' stays text.
+            if (!definition.Fields.TryGetValue(key, out var field) || !field.GuidValue) continue;
+            string name = text[1..];
+            if (!refs.TryGetValue(name, out var id))
+                throw new ArgumentException($"Batch step {index}: unknown reference '{text}'. Define ref \"{name}\" on an earlier step.");
+            result[key] = id.ToString();
+        }
+        return result;
     }
 
     internal static JsonObject BatchArguments(JsonObject batch, JsonObject step)

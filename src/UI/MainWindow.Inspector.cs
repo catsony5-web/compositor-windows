@@ -62,11 +62,11 @@ public sealed partial class MainWindow
         widthGrip.MouseEnter += (_, _) => widthGrip.Background = Theme.Stroke;
         widthGrip.MouseLeave += (_, _) => widthGrip.Background = Brushes.Transparent;
         host.Children.Add(widthGrip);
-        var panel = new Grid(); Grid.SetColumn(panel, 1); host.Children.Add(panel);
+        var panel = new MeasureHookGrid { BeforeMeasure = LimitStudioHeight }; Grid.SetColumn(panel, 1); host.Children.Add(panel);
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
         panel.RowDefinitions.Add(new RowDefinition());
-        panel.Children.Add(BuildStudioTop());
+        panel.Children.Add(studioTopCard = BuildStudioTop());
         // The 8px gap between the cards is the vertical splitter; a short handle appears on hover.
         var splitter = new System.Windows.Controls.Primitives.Thumb { Height = 8, Cursor = Cursors.SizeNS, Background = Brushes.Transparent, ToolTip = "패널 높이 조절" };
         var splitterTemplate = new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb));
@@ -105,7 +105,7 @@ public sealed partial class MainWindow
         var footer = new Border { BorderBrush = Theme.Line, BorderThickness = new Thickness(0, 1, 0, 0), Child = actions };
         Button ActionButton(string glyph, string tip, Action action) => Theme.IconButton(glyph, () => Guard(action), tip, 30, 16);
         var delete = ActionButton(Theme.Glyphs.Delete, "선택 레이어 삭제", DeleteLayer); DockPanel.SetDock(delete, Dock.Right); actions.Children.Add(delete);
-        actions.Children.Add(ActionButton(Theme.Glyphs.Plus, "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = $"레이어 {doc.Layers.Count + 1}", Pixels = new Raster(doc.Width, doc.Height) }))));
+        actions.Children.Add(ActionButton(Theme.Glyphs.Plus, "새 투명 레이어", () => Edit("새 레이어", () => doc.Add(new Layer { Name = Loc.T($"레이어 {doc.Layers.Count + 1}"), Pixels = new Raster(doc.Width, doc.Height) }))));
         actions.Children.Add(ActionButton(Theme.Glyphs.Duplicate, "선택 레이어 복제 · Ctrl+J", Duplicate));
         Border Divider() => new() { Width = 1, Height = 16, Background = Theme.Line, Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
         actions.Children.Add(Divider());
@@ -129,6 +129,7 @@ public sealed partial class MainWindow
         {
             var empty = Theme.Label("레이어를 선택하세요", Theme.BodySize, Theme.Muted);
             empty.Margin = new Thickness(2, 0, 2, 6); properties.Children.Add(empty);
+            AddSelectionMaterials();
             return;
         }
 
@@ -141,6 +142,7 @@ public sealed partial class MainWindow
             LayerKind.Text => (Theme.Glyphs.Text, "텍스트 레이어"),
             LayerKind.Adjustment => (Theme.Glyphs.Adjustment, "조정 레이어"),
             LayerKind.Group => (Theme.Glyphs.Folder, "그룹"),
+            LayerKind.Material => (Theme.Glyphs.Image, "재료 맵핑 레이어"),
             _ => (Theme.Glyphs.Image, "이미지 레이어")
         };
         var kind = Theme.Label(kindName, Theme.CaptionSize, Theme.Muted); kind.Margin = new Thickness(0, 1, 0, 0);
@@ -149,6 +151,7 @@ public sealed partial class MainWindow
         DockPanel.SetDock(badge, Dock.Left); identity.Children.Add(badge);
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; titles.Children.Add(name); titles.Children.Add(kind); identity.Children.Add(titles);
         properties.Children.Add(identity);
+        AddSelectionMaterials();
         AddTextProperties(layer);
         AddShapeProperties(layer);
 
@@ -175,6 +178,7 @@ public sealed partial class MainWindow
         properties.Children.Add(PropertyRows.Inline("불투명도 · %", opacityBox, margin: new Thickness(2, 0, 2, 4)));
         if (layer.Kind == LayerKind.Raster)
             properties.Children.Add(InspectorAction("레벨 보정", Levels, "선택한 이미지 레이어의 검정·흰색·감마 값을 보정합니다.", layer, Theme.Glyphs.Levels));
+        AddShadowActions(layer);
 
         properties.Children.Add(Theme.Section("위치와 변형"));
         properties.Children.Add(TransformRow(layer, ("X", layer.X, -100000, 100000, "X 위치", (l, v) => l.X = v),
@@ -300,7 +304,10 @@ public sealed partial class MainWindow
         var byId = doc.Layers.ToDictionary(layer => layer.Id);
         if (!byId.TryGetValue(id, out var selected)) return;
         var parent = selected.ParentId;
-        bool keepDrawingCollapsed = DrawingLayers.Categories(doc).GetValueOrDefault(id) == LayerCategory.Drawing;
+        var categories = DrawingLayers.Categories(doc);
+        // A hatch material is its own row on the photo tab; its drawing folder stays as it was.
+        if (DrawingLayers.IsNestedPhoto(selected, categories)) { pendingLayerReveal = id; return; }
+        bool keepDrawingCollapsed = categories.GetValueOrDefault(id) == LayerCategory.Drawing;
         Guid reveal = id;
         for (int depth = 0; parent is { } parentId && depth < 16; depth++)
         {
@@ -334,27 +341,21 @@ public sealed partial class MainWindow
         UpdateLayerQuickBar(entries.Length);
     }
 
-    // Alt+click on the eye isolates; releasing Alt must not then open the menu bar.
-    bool IsolationClick()
-    {
-        if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) return false;
-        suppressAltMenu = true; return true;
-    }
-
+    // Eye clicks: plain toggles, Shift applies the reference row's state to a range, Alt isolates.
     LayerRow CreateLayerRow(LayerListEntry entry)
     {
         var id = entry.Layer.Id;
         if (entry.GroupMembers is { } members)
         {
             var grouped = new LayerRow(entry.Layer, entry.Selected, () => ClickLayerRow(entry, Keyboard.Modifiers),
-                visible => { if (IsolationClick()) IsolateLayers(members); else ToggleSourceLayer(members, visible); }, () => ToggleSourceLayer(members), entry.Expanded,
+                _ => ClickLayerEye(entry, Keyboard.Modifiers), () => ToggleSourceLayer(members), entry.Expanded,
                 () => { foreach (var member in members) if (entry.Expanded) collapsedGroups.Add(member); else collapsedGroups.Remove(member); BuildLayers(); }, entry.Description);
             grouped.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1);
             return grouped;
         }
         var row = new LayerRow(entry.Layer, entry.Selected,
             () => ClickLayerRow(entry, Keyboard.Modifiers),
-            visible => { if (IsolationClick()) IsolateLayers([id]); else Edit("레이어 표시", () => doc.Layers.Single(item => item.Id == id).Visible = visible); },
+            _ => ClickLayerEye(entry, Keyboard.Modifiers),
             () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
             entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); }, entry.Description);
         row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;

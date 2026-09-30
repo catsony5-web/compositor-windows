@@ -10,6 +10,8 @@ namespace Compositor.Windows;
 
 public sealed class AdjustmentDialog : Window
 {
+    /// <summary>Long side of the preview rasters the dialog keeps; larger documents are box-filtered down after rendering.</summary>
+    internal const int PreviewMaxSide = 2560;
     public AdjustmentSpec Spec { get; private set; }
     readonly Document original;
     readonly Guid? editingId;
@@ -17,15 +19,48 @@ public sealed class AdjustmentDialog : Window
     readonly SemaphoreSlim renderGate = new(1, 1);
     readonly List<Action> synchronizeControls = [];
     readonly List<ParameterSlider> parameterControls = [];
-    CancellationTokenSource? previewCts;
+    CancellationTokenSource? previewCts, beforeCts;
     int selectedChannel;
     readonly HistogramView histogram = new();
-    readonly Image preview = new() { Stretch = Stretch.Uniform, Margin = new Thickness(12) };
+    readonly BeforeAfterView preview = new();
+    readonly SegmentedChoice<CompareMode> compareModes = CompareControls.ModeChoice(CompareMode.Result);
+    readonly HoldButton holdButton = new();
     readonly CheckBox enabled = new() { Content = "미리보기", IsChecked = true, Foreground = Theme.Text, Margin = new Thickness(8) };
     readonly TextBlock info = Theme.Label("", Theme.CaptionSize, Theme.Muted);
+    // "Before" (the document without this adjustment) is rendered once per dialog and reused; only "after" follows the sliders.
+    Raster? beforePreview, afterPreview;
+    // Histogram bins of each state, taken from the full-resolution render (the stage copies are box-averaged and lose the tails).
+    double[][]? beforeBins, afterBins;
+    // Why the last "before" render failed, and the settings generation it failed at; a later settings change retries it.
+    string? beforeFailure;
+    long beforeFailedAt;
     long version;
-    bool closed, synchronizing, preservePendingInputs;
-    internal void SetDesignPreview(Raster raster) { preview.Source = raster.Bitmap(); histogram.Update(raster); }
+    int afterPending;
+    bool closed, synchronizing, preservePendingInputs, beforePending;
+    internal int BeforeRenderCount { get; private set; }
+    internal int AfterRenderCount { get; private set; }
+    internal BeforeAfterView CompareView => preview;
+    internal SegmentedChoice<CompareMode> CompareModes => compareModes;
+    internal CheckBox PreviewToggle => enabled;
+    internal HoldButton HoldBeforeButton => holdButton;
+    internal Raster? BeforePreview => beforePreview;
+    internal Raster? AfterPreview => afterPreview;
+    internal HistogramView HistogramPanel => histogram;
+    internal string InfoText => info.Text;
+    /// <summary>Renders a preview document; self-tests replace it to simulate failures.</summary>
+    internal Func<Document, CancellationToken, Raster> Renderer { get; set; } = Imaging.Render;
+    internal void SetDesignPreview(Raster raster) { afterPreview = PreviewScaling.Fit(raster, PreviewMaxSide); afterBins = HistogramView.Compute(raster); preview.After = afterPreview.Bitmap(); UpdateHistogram(); }
+    internal void SetDesignBefore(Raster raster) { beforePreview = PreviewScaling.Fit(raster, PreviewMaxSide); beforeBins = HistogramView.Compute(raster); preview.Before = beforePreview.Bitmap(); UpdateHistogram(); }
+    /// <summary>Offscreen capture hook: shows the state after a failed "before" render without rendering.</summary>
+    internal void SetDesignBeforeFailure(string message)
+    {
+        beforeCts?.Cancel(); beforePending = false; beforePreview = null; preview.Before = null;
+        beforeFailure = message; beforeFailedAt = version; preview.BeforeFailed = true; UpdateInfo();
+    }
+    internal void SelectCompareMode(CompareMode mode) => compareModes.Select(mode);
+    internal void ToggleCompareState() => TogglePreviewState();
+    /// <summary>Starts the preview the way <see cref="FrameworkElement.Loaded"/> does, for self-tests without a window.</summary>
+    internal void StartPreview() => Schedule();
     public AdjustmentDialog(Window? owner, Document document, AdjustmentSpec initial, Guid? editingId = null, Selection? selection = null)
     {
         initial.Validate(); Spec = initial.Snapshot(); original = document.Snapshot(); this.editingId = editingId;
@@ -35,8 +70,8 @@ public sealed class AdjustmentDialog : Window
         Owner = owner; Title = "Morupixel · " + (photoDevelop ? "사진 현상" : initial.Kind.ToString()); Width = photoDevelop ? 1040 : 1000; Height = photoDevelop ? 760 : 660; MinWidth = 860; MinHeight = 580;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Header; Foreground = Theme.Text;
         var grid = new Grid { Margin = new Thickness(12) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 360 : 320) });
-        grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) }); Content = grid;
-        grid.Children.Add(new Border { Background = Theme.Stage, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = preview });
+        grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Content = grid;
+        grid.Children.Add(BuildCompareStage());
         var controls = new StackPanel { Margin = new Thickness(15) };
         var controlScroll = new ScrollViewer { Content = controls, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; var glass = new GlassPanel { Child = controlScroll, Margin = new Thickness(12, 0, 0, 0) }; Grid.SetColumn(glass, 1); grid.Children.Add(glass);
         var heading = Theme.Label(initial.Kind switch { AdjustmentKind.Exposure => "노출", AdjustmentKind.Curves => "곡선", AdjustmentKind.Levels => "레벨", AdjustmentKind.HueSaturation => "색조 / 채도", AdjustmentKind.Grain => "그레인", AdjustmentKind.PhotoDevelop => "사진 현상", _ => "그라데이션 맵" }, 23);
@@ -106,18 +141,93 @@ public sealed class AdjustmentDialog : Window
                 ColorButton("어두운 영역 색상", true); ColorButton("밝은 영역 색상", false); break;
         }
         if (!photoDevelop) controls.Children.Add(enabled);
-        controls.Children.Add(info); enabled.Click += (_, _) => Schedule();
-        var footerRow = new DockPanel(); Grid.SetRow(footerRow, 1); Grid.SetColumnSpan(footerRow, 2); grid.Children.Add(footerRow);
-        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right }; DockPanel.SetDock(footer, Dock.Right); footerRow.Children.Add(footer);
+        controls.Children.Add(info); enabled.Click += (_, _) => RefreshView();
+        // The footer keeps the same 12 DIP gap below the panels as between them; buttons keep their own height.
+        var footerRow = new DockPanel { Margin = new Thickness(0, 12, 0, 0) }; Grid.SetRow(footerRow, 1); Grid.SetColumnSpan(footerRow, 2); grid.Children.Add(footerRow);
+        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center }; DockPanel.SetDock(footer, Dock.Right); footerRow.Children.Add(footer);
+        // View controls under the preview: the result check box (photo develop) and, in the toggle view, the hold button.
+        var viewControls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center }; footerRow.Children.Add(viewControls);
         if (photoDevelop)
         {
             enabled.Content = "보정 결과 보기"; enabled.VerticalAlignment = VerticalAlignment.Center;
-            enabled.ToolTip = "해제하면 현재 사진 현상을 끈 보정 전 모습을 표시합니다."; footerRow.Children.Add(enabled);
+            enabled.ToolTip = "해제하면 현재 사진 현상을 끈 보정 전 모습을 표시합니다."; viewControls.Children.Add(enabled);
         }
-        var cancel = Theme.Button("취소", () => DialogResult = false); cancel.IsCancel = true; cancel.MinWidth = 80; footer.Children.Add(cancel);
-        var apply = Theme.Styled(Theme.Button("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageDialog.Show(this, e.Message); } }), "PrimaryButton");
-        apply.MinWidth = 96; footer.Children.Add(apply);
-        Closed += (_, _) => { closed = true; version++; previewCts?.Cancel(); }; Loaded += (_, _) => Schedule();
+        viewControls.Children.Add(holdButton);
+        var cancel = DialogShell.Secondary("취소", () => DialogResult = false); cancel.IsCancel = true; footer.Children.Add(cancel);
+        var apply = DialogShell.Primary("조정 적용", () => { try { if (TryCommitParameters()) { Spec.Validate(); DialogResult = true; } } catch (Exception e) { MessageDialog.Show(this, e.Message); } });
+        apply.MinWidth = 96; apply.Margin = new Thickness(8, 0, 0, 0); footer.Children.Add(apply);
+        // Hold \ (₩ on Korean layouts) to see the image before this adjustment; typing in number fields is left alone.
+        PreviewKeyDown += (_, e) => { if (CompareControls.IsHoldKey(e.Key) && e.OriginalSource is not System.Windows.Controls.Primitives.TextBoxBase && preview.ShowsSingleImage) { SetHold(true); e.Handled = true; } };
+        PreviewKeyUp += (_, e) => { if (CompareControls.IsHoldKey(e.Key) && preview.HoldBefore) { SetHold(false); e.Handled = true; } };
+        Deactivated += (_, _) => SetHold(false);
+        Closed += (_, _) => { closed = true; version++; previewCts?.Cancel(); beforeCts?.Cancel(); }; Loaded += (_, _) => Schedule();
+    }
+    FrameworkElement BuildCompareStage()
+    {
+        var stage = new DockPanel();
+        System.Windows.Automation.AutomationProperties.SetName(compareModes, "미리보기 비교 방식");
+        compareModes.HorizontalAlignment = HorizontalAlignment.Left; compareModes.Margin = new Thickness(0, 0, 0, 8);
+        DockPanel.SetDock(compareModes, Dock.Top); stage.Children.Add(compareModes);
+        CompareControls.Command(holdButton, Theme.Glyphs.Eye, "누르는 동안 보정 전", "누르고 있는 동안 보정 전 이미지를 봅니다. \\(₩) 키를 누르고 있어도 됩니다.");
+        holdButton.HeldChanged += SetHold;
+        stage.Children.Add(new Border { Background = Theme.Stage, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Child = preview });
+        compareModes.Changed += _ => RefreshView(); preview.ToggleRequested += TogglePreviewState;
+        RefreshView();
+        return stage;
+    }
+    bool ShowingBeforeImage => preview.ShowsSingleImage && preview.ShowBefore;
+    // Two-image views and the toggle view want "before" ready at once; the plain result view only when it is shown.
+    bool NeedsBefore => preview.Mode != CompareMode.Result || preview.DisplaysBefore;
+    // Applies the compare mode and the preview check box to the stage, then fetches "before" if it is now needed.
+    void RefreshView()
+    {
+        preview.Mode = compareModes.Selected; preview.ShowBefore = enabled.IsChecked != true;
+        holdButton.Visibility = preview.Mode == CompareMode.Toggle ? Visibility.Visible : Visibility.Collapsed;
+        // Split and side-by-side views always show both states, so the single-image check box rests.
+        enabled.IsEnabled = preview.ShowsSingleImage;
+        if (!preview.ShowsSingleImage) preview.HoldBefore = false;
+        if (NeedsBefore) EnsureBefore();
+        UpdateHistogram(); UpdateInfo();
+    }
+    void TogglePreviewState()
+    {
+        if (!preview.ShowsSingleImage) return;
+        enabled.IsChecked = enabled.IsChecked != true; RefreshView();
+    }
+    void SetHold(bool held)
+    {
+        if (held && !preview.ShowsSingleImage) return;
+        preview.HoldBefore = held;
+        if (held) EnsureBefore();
+    }
+    // Switches between the bins cached with each render, so the histogram does not depend on how the view got to a state.
+    void UpdateHistogram()
+    {
+        var bins = ShowingBeforeImage ? beforeBins : afterBins;
+        if (bins == null || ReferenceEquals(bins, histogram.Bins)) return;
+        histogram.Show(bins);
+    }
+    void UpdateInfo()
+    {
+        if (closed) return;
+        if (afterPending > 0) { info.Text = "미리보기 계산 중…"; return; }
+        if (NeedsBefore && beforePreview == null && beforePending) { info.Text = "보정 전 이미지 계산 중…"; return; }
+        if (NeedsBefore && beforePreview == null && beforeFailure != null) { info.Text = $"보정 전 이미지를 만들지 못했습니다: {beforeFailure}\n설정을 바꾸면 다시 시도합니다."; return; }
+        if (afterPreview == null) return;
+        info.Text = $"{original.Width} × {original.Height} px · " + (preview.ShowsBoth ? "보정 전후 비교" : ShowingBeforeImage ? "이 조정 없이 보기" : "조정 미리보기");
+    }
+    bool Current(long generation) => generation == version && !closed && Dispatcher.CheckAccess();
+    /// <summary>Pumps the dispatcher until pending previews finish. Callers set a dispatcher synchronization context before starting them.</summary>
+    internal bool WaitForPreviews(TimeSpan timeout)
+    {
+        bool Idle() => afterPending == 0 && !beforePending;
+        if (Idle()) return true;
+        var frame = new System.Windows.Threading.DispatcherFrame(); var deadline = DateTime.UtcNow + timeout;
+        var poll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(15) };
+        poll.Tick += (_, _) => { if (Idle() || DateTime.UtcNow > deadline) frame.Continue = false; };
+        poll.Start();
+        try { System.Windows.Threading.Dispatcher.PushFrame(frame); } finally { poll.Stop(); }
+        return Idle();
     }
     internal bool TryCommitParameters()
     {
@@ -160,33 +270,87 @@ public sealed class AdjustmentDialog : Window
         }
         else if (show)
         {
-            var layer = DocumentFeatures.CreateAdjustment(document, spec); layer.Mask = selectionMask; document.Add(layer);
+            var layer = DocumentFeatures.CreateAdjustment(document, spec); layer.Name = Loc.T(layer.Name); layer.Mask = selectionMask; document.Add(layer);
         }
         return document;
     }
     async Task<Raster> Render(Document document, CancellationToken token)
     {
         await renderGate.WaitAsync(token);
-        try { return await Task.Run(() => Imaging.Render(document, token), token); }
+        var render = Renderer;
+        try { return await Task.Run(() => render(document, token), token); }
         finally { renderGate.Release(); }
     }
+    // Full-resolution render (detail settings keep their real radius) and its histogram, then a screen-size copy for the stage.
+    async Task<(double[][] Bins, Raster Preview, System.Windows.Media.Imaging.BitmapSource Bitmap)> RenderPreview(Document document, CancellationToken token)
+    {
+        await renderGate.WaitAsync(token);
+        var render = Renderer;
+        try
+        {
+            return await Task.Run(() =>
+            {
+                var full = render(document, token); var bins = HistogramView.Compute(full); var small = PreviewScaling.Fit(full, PreviewMaxSide, token);
+                return (bins, small, small.Bitmap());
+            }, token);
+        }
+        finally { renderGate.Release(); }
+    }
+    // Only the "after" image re-renders when settings change; the check box and compare modes reuse both images.
     async void Schedule()
     {
         if (closed) return;
-        long generation = ++version; var spec = Spec; bool show = enabled.IsChecked == true;
-        previewCts?.Cancel(); var cts = previewCts = new CancellationTokenSource();
+        long generation = ++version; var spec = Spec; string? failure = null;
+        previewCts?.Cancel(); var cts = previewCts = new CancellationTokenSource(); afterPending++;
         try
         {
-            await Task.Delay(120, cts.Token); if (generation != version || closed) return;
+            await Task.Delay(120, cts.Token); if (!Current(generation)) return;
             info.Text = "미리보기 계산 중…";
-            var d = PreviewDocument(original, editingId, spec, show, selectionMask);
-            var result = await Render(d, cts.Token);
-            if (generation != version || closed) return;
-            preview.Source = result.Bitmap(); histogram.Update(result); info.Text = $"{d.Width} × {d.Height} px · " + (show ? "조정 미리보기" : "이 조정 없이 보기");
+            var d = PreviewDocument(original, editingId, spec, true, selectionMask);
+            AfterRenderCount++;
+            var result = await RenderPreview(d, cts.Token);
+            if (!Current(generation)) return;
+            afterPreview = result.Preview; afterBins = result.Bins; preview.After = result.Bitmap;
+            UpdateHistogram();
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { if (generation == version && !closed) info.Text = e.Message; }
-        finally { if (ReferenceEquals(previewCts, cts)) previewCts = null; cts.Dispose(); }
+        catch (Exception e) { failure = e.Message; }
+        finally
+        {
+            afterPending--; if (ReferenceEquals(previewCts, cts)) previewCts = null; cts.Dispose();
+            if (Current(generation))
+            {
+                // A settings change made after "before" failed is the retry the info line offers.
+                if (failure == null && beforeFailure != null && generation > beforeFailedAt && NeedsBefore) EnsureBefore();
+                if (failure != null) info.Text = failure; else UpdateInfo();
+            }
+        }
+    }
+    // "Before" does not depend on the settings, so it is rendered at most once per dialog and only when first shown.
+    async void EnsureBefore()
+    {
+        if (closed || beforePreview != null || beforePending) return;
+        beforePending = true; BeforeRenderCount++; string? failure = null;
+        beforeFailure = null; preview.BeforeFailed = false;
+        var cts = beforeCts = new CancellationTokenSource();
+        try
+        {
+            var result = await RenderPreview(PreviewDocument(original, editingId, Spec, false, selectionMask), cts.Token);
+            if (closed || !Dispatcher.CheckAccess()) return;
+            beforePreview = result.Preview; beforeBins = result.Bins; preview.Before = result.Bitmap;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e) { failure = e.Message; }
+        finally
+        {
+            beforePending = false; if (ReferenceEquals(beforeCts, cts)) beforeCts = null; cts.Dispose();
+            if (!closed && Dispatcher.CheckAccess())
+            {
+                // Keep the failure visible (stage caption and info line) instead of a "calculating" placeholder that never resolves.
+                if (failure != null) { beforeFailure = failure; beforeFailedAt = version; preview.BeforeFailed = true; }
+                UpdateHistogram(); UpdateInfo();
+            }
+        }
     }
     async void AutoLevels()
     {
@@ -445,6 +609,19 @@ public static class ExportDialog
             catch (Exception e) { if (!closed) MessageDialog.Show(window, e.Message, "내보내지 못했습니다", NoticeKind.Error); }
             finally { saving = false; if (!closed) { window.IsEnabled = true; Update(); } }
         }
+        // Layered .psd / .ai and PDF live in their own dialog; this one stays for PNG, JPEG and TIFF.
+        var otherFormats = Theme.Styled(Theme.Button("PDF · PSD · AI로 내보내기…", () =>
+        {
+            if (saving || closed) return;
+            var source = snapshot; window.Close();
+            window.Dispatcher.InvokeAsync(() => new CompatibilityExportDialog(owner, source).ShowDialog());
+        }, "레이어를 유지하는 .psd·.ai 또는 PDF로 저장합니다."), "GhostButton");
+        var otherContent = new StackPanel { Orientation = Orientation.Horizontal };
+        var otherIcon = Theme.Glyph(Theme.Glyphs.LayerStack, 15, Theme.Muted); otherIcon.VerticalAlignment = VerticalAlignment.Center; otherContent.Children.Add(otherIcon);
+        otherContent.Children.Add(new TextBlock { Text = "PDF · PSD · AI로 내보내기…", FontSize = Theme.CaptionSize, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) });
+        otherFormats.Content = otherContent; System.Windows.Automation.AutomationProperties.SetName(otherFormats, "PDF · PSD · AI로 내보내기…");
+        otherFormats.HorizontalAlignment = HorizontalAlignment.Left; otherFormats.Margin = new Thickness(-8, 2, 0, 2); otherFormats.Padding = new Thickness(8, 4, 10, 4);
+        side.Children.Insert(side.Children.IndexOf(formatNote) + 1, otherFormats);
         var saveButton = DialogShell.Primary("파일로 저장…", Save); saveButton.IsDefault = true; saveButton.Margin = new Thickness(0, 12, 0, 0);
         var cancel = DialogShell.Secondary("닫기", window.Close); cancel.IsCancel = true; cancel.Margin = new Thickness(0, 6, 0, 0);
         var footer = new StackPanel(); footer.Children.Add(saveButton); footer.Children.Add(cancel); Grid.SetRow(footer, 1); sideGrid.Children.Add(footer);

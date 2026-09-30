@@ -228,7 +228,12 @@ public static class CadCompatibility
         var spaces = cad.BlockRecords.Where(b => b.Layout?.IsPaperSpace == true && b.Entities.Any(e => e is not Viewport || e is Viewport v && !v.RepresentsPaper))
             .OrderBy(b => b.Layout.TabOrder).ToArray();
         var selected = options.CadLayout == null ? spaces.FirstOrDefault() : spaces.FirstOrDefault(b => b.Name == options.CadLayout || b.Layout.Name == options.CadLayout);
-        if (options.CadLayout != null && options.CadLayout != "*Model_Space" && selected == null) throw new ArgumentException("선택한 CAD 배치를 찾을 수 없습니다.");
+        if (options.CadLayout != null && options.CadLayout != "*Model_Space" && selected == null)
+        {
+            // Remembered settings name a layout that another drawing may not have.
+            if (!options.CadLayoutOptional) throw new ArgumentException("선택한 CAD 배치를 찾을 수 없습니다.");
+            selected = spaces.FirstOrDefault(); warnings.Add($"‘{options.CadLayout}’ 배치가 없어 자동으로 고른 도면을 가져왔습니다.");
+        }
         string spaceName = selected?.Layout.Name ?? "모델 공간";
         if (selected != null)
         {
@@ -255,6 +260,9 @@ public static class CadCompatibility
         else foreach (var entity in cad.Entities) Visit(entity, Matrix.Identity, null, null, 0, path);
         if (marks.Count == 0) throw new NotSupportedException($"‘{spaceName}’에서 표시할 도형을 찾지 못했습니다. " + (unsupported.Count == 0 ? "다른 배치나 모델 공간을 선택해 주세요." : string.Join(", ", unsupported.Keys.Take(5))));
         Rect bounds = Rect.Empty; foreach (var mark in marks) { var area = mark.Geometry.Bounds; if (mark.Clip != null) area.Intersect(mark.Clip.Bounds); bounds.Union(area); }
+        // A layout's artboard is its paper sheet; the canvas grows to include it.
+        Rect? sheet = options.Artboard && selected != null && !bounds.IsEmpty ? PaperSheet(selected.Layout, bounds) : null;
+        if (sheet is { } paperSheet) bounds.Union(paperSheet);
         double longest = Math.Max(bounds.Width, bounds.Height); if (longest <= 0 || !double.IsFinite(longest)) throw new InvalidDataException("도면 범위가 올바르지 않습니다.");
         double scale = (options.CadLongEdge - 40) / longest;
         int width = Math.Max(64, (int)Math.Ceiling(bounds.Width * scale) + 40), height = Math.Max(64, (int)Math.Ceiling(bounds.Height * scale) + 40);
@@ -309,7 +317,15 @@ public static class CadCompatibility
         if (totalBytes > Document.MaxLayerBytes)
             throw new InvalidDataException("도면 객체의 미리보기가 메모리 한도를 초과합니다. 긴 변 크기를 줄이거나 ‘레이어별’ 또는 ‘하나로’를 선택해 주세요.");
         var doc = new Document { Name = Path.GetFileNameWithoutExtension(path), Width = width, Height = height };
-        var paper = VectorShapes.Create(new ShapeSpec { Width = width, Height = height, FillArgb = 0xFFFFFFFF }); paper.Name = "도면 배경"; paper.Locked = true; doc.Layers.Add(paper);
+        var paper = VectorShapes.Create(new ShapeSpec { Width = width, Height = height, FillArgb = 0xFFFFFFFF }); paper.Name = Loc.T("도면 배경"); paper.Locked = true; doc.Layers.Add(paper);
+        if (options.Artboard)
+        {
+            // Model space: the drawing extents with the 20px import margin. Layout: the paper sheet.
+            var area = sheet is { } paperArea ? new MatrixTransform(fit).TransformBounds(paperArea) : new Rect(0, 0, width, height);
+            double left = Math.Clamp(Math.Floor(area.Left), 0, width - 1), top = Math.Clamp(Math.Floor(area.Top), 0, height - 1);
+            double right = Math.Clamp(Math.Ceiling(area.Right), left + 1, width), bottom = Math.Clamp(Math.Ceiling(area.Bottom), top + 1, height);
+            doc.Artboards.Add(new Artboard(Guid.NewGuid(), sheet != null ? $"{doc.Name} · {spaceName}" : doc.Name, left, top, right - left, bottom - top));
+        }
         long retainedVectorBytes = 0;
         Layer RenderObject(PaintObject content, PixelArea area)
         {
@@ -377,6 +393,26 @@ public static class CadCompatibility
         warnings.Add($"‘{spaceName}’을 가져왔습니다" + (references.Count > 1 ? $" · 외부참조 {references.Count - 1}개 읽음." : ".") + (options.RetainVectors ? " 벡터 경로를 보존하며 디자인 모드에서 확대 배율에 맞춰 그립니다." : "픽셀 이미지로 가져왔습니다.") + " 도면 단위·실측 축척·CTB 선종류/선굵기는 보존하지 않습니다.");
         return new(doc, warnings.ToArray());
     }
+    // The paper sheet of a layout in paper-space units: the plot paper size (rotated, in the layout's
+    // paper units) placed by its unprintable margin and plot origin. When that sheet does not sit
+    // around the drawing, a sheet of the same size is centered on it; a sheet smaller than the
+    // drawing is ignored so the artboard falls back to the drawing extents.
+    static Rect? PaperSheet(ACadSharp.Objects.Layout? layout, Rect content)
+    {
+        if (layout == null || layout.PaperUnits == ACadSharp.Objects.PlotPaperUnits.Pixels) return null;
+        double width = layout.PaperWidth, height = layout.PaperHeight;
+        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0 || width > 1e7 || height > 1e7) return null;
+        if (layout.PaperRotation is ACadSharp.Objects.PlotRotation.Degrees90 or ACadSharp.Objects.PlotRotation.Degrees270) (width, height) = (height, width);
+        double unit = layout.PaperUnits == ACadSharp.Objects.PlotPaperUnits.Inches ? 1 / 25.4 : 1;
+        var margin = layout.UnprintableMargin;
+        double x = -(margin.Left + layout.PlotOriginX) * unit, y = -(margin.Bottom + layout.PlotOriginY) * unit;
+        if (!double.IsFinite(x) || !double.IsFinite(y)) return null;
+        var sheet = new Rect(x, y, width * unit, height * unit);
+        var tolerance = sheet; tolerance.Inflate(sheet.Width * .01, sheet.Height * .01);
+        if (tolerance.Contains(content)) return sheet;
+        if (sheet.Width + 1e-9 < content.Width || sheet.Height + 1e-9 < content.Height) return null;
+        return new Rect(content.X + (content.Width - sheet.Width) / 2, content.Y + (content.Height - sheet.Height) / 2, sheet.Width, sheet.Height);
+    }
     // Closed boundary loops of a hatch as one even-odd region in CAD coordinates.
     static Geometry? HatchRegion(Hatch hatch)
     {
@@ -403,9 +439,8 @@ public static class CadCompatibility
     {
         if (cleanup.LineWeights)
         {
-            var summary = marks.Select(m => m.Layer).Distinct(StringComparer.OrdinalIgnoreCase).GroupBy(role).OrderBy(g => g.Key)
-                .Select(g => $"{DrawingCleanup.RoleName(g.Key).Split(' ')[0]} {g.Count()}");
-            warnings.Add("레이어 역할에 맞춰 선 굵기와 농도를 정리했습니다: " + string.Join(" · ", summary) + " (레이어 수).");
+            var summary = DrawingCleanup.RoleSummary(marks.Select(m => m.Layer).Distinct(StringComparer.OrdinalIgnoreCase).Select(role));
+            warnings.Add("레이어 역할에 맞춰 선 굵기와 농도를 정리했습니다: " + summary + " (레이어 수).");
         }
         if (hatches.Count == 0 || cleanup.Hatches == HatchTreatment.Keep) return;
         MaterialAsset? custom = null;
@@ -416,7 +451,7 @@ public static class CadCompatibility
         }
         var canvas = new RectangleGeometry(new Rect(0, 0, width, height)); canvas.Freeze();
         double tile = Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
-        int insertAt = 1, skipped = 0; var counts = new Dictionary<string, int>();
+        int insertAt = 1, skipped = 0, unusable = 0; var counts = new Dictionary<string, int>();
         var groups = hatches.GroupBy(h => custom != null ? MaterialKind.Solid : DrawingCleanup.Suggest(h.Pattern, h.Layer, role(h.Layer))).OrderBy(g => g.Key);
         foreach (var group in groups)
         {
@@ -429,10 +464,28 @@ public static class CadCompatibility
                 if (chunk.Children.Count == 0) return;
                 if (doc.MaterialRegions.Count >= MaterialEditing.MaxRegions) { skipped += chunk.Children.Count; chunk = new GeometryGroup(); chunkBytes = 0; return; }
                 part++;
-                var region = MaterialEditing.Region(doc, part == 1 ? "해치 · " + label : $"해치 · {label} {part}", chunk, "polygon");
-                doc.MaterialRegions.Add(region);
-                var layer = MaterialEditing.Apply(doc, asset.Id, region.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
-                layer.Name = "재질 · " + region.Name[5..];
+                string regionName = part == 1 ? "해치 · " + label : $"해치 · {label} {part}";
+                MaterialRegion? region = null; Layer layer;
+                try
+                {
+                    region = MaterialEditing.Region(doc, regionName, chunk, "polygon");
+                    doc.MaterialRegions.Add(region);
+                    layer = MaterialEditing.Apply(doc, asset.Id, region.Id, tile, tile * asset.Pixels.Height / Math.Max(1, asset.Pixels.Width));
+                }
+                catch (InvalidDataException)
+                {
+                    // One degenerate hatch must not abort the import: its boundary lines stay, it just gets no material.
+                    if (region != null) doc.MaterialRegions.Remove(region);
+                    part--;
+                    var members = chunk.Children.ToArray();
+                    chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
+                    if (members.Length == 1) { unusable++; return; }
+                    // Retry the merged hatches one by one so only the unusable ones lose their material.
+                    foreach (var member in members) { chunk.Children.Add(member); Flush(); }
+                    return;
+                }
+                // Layer names are made in the display language; a user's material image keeps its file name.
+                layer.Name = Loc.T("재질 · ") + (custom != null ? label : Loc.T(label)) + (part == 1 ? "" : $" {part}");
                 doc.Layers.Insert(insertAt++, layer);
                 chunk = new GeometryGroup { FillRule = FillRule.Nonzero }; chunkBytes = 0;
             }
@@ -453,8 +506,9 @@ public static class CadCompatibility
         }
         if (counts.Count > 0)
             warnings.Add((custom != null ? "해치에 선택한 재질 이미지를 적용했습니다: " : "해치 재질을 추천해 채웠습니다: ") + string.Join(" · ", counts.Select(p => $"{p.Key} {p.Value}개"))
-                + ". 재질 레이어는 선 아래에 곱하기로 놓이며, 숨기거나 삭제해 원래 해치로 돌아갈 수 있습니다.");
+                + ". 재질 레이어는 선 아래에 곱하기로 놓이며 사진 레이어 탭에서 편집할 수 있습니다. 숨기거나 삭제하면 원래 해치로 돌아갑니다.");
         if (skipped > 0) warnings.Add($"복잡하거나 너무 많은 해치 {skipped}개는 경계선만 가져왔습니다.");
+        if (unusable > 0) warnings.Add($"면적을 계산할 수 없는 해치 {unusable}개는 재질 없이 경계선만 가져왔습니다.");
     }
 
     static string ObjectLabel(Entity entity) => entity switch

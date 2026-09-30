@@ -1,3 +1,27 @@
+# Preview 37 drawings, boards and presentation work validation
+
+- Source self-tests: **674/674 passed** on Windows x64 (548 in Preview 36; +1 batch references, +67 across the seven features, +33 regression checks for the review findings, +25 for the screen fixes), seven consecutive full runs including four in parallel under load.
+  - Large drawings: scene change detection catches in-place edits; the cached, grid-indexed picker matches a full scan on 400 probes and rebuilds only after edits; wheel steps start no render and render once afterwards with output identical to a direct render; batched, culled rendering is pixel-identical to a full render and a cancelled render stops after its batch; the canvas releases a closed drawing.
+  - Import: settings store round trip and sanitizing; one dialog for three synthetic DXF plans (quick path and apply-to-all, role overrides by layer name, tab limit, cancel, a failing first file skipped); artboards for model space, a 420×297 layout, a PDF page and beside existing artboards without shrinking; material layers on the photo tab rendered below crossing walls, kept through save/load, reported as Photo by the AI connection, and drops next to them never move a photo into the drawing.
+  - Layers and materials: Shift range visibility on photo and grouped drawing rows in one undo step; W selects the magic wand; recommendation order for wall/floor/ground layers; a swatch creates one undoable material layer shaped like the selection, correctly placed inside transformed drawing folders; region slots are released; own images are not duplicated.
+  - Profiles: 기본 leaves panels, tool rail and captions identical to before; 건축학과 ordering, persistence and menus; re-applying line cleanup matches import cleanup, covers the whole placed drawing (also after switching tabs), honours remembered roles and grouped objects, runs off the UI thread and can be cancelled.
+  - Shadows: offsets, hard versus soft edges, softness growing with distance, plan sweep length, layer placement with Multiply in one undo step, save/load and re-edit, validation, memory bounds; shadows never include other shadows, keep clipping, follow placed drawings and duplicated sources.
+  - Before/after: before equals the document without the adjustment and is rendered once; split, side-by-side and toggle behaviour; a failed before render is reported.
+  - Export: layered .psd structure checked with PsdSharp (groups, names, order, opacity, blend, visibility, mask, clipping), PackBits within bound on worst-case rows, Preview 35 .psd files reopening in their original order, PDF layers (OCGs) for layered PDF and .ai, group blending and clipping stacks in PDF matching the canvas, cancel reporting.
+  - Screens: plural-free English counts (checked over every count string in the table), command search in English, range hints, app-made names in Korean and English, file names kept as on disk in import progress, the rail and layer list fitting 1280×720 and 1000×640, the zoom readout after every fit, whole-word ribbon labels with aligned icons, distinct flip and mask icons, drawing thumbnail backing, dialog layout (CMYK padding, role and step dropdown widths, new-document alignment), and Korean wrapped labels breaking only between words while `TextBlock.Text` stays unchanged.
+- `tools/i18n/extract.py` reports 0 missing keys (1,898 entries per language).
+- `--render-studio-previews` in Korean and English; the new captures (import batch and quick path, photo-tab hatch materials, selection materials, 건축학과 editor and start screen, shadow dialog and result, before/after modes, layered export dialog) were reviewed.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered offscreen: real mouse drag of the before/after bar and of layer eyes, Shift-held file drops, high-DPI scaling, and dragging objects in very large drawings (still slower when material layers are present).
+
+# Preview 36 drawing cleanup hatch fix validation
+
+- Source self-tests: **548/548 passed** on Windows x64. The added check uses the exact sliver outline from a failing site plan: its area stays the same after translation to the layer origin, and a brick material layer is created at its position.
+- Two real site-plan DWG files that failed with cleanup before the fix now import with cleanup (2400×1707, 7 material regions each); without cleanup they import as before. The drawings were only read and are not part of the repository.
+- `tools/i18n/extract.py` reports 0 missing keys; Korean and English offscreen captures were reviewed (no UI change).
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered: whether WPF misreports area for other shapes than thin slivers; such hatches are now skipped with a notice instead of stopping the import.
+
 # Preview 35 AI import settings and artboard batch validation
 
 - Source self-tests: **547/547 passed** on Windows x64. Added checks cover CAD layer roles and hatch-material counts from `inspect_file`, cleanup options rejected without `cadCleanup`, a cleanup import that fills the hatch with a material, a role override that thins the wall with hatches kept, an unknown role rejected, PSD import as one composite versus separate layers, batches that add two artboards and a text layer as one undo step, dry runs that create nothing and return no ids, and rollback when an artboard step fails.

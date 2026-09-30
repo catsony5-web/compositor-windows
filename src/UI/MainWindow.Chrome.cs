@@ -93,7 +93,7 @@ public sealed partial class MainWindow
             int index = i; var tab = tabs[i]; bool active = index == activeTab;
             var card = new Border { Background = active ? Theme.Stage : Brushes.Transparent, CornerRadius = new CornerRadius(7, 7, 0, 0), Margin = new Thickness(i == 0 ? 6 : 0, 5, 2, 0) };
             var content = new Grid(); content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); card.Child = content;
-            var title = Loc.Keep(new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center });
+            var title = Loc.Keep(new TextBlock { Text = tab.Document.Name, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = tabs.Count <= 3 ? 320 : 200, Foreground = active ? Theme.Text : Theme.Muted, FontSize = Theme.BodySize, FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center });
             var labels = new StackPanel { Orientation = Orientation.Horizontal };
             if (tab.History.Dirty(tab.Document)) labels.Children.Add(new TextBlock { Text = "●", FontSize = 7, Foreground = Theme.Accent, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 7, 0), ToolTip = "저장하지 않은 변경 사항" });
             labels.Children.Add(title);
@@ -125,6 +125,6 @@ public sealed partial class MainWindow
         Tool.Move => "이동", Tool.Brush => "브러시", Tool.Eraser => "지우개", Tool.Bucket => "버킷 채우기", Tool.Text => "텍스트", Tool.Artboard => "대지 편집",
         Tool.RectangleSelect => "사각 선택", Tool.EllipseSelect => "타원 선택", Tool.Crop => "자르기", Tool.Rectangle => "사각형", Tool.Ellipse => "타원",
         Tool.Gradient => "그라데이션", Tool.Eyedropper => "색상 추출", Tool.Hand => "화면 이동", Tool.Lasso => "올가미", Tool.PolygonLasso => "다각형 선택",
-        Tool.MagicWand => "자동 선택", Tool.CloneStamp => "복제 도장", Tool.Heal => "복구 브러시", Tool.Smudge => "스머지", Tool.Liquify => "액화", Tool.BlurBrush => "흐림 브러시", _ => "도구"
+        Tool.MagicWand => "마술봉", Tool.CloneStamp => "복제 도장", Tool.Heal => "복구 브러시", Tool.Smudge => "스머지", Tool.Liquify => "액화", Tool.BlurBrush => "흐림 브러시", _ => "도구"
     };
 }

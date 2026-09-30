@@ -7,7 +7,14 @@ namespace Compositor.Windows;
 
 public sealed partial class CanvasView : FrameworkElement
 {
-    public Document? Document { get; set; }
+    // OnRender returns before the design path when there is no document, so an
+    // emptied canvas releases the design preview of the drawing it last showed.
+    public Document? Document
+    {
+        get => shownDocument;
+        set { if (value == null && shownDocument != null) CancelDesignPreview(); shownDocument = value; }
+    }
+    Document? shownDocument;
     public Selection? Selection { get; set; }
     public Rect? GestureBounds { get; set; }
     public bool EllipseGesture { get; set; }
@@ -36,7 +43,10 @@ public sealed partial class CanvasView : FrameworkElement
     public BitmapSource? MovePreviewForeground { get; set; }
     public Matrix MovePreviewMatrix { get; set; } = Matrix.Identity;
     public double MovePreviewOpacity { get; set; } = 1;
-    public double Zoom { get; set; } = .65;
+    double zoom = .65;
+    // Raised whenever the scale changes (fit, wheel, typed value, tab switch) so readouts follow it.
+    public event Action? ZoomChanged;
+    public double Zoom { get => zoom; set { if (zoom == value) return; zoom = value; ZoomChanged?.Invoke(); } }
     public Vector Pan { get; set; }
     public Point Origin => new((ActualWidth - (Document?.Width ?? 0) * Zoom) / 2 + Pan.X, (ActualHeight - (Document?.Height ?? 0) * Zoom) / 2 + Pan.Y);
     public Point ToDocument(Point p) => new((p.X - Origin.X) / Zoom, (p.Y - Origin.Y) / Zoom);

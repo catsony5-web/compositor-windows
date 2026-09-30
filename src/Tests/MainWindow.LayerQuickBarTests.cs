@@ -103,6 +103,37 @@ public sealed partial class MainWindow
             finally { Loc.Use(previous); }
         });
 
+        test("magic wand has its own name, few tabs show longer names and preset card titles line up", () =>
+        {
+            Check(ToolDisplayName(Tool.MagicWand) == "마술봉", "The magic wand shares the Move tool's auto-select label");
+            string previous = Loc.Language;
+            try { Loc.Use("en"); Check(Loc.T(ToolDisplayName(Tool.MagicWand)) == "Magic Wand", "The magic wand name is not translated as a tool name"); }
+            finally { Loc.Use(previous); }
+
+            var window = new MainWindow(null) { headlessTesting = true };
+            try
+            {
+                var document = new Document { Width = 8, Height = 8, Name = "Learn · Window to the Sea · Sample" };
+                document.Add(new Layer { Name = "바탕", Pixels = Raster.Solid(8, 8, Colors.Red) });
+                window.AddTab(document, null);
+                var title = FindAll<TextBlock>(window.tabsBar).First(t => t.Text == document.Name);
+                Check(title.MaxWidth >= 300, $"A single tab still cuts its name at {title.MaxWidth} px");
+            }
+            finally { window.StopRenderingForShutdown(); }
+
+            string store = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "morupixel-cards-" + Guid.NewGuid().ToString("N") + ".json");
+            var dialog = new NewDocumentDialog(null, store);
+            var root = (FrameworkElement)dialog.Content; root.Measure(new Size(1020, 760)); root.Arrange(new Rect(0, 0, 1020, 760)); root.UpdateLayout();
+            // Row one: current screen (screen ratio), Full HD and QHD (16:9) — their titles must share a baseline.
+            var tops = dialog.Cards.Take(3).Select(card =>
+            {
+                var label = ((StackPanel)card.Content).Children.OfType<TextBlock>().First();
+                return label.TranslatePoint(new Point(0, 0), card).Y;
+            }).ToArray();
+            Check(tops.Max() - tops.Min() < 0.5, "Preset card titles in one row are misaligned: " + string.Join(", ", tops.Select(t => t.ToString("0.0"))));
+            dialog.Close();
+        });
+
         static IEnumerable<T> FindAll<T>(DependencyObject root) where T : DependencyObject
         {
             foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())

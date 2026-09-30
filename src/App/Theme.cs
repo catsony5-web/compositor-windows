@@ -26,6 +26,8 @@ public static class Theme
     public static readonly Brush Hover = Brush("#373D46");
     public static readonly Brush Pressed = Brush("#414853");
     public static readonly Brush Input = Brush("#101216");
+    // Light backing for drawing thumbnails, like the paper the canvas draws line work on.
+    public static readonly Brush Paper = Brush("#F4F5F7");
     public static readonly Brush Line = Brush("#2A2F37");
     public static readonly Brush Stroke = Brush("#3B414B");
     public static readonly Brush Text = Brush("#E8EBF0");
@@ -75,7 +77,8 @@ public static class Theme
 
     public static TextBlock Label(string text, double size = BodySize, Brush? color = null)
     {
-        var label = new TextBlock
+        // Wrapped Korean breaks between words (KeepWordsTextBlock); Text stays the source string.
+        var label = new KeepWordsTextBlock
         {
             Text = text,
             FontFamily = UiFont,
@@ -103,7 +106,7 @@ public static class Theme
         button.BorderBrush = Brushes.Transparent; button.Padding = new Thickness(8, 7, 6, 7); button.Margin = new Thickness(0, 1, 0, 1);
         button.MinHeight = 34; button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
-        var text = new TextBlock { Text = label, FontSize = BodySize, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        var text = new KeepWordsTextBlock { Text = label, FontSize = BodySize, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
         if (glyph != null)
         {
             // An optional leading icon names the command at a glance; the label stays complete.
@@ -205,6 +208,10 @@ public static class Theme
         public const string ChevronDown = "M6 9L12 15L18 9";
         // Adjustments and photo work.
         public const string Camera = "M4 8.5A2 2 0 0 1 6 6.5H7.8L9.3 4.5H14.7L16.2 6.5H18A2 2 0 0 1 20 8.5V17.5A2 2 0 0 1 18 19.5H6A2 2 0 0 1 4 17.5Z | M12 9.5A3.5 3.5 0 1 0 12 16.5A3.5 3.5 0 1 0 12 9.5Z | *M12 9.5A3.5 3.5 0 1 0 12 16.5A3.5 3.5 0 1 0 12 9.5Z";
+        // Before/after comparison views: one frame split by a handle, two frames, one frame that switches.
+        public const string CompareSplit = "M6 4.5H18A2 2 0 0 1 20 6.5V17.5A2 2 0 0 1 18 19.5H6A2 2 0 0 1 4 17.5V6.5A2 2 0 0 1 6 4.5Z | M12 2.5V9.5 M12 14.5V21.5 M12 9.5A2.5 2.5 0 1 0 12 14.5A2.5 2.5 0 1 0 12 9.5Z | *M6 4.5H12V19.5H6A2 2 0 0 1 4 17.5V6.5A2 2 0 0 1 6 4.5Z";
+        public const string CompareSideBySide = "M4.8 6H8.7A1.8 1.8 0 0 1 10.5 7.8V16.2A1.8 1.8 0 0 1 8.7 18H4.8A1.8 1.8 0 0 1 3 16.2V7.8A1.8 1.8 0 0 1 4.8 6Z | M15.3 6H19.2A1.8 1.8 0 0 1 21 7.8V16.2A1.8 1.8 0 0 1 19.2 18H15.3A1.8 1.8 0 0 1 13.5 16.2V7.8A1.8 1.8 0 0 1 15.3 6Z | *M4.8 6H8.7A1.8 1.8 0 0 1 10.5 7.8V16.2A1.8 1.8 0 0 1 8.7 18H4.8A1.8 1.8 0 0 1 3 16.2V7.8A1.8 1.8 0 0 1 4.8 6Z";
+        public const string CompareToggle = "M8 9.5H16 M13.5 7L16 9.5L13.5 12 M16 14.5H8 M10.5 12L8 14.5L10.5 17 | ~M6 4.5H18A2 2 0 0 1 20 6.5V17.5A2 2 0 0 1 18 19.5H6A2 2 0 0 1 4 17.5V6.5A2 2 0 0 1 6 4.5Z | *M6 4.5H18A2 2 0 0 1 20 6.5V17.5A2 2 0 0 1 18 19.5H6A2 2 0 0 1 4 17.5V6.5A2 2 0 0 1 6 4.5Z";
         public const string Exposure = "M12 8A4 4 0 1 0 12 16A4 4 0 1 0 12 8Z | M12 2.5V4.5 M12 19.5V21.5 M5.3 5.3L6.7 6.7 M17.3 17.3L18.7 18.7 M2.5 12H4.5 M19.5 12H21.5 M5.3 18.7L6.7 17.3 M17.3 6.7L18.7 5.3 | *M12 8A4 4 0 1 0 12 16A4 4 0 1 0 12 8Z";
         public const string Levels = "M5 13H7A1 1 0 0 1 8 14V19A1 1 0 0 1 7 20H5A1 1 0 0 1 4 19V14A1 1 0 0 1 5 13Z | M11 6.5H13A1 1 0 0 1 14 7.5V19A1 1 0 0 1 13 20H11A1 1 0 0 1 10 19V7.5A1 1 0 0 1 11 6.5Z | M17 10H19A1 1 0 0 1 20 11V19A1 1 0 0 1 19 20H17A1 1 0 0 1 16 19V11A1 1 0 0 1 17 10Z | *M11 6.5H13A1 1 0 0 1 14 7.5V19A1 1 0 0 1 13 20H11A1 1 0 0 1 10 19V7.5A1 1 0 0 1 11 6.5Z";
         public const string Curves = "M4 20C11 20 13 4 20 4 | ~M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z M12 4V20 M4 12H20";
@@ -214,6 +221,13 @@ public static class Theme
         public const string Sliders = "M4 7H12.5 M17.5 7H20 M15 4.8A2.2 2.2 0 1 0 15 9.2A2.2 2.2 0 1 0 15 4.8Z M4 12H6 M10.5 12H20 M8.2 9.8A2.2 2.2 0 1 0 8.2 14.2A2.2 2.2 0 1 0 8.2 9.8Z M4 17H11 M16 17H20 M13.5 14.8A2.2 2.2 0 1 0 13.5 19.2A2.2 2.2 0 1 0 13.5 14.8Z";
         public const string SelectAlpha = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z | *M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z";
         public const string Mask = "M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z | M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z | *M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z";
+        // Mask commands: the mask frame with a badge (add / remove), or with its halves swapped (invert).
+        public const string MaskAdd = "M6.5 3.5H14A2.5 2.5 0 0 1 16.5 6V14A2.5 2.5 0 0 1 14 16.5H6.5A2.5 2.5 0 0 1 4 14V6A2.5 2.5 0 0 1 6.5 3.5Z | M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z M18.5 14V21 M15 17.5H22 | *M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z";
+        public const string MaskInvert = "M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z | M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z | ~M12 4V20 | *M7 4H12V7.5A4.5 4.5 0 0 0 12 16.5V20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z M12 7.5A4.5 4.5 0 0 1 12 16.5Z";
+        public const string MaskRemove = "M6.5 3.5H14A2.5 2.5 0 0 1 16.5 6V14A2.5 2.5 0 0 1 14 16.5H6.5A2.5 2.5 0 0 1 4 14V6A2.5 2.5 0 0 1 6.5 3.5Z | M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z M16.5 16.5L21.5 21.5 M21.5 16.5L16.5 21.5 | *M10.25 6.5A3.5 3.5 0 1 0 10.25 13.5A3.5 3.5 0 1 0 10.25 6.5Z";
+        // Mirror across a dashed axis: left/right halves (horizontal) and top/bottom halves (vertical).
+        public const string FlipHorizontal = "M9.5 6L3.5 18H9.5Z M14.5 6L20.5 18H14.5Z | ~M12 3V5 M12 8V10 M12 13V15 M12 18V21 | *M9.5 6L3.5 18H9.5Z";
+        public const string FlipVertical = "M6 9.5L18 3.5V9.5Z M6 14.5L18 20.5V14.5Z | ~M3 12H5 M8 12H10 M13 12H15 M18 12H21 | *M6 9.5L18 3.5V9.5Z";
         public const string Sparkle = "M10 3.5C11.43 8.57 11.43 8.57 16.5 10C11.43 11.43 11.43 11.43 10 16.5C8.57 11.43 8.57 11.43 3.5 10C8.57 8.57 8.57 8.57 10 3.5Z | M18 14.5C18.66 16.84 18.66 16.84 21 17.5C18.66 18.16 18.66 18.16 18 20.5C17.34 18.16 17.34 18.16 15 17.5C17.34 16.84 17.34 16.84 18 14.5Z | *M10 3.5C11.43 8.57 11.43 8.57 16.5 10C11.43 11.43 11.43 11.43 10 16.5C8.57 11.43 8.57 11.43 3.5 10C8.57 8.57 8.57 8.57 10 3.5Z";
         public const string FillSelection = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M12 7.8C12.92 11.08 12.92 11.08 16.2 12C12.92 12.92 12.92 12.92 12 16.2C11.08 12.92 11.08 12.92 7.8 12C11.08 11.08 11.08 11.08 12 7.8Z | *M12 7.8C12.92 11.08 12.92 11.08 16.2 12C12.92 12.92 12.92 12.92 12 16.2C11.08 12.92 11.08 12.92 7.8 12C11.08 11.08 11.08 11.08 12 7.8Z";
         // Layers, arrangement and design.
@@ -237,6 +251,11 @@ public static class Theme
         public const string Image = "M6 5H18A2.5 2.5 0 0 1 20.5 7.5V16.5A2.5 2.5 0 0 1 18 19H6A2.5 2.5 0 0 1 3.5 16.5V7.5A2.5 2.5 0 0 1 6 5Z | M4 16.5L8.8 11.8L13 16 M11.5 14.5L14.2 11.8L20 17.5 | ~M15.5 7.6A1.4 1.4 0 1 0 15.5 10.4A1.4 1.4 0 1 0 15.5 7.6Z";
         public const string Text = "M5.5 7V5H18.5V7 M12 5V19 M9.5 19H14.5";
         public const string Shape = "M5.3 3.5H11.2A1.8 1.8 0 0 1 13 5.3V11.2A1.8 1.8 0 0 1 11.2 13H5.3A1.8 1.8 0 0 1 3.5 11.2V5.3A1.8 1.8 0 0 1 5.3 3.5Z | M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z | *M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z";
+        // Drawing work (사용 목적 · 건축학과): a floor plan with a door swing, and three line weights.
+        public const string Plan = "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z M12 4V10.5 M4 13H8.5 | ~M12 13.5V20 M12 13.5A6.5 6.5 0 0 1 18.5 20 | *M12 13.5A6.5 6.5 0 0 1 18.5 20H12Z";
+        public const string LineWeight = "M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z M4 13H20 | ~M4 18.5H20 | *M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z";
+        // An object and the shadow it casts toward the lower right.
+        public const string Shadow = "M6 4.5H12.5A1.5 1.5 0 0 1 14 6V12.5A1.5 1.5 0 0 1 12.5 14H6A1.5 1.5 0 0 1 4.5 12.5V6A1.5 1.5 0 0 1 6 4.5Z | ~M13.6 5L19.5 10.9V18A1.5 1.5 0 0 1 18 19.5H10.9L5 13.6 | *M13.6 5L19.5 10.9V18A1.5 1.5 0 0 1 18 19.5H10.9L5 13.6L6 14H12.5A1.5 1.5 0 0 0 14 12.5V6Z";
         // Canvas alignment: a guide line and two bars.
         public const string AlignLeft = "M4 3.5V20.5 | M7.5 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H7.5A1 1 0 0 1 6.5 9.5V7.5A1 1 0 0 1 7.5 6.5Z | M7.5 13.5H13.5A1 1 0 0 1 14.5 14.5V16.5A1 1 0 0 1 13.5 17.5H7.5A1 1 0 0 1 6.5 16.5V14.5A1 1 0 0 1 7.5 13.5Z | *M7.5 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H7.5A1 1 0 0 1 6.5 9.5V7.5A1 1 0 0 1 7.5 6.5Z M7.5 13.5H13.5A1 1 0 0 1 14.5 14.5V16.5A1 1 0 0 1 13.5 17.5H7.5A1 1 0 0 1 6.5 16.5V14.5A1 1 0 0 1 7.5 13.5Z";
         public const string AlignCenter = "M12 3.5V20.5 | M6 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H6A1 1 0 0 1 5 9.5V7.5A1 1 0 0 1 6 6.5Z | M8.5 13.5H15.5A1 1 0 0 1 16.5 14.5V16.5A1 1 0 0 1 15.5 17.5H8.5A1 1 0 0 1 7.5 16.5V14.5A1 1 0 0 1 8.5 13.5Z | *M6 6.5H18A1 1 0 0 1 19 7.5V9.5A1 1 0 0 1 18 10.5H6A1 1 0 0 1 5 9.5V7.5A1 1 0 0 1 6 6.5Z M8.5 13.5H15.5A1 1 0 0 1 16.5 14.5V16.5A1 1 0 0 1 15.5 17.5H8.5A1 1 0 0 1 7.5 16.5V14.5A1 1 0 0 1 8.5 13.5Z";
