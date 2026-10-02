@@ -286,7 +286,7 @@ public sealed partial class MainWindow
         automationResultLayers = ABool(args, "includeLayers", true);
         if (command == "list_sessions") return new JsonObject { ["sessions"] = AutomationBridge.ListSessions() };
         if (command == "get_capabilities") return AutomationCatalog.Capabilities();
-        if (command == "query_patterns") return AutomationMaterials.Patterns(args.ContainsKey("nameContains") ? AString(args, "nameContains") : null, AString(args, "surface", "general"));
+        if (command == "query_patterns") return AutomationPatternQuery(args);
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
         RequireAutomationIdle(token);
@@ -518,22 +518,28 @@ public sealed partial class MainWindow
         return result;
     }
 
-    // A built-in hatch pattern named by its materialId joins the library on first use.
-    static void RegisterAutomationPattern(Document candidate, Guid materialId)
+    // A built-in hatch pattern, or a pattern from the user's 내 패턴 library, named by its materialId
+    // joins the document library on first use (the document's own copy wins, like the palette).
+    void RegisterAutomationPattern(Document candidate, Guid materialId)
     {
-        if (!HatchPatterns.TryGet(materialId, out var pattern)) return;
         var library = MaterialEditing.Assets(candidate);
         if (library.Any(a => a.Id == materialId)) return;
+        MaterialAsset? asset = HatchPatterns.TryGet(materialId, out var pattern) ? HatchPatternRenderer.Create(pattern)
+            : LinePatternLibrary().FirstOrDefault(p => p.Id == materialId);
+        if (asset == null) return;
         if (library.Count >= MaterialEditing.MaxAssets) throw new AutomationFault("capacity_exceeded", "재료 라이브러리가 가득 찼습니다.");
-        candidate.Materials.Add(HatchPatternRenderer.Create(pattern));
+        candidate.Materials.Add(asset);
     }
 
     /// <summary>materialId, or the stable materialId of a patternId; null when neither is given.</summary>
     static Guid? AutomationMaterialId(JsonObject args)
     {
         if (args.ContainsKey("materialId")) return Guid.Parse(AString(args, "materialId"));
-        if (args.ContainsKey("patternId") && HatchPatterns.TryParseKey(AString(args, "patternId"), out var pattern)) return HatchPatterns.StableId(pattern);
-        return null;
+        if (!args.ContainsKey("patternId")) return null;
+        string key = AString(args, "patternId");
+        if (HatchPatterns.TryParseKey(key, out var pattern)) return HatchPatterns.StableId(pattern);
+        if (key.StartsWith(LinePatterns.CustomKeyPrefix, StringComparison.Ordinal) && Guid.TryParseExact(key[LinePatterns.CustomKeyPrefix.Length..], "N", out var id)) return id;
+        throw new AutomationFault("invalid_arguments", "query_patterns의 patternId를 사용하세요.");
     }
 
     /// <summary>
@@ -553,7 +559,7 @@ public sealed partial class MainWindow
         return (width, Math.Max(1, width * MaterialEditing.Aspect(asset) * ratio));
     }
 
-    static async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
+    async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
     {
         Guid? affected = null;
         Layer Target(bool allowUnlock = false)
@@ -609,9 +615,10 @@ public sealed partial class MainWindow
                     }
                     var (tileWidth, tileHeight) = AutomationTileSize(args, candidate, asset, null);
                     var created = MaterialEditing.Apply(candidate, materialId, regionId, tileWidth, tileHeight, ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY"));
-                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight"))
+                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight") || args.ContainsKey("background"))
                     {
-                        var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1) };
+                        var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1),
+                            Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : 0 };
                         MaterialEditing.ValidateFill(tuned, created.Pixels); created.Material = tuned; created.Pixels = MaterialRenderer.Render(tuned);
                     }
                     return created;
@@ -629,7 +636,8 @@ public sealed partial class MainWindow
                 var (width, height) = AutomationTileSize(args, candidate, material, original);
                 var replacement = original with { Asset = material, TileWidth = width, TileHeight = height,
                     Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY),
-                    Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight) };
+                    Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight),
+                    Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : original.Background };
                 if (replacement != original)
                 {
                     MaterialEditing.ValidateFill(replacement, materialLayer.Pixels);

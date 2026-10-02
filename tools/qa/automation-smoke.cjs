@@ -120,6 +120,10 @@ async function main() {
   for (const [y, color] of [[0, '#AE9069'], [16, '#D8C29D'], [32, '#A98B63'], [48, '#CFB894']])
     await edit('add_shape', { shape: 'rectangle', x: 0, y, width: 64, height: 2, fill: color });
   const texture = path.join(output, 'parquet.png'); await edit('export_image', { path: texture });
+  state = data(await call('new_document', { name: 'Synthetic line tile', width: 32, height: 32, background: '#FFFFFF' })); documentId = state.documentId;
+  await edit('add_shape', { shape: 'rectangle', x: 0, y: 0, width: 32, height: 3, fill: '#141414' });
+  await edit('add_shape', { shape: 'rectangle', x: 0, y: 0, width: 3, height: 32, fill: '#141414' });
+  const lineTile = path.join(output, 'line-tile.png'); await edit('export_image', { path: lineTile });
   state = data(await call('new_document', { name: 'Material mapping study', width: 960, height: 640, background: '#F5F3EE' })); documentId = state.documentId;
   await edit('add_text', { text: 'MATERIAL STUDY / 01', x: 70, y: 40, fontSize: 28, color: '#29352F', name: 'Sheet title' });
   await edit('add_text', { text: 'EDITABLE BOUNDARIES + ORIGINAL TEXTURES', x: 70, y: 88, fontSize: 14, color: '#647069' });
@@ -168,7 +172,14 @@ async function main() {
   await edit('update_material', { layerId: brickId, angle: 0, ink: '#FF5A3A2A' });
   const brick = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: brickId }));
   assert.equal(brick.layer.material.patternId, 'brick'); assert.equal(brick.layer.material.verticalRatio, 1.5); assert.equal(brick.layer.material.angle, 0);
-  checks.push('One-call hatch insertion with an inline polygon, relative size and ratio, then update');
+  await edit('register_material', { name: 'Line tile', path: lineTile, kind: 'line_pattern' });
+  const customId = state.patternId; assert.match(customId, /^custom:[0-9a-f]{32}$/);
+  const listedCustom = data(await call('query_patterns', { documentId })); assert(listedCustom.patterns.some(p => p.patternId === customId && p.kind === 'custom'));
+  await edit('apply_material', { patternId: customId, points: wall, regionName: 'Custom wall', background: '#FFF4E8D0', ink: '#FF30405A' });
+  await edit('update_material', { layerId: brickId, background: '#FFEFE4D8' });
+  const custom = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: brickId }));
+  assert.equal(custom.layer.material.background, '#FFEFE4D8');
+  checks.push('One-call hatch insertion with an inline polygon, relative size and ratio, background, image-to-line-pattern registration and update');
   await edit('export_document', { path: path.join(output, 'material-study.pdf'), format: 'pdf' }); assert(state.pdfLayerCount > 0);
   await edit('export_document', { path: path.join(output, 'material-study-flat.pdf'), format: 'pdf', layers: 'flatten' }); assert.equal(state.pdfLayerCount, 0);
   await edit('export_document', { path: path.join(output, 'material-study.psd'), format: 'psd' }); assert(state.psdLayerCount > 0);

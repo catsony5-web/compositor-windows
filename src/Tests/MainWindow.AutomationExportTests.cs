@@ -312,5 +312,135 @@ public sealed partial class MainWindow
             Success(Call(window, "undo", Write(window)));
             Check(SameDocument(window.doc, before), "One undo must revert the whole pattern batch");
         });
+        // A scanned-looking grid: dark 3 px lines every 16 px on white paper.
+        string GridImage(string name, bool blank = false)
+        {
+            var image = Raster.Solid(64, 64, Colors.White);
+            if (!blank)
+                for (int y = 0; y < 64; y++) for (int x = 0; x < 64; x++)
+                    if (x % 16 < 3 || y % 16 < 3) { int i = (y * 64 + x) * 4; image.Data[i] = image.Data[i + 1] = image.Data[i + 2] = 20; }
+            string path = Path.Combine(files, name);
+            using (var output = File.Create(path)) image.WritePng(output);
+            return path;
+        }
+        static (int Ink, int Paper, int Outside) Count(Raster image, int width, Func<byte, byte, byte, bool> ink, Func<byte, byte, byte, bool> paper, Int32Rect inside)
+        {
+            int inks = 0, papers = 0, outside = 0;
+            for (int y = 0; y < image.Height; y++) for (int x = 0; x < width; x++)
+            {
+                int i = (y * width + x) * 4; byte b = image.Data[i], g = image.Data[i + 1], r = image.Data[i + 2];
+                bool inRect = x > inside.X + 1 && x < inside.X + inside.Width - 2 && y > inside.Y + 1 && y < inside.Y + inside.Height - 2;
+                bool outRect = x < inside.X - 2 || x > inside.X + inside.Width + 2 || y < inside.Y - 2 || y > inside.Y + inside.Height + 2;
+                if (inRect) { if (ink(r, g, b)) inks++; else if (paper(r, g, b)) papers++; }
+                else if (outRect && (r < 250 || g < 250 || b < 250)) outside++;
+            }
+            return (inks, papers, outside);
+        }
+
+        Case("a pattern background is set, reported, drawn under the lines and cleared", window =>
+        {
+            Success(Call(window, "new_document", new JsonObject { ["name"] = "바탕색", ["width"] = 100, ["height"] = 80, ["background"] = "#FFFFFF" }));
+            var created = Success(Call(window, "apply_material", Write(window, ("patternId", "dots-sparse"), ("points", Rect(10, 10, 60, 50)), ("background", "#E03020"))));
+            var id = Guid.Parse(Text(created, "layerId")); Layer Mapped() => window.doc.Layers.Single(l => l.Id == id);
+            Check(Mapped().Material!.Background == 0xFFE03020, "background was not stored");
+            var counts = Count(Imaging.Render(window.doc), 100, (r, g, b) => r < 120 && g < 120, (r, g, b) => r > 200 && g < 80 && b < 70, new Int32Rect(10, 10, 60, 50));
+            Check(counts.Paper > 2000 && counts.Outside == 0, $"The background was not painted only inside the boundary: {counts}");
+            var detail = Success(Call(window, "get_layer", new JsonObject { ["documentId"] = Text(created, "documentId"), ["layerId"] = id.ToString() }))["layer"]!["material"]!.AsObject();
+            Check(Text(detail, "background") == "#FFE03020" && Text(detail, "patternKind") == "builtin", "get_layer does not report the background: " + detail.ToJsonString());
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("background", "#80FF0000"))));
+            Check(Mapped().Material!.Background == 0x80FF0000, "A translucent background was not kept");
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("lineWeight", 2))));
+            Check(Mapped().Material!.Background == 0x80FF0000, "An omitted background changed");
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("background", "#00123456"))));
+            Check(Mapped().Material!.Background == 0, "Alpha 00 must mean no background");
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("background", "#FF00FF00"))));
+            Success(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("background", "none"))));
+            counts = Count(Imaging.Render(window.doc), 100, (r, g, b) => r < 120 && g < 120, (r, g, b) => g > 200 && r < 100, new Int32Rect(10, 10, 60, 50));
+            Check(Mapped().Material!.Background == 0 && counts.Paper == 0, "background=none did not clear the paper");
+            foreach (var invalid in new[] { "red", "#12345", "#GG0000", "transparent" })
+                Failure(Call(window, "update_material", Write(window, ("layerId", id.ToString()), ("background", invalid))), "invalid_arguments");
+            // An image material keeps the value but does not paint it, like ink.
+            string texture = Path.Combine(files, "texture.png");
+            using (var output = File.Create(texture)) Raster.Solid(4, 4, Colors.LightGray).WritePng(output);
+            string materialId = Text(Success(Call(window, "register_material", Write(window, ("name", "회색"), ("path", texture)))), "materialId");
+            var image = Success(Call(window, "apply_material", Write(window, ("materialId", materialId), ("points", Rect(75, 10, 20, 20)), ("background", "#FF0000FF"))));
+            var imageLayer = window.doc.Layers.Single(l => l.Id.ToString() == Text(image, "layerId"));
+            Check(imageLayer.Material!.Background == 0xFF0000FF && imageLayer.Pixels.Data.AsSpan().SequenceEqual(MaterialRenderer.Render(imageLayer.Material with { Background = 0 }).Data),
+                "An image material painted the background");
+        });
+
+        Case("an image becomes a user line pattern through register_material and fills like a built-in pattern", window =>
+        {
+            Success(Call(window, "new_document", new JsonObject { ["name"] = "내 패턴", ["width"] = 120, ["height"] = 90, ["background"] = "#FFFFFF" }));
+            string grid = GridImage("grid-scan.png");
+            var registered = Success(Call(window, "register_material", Write(window, ("name", "격자 스캔"), ("path", grid), ("kind", "line_pattern"))));
+            var asset = window.doc.Materials.Single(m => m.Id.ToString() == Text(registered, "materialId"));
+            string key = "custom:" + asset.Id.ToString("N");
+            Check(LinePatterns.IsCustom(asset) && Text(registered, "kind") == "pattern" && Text(registered, "patternKind") == "custom" && Text(registered, "patternId") == key
+                && !registered["savedToMyPatterns"]!.GetValue<bool>() && registered["threshold"]!.GetValue<double>() is > 0 and < 1 && window.LinePatternLibrary().Count == 0,
+                "register_material did not make a document-only line pattern: " + registered.ToJsonString());
+            var query = Success(Call(window, "query_patterns", new JsonObject { ["documentId"] = Text(registered, "documentId") }));
+            var listed = query["patterns"]!.AsArray().OfType<JsonObject>().Single(p => Text(p, "patternId") == key);
+            Check(query["count"]!.GetValue<int>() == HatchPatterns.All.Count + 1 && query["customCount"]!.GetValue<int>() == 1 && Text(listed, "kind") == "custom" &&
+                listed["inDocument"]!.GetValue<bool>() && !listed["inLibrary"]!.GetValue<bool>() && !listed["favorite"]!.GetValue<bool>(), "query_patterns lacks the document's pattern: " + listed.ToJsonString());
+            Check(Text(query["patterns"]![0]!.AsObject(), "kind") == "builtin", "Built-in patterns must come first");
+            var created = Success(Call(window, "apply_material", Write(window, ("patternId", key), ("points", Rect(10, 10, 80, 60)), ("ink", "#FF1050A0"), ("lineWeight", 1.5), ("background", "#FFFFF0C0"), ("scale", 1.2))));
+            var layer = window.doc.Layers.Single(l => l.Id.ToString() == Text(created, "layerId"));
+            Check(layer.Material!.Asset.Id == asset.Id && layer.Material.Ink == 0xFF1050A0 && layer.Material.LineWeight == 1.5 && layer.Material.Background == 0xFFFFF0C0, "Custom pattern parameters were not applied");
+            var counts = Count(Imaging.Render(window.doc), 120, (r, g, b) => b > r + 40 && r < 120, (r, g, b) => r > 230 && b < 215, new Int32Rect(10, 10, 80, 60));
+            Check(counts.Ink > 300 && counts.Paper > 300 && counts.Outside == 0, $"Custom pattern lines/background not drawn as expected: {counts}");
+            var fill = Success(Call(window, "get_layer", new JsonObject { ["documentId"] = Text(created, "documentId"), ["layerId"] = layer.Id.ToString() }))["layer"]!["material"]!.AsObject();
+            Check(Text(fill, "patternId") == key && Text(fill, "rendering") == "pattern_redrawn" && Text(fill, "patternKind") == "custom" && Math.Abs(fill["scale"]!.GetValue<double>() - 1.2) < 1e-6,
+                "The mapping does not report a redrawn custom pattern: " + fill.ToJsonString());
+            Success(Call(window, "update_material", Write(window, ("layerId", layer.Id.ToString()), ("patternId", "brick"))));
+            Success(Call(window, "update_material", Write(window, ("layerId", layer.Id.ToString()), ("patternId", key), ("lineWeight", .8))));
+            Check(window.doc.Layers.Single(l => l.Id == layer.Id).Material!.Asset.Id == asset.Id && window.doc.Layers.Single(l => l.Id == layer.Id).Material!.Background == 0xFFFFF0C0,
+                "update_material did not swap back to the custom pattern keeping its background");
+            var before = window.doc.Snapshot();
+            var blank = Failure(Call(window, "register_material", Write(window, ("name", "빈 종이"), ("path", GridImage("blank.png", blank: true)), ("kind", "line_pattern"))), "pattern_conversion_failed");
+            Check(Text(blank, "message").Length > 5, "The conversion error lacks its reason");
+            Failure(Call(window, "register_material", Write(window, ("name", "없음"), ("path", Path.Combine(files, "absent.png")), ("kind", "line_pattern"))), "file_not_found");
+            Failure(Call(window, "register_material", Write(window, ("name", "기준"), ("path", grid), ("threshold", .5))), "invalid_arguments");
+            Failure(Call(window, "register_material", Write(window, ("name", "기준"), ("path", grid), ("kind", "line_pattern"), ("threshold", 1.5))), "invalid_arguments");
+            Failure(Call(window, "register_material", Write(window, ("name", "출처"), ("path", grid), ("kind", "line_pattern"), ("source", "scan"))), "invalid_arguments");
+            Failure(Call(window, "register_material", Write(window, ("name", "저장"), ("path", grid), ("saveToMyPatterns", true))), "invalid_arguments");
+            Failure(Call(window, "apply_material", Write(window, ("patternId", "custom:" + Guid.NewGuid().ToString("N")), ("points", Rect(1, 1, 9, 9)))), "material_not_found");
+            foreach (var bad in new[] { "custom:XYZ", "custom:" + Guid.NewGuid().ToString("D"), "Brick" })
+                Failure(Call(window, "apply_material", Write(window, ("patternId", bad), ("points", Rect(1, 1, 9, 9)))), "invalid_arguments");
+            Check(SameDocument(window.doc, before), "A refused pattern request changed the document");
+            string project = Path.Combine(files, "custom-pattern.moruproj");
+            Success(Call(window, "save_project", Write(window, ("path", project))));
+            Check(LinePatterns.IsCustom(ProjectStore.Load(project).Layers.Single(l => l.Id == layer.Id).Material!.Asset), "The saved document lost its user pattern");
+        });
+
+        Case("saveToMyPatterns stores the pattern in the test library, other documents use it and batches refer to it", window =>
+        {
+            string store = Path.Combine(files, "my-patterns-" + Guid.NewGuid().ToString("N")); window.linePatternStore = store;
+            Success(Call(window, "new_document", new JsonObject { ["name"] = "원본", ["width"] = 80, ["height"] = 60, ["background"] = "#FFFFFF" }));
+            var registered = Success(Call(window, "register_material", Write(window, ("name", "내 격자"), ("path", GridImage("library-grid.png")), ("kind", "line_pattern"),
+                ("threshold", .4), ("trim", true), ("saveToMyPatterns", true))));
+            string key = Text(registered, "patternId"); var id = Guid.Parse(Text(registered, "materialId"));
+            Check(registered["savedToMyPatterns"]!.GetValue<bool>() && registered["threshold"]!.GetValue<double>() == .4 && window.LinePatternLibrary().Any(p => p.Id == id)
+                && File.Exists(Path.Combine(store, "patterns.json")) && LinePatternStore.Load(store).Any(p => p.Id == id), "The pattern was not saved to the given library folder");
+            window.patternFavorites.Add(key);
+            Success(Call(window, "new_document", new JsonObject { ["name"] = "다른 문서", ["width"] = 100, ["height"] = 80, ["background"] = "#FFFFFF" }));
+            var listed = Success(Call(window, "query_patterns", new JsonObject()))["patterns"]!.AsArray().OfType<JsonObject>().Single(p => Text(p, "patternId") == key);
+            Check(listed["inLibrary"]!.GetValue<bool>() && !listed["inDocument"]!.GetValue<bool>() && listed["favorite"]!.GetValue<bool>(), "The library pattern is not listed for another document: " + listed.ToJsonString());
+            var before = window.doc.Snapshot();
+            var steps = new JsonArray(
+                Step("add_shape", new JsonObject { ["shape"] = "rectangle", ["width"] = 60, ["height"] = 40, ["x"] = 10, ["y"] = 10, ["fill"] = "transparent" }, "room"),
+                Step("apply_material", new JsonObject { ["patternId"] = key, ["boundaryLayerId"] = "@room", ["background"] = "#FFE0F0E0", ["ink"] = "#FF203040" }, "fill"),
+                Step("update_material", new JsonObject { ["layerId"] = "@fill", ["background"] = "none", ["lineWeight"] = 2, ["verticalRatio"] = 1.5 }));
+            var batch = Write(window, ("operationId", Guid.NewGuid().ToString()), ("dryRun", true), ("steps", steps));
+            Success(Call(window, "apply_batch", batch));
+            Check(SameDocument(window.doc, before) && !window.doc.Materials.Any(m => m.Id == id), "Dry run registered the library pattern");
+            batch["dryRun"] = false;
+            var applied = Success(Call(window, "apply_batch", batch));
+            var fill = window.doc.Layers.Single(l => l.Id.ToString() == applied["steps"]![1]!["layerId"]!.GetValue<string>()).Material!;
+            Check(fill.Asset.Id == id && window.doc.Materials.Any(m => m.Id == id) && fill.Background == 0 && fill.LineWeight == 2 && fill.Ink == 0xFF203040 &&
+                Math.Abs(MaterialEditing.Stretch(fill) - 1.5) < 1e-9 && applied["undoSteps"]!.GetValue<int>() == 1, "The batch did not apply and tune the library pattern by reference");
+            Success(Call(window, "undo", Write(window)));
+            Check(SameDocument(window.doc, before), "One undo must revert the custom pattern batch");
+        });
     }
 }

@@ -568,6 +568,10 @@
   "file": "Core/HatchPatterns.cs"
  },
  {
+  "ko": "패턴 타일은 한 변 {0}–{1}px로 만드세요.",
+  "file": "Core/LinePatterns.cs"
+ },
+ {
   "ko": "영역 경로 또는 변환이 올바르지 않습니다.",
   "file": "Core/Materials.cs"
  },
@@ -966,6 +970,38 @@
  {
   "ko": "잠겼거나 숨겨진 그룹의 레이어는 채울 수 없습니다.",
   "file": "Engine/FillTools.cs"
+ },
+ {
+  "ko": "선 패턴이 아닙니다.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "이미지 파일을 찾을 수 없습니다.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "패턴 이미지는 96MiB 이하로 사용하세요.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "패턴 이미지가 비어 있습니다.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "패턴 이미지는 한 변 {0}px 이상이어야 합니다.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "이미지에서 선을 찾지 못했습니다. 선 인식 기준을 낮춰 보세요.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "선과 바탕의 밝기 차이가 너무 작습니다. 밝은 바탕에 어두운 선이 있는 이미지를 사용하세요.",
+  "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "이미지의 거의 전부가 선으로 인식됩니다. 밝은 바탕에 어두운 선이 있는 이미지를 쓰거나 선 인식 기준을 높여 보세요.",
+  "file": "Engine/LinePatternRenderer.cs"
  },
  {
   "ko": "추천 · ",
@@ -1746,6 +1782,10 @@
  {
   "ko": "내보내기는 PNG, JPEG, TIFF 형식을 지원합니다.",
   "file": "Formats/ImportExport.cs"
+ },
+ {
+  "ko": "내 패턴",
+  "file": "Formats/LinePatternStore.cs"
  },
  {
   "ko": "재료 원본 파일이 96MiB를 초과합니다.",
@@ -3664,6 +3704,50 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
+  "ko": "가장자리 빈 여백 자르기",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "내 패턴 추가",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "이미지로 선 패턴 만들기",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "어두운 선은 잉크로, 밝은 바탕은 투명하게 바꿔 반복되는 선 패턴으로 등록합니다.",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "패턴 이름",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "선 인식 기준 %",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "이 값보다 어두운 부분을 선으로 봅니다. 처음 값은 이미지에서 자동으로 정했습니다.",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "흐린 선이 빠지면 값을 낮추고, 종이 얼룩이 선으로 보이면 높이세요.",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "그림 둘레의 빈 종이를 잘라 반복 간격을 그림에 맞춥니다. 타일의 여백이 무늬 간격이면 끄세요.",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "패턴 추가",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "패턴 타일 {0}×{1}px · 미리보기는 2×2로 반복합니다.",
+  "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
   "ko": "작업을 완료하지 못했습니다",
   "file": "UI/Dialogs/MessageDialog.cs"
  },
@@ -4748,7 +4832,27 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": "query_patterns의 patternId를 사용하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
   "ko": "레이어 또는 부모 그룹의 잠금을 먼저 해제하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "materialId 또는 patternId를 지정하세요.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "영역은 최대 128개를 보관합니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "경계로 쓸 레이어를 찾을 수 없습니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "영역 {0}",
   "file": "UI/MainWindow.Automation.cs"
  },
  {
@@ -4780,6 +4884,14 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": ".ai 내보내기는 레이어를 유지합니다. 한 장으로 합치려면 format=pdf, layers=flatten을 사용하세요.",
+  "file": "UI/MainWindow.AutomationExport.cs"
+ },
+ {
+  "ko": "format={0}에는 {1} 경로를 지정하세요.",
+  "file": "UI/MainWindow.AutomationExport.cs"
+ },
+ {
   "ko": "조회 중 문서가 변경되었습니다. 첫 페이지부터 다시 확인하세요.",
   "file": "UI/MainWindow.AutomationFoundation.cs"
  },
@@ -4797,10 +4909,6 @@
  },
  {
   "ko": "문서가 변경되었습니다. 목록을 다시 조회하세요.",
-  "file": "UI/MainWindow.AutomationMaterials.cs"
- },
- {
-  "ko": "영역은 최대 128개를 보관합니다.",
   "file": "UI/MainWindow.AutomationMaterials.cs"
  },
  {
@@ -5500,6 +5608,14 @@
   "file": "UI/MainWindow.HatchPreview.cs"
  },
  {
+  "ko": "손그림 점선",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
+  "ko": "손그림 물결",
+  "file": "UI/MainWindow.HatchPreview.cs"
+ },
+ {
   "ko": "세로 비율 %",
   "file": "UI/MainWindow.HatchPreview.cs"
  },
@@ -6012,11 +6128,115 @@
   "file": "UI/MainWindow.LayerVisibility.cs"
  },
  {
+  "ko": "즐겨찾기에서 뺐습니다: {0}",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "즐겨찾기는 {0}개까지 보관합니다.",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "즐겨찾기에 추가했습니다: {0}",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "내 패턴은 {0}개까지 보관합니다. 쓰지 않는 패턴을 삭제하세요.",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "패턴 이름을 바꿨습니다: {0}",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "내 패턴에서 삭제했습니다: {0} · 이 패턴을 쓴 문서는 그대로 남습니다.",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "선 패턴으로 바꿀 이미지",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "내 패턴에 추가했습니다: {0}",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "즐겨찾기",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "기본 패턴",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "이미지로 패턴 추가…",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "스캔하거나 그린 해치 이미지의 어두운 선을 잉크로 바꿔 내 패턴에 등록하고 바로 채웁니다.",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "즐겨찾기에서 빼기",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "즐겨찾기에 추가",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "이름 바꾸기…",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "패턴 이름 바꾸기",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "내 패턴에서 삭제",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "내 패턴에 저장",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "패턴 바탕색",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "바탕색 없음",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "없음",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "바탕색",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "바탕색 변경",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
+  "ko": "선 아래 영역을 채울 색입니다. 없음이면 바탕이 투명해 아래 색과 선이 보입니다.",
+  "file": "UI/MainWindow.LinePatterns.cs"
+ },
+ {
   "ko": "재질과 패턴",
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
  {
   "ko": "해치 패턴 · 반복 {0}×{1}px",
+  "file": "UI/MainWindow.MaterialProperties.cs"
+ },
+ {
+  "ko": "내 패턴 · 반복 {0}×{1}px",
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
  {
@@ -6997,10 +7217,6 @@
  },
  {
   "ko": "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다.",
-  "file": "UI/MainWindow.SelectionMaterials.cs"
- },
- {
-  "ko": "도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.",
   "file": "UI/MainWindow.SelectionMaterials.cs"
  },
  {

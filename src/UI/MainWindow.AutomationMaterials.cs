@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Media;
@@ -23,6 +24,20 @@ public sealed partial class MainWindow
             [command == "query_materials" ? "materials" : "regions"] = new JsonArray(page.Cast<JsonNode?>().ToArray())
         };
     }
+    // Built-in patterns, then the user's 내 패턴 library and the user patterns the document carries.
+    JsonObject AutomationPatternQuery(JsonObject args)
+    {
+        Document? document = null;
+        if (args.ContainsKey("documentId")) { StoreTab(); document = AutomationTab(args).Document; }
+        else if (HasDocument) document = doc;
+        IReadOnlyList<MaterialAsset> carried = [];
+        if (document != null)
+            try { carried = MaterialEditing.Assets(document).Where(LinePatterns.IsCustom).ToArray(); }
+            catch (InvalidDataException) { }
+        return AutomationMaterials.Patterns(args.ContainsKey("nameContains") ? AString(args, "nameContains") : null, AString(args, "surface", "general"),
+            LinePatternLibrary(), carried, patternFavorites);
+    }
+
     async Task<JsonObject> AutomationRegisterMaterialAsync(string command, JsonObject args, CancellationToken token)
     {
         var tab = AutomationTab(args, true); var before = doc.Snapshot(); var candidate = doc.Snapshot();
@@ -32,9 +47,34 @@ public sealed partial class MainWindow
         {
             if (MaterialEditing.Assets(candidate).Count >= MaterialEditing.MaxAssets) throw new AutomationFault("capacity_exceeded", "재료 라이브러리가 가득 찼습니다.");
             string path = AutomationSourcePath(args);
-            var pixels = await CompatibilityImport.OnSta(() => MaterialTextures.Load(path), token);
-            var asset = new MaterialAsset(Guid.NewGuid(), AString(args, "name"), pixels, args.ContainsKey("source") ? AString(args, "source") : "", ABool(args, "tileable"));
-            candidate.Materials.Add(asset); added = AutomationMaterials.Asset(asset);
+            if (AString(args, "kind", "image") == "line_pattern")
+            {
+                // The same conversion as 이미지로 패턴 추가: dark lines become ink coverage, light paper clear.
+                var (pattern, threshold) = await CompatibilityImport.OnSta(() =>
+                {
+                    try
+                    {
+                        var source = LinePatternSource.Load(path); token.ThrowIfCancellationRequested();
+                        double used = ANumber(args, "threshold", source.AutoThreshold);
+                        return (LinePatterns.Create(AString(args, "name"), source.Convert(used, ABool(args, "trim"))), used);
+                    }
+                    catch (Exception e) when (e is InvalidDataException or NotSupportedException or FileFormatException or ArgumentException)
+                    { throw new AutomationFault("pattern_conversion_failed", e.Message); }
+                }, token);
+                bool saved = ABool(args, "saveToMyPatterns");
+                RequireAutomationIdle(token); _ = AutomationTab(args, true);
+                if (saved)
+                    try { pattern = AddLinePattern(pattern); }
+                    catch (InvalidDataException e) { throw new AutomationFault("capacity_exceeded", e.Message); }
+                candidate.Materials.Add(pattern); added = AutomationMaterials.Asset(pattern);
+                added["threshold"] = Math.Round(threshold, 4); added["savedToMyPatterns"] = saved;
+            }
+            else
+            {
+                var pixels = await CompatibilityImport.OnSta(() => MaterialTextures.Load(path), token);
+                var asset = new MaterialAsset(Guid.NewGuid(), AString(args, "name"), pixels, args.ContainsKey("source") ? AString(args, "source") : "", ABool(args, "tileable"));
+                candidate.Materials.Add(asset); added = AutomationMaterials.Asset(asset);
+            }
         }
         else
         {
