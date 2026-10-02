@@ -41,10 +41,20 @@ public sealed partial class CanvasView : FrameworkElement
     public BitmapSource? MovePreviewBackground { get; set; }
     public BitmapSource? MovePreviewLayer { get; set; }
     public BitmapSource? MovePreviewForeground { get; set; }
-    // Document rectangle the foreground covers. Null: the whole document. The
-    // interim frame shown while the fixed planes flatten covers only the dragged
-    // object's original footprint.
-    public Rect? MovePreviewForegroundBounds { get; set; }
+    // The interim frame shown while the fixed planes flatten draws the layers above
+    // the object as tiles (document rectangles) instead of one foreground plane.
+    public IReadOnlyList<(BitmapSource Image, Rect Bounds)>? MovePreviewForegroundTiles { get; set; }
+    // Opaque tiles drawn over the interim background, replacing it there.
+    public IReadOnlyList<(BitmapSource Image, Rect Bounds)>? MovePreviewBackgroundTiles { get; set; }
+    // Tiles meet edge to edge; aliased edges keep their seams from blending with what is under them.
+    static void DrawTiles(DrawingContext dc, IReadOnlyList<(BitmapSource Image, Rect Bounds)> tiles, Func<Rect, Rect> place)
+    {
+        if (tiles.Count == 0) return;
+        var group = new DrawingGroup();
+        RenderOptions.SetEdgeMode(group, EdgeMode.Aliased);
+        using (var context = group.Open()) foreach (var (image, bounds) in tiles) context.DrawImage(image, place(bounds));
+        dc.DrawDrawing(group);
+    }
     public Matrix MovePreviewMatrix { get; set; } = Matrix.Identity;
     public double MovePreviewOpacity { get; set; } = 1;
     double zoom = .65;
@@ -89,19 +99,24 @@ public sealed partial class CanvasView : FrameworkElement
         dc.PushClip(ArtboardClip(true));
         dc.DrawRectangle(checker, null, rect);
         dc.Pop();
-        if (!TryDrawDesign(dc) && (MovePreviewBackground ?? Composite) is { } image) dc.DrawImage(image, rect);
+        // After a drop the crisp view, once ready, replaces the move preview planes.
+        bool crisp = TryDrawDesign(dc);
+        if (!crisp && (MovePreviewBackground ?? Composite) is { } image) dc.DrawImage(image, rect);
+        if (!crisp && MovePreviewLayer != null && MovePreviewBackgroundTiles is { } under)
+            DrawTiles(dc, under, b => new Rect(origin.X + b.X * Zoom, origin.Y + b.Y * Zoom, b.Width * Zoom, b.Height * Zoom));
         if (Document.Artboards.Count == 0) dc.DrawRectangle(null, new Pen(Theme.Brush("#464E5B"), 1), rect);
         dc.PushTransform(new TranslateTransform(origin.X, origin.Y)); dc.PushTransform(new ScaleTransform(Zoom, Zoom));
         dc.PushClip(new RectangleGeometry(new Rect(0, 0, Document.Width, Document.Height)));
-        if (MovePreviewLayer is { } moving)
+        if (MovePreviewLayer is { } moving && !crisp)
         {
             dc.PushOpacity(MovePreviewOpacity);
             dc.PushTransform(new MatrixTransform(MovePreviewMatrix));
             dc.DrawImage(moving, new Rect(0, 0, moving.PixelWidth, moving.PixelHeight));
             dc.Pop(); dc.Pop();
         }
-        if (MovePreviewLayer != null && MovePreviewForeground is { } above)
-            dc.DrawImage(above, MovePreviewForegroundBounds ?? new Rect(0, 0, Document.Width, Document.Height));
+        if (MovePreviewLayer != null && !crisp && MovePreviewForeground is { } above)
+            dc.DrawImage(above, new Rect(0, 0, Document.Width, Document.Height));
+        if (MovePreviewLayer != null && !crisp && MovePreviewForegroundTiles is { } tiles) DrawTiles(dc, tiles, b => b);
         if (PixelGrid && Zoom >= 8)
         {
             var pen = new Pen(new SolidColorBrush(Color.FromArgb(65, 180, 190, 200)), 1 / Zoom);

@@ -124,21 +124,28 @@ public sealed partial class MainWindow
             // are on screen. The old path waited for the full flatten of the drawing.
             if (fast)
             {
-                var start = Imaging.Render(document); window.RememberCurrentComposite(start); canvas.Composite = start.Bitmap(); Frame();
+                var composed = Stopwatch.StartNew(); var start = Imaging.Render(document);
+                // As in the app, the last full render's time marks the drawing as slow.
+                window.lastCompositeMilliseconds = composed.Elapsed.TotalMilliseconds;
+                window.RememberCurrentComposite(start); canvas.Composite = start.Bitmap(); Frame();
                 var objects = document.Layers.Where(l => l.Kind == LayerKind.Vector && l.Visible && !l.Locked).ToArray();
                 var middle = objects[objects.Length / 2];
-                void DragStart(string what, Layer layer, bool interim, bool keepPlanes, Action? before = null)
+                void DragStart(string what, Layer layer, bool interim, bool keepPlanes, Action? before = null, int gap = 0)
                 {
                     window.ClearTextMovePreview(); if (!keepPlanes) window.DropMovePlanes();
                     window.moveInterimEnabled = interim;
                     document.ActiveId = layer.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(layer.Id);
                     before?.Invoke();
+                    int builds = window.MovePlaneBuilds;
                     window.beforeGesture = document.Snapshot(); window.dragging = true; window.moveStarted = true; window.CaptureMoveInterimSource();
-                    int builds = window.MovePlaneBuilds; ulong c0 = Cycles(); var clock = Stopwatch.StartNew();
+                    // Time from pointer down to the drag threshold.
+                    if (gap > 0) { var wait = Stopwatch.StartNew(); PumpDispatcherUntil(() => wait.ElapsedMilliseconds >= gap, gap + 1000); }
+                    ulong c0 = Cycles(); var clock = Stopwatch.StartNew();
                     layer.X += 4; window.TryPreviewTextMove(); Frame();
                     double sync = clock.Elapsed.TotalMilliseconds, syncCycles = (Cycles() - c0) / 1e6;
                     PumpDispatcherUntil(() => canvas.MovePreviewBackground != null && canvas.MovePreviewLayer != null, 60000); Frame();
                     double first = clock.Elapsed.TotalMilliseconds; bool interimShown = window.textPreviewInterim;
+                    if (window.moveInterim is { } steps) report($"[{label}]   interim steps: stacks {steps.StacksAt:0.0} ms, tile index {steps.IndexAt:0.0} ms, background copy {steps.BackgroundAt:0.0} ms, first frame {steps.FirstFrameAt:0.0} ms, tiles {steps.TilesRendered}");
                     PumpDispatcherUntil(() => window.textPreviewPlanes is { Ready: true } && !window.textPreviewInterim, 60000); Frame();
                     double full = clock.Elapsed.TotalMilliseconds;
                     report($"[{label}] drag start, {what}: first moved frame {first:0.0} ms ({(interimShown ? "interim from composite" : "full planes")}), full planes on screen {full:0.0} ms, UI thread at drag start {sync:0.0} ms / {syncCycles:0.0} Mcyc, new flattens {window.MovePlaneBuilds - builds}");
@@ -149,12 +156,70 @@ public sealed partial class MainWindow
                 DragStart("new, same object dragged again after its drop", dragged, true, true);
                 DragStart("old path, object in the middle of the stack", middle, false, false);
                 DragStart("new, first drag of a just-picked middle object", middle, true, false);
+                DragStart("new, first drag of a just-picked middle object, 40 ms from pointer down to the drag threshold", middle, true, false, gap: 40);
                 DragStart("new, object selected a moment before the drag", middle, true, false, () =>
                 {
                     var planes = window.PrepareMovePlanes(); var clock = Stopwatch.StartNew();
                     PumpDispatcherUntil(() => planes is not { Ready: false, Failed: false }, 60000);
                     report($"[{label}] speculative planes for the selected object ready after {clock.ElapsedMilliseconds} ms");
                 });
+                // Drop in the drawing view: wall time from the pointer release until the crisp view shows
+                // the dropped object, and until the full composite is in as well. Before, the crisp view
+                // waited for the composite and then rendered the whole viewport again.
+                void DropSettle(string what, bool settle)
+                {
+                    canvas.MoveSettleEnabled = settle; window.moveInterimEnabled = true;
+                    window.ClearTextMovePreview(); Frame(); Settle($"crisp view before the drag ({what})");
+                    var layer = middle; document.ActiveId = layer.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(layer.Id);
+                    window.RememberCurrentComposite(window.composite ?? Imaging.Render(document));
+                    window.beforeGesture = document.Snapshot(); window.dragging = true; window.moveStarted = false; window.CaptureMoveInterimSource();
+                    window.moveStarted = true; layer.X += 25; layer.Y -= 12; window.TryPreviewTextMove(); Frame();
+                    PumpDispatcherUntil(() => window.textPreviewPlanes is { Ready: true } && !window.textPreviewInterim, 60000); Frame();
+                    int started = canvas.DesignRendersStarted, patches = canvas.DesignPatchesCompleted;
+                    var drop = Stopwatch.StartNew(); double crisp = -1;
+                    window.dragging = false; window.headlessTesting = false;
+                    try
+                    {
+                        window.CommitPointerGesture(canvas.ToDocument(center));
+                        PumpDispatcherUntil(() =>
+                        {
+                            Frame();
+                            if (crisp < 0 && canvas.IsDesignPreviewReady) crisp = drop.Elapsed.TotalMilliseconds;
+                            return crisp >= 0 && !window.rendering && !window.pendingFullRender && canvas.IsDesignPreviewReady;
+                        }, 60000);
+                    }
+                    finally { window.headlessTesting = true; }
+                    double all = drop.Elapsed.TotalMilliseconds;
+                    report($"[{label}] drop -> settled crisp frame, {what}: crisp view {crisp:0} ms, full composite also in {all:0} ms, whole-view crisp renders after the drop {canvas.DesignRendersStarted - started - (canvas.DesignPatchesCompleted - patches)}, footprint patches {canvas.DesignPatchesCompleted - patches}");
+                    canvas.MoveSettleEnabled = true;
+                }
+                // A drag that stays on the interim frame (planes held back): pointer events every 8 ms,
+                // 6 px apart. The object only moves where its tiles are ready (it stays under the layers
+                // above it); count the events it had to wait for tiles.
+                {
+                    window.ClearTextMovePreview(); window.DropMovePlanes(); window.moveInterimEnabled = true;
+                    var layer = middle; document.ActiveId = layer.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(layer.Id);
+                    window.RememberCurrentComposite(Imaging.Render(document));
+                    var hold = window.movePlanesHold = new TaskCompletionSource();
+                    window.beforeGesture = document.Snapshot(); window.dragging = true; window.moveStarted = true; window.CaptureMoveInterimSource();
+                    var clock = Stopwatch.StartNew(); layer.X += 6; window.TryPreviewTextMove();
+                    PumpDispatcherUntil(() => canvas.MovePreviewLayer != null, 60000); Frame();
+                    double first = clock.Elapsed.TotalMilliseconds; int waited = 0, longest = 0, run = 0; var interim = window.moveInterim;
+                    for (int i = 0; i < 80; i++)
+                    {
+                        layer.X += i < 40 ? 6 : -4; layer.Y += i % 3 == 0 ? 5 : 0; window.TryPreviewTextMove();
+                        var tick = Stopwatch.StartNew(); PumpDispatcherUntil(() => tick.ElapsedMilliseconds >= 8, 1000); Frame();
+                        if (canvas.MovePreviewMatrix != layer.Matrix) { waited++; longest = Math.Max(longest, ++run); } else run = 0;
+                    }
+                    report($"[{label}] interim drag (planes held), middle object: first frame {first:0.0} ms, {interim?.TilesRendered ?? 0} tiles of {MoveInterim.Tile} px rendered, object waited for tiles at {waited} of 80 pointer events (longest {longest * 8} ms)");
+                    hold.SetResult(); window.movePlanesHold = null;
+                    PumpDispatcherUntil(() => window.textPreviewPlanes is { Ready: true }, 60000);
+                    window.dragging = false; window.moveStarted = false; window.beforeGesture = null; window.ClearTextMovePreview();
+                }
+
+                DropSettle("old path (whole view after the composite)", false);
+                DropSettle("new (footprints redrawn into the kept frame)", true);
+
                 // How far the footprint patch of the interim frame is from the whole-page render of the
                 // layers below (hatch tiles are not shift-invariant to the last level).
                 {
