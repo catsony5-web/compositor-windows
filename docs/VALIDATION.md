@@ -1,3 +1,11 @@
+# Preview 39 drag performance validation
+
+- Source self-tests: **710/710 passed** on Windows x64 (708 in Preview 38; +2). New checks: a plan with a Multiply hatch material and a Multiply tint below the dragged linework stays on the fast move preview, and the preview's three planes composed as the canvas draws them equal the full compositor pixel for pixel; the same Multiply layer placed above the mover falls back to the full path; the synthetic CAD drawing (materials under the linework) is eligible while a material layer itself is not.
+- Hidden benchmark `--benchmark-drawing` gained a drag section. Synthetic 2400×1707 plan, 19,004 objects in 51 folders, 4 Multiply hatch fills, release build on this PC: fast move preview eligible = true; flatten below/above once at drag start 861 ms; drag move frame 1.27 ms median (2.93 ms worst) versus 875.9 ms median for the full composite the drag used to run every frame.
+- No UI text changed (`tools/i18n/extract.py`: 1,950 entries per language, 0 missing). Offscreen captures in Korean and English re-rendered (83 each) as a no-change check.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered offscreen: real mouse drags (the gesture path is driven headlessly through the same gate and plane builders); real office DWG files beyond the synthetic plan.
+
 # Preview 38 hatch patterns validation
 
 - Source self-tests: **708/708 passed** on Windows x64 (674 in Preview 37; +34: `HatchPatternTests`, `MainWindow.MaterialPropertiesTests`, CAD dialog, automation and review regression checks).

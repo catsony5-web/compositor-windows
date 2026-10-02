@@ -1,4 +1,11 @@
-# Morupixel 0.2.0 Preview 38 — hatch patterns you pick like images
+# Morupixel 0.2.0 Preview 39 — dragging objects in large drawings is smooth again
+
+- **Fixed: dragging an object in a drawing with hatch materials was slow.** The fast move preview (which flattens the layers once and then only moves the dragged object) switched itself off whenever the document held any layer with a blend mode other than normal — and every hatch material layer multiplies. So in a cleaned-up plan each drag frame re-composited the whole drawing. On a synthetic 19,000-object plan with four hatch fills a drag frame took about 876 ms; it now takes about 1.3 ms once the drag has started.
+- **Why this is exact, not an approximation.** A layer that reads what is beneath it (multiply, clipping, adjustment) only interacts with the dragged object when it sits *above* it. Below the object it is flattened in paint order by the same renderer, so the preview matches the full composite pixel for pixel; a regression check composes the three planes and compares them with the full render. Such layers above the dragged object still use the full compositor, as before.
+- **Known remaining cost.** The first moment of a drag still waits while the planes are flattened (about 0.9 s on that synthetic plan); the previous image stays visible meanwhile. Before this release that cost was paid on every frame.
+- **Validation.** 710 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 38 — hatch patterns you pick like images
 
 - **19 drawing-style hatch patterns.** The material palette now has two tabs, 재질 이미지 and 해치 패턴. The pattern tab offers 잔디, 풀밭, 모래, 성긴 점, 짧은 빗금, 짧은 가로선, 둥근 점, 작은 포장석, 가로줄, 고운 점, 판석, 자연석, 자갈, 콘크리트, 벽돌, 사선, 교차 사선, 사각 격자 and 단열재, shown as swatches on white paper and ordered for the surface under the selection (ground, floor or wall). Patterns have a transparent background, so the colors and lines underneath stay visible.
 - **Always crisp.** Patterns are redrawn from their geometry at the size they are shown, so lines stay sharp at 400% zoom and in PNG, .psd and PDF output, and large fills repeat without a visible seam or lattice.
