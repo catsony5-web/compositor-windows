@@ -15,7 +15,8 @@ public static partial class DesignRenderer
         return layer.Kind == LayerKind.Vector && layer.Vector?.Format == VectorFormat.Paths;
     }
 
-    static Raster DrawPathRun(Layer[] stack, int start, int end, Dictionary<Guid, Layer[]> children, Matrix parent,
+    // Null when no object reached the surface (or the cull rectangle).
+    static Raster? DrawPathRun(Layer[] stack, int start, int end, Dictionary<Guid, Layer[]> children, Matrix parent,
         int width, int height, PathPasses passes, CancellationToken token)
     {
         // Keep WPF surfaces within the same limits as retained PDF/path renders.
@@ -26,7 +27,8 @@ public static partial class DesignRenderer
             {
                 token.ThrowIfCancellationRequested(); var map = parent; map.OffsetX -= x; map.OffsetY -= y;
                 int w = Math.Min(1536, width - x), h = Math.Min(1536, height - y);
-                var tile = DrawPathRun(stack, start, end, children, map, w, h, passes, token);
+                var tilePasses = passes.Cull is { } c ? passes with { Cull = new Rect(c.X - x, c.Y - y, c.Width, c.Height) } : passes;
+                if (DrawPathRun(stack, start, end, children, map, w, h, tilePasses, token) is not { } tile) continue;
                 for (int row = 0; row < h; row++) Buffer.BlockCopy(tile.Data, row * w * 4, output.Data, ((row + y) * width + x) * 4, w * 4);
             }
             return output;
@@ -36,6 +38,8 @@ public static partial class DesignRenderer
         // without decoding or drawing it. A zoomed-in viewport then costs the
         // objects in view rather than the whole drawing.
         var viewport = new Rect(-2, -2, width + 4, height + 4);
+        if (passes.Cull is { } cull) viewport.Intersect(cull);
+        bool drew = false;
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         // Groups entered but not yet left, re-applied when a new pass begins.
         var open = new List<(Matrix Transform, Rect? Clip)>();
@@ -79,10 +83,12 @@ public static partial class DesignRenderer
                 return;
             }
             if (dc == null) Begin();
+            drew = true;
             Push(local, clip); dc!.DrawDrawing(layer.Vector!.Drawing); Pop(clip);
             if (++pending >= passSize) Flush();
         }
         for (int i = start; i < end; i++) Draw(stack[i], parent);
+        if (!drew) return null;
         Flush();
         return Raster.FromBitmap(bitmap);
     }
