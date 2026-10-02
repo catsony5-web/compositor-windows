@@ -107,6 +107,7 @@ public sealed partial class MainWindow
             document.ActiveId = dragged.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(dragged.Id);
             bool fast = CanPreviewLayerMove(document, dragged, 1);
             report($"[{label}] drag eligible for fast move preview (materials below mover): {fast}");
+            Time("fast preview eligibility check (each pointer event)", 20, _ => CanPreviewLayerMove(document, dragged, 1));
             if (fast)
             {
                 watch.Restart(); var (below, above) = CreateLayerMovePreviewStacks(document, dragged.Id);

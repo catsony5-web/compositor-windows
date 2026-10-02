@@ -93,6 +93,10 @@ public sealed partial class MainWindow
                 window.TryPreviewTextMove();
                 Check(ReferenceEquals(window.canvas.MovePreviewBackground, planes.Background) && window.MovePlaneBuilds == builds,
                     "The second drag of the same object flattened the document again");
+                // Later pointer events skip the stack check but still see a distortion of the object.
+                mover.Warp = new(new Point(0, 0), new Point(mover.Pixels.Width, 0), new Point(mover.Pixels.Width * .8, mover.Pixels.Height), new Point(0, mover.Pixels.Height));
+                Check(!window.TryPreviewTextMove() && window.canvas.MovePreviewBackground == null, "A distorted object kept the affine move preview");
+                mover.Warp = null;
                 EndDrag(window);
             }
             finally { window.StopRenderingForShutdown(); }
