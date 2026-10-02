@@ -32,6 +32,9 @@ public sealed partial class MainWindow
     static void MeasureDrawingInteraction(string label, Document document, Action<string> report)
     {
         var window = new MainWindow(null) { headlessTesting = true };
+        // Async preview work resumes on this thread, as it does inside the running app.
+        var previousContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(window.Dispatcher));
         try
         {
             window.AddTab(document, null); window.SetWorkspaceMode(true);
@@ -104,6 +107,7 @@ public sealed partial class MainWindow
             document.ActiveId = dragged.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(dragged.Id);
             bool fast = CanPreviewLayerMove(document, dragged, 1);
             report($"[{label}] drag eligible for fast move preview (materials below mover): {fast}");
+            Time("fast preview eligibility check (each pointer event)", 20, _ => CanPreviewLayerMove(document, dragged, 1));
             if (fast)
             {
                 watch.Restart(); var (below, above) = CreateLayerMovePreviewStacks(document, dragged.Id);
@@ -114,6 +118,64 @@ public sealed partial class MainWindow
                 canvas.MovePreviewBackground = null; canvas.MovePreviewLayer = null; canvas.MovePreviewForeground = null;
             }
             Time("drag move frame (full composite, the old path)", 5, i => { dragged.X += i % 2 == 0 ? 3 : -2; canvas.Composite = Imaging.Render(document).Bitmap(); Frame(); });
+
+            // Drag start through the real preview path: wall time from the first moved pointer
+            // event until a frame shows the object at its new place, and until the full planes
+            // are on screen. The old path waited for the full flatten of the drawing.
+            if (fast)
+            {
+                var start = Imaging.Render(document); window.RememberCurrentComposite(start); canvas.Composite = start.Bitmap(); Frame();
+                var objects = document.Layers.Where(l => l.Kind == LayerKind.Vector && l.Visible && !l.Locked).ToArray();
+                var middle = objects[objects.Length / 2];
+                void DragStart(string what, Layer layer, bool interim, bool keepPlanes, Action? before = null)
+                {
+                    window.ClearTextMovePreview(); if (!keepPlanes) window.DropMovePlanes();
+                    window.moveInterimEnabled = interim;
+                    document.ActiveId = layer.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(layer.Id);
+                    before?.Invoke();
+                    window.beforeGesture = document.Snapshot(); window.dragging = true; window.moveStarted = true; window.CaptureMoveInterimSource();
+                    int builds = window.MovePlaneBuilds; ulong c0 = Cycles(); var clock = Stopwatch.StartNew();
+                    layer.X += 4; window.TryPreviewTextMove(); Frame();
+                    double sync = clock.Elapsed.TotalMilliseconds, syncCycles = (Cycles() - c0) / 1e6;
+                    PumpDispatcherUntil(() => canvas.MovePreviewBackground != null && canvas.MovePreviewLayer != null, 60000); Frame();
+                    double first = clock.Elapsed.TotalMilliseconds; bool interimShown = window.textPreviewInterim;
+                    PumpDispatcherUntil(() => window.textPreviewPlanes is { Ready: true } && !window.textPreviewInterim, 60000); Frame();
+                    double full = clock.Elapsed.TotalMilliseconds;
+                    report($"[{label}] drag start, {what}: first moved frame {first:0.0} ms ({(interimShown ? "interim from composite" : "full planes")}), full planes on screen {full:0.0} ms, UI thread at drag start {sync:0.0} ms / {syncCycles:0.0} Mcyc, new flattens {window.MovePlaneBuilds - builds}");
+                    layer.X -= 4; window.dragging = false; window.moveStarted = false; window.beforeGesture = null; window.ClearTextMovePreview();
+                }
+                DragStart("old path (nothing cached, wait for the flatten), top object", dragged, false, false);
+                DragStart("new, first drag of a just-picked top object", dragged, true, false);
+                DragStart("new, same object dragged again after its drop", dragged, true, true);
+                DragStart("old path, object in the middle of the stack", middle, false, false);
+                DragStart("new, first drag of a just-picked middle object", middle, true, false);
+                DragStart("new, object selected a moment before the drag", middle, true, false, () =>
+                {
+                    var planes = window.PrepareMovePlanes(); var clock = Stopwatch.StartNew();
+                    PumpDispatcherUntil(() => planes is not { Ready: false, Failed: false }, 60000);
+                    report($"[{label}] speculative planes for the selected object ready after {clock.ElapsedMilliseconds} ms");
+                });
+                // How far the footprint patch of the interim frame is from the whole-page render of the
+                // layers below (hatch tiles are not shift-invariant to the last level).
+                {
+                    var (below, _) = CreateLayerMovePreviewStacks(document, dragged.Id);
+                    var whole = Imaging.Render(below); int worst = 0, differing = 0, total = 0;
+                    foreach (var other in objects.Where((_, i) => i % 50 == 0))
+                    {
+                        var footprint = MoveFootprint(document, other); if (footprint.Width <= 0) continue;
+                        var patch = RenderMoveRegion(below, footprint, true, default);
+                        for (int y = 0; y < footprint.Height; y++) for (int x = 0; x < footprint.Width; x++)
+                        {
+                            int i = (y * footprint.Width + x) * 4, j = ((footprint.Y + y) * document.Width + footprint.X + x) * 4, d = 0;
+                            for (int c = 0; c < 4; c++) d = Math.Max(d, Math.Abs(patch.Data[i + c] - whole.Data[j + c]));
+                            worst = Math.Max(worst, d); if (d > 0) differing++; total++;
+                        }
+                    }
+                    report($"[{label}] interim footprint patches vs whole-page render below: {differing:N0} of {total:N0} pixels differ, worst channel difference {worst}");
+                }
+                window.moveInterimEnabled = true; window.DropMovePlanes();
+                document.ActiveId = dragged.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(dragged.Id);
+            }
 
             window.SetWorkspaceMode(false); Frame();
             Time("photo mode pan move", 60, i => { canvas.Pan += new Vector(i % 2 == 0 ? 6 : -4, 3); Frame(); });
@@ -130,6 +192,6 @@ public sealed partial class MainWindow
             Direct("direct design render, 15% window at ~1500 px", new Rect(document.Width * .4, document.Height * .4, document.Width * .15, document.Height * .15));
             Time("document snapshot", 10, _ => document.Snapshot());
         }
-        finally { window.StopRenderingForShutdown(); }
+        finally { SynchronizationContext.SetSynchronizationContext(previousContext); window.StopRenderingForShutdown(); }
     }
 }

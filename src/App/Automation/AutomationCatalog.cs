@@ -8,7 +8,7 @@ namespace Compositor.Windows;
 public static partial class AutomationCatalog
 {
     sealed record Field(string Type, string Description, double? Minimum = null, double? Maximum = null,
-        int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null, bool Ink = false)
+        int MaxLength = 0, bool EmptyAllowed = false, string[]? Choices = null, bool GuidValue = false, bool Color = false, string? ArrayShape = null, bool Ink = false, string? TextPattern = null)
     {
         /// <summary>Inside apply_batch an ID field may also name an earlier step's ref as "@name".</summary>
         public JsonObject BatchSchema()
@@ -34,6 +34,7 @@ public static partial class AutomationCatalog
             if (GuidValue) schema["format"] = "uuid";
             if (Color) schema["pattern"] = "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|transparent)$";
             if (Ink) schema["pattern"] = InkPattern;
+            if (TextPattern != null) schema["pattern"] = TextPattern;
             return schema;
         }
     }
@@ -45,6 +46,10 @@ public static partial class AutomationCatalog
     // Alpha 00 is refused: an invisible ink is no pattern, and 0 is the stored "default" marker.
     const string InkPattern = "^(#[0-9a-fA-F]{6}|#(?!00)[0-9a-fA-F]{8}|default)$";
     static readonly Field InkColor = new("string", "Hatch pattern ink: #RRGGBB, #AARRGGBB with alpha 01-FF, or default (dark grey). Ignored for image materials.", MaxLength: 9, Ink: true);
+    const string BackgroundPattern = "^(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|none)$";
+    static readonly Field BackgroundColor = new("string", "Line pattern background painted inside the boundary under the lines: #RRGGBB, #AARRGGBB, or none (transparent, the default). An alpha of 00 also means none. Ignored for image materials.", MaxLength: 9, TextPattern: BackgroundPattern);
+    // Built-in keys (brick, grass-sparse, …) or a user line pattern "custom:<32 hex>" from query_patterns.
+    public const string PatternIdPattern = "^([a-z]+(-[a-z]+)*|custom:[0-9a-f]{32})$";
     static readonly Field Coordinate = Number(-100_000, 100_000, "Position in parent-layer pixels; document pixels for root layers. See get_capabilities for coordinate conventions.");
     static readonly Dictionary<string, Command> Commands = CreateCommands();
 
@@ -141,6 +146,13 @@ public static partial class AutomationCatalog
                 ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination.")), ("layerId", Id),
                 ("artboardId", Id), ("scale", Number(.05, 8, "Output scale multiplier; 1 is actual size, 2 doubles pixels.")),
                 ("keepTransparency", Bool("PNG/TIFF only; false fills transparent areas with white. Defaults to true."))), WriteRequired("path"));
+        Add("export_document", "Export the active document or one artboard as PDF, .psd or PDF-compatible .ai through the same writers as the app's PDF/PSD/AI export dialog. layers=keep (default) makes one PDF layer per top-level layer or group (pdf, ai) or keeps the .psd layer tree; layers=flatten writes one page or one image layer. RGB at document resolution. Existing files require overwrite=true. Not part of apply_batch.", false,
+            Mutation(("path", new("string", "Absolute Windows path whose extension matches format (.pdf, .psd or .ai).", MaxLength: 32767)),
+                ("format", Choice(DocumentExportFormats)),
+                ("layers", Choice("keep", "flatten")),
+                ("vectors", Bool("format=pdf with layers=flatten only: keep lines, text and shapes as vectors (true) or place one image of the page (false). Defaults to the app dialog's suggestion: true when the document has text, shapes, drawings or materials.")),
+                ("artboardId", Id),
+                ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path", "format"));
         Add("add_artboard", "Add an artboard in document pixels. The canvas grows to include it; a document without artboards first turns its whole canvas into one. Returns artboardId.", false,
             Mutation(("name", Name), ("x", Coordinate), ("y", Coordinate), ("width", Number(1, 16384)), ("height", Number(1, 16384))), WriteRequired("width", "height"));
         Add("update_artboard", "Rename, move or resize an existing artboard by artboardId from get_state.", false,
@@ -156,8 +168,13 @@ public static partial class AutomationCatalog
                 ("label", new("string", "Short undo history label describing the user's intent.", MaxLength: 120)),
                 ("dryRun", Bool("Validate every step and document limit without committing; defaults to false.")),
                 ("steps", new("array", "Ordered atomic edits; each command has its own strict argument schema."))), WriteRequired("operationId", "steps"));
-        Add("register_material", "Register an existing local texture image in the document's embedded material library. Does not generate images or use an AI provider account. Returns materialId; use query_materials after uncertain delivery instead of blindly retrying.", false,
-            Mutation(("name", Name), ("path", Path), ("source", new("string", "Optional provenance label supplied by the caller, not a verified credential.", MaxLength: 4096)), ("tileable", Bool("Caller-declared seamless texture; no seam correction is performed."))), WriteRequired("name", "path"));
+        Add("register_material", "Register an existing local image in the document's embedded material library. kind=image (default) keeps it as a texture; kind=line_pattern turns its dark lines into a user line pattern (like the app's add-pattern-from-image command: light paper becomes transparent, lines take ink, line weight and background) with patternId custom:<id>. Does not generate images or use an AI provider account. Returns materialId; use query_materials after uncertain delivery instead of blindly retrying.", false,
+            Mutation(("name", Name), ("path", Path), ("kind", Choice("image", "line_pattern")),
+                ("source", new("string", "kind=image only: optional provenance label supplied by the caller, not a verified credential.", MaxLength: 4096)),
+                ("tileable", Bool("kind=image only: caller-declared seamless texture; no seam correction is performed.")),
+                ("threshold", Number(0, 1, "kind=line_pattern only: line detection threshold, 0 paper … 1 ink; defaults to the automatic threshold the app suggests.")),
+                ("trim", Bool("kind=line_pattern only: crop blank margins around the drawing. Defaults to false.")),
+                ("saveToMyPatterns", Bool("kind=line_pattern only: also add the pattern to the user's My patterns library on this PC. Defaults to false (document only)."))), WriteRequired("name", "path"));
         foreach (string query in new[] { "query_materials", "query_regions" })
             Add(query, "List document material assets or captured region templates in bounded pages. Pass expectedRevision for further pages. Region templates are snapshots, not semantic room detection.", true,
                 Fields(("documentId", Id), ("expectedRevision", Id), ("nameContains", new("string", "Case-insensitive literal name substring.", MaxLength: 256)),
@@ -166,16 +183,27 @@ public static partial class AutomationCatalog
             Mutation(("name", Name), ("source", Choice("polygon", "closed_layer", "selection")), ("layerId", Id),
                 ("points", new("array", "Closed outer contour, at least 3 points. Closure is automatic.", ArrayShape: "points")),
                 ("holes", new("array", "Optional inner contours; at most 2048 points across all contours.", ArrayShape: "holes"))), WriteRequired("name", "source"));
-        var pattern = Fields(("materialId", Id), ("tileWidth", Number(1, 100000, "One texture repeat width in layer-local pixels, not millimeters.")),
-            ("tileHeight", Number(1, 100000, "One texture repeat height in layer-local pixels.")), ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
+        var pattern = Fields(("materialId", Id),
+            ("patternId", new("string", "Pattern from query_patterns instead of materialId: a built-in key (" + string.Join(", ", HatchPatterns.All.Select(HatchPatterns.Key)) + ") or a user line pattern \"custom:<32 hex>\".", MaxLength: 39, TextPattern: PatternIdPattern)),
+            ("tileWidth", Number(1, 100000, "One texture repeat width in layer-local pixels, not millimeters. Cannot be combined with scale.")),
+            ("tileHeight", Number(1, 100000, "One texture repeat height in layer-local pixels. Cannot be combined with verticalRatio.")),
+            ("scale", Number(.1, 10, "Repeat size relative to the material's default size for this document, like the app's size % / 100; 1 is the default size. Cannot be combined with tileWidth.")),
+            ("verticalRatio", Number(.25, 4, "Vertical ratio like the app's vertical ratio % / 100; 1 keeps the material's own proportions. Patterns keep their marks and change vertical spacing only. Cannot be combined with tileHeight.")),
+            ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
             ("offsetX", Coordinate), ("offsetY", Coordinate), ("name", Name), ("ink", InkColor),
-            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Ignored for image materials.")));
-        Add("query_patterns", "List the built-in line hatch patterns (lawn, sand, pavers, brick, …) with their materialId, ordered for a surface. No document is needed; apply_material registers a pattern automatically.", true,
-            Fields(("nameContains", new("string", "Case-insensitive literal substring of patternId, Korean name or display name.", MaxLength: 256)),
+            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Ignored for image materials.")),
+            ("background", BackgroundColor),
+            ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())));
+        Add("query_patterns", "List the built-in line hatch patterns (lawn, sand, pavers, brick, …) ordered for a surface, then the user's line patterns (My patterns library and those carried by the document) with patternId custom:<id>. No document is needed; with documentId (default: the active document) its own user patterns are included. apply_material registers a pattern automatically.", true,
+            Fields(("documentId", Id), ("nameContains", new("string", "Case-insensitive literal substring of patternId, Korean name or display name.", MaxLength: 256)),
                 ("surface", Choice("general", "wall", "floor", "ground"))));
-        Add("apply_material", "Create an editable material layer from a registered image or a built-in hatch pattern (query_patterns) and a region. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId; can be included in apply_batch.", false,
-            Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id), ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())) }).ToArray()), WriteRequired("materialId", "regionId", "tileWidth", "tileHeight"));
-        Add("update_material", "Change the source material (a registered image or a built-in hatch pattern) or repeat size, direction, offset, pattern ink and line weight of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
+        Add("apply_material", "Create an editable material layer from a registered image (materialId) or a built-in hatch pattern (patternId, or its materialId from query_patterns) inside a boundary: an existing regionId, or inline points/holes or a closed boundaryLayerId, stored as a new region template in the same step. Size with tileWidth/tileHeight in pixels or scale/verticalRatio relative to the default; omitted sizes use the app's default. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId (and regionId); can be included in apply_batch.", false,
+            Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id),
+                ("points", new Field("array", "Inline closed outer contour in document pixels instead of regionId, at least 3 points; stored as a polygon region template.", ArrayShape: "points")),
+                ("holes", new Field("array", "Optional inner contours for points; at most 2048 points across all contours.", ArrayShape: "holes")),
+                ("boundaryLayerId", Id with { Description = "Closed shape or closed CAD path layer used as the boundary instead of regionId, like define_region source=closed_layer." }),
+                ("regionName", Name with { Description = "Name of the region template created from points or boundaryLayerId." }) }).ToArray()), WriteRequired());
+        Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         return commands;
     }
@@ -225,6 +253,8 @@ public static partial class AutomationCatalog
                 if (field.GuidValue && (!Guid.TryParseExact(text, "D", out var id) || id == Guid.Empty)) throw new ArgumentException($"{key} must be a nonempty GUID returned by Morupixel.");
                 if (field.Color && !Regex.IsMatch(text, "^(#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?|transparent)$", RegexOptions.CultureInvariant))
                     throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB, or transparent.");
+                if (field.TextPattern != null && !Regex.IsMatch(text, field.TextPattern, RegexOptions.CultureInvariant))
+                    throw new ArgumentException($"Invalid {key}: {field.Description}");
                 if (field.Ink && !Regex.IsMatch(text, InkPattern, RegexOptions.CultureInvariant))
                     throw new ArgumentException($"Invalid {key}: use #RRGGBB, #AARRGGBB with a nonzero alpha, or default.");
             }
@@ -255,6 +285,17 @@ public static partial class AutomationCatalog
             int count = (arguments["points"] as JsonArray)?.Count ?? 0;
             count += (arguments["holes"] as JsonArray)?.Sum(h => h!.AsArray().Count) ?? 0;
             if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
+        }
+        if (command is "apply_material" or "update_material") ValidateMaterialFields(command, arguments);
+        if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
+            throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
+        if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))
+            throw new ArgumentException("A line pattern is always seamless and marked as a line pattern; source and tileable apply to kind=image only.");
+        if (command == "export_document")
+        {
+            string format = arguments["format"]!.GetValue<string>(), layers = arguments["layers"]?.GetValue<string>() ?? "keep";
+            if (format == "ai" && layers != "keep") throw new ArgumentException(".ai export keeps layers; use format=pdf with layers=flatten for one flat page.");
+            if (arguments.ContainsKey("vectors") && (format != "pdf" || layers != "flatten")) throw new ArgumentException("vectors applies to format=pdf with layers=flatten only.");
         }
         if (command == "add_adjustment")
         {

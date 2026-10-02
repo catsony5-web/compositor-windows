@@ -51,8 +51,23 @@ public sealed partial class MainWindow
             SetWorkspaceMode(true); Show();
             CaptureZoomed("hatch-zoom-400", new Point(lawn.X + lawn.Pixels.Width / 2d, lawn.Y + lawn.Pixels.Height / 2d), 4, directory);
             SetWorkspaceMode(false);
+            // The pattern library: two favorites (one built-in, one of the user's) and a pattern made from a scan.
+            var mine = AddLinePattern(PreviewLinePattern());
+            patternFavorites = [HatchPatterns.Key(HatchPattern.Brick), LinePatterns.FavoriteKey(mine)];
+            AddLinePattern(LinePatterns.Create("손그림 점선", PreviewLinePattern(dashes: true).Pixels));
+            Pick(); materialPaletteTab = MaterialPaletteTab.Patterns; Show(); ShowStudioPage(1);
+            capturePane(studioPanes[1], "selection-hatch-library", 360, 1200);
+            capturePane(studioPanes[1], "selection-hatch-library-narrow", 300, 1300);
+            // The lawn swapped to the user's pattern, with a background color under its lines.
+            selection = null; doc.ActiveId = lawn.Id; selectedLayers.Clear(); selectedLayers.Add(lawn.Id); Show();
+            SwapLayerMaterial(mine, mine.Name);
+            SetPatternBackground(Color.FromRgb(0xF3, 0xE6, 0xC4));
+            Show(); ShowStudioPage(1);
+            capturePane(studioPanes[1], "material-properties-background", 360, 1000);
+            capturePane(studioPanes[1], "material-properties-background-narrow", 300, 1050);
+            captureWindow("hatch-custom-background", 1480, 920);
         }
-        finally { materialPaletteTab = previousTab; SectionHeader.SetCollapsedKeys([], []); }
+        finally { materialPaletteTab = previousTab; SectionHeader.SetCollapsedKeys([], []); patternFavorites = []; linePatternLibrary = null; }
         SavePng(PatternLibrarySheet(), Path.Combine(directory, "hatch-pattern-library.png"));
         SavePng(PatternRatioSheet(), Path.Combine(directory, "hatch-ratio-lineweight.png"));
         SavePng(PatternSitePlan(), Path.Combine(directory, "hatch-site-plan.png"));
@@ -80,6 +95,39 @@ public sealed partial class MainWindow
     {
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
         using var output = File.Create(path); encoder.Save(output);
+    }
+
+    // A scanned-looking hatch tile (warm paper with grain, hand-drawn waves or dashes) and the line
+    // pattern made from it with the automatic threshold, for the offscreen review.
+    internal static Raster PreviewLinePatternScan(bool dashes = false) => Imaging.Draw(180, 180, dc =>
+    {
+        dc.DrawRectangle(new SolidColorBrush(Color.FromRgb(0xF4, 0xEE, 0xDF)), null, new Rect(0, 0, 180, 180));
+        var random = new Random(dashes ? 11 : 5);
+        for (int i = 0; i < 900; i++)
+        {
+            byte tone = (byte)random.Next(0xD8, 0xEA);
+            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(tone, tone, (byte)(tone - 10))), null, new Point(random.NextDouble() * 180, random.NextDouble() * 180), .6, .6);
+        }
+        var pen = new Pen(new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x30)), dashes ? 2.4 : 2.1) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
+        if (dashes) pen.DashStyle = new DashStyle([3, 3.2], 0);
+        for (int row = 0; row < 4; row++)
+            foreach (double shift in new[] { -180d, 0, 180 })
+            {
+                var wave = new StreamGeometry();
+                using (var g = wave.Open())
+                {
+                    double y = 22 + row * 45;
+                    g.BeginFigure(new Point(shift, y), false, false);
+                    for (int s = 1; s <= 36; s++) g.LineTo(new Point(shift + s * 5, y + Math.Sin(s * 5 / 180d * Math.PI * 4) * (dashes ? 4 : 9) + (random.NextDouble() - .5) * 1.2), true, true);
+                }
+                dc.DrawGeometry(null, pen, wave);
+            }
+    });
+
+    internal static MaterialAsset PreviewLinePattern(bool dashes = false)
+    {
+        var source = LinePatternSource.From(PreviewLinePatternScan(dashes));
+        return LinePatterns.Create("손그림 물결", source.Convert(source.AutoThreshold));
     }
 
     static MaterialFill PreviewFill(MaterialAsset asset, double width, double height, double tileWidth, double tileHeight) =>

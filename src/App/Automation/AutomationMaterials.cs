@@ -5,16 +5,30 @@ namespace Compositor.Windows;
 
 public static class AutomationMaterials
 {
+    /// <summary>A built-in key (brick) or "custom:&lt;32 hex&gt;" for a user line pattern; null for an image material.</summary>
+    public static string? PatternId(MaterialAsset asset) => LinePatterns.IsPattern(asset) ? LinePatterns.FavoriteKey(asset) : null;
     public static JsonObject Asset(MaterialAsset asset)
     {
-        bool pattern = HatchPatterns.TryGet(asset, out var hatch);
+        bool builtIn = HatchPatterns.TryGet(asset, out _), custom = LinePatterns.IsCustom(asset);
         return new()
         {
             ["materialId"] = asset.Id.ToString(), ["name"] = asset.Name, ["width"] = asset.Pixels.Width, ["height"] = asset.Pixels.Height,
-            ["source"] = asset.Source, ["tileable"] = asset.Tileable, ["kind"] = pattern ? "pattern" : "image", ["patternId"] = pattern ? HatchPatterns.Key(hatch) : null,
-            ["tileableMeaning"] = pattern ? "Built-in seamless pattern, redrawn from vector geometry at display and export resolution."
+            ["source"] = asset.Source, ["tileable"] = asset.Tileable, ["kind"] = builtIn || custom ? "pattern" : "image", ["patternId"] = PatternId(asset),
+            ["patternKind"] = builtIn ? "builtin" : custom ? "custom" : null,
+            ["tileableMeaning"] = builtIn ? "Built-in seamless pattern, redrawn from vector geometry at display and export resolution."
+                : custom ? "User line pattern converted from an image; its coverage tile is recolored with ink, line weight and background at display and export resolution."
                 : "Caller-declared; no seamless-image generation or verification is performed."
         };
+    }
+    public static string Background(uint background) => background >> 24 == 0 ? "none" : $"#{background:X8}";
+    /// <summary>"none" → 0; "#RRGGBB" (opaque) or "#AARRGGBB" → ARGB; a zero alpha also means none.</summary>
+    public static uint ParseBackground(string text)
+    {
+        if (text == "none") return 0;
+        string hex = text.TrimStart('#');
+        uint value = uint.Parse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+        value = hex.Length == 6 ? 0xFF000000 | value : value;
+        return value >> 24 == 0 ? 0 : value;
     }
     public static string Ink(uint ink) => ink == 0 ? "default" : $"#{ink:X8}";
     /// <summary>"default" → 0; "#RRGGBB" (opaque) or "#AARRGGBB" → ARGB. A zero alpha is refused: 0 means default ink.</summary>
@@ -27,23 +41,36 @@ public static class AutomationMaterials
         if (value >> 24 == 0) throw new ArgumentException("Invalid ink: a fully transparent ink draws nothing; use a nonzero alpha or default.");
         return value;
     }
-    // Built-in hatch patterns in the order suited to a surface (general: catalog order).
-    public static JsonObject Patterns(string? nameContains, string surface)
+    // Built-in hatch patterns in the order suited to a surface (general: catalog order), then the user's
+    // line patterns: the 내 패턴 library first, then those only the document carries (the palette's order).
+    public static JsonObject Patterns(string? nameContains, string surface, IReadOnlyList<MaterialAsset>? library = null,
+        IReadOnlyList<MaterialAsset>? documentPatterns = null, IReadOnlyCollection<string>? favorites = null)
     {
         var hint = surface switch { "wall" => SurfaceHint.Wall, "floor" => SurfaceHint.Floor, "ground" => SurfaceHint.Ground, _ => SurfaceHint.General };
-        var items = SelectionMaterials.PatternOrder(hint).Select(p => new JsonObject
+        bool Favorite(string key) => favorites?.Contains(key) == true;
+        var builtIn = SelectionMaterials.PatternOrder(hint).Select(p => new JsonObject
         {
-            ["patternId"] = HatchPatterns.Key(p), ["materialId"] = HatchPatterns.StableId(p).ToString(), ["name"] = HatchPatterns.Name(p),
-            ["displayName"] = Loc.T(HatchPatterns.Name(p)), ["defaultInk"] = Ink(HatchPatterns.DefaultInk),
+            ["patternId"] = HatchPatterns.Key(p), ["materialId"] = HatchPatterns.StableId(p).ToString(), ["kind"] = "builtin", ["name"] = HatchPatterns.Name(p),
+            ["displayName"] = Loc.T(HatchPatterns.Name(p)), ["defaultInk"] = Ink(HatchPatterns.DefaultInk), ["favorite"] = Favorite(HatchPatterns.Key(p)),
             ["surfaces"] = new JsonArray(new[] { (SurfaceHint.Wall, "wall"), (SurfaceHint.Floor, "floor"), (SurfaceHint.Ground, "ground") }
                 .Where(s => SelectionMaterials.LeadPatterns(s.Item1).Contains(p)).Select(s => (JsonNode?)JsonValue.Create(s.Item2)).ToArray()),
             ["cadKeywords"] = new JsonArray(DrawingCleanup.PatternKeywords(p).Select(k => (JsonNode?)JsonValue.Create(k)).ToArray())
         });
+        var mine = (library ?? []).Concat((documentPatterns ?? []).Where(a => library?.All(p => p.Id != a.Id) != false)).Where(LinePatterns.IsCustom)
+            .Select(a => new JsonObject
+            {
+                ["patternId"] = LinePatterns.FavoriteKey(a), ["materialId"] = a.Id.ToString(), ["kind"] = "custom", ["name"] = a.Name, ["displayName"] = a.Name,
+                ["defaultInk"] = Ink(HatchPatterns.DefaultInk), ["favorite"] = Favorite(LinePatterns.FavoriteKey(a)),
+                ["inLibrary"] = library?.Any(p => p.Id == a.Id) == true, ["inDocument"] = documentPatterns?.Any(p => p.Id == a.Id) == true,
+                ["width"] = a.Pixels.Width, ["height"] = a.Pixels.Height, ["surfaces"] = new JsonArray(), ["cadKeywords"] = new JsonArray()
+            });
+        var items = builtIn.Concat(mine);
         if (!string.IsNullOrEmpty(nameContains))
             items = items.Where(i => new[] { "patternId", "name", "displayName" }.Any(k => i[k]!.GetValue<string>().Contains(nameContains, StringComparison.OrdinalIgnoreCase)));
         var list = items.ToArray();
-        return new JsonObject { ["count"] = list.Length, ["surface"] = surface, ["patterns"] = new JsonArray(list.Cast<JsonNode?>().ToArray()),
-            ["usage"] = "Pass materialId to apply_material or update_material; the pattern is added to the document library automatically. ink and lineWeight tune it." };
+        return new JsonObject { ["count"] = list.Length, ["customCount"] = list.Count(i => i["kind"]!.GetValue<string>() == "custom"), ["surface"] = surface,
+            ["patterns"] = new JsonArray(list.Cast<JsonNode?>().ToArray()),
+            ["usage"] = "Pass patternId (or materialId) to apply_material or update_material; the pattern is added to the document library automatically. scale, verticalRatio, angle, ink, lineWeight, background and opacity tune it. favorite mirrors the user's starred patterns (read-only)." };
     }
     public static JsonObject Region(MaterialRegion region) => new()
     {
@@ -52,15 +79,18 @@ public static class AutomationMaterials
         ["coordinateSpace"] = "document", ["areaPixelsSquared"] = region.Path.Geometry.GetArea(),
         ["meaning"] = "Captured boundary template, not a semantic room or a live link to the original object."
     };
-    public static JsonObject Fill(MaterialFill fill) => new()
+    /// <summary>A material layer's fill. With the document, scale is the repeat width relative to the default for that document (the app's size % / 100).</summary>
+    public static JsonObject Fill(MaterialFill fill, Document? document = null) => new()
     {
         ["materialId"] = fill.Asset.Id.ToString(), ["materialName"] = fill.Asset.Name,
         ["sourceRegionId"] = fill.SourceRegionId.ToString(), ["regionName"] = fill.RegionName,
         ["tileWidth"] = fill.TileWidth, ["tileHeight"] = fill.TileHeight, ["angle"] = fill.Angle,
         ["offsetX"] = fill.OffsetX, ["offsetY"] = fill.OffsetY, ["patternSpace"] = "layer_local_pixels",
-        ["ink"] = Ink(fill.Ink), ["lineWeight"] = fill.LineWeight,
-        ["patternId"] = HatchPatterns.TryGet(fill.Asset, out var pattern) ? HatchPatterns.Key(pattern) : null,
-        ["rendering"] = HatchPatterns.TryGet(fill.Asset, out _) ? "pattern_redrawn" : "image_tile",
+        ["ink"] = Ink(fill.Ink), ["lineWeight"] = fill.LineWeight, ["background"] = Background(fill.Background),
+        ["verticalRatio"] = Math.Round(MaterialEditing.Stretch(fill), 6),
+        ["scale"] = document == null ? null : Math.Round(fill.TileWidth / MaterialEditing.DefaultTile(document.Width, document.Height, fill.Asset), 6),
+        ["patternId"] = PatternId(fill.Asset), ["patternKind"] = HatchPatterns.TryGet(fill.Asset, out _) ? "builtin" : LinePatterns.IsCustom(fill.Asset) ? "custom" : null,
+        ["rendering"] = LinePatterns.IsPattern(fill.Asset) ? "pattern_redrawn" : "image_tile",
         ["boundaryRetained"] = true, ["originalTextureRetained"] = true
     };
     static JsonObject Bounds(Rect r) => new() { ["x"] = r.X, ["y"] = r.Y, ["width"] = r.Width, ["height"] = r.Height };
@@ -69,6 +99,27 @@ public static class AutomationMaterials
 public static partial class AutomationCatalog
 {
     public static readonly string[] DrawingRoleNames = ["structure", "opening", "furniture", "annotation", "hatch", "other"];
+    public static readonly string[] DocumentExportFormats = ["pdf", "psd", "ai"];
+
+    /// <summary>Which material source, boundary and size fields of apply_material/update_material belong together.</summary>
+    static void ValidateMaterialFields(string command, JsonObject arguments)
+    {
+        bool Has(string key) => arguments.ContainsKey(key);
+        if (Has("materialId") && Has("patternId")) throw new ArgumentException("Use materialId or patternId, not both.");
+        if (Has("patternId") && arguments["patternId"]!.GetValue<string>() is var key && !key.StartsWith(LinePatterns.CustomKeyPrefix, StringComparison.Ordinal) && !HatchPatterns.TryParseKey(key, out _))
+            throw new ArgumentException($"Unknown patternId '{key}': use a key from query_patterns.");
+        if (Has("scale") && Has("tileWidth")) throw new ArgumentException("Use tileWidth (pixels) or scale (relative), not both.");
+        if (Has("verticalRatio") && Has("tileHeight")) throw new ArgumentException("Use tileHeight (pixels) or verticalRatio (relative), not both.");
+        if (command != "apply_material") return;
+        if (!Has("materialId") && !Has("patternId")) throw new ArgumentException("apply_material requires materialId or patternId.");
+        int boundaries = new[] { "regionId", "points", "boundaryLayerId" }.Count(Has);
+        if (boundaries != 1) throw new ArgumentException("apply_material requires exactly one boundary: regionId, points (with optional holes) or boundaryLayerId.");
+        if (Has("holes") && !Has("points")) throw new ArgumentException("holes belong to points only.");
+        if (Has("regionName") && Has("regionId")) throw new ArgumentException("regionName names a new region from points or boundaryLayerId; an existing regionId keeps its name.");
+        int count = (arguments["points"] as JsonArray)?.Count ?? 0;
+        count += (arguments["holes"] as JsonArray)?.Sum(h => (h as JsonArray)?.Count ?? 0) ?? 0;
+        if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
+    }
 
     static JsonObject MaterialArraySchema(string type)
     {

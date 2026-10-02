@@ -58,6 +58,8 @@ public static class SelfTests
         MagneticPickingTests.Run(Test);
         MagneticSnapTests.Run(Test);
         MainWindow.RunMovePreviewTests(Test);
+        MainWindow.RunMovePlaneCacheTests(Test);
+        MainWindow.RunMovePreviewIsolationTests(Test);
         MainWindow.RunGroupedMovePreviewTests(Test);
         MainWindow.RunPointerFeedbackTests(Test, directory);
         MainWindow.RunDrawingPerformanceTests(Test);
@@ -73,6 +75,7 @@ public static class SelfTests
         AutomationTransportTests.Run(Test, directory);
         AutomationProtocolTests.Run(Test);
         MainWindow.RunAutomationCommandTests(Test, directory);
+        MainWindow.RunAutomationExportTests(Test, directory);
         MainWindow.RunCommandTests(Test, directory);
         MainWindow.RunBucketCommandTests(Test);
         MainWindow.RunRenderingLifecycleTests(Test);
@@ -136,6 +139,8 @@ public static class SelfTests
         MainWindow.RunWandCommandTests(Test);
         MainWindow.RunLayerWandTests(Test, directory);
         MainWindow.RunMaterialPropertiesTests(Test);
+        LinePatternTests.Run(Test, directory);
+        MainWindow.RunLinePatternTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);

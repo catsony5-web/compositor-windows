@@ -199,6 +199,9 @@ public static class Theme
         public const string LockOpen = "M7.7 10.5H16.3A2.2 2.2 0 0 1 18.5 12.7V18.3A2.2 2.2 0 0 1 16.3 20.5H7.7A2.2 2.2 0 0 1 5.5 18.3V12.7A2.2 2.2 0 0 1 7.7 10.5Z | M8.5 10.5V7.5A3.5 3.5 0 0 1 15.3 6.3";
         public const string Revert = "M4.5 12A7.5 7.5 0 1 0 7 6.4 M4.5 3.5V8H9";
         // A hatched square: a fill area drawn with line hatching.
+        // Favorites: an outline star to add, the tinted star once starred.
+        public const string Star = "M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z";
+        public const string StarFilled = "M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z | *M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z";
         public const string Hatch = "M4 4H20V20H4Z | ~M4 12L12 4M4 20L20 4M12 20L20 12";
         public const string Info = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M12 11V16.5 M12 7.8V7.9 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";
         public const string Warning = "M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z | M12 9.5V13.5 M12 16.8V16.9 | *M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z";

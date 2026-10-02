@@ -286,7 +286,7 @@ public sealed partial class MainWindow
         automationResultLayers = ABool(args, "includeLayers", true);
         if (command == "list_sessions") return new JsonObject { ["sessions"] = AutomationBridge.ListSessions() };
         if (command == "get_capabilities") return AutomationCatalog.Capabilities();
-        if (command == "query_patterns") return AutomationMaterials.Patterns(args.ContainsKey("nameContains") ? AString(args, "nameContains") : null, AString(args, "surface", "general"));
+        if (command == "query_patterns") return AutomationPatternQuery(args);
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
         RequireAutomationIdle(token);
@@ -375,6 +375,7 @@ public sealed partial class MainWindow
             }, token);
             token.ThrowIfCancellationRequested(); return preview;
         }
+        if (command == "export_document") return await AutomationExportDocumentAsync(args, token);
         var targetTab = AutomationTab(args, true); var before = doc.Snapshot(); var candidate = doc.Snapshot();
         void Recheck() { RequireAutomationIdle(token); _ = AutomationTab(args, true); }
         if (command is "add_artboard" or "update_artboard" or "delete_artboard")
@@ -459,7 +460,10 @@ public sealed partial class MainWindow
         var affected = await ApplyAutomationEditAsync(candidate, command, args, token);
         candidate.Validate(); Recheck();
         CommitAutomationCandidate("AI · " + command, before, candidate, affected);
-        return AutomationResult(affected);
+        var edited = AutomationResult(affected);
+        if (command == "apply_material" && affected is { } mappedId && doc.Layers.FirstOrDefault(l => l.Id == mappedId)?.Material is { } mappedFill)
+            edited["regionId"] = mappedFill.SourceRegionId.ToString();
+        return edited;
     }
 
     /// <summary>Artboard add/update/delete on a candidate document; shared by single commands and apply_batch.</summary>
@@ -514,17 +518,48 @@ public sealed partial class MainWindow
         return result;
     }
 
-    // A built-in hatch pattern named by its materialId joins the library on first use.
-    static void RegisterAutomationPattern(Document candidate, Guid materialId)
+    // A built-in hatch pattern, or a pattern from the user's 내 패턴 library, named by its materialId
+    // joins the document library on first use (the document's own copy wins, like the palette).
+    void RegisterAutomationPattern(Document candidate, Guid materialId)
     {
-        if (!HatchPatterns.TryGet(materialId, out var pattern)) return;
         var library = MaterialEditing.Assets(candidate);
         if (library.Any(a => a.Id == materialId)) return;
+        MaterialAsset? asset = HatchPatterns.TryGet(materialId, out var pattern) ? HatchPatternRenderer.Create(pattern)
+            : LinePatternLibrary().FirstOrDefault(p => p.Id == materialId);
+        if (asset == null) return;
         if (library.Count >= MaterialEditing.MaxAssets) throw new AutomationFault("capacity_exceeded", "재료 라이브러리가 가득 찼습니다.");
-        candidate.Materials.Add(HatchPatternRenderer.Create(pattern));
+        candidate.Materials.Add(asset);
     }
 
-    static async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
+    /// <summary>materialId, or the stable materialId of a patternId; null when neither is given.</summary>
+    static Guid? AutomationMaterialId(JsonObject args)
+    {
+        if (args.ContainsKey("materialId")) return Guid.Parse(AString(args, "materialId"));
+        if (!args.ContainsKey("patternId")) return null;
+        string key = AString(args, "patternId");
+        if (HatchPatterns.TryParseKey(key, out var pattern)) return HatchPatterns.StableId(pattern);
+        if (key.StartsWith(LinePatterns.CustomKeyPrefix, StringComparison.Ordinal) && Guid.TryParseExact(key[LinePatterns.CustomKeyPrefix.Length..], "N", out var id)) return id;
+        throw new AutomationFault("invalid_arguments", "query_patterns의 patternId를 사용하세요.");
+    }
+
+    /// <summary>
+    /// Repeat size from pixels (tileWidth/tileHeight) or relative values (scale/verticalRatio, the
+    /// properties panel's size % and vertical ratio % divided by 100). A new fill without any size
+    /// uses the panel's default; an update keeps every size the request does not mention.
+    /// </summary>
+    static (double Width, double Height) AutomationTileSize(JsonObject args, Document document, MaterialAsset asset, MaterialFill? current)
+    {
+        double width = args.ContainsKey("tileWidth") ? ANumber(args, "tileWidth")
+            : args.ContainsKey("scale") || current == null ? MaterialEditing.DefaultTile(document.Width, document.Height, asset) * ANumber(args, "scale", 1)
+            : current.TileWidth;
+        if (args.ContainsKey("tileHeight")) return (width, ANumber(args, "tileHeight"));
+        // An update that names neither ratio nor scale keeps its pixel height (tileWidth alone never stretched before).
+        if (current != null && !args.ContainsKey("verticalRatio") && !args.ContainsKey("scale")) return (width, current.TileHeight);
+        double ratio = ANumber(args, "verticalRatio", current == null ? 1 : MaterialEditing.Stretch(current));
+        return (width, Math.Max(1, width * MaterialEditing.Aspect(asset) * ratio));
+    }
+
+    async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
     {
         Guid? affected = null;
         Layer Target(bool allowUnlock = false)
@@ -543,18 +578,47 @@ public sealed partial class MainWindow
         switch (command)
         {
             case "apply_material":
-                RegisterAutomationPattern(candidate, Guid.Parse(AString(args, "materialId")));
-                if (!MaterialEditing.Assets(candidate).Any(a => a.Id == Guid.Parse(AString(args, "materialId"))))
-                    throw new AutomationFault("material_not_found", "등록된 재료 ID가 없습니다.");
-                if (!candidate.MaterialRegions.Any(r => r.Id == Guid.Parse(AString(args, "regionId"))))
-                    throw new AutomationFault("region_not_found", "등록된 영역 ID가 없습니다.");
+                var materialId = AutomationMaterialId(args) ?? throw new AutomationFault("invalid_arguments", "materialId 또는 patternId를 지정하세요.");
+                RegisterAutomationPattern(candidate, materialId);
+                var asset = MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == materialId)
+                    ?? throw new AutomationFault("material_not_found", "등록된 재료 ID가 없습니다.");
+                Guid? boundaryLayer = args.ContainsKey("boundaryLayerId") ? Guid.Parse(AString(args, "boundaryLayerId")) : null;
+                if (args.ContainsKey("regionId"))
+                {
+                    if (!candidate.MaterialRegions.Any(r => r.Id == Guid.Parse(AString(args, "regionId"))))
+                        throw new AutomationFault("region_not_found", "등록된 영역 ID가 없습니다.");
+                }
+                else
+                {
+                    if (candidate.MaterialRegions.Count >= MaterialEditing.MaxRegions) throw new AutomationFault("capacity_exceeded", "영역은 최대 128개를 보관합니다.");
+                    if (boundaryLayer.HasValue && !candidate.Layers.Any(l => l.Id == boundaryLayer.Value)) throw new AutomationFault("layer_not_found", "경계로 쓸 레이어를 찾을 수 없습니다.");
+                }
                 var mapped = await CompatibilityImport.OnSta(() =>
                 {
-                    var created = MaterialEditing.Apply(candidate, Guid.Parse(AString(args, "materialId")), Guid.Parse(AString(args, "regionId")),
-                        ANumber(args, "tileWidth"), ANumber(args, "tileHeight"), ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY"));
-                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight"))
+                    token.ThrowIfCancellationRequested();
+                    Guid regionId;
+                    if (args.ContainsKey("regionId")) regionId = Guid.Parse(AString(args, "regionId"));
+                    else
                     {
-                        var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1) };
+                        // An inline boundary becomes a region template, exactly as define_region would store it.
+                        Geometry geometry;
+                        if (boundaryLayer.HasValue) geometry = MaterialEditing.ClosedLayer(candidate, boundaryLayer.Value);
+                        else
+                        {
+                            var contours = new List<Point[]> { AutomationCatalog.MaterialPoints(args["points"]!.AsArray()) };
+                            if (args["holes"] is JsonArray holes) contours.AddRange(holes.Select(h => AutomationCatalog.MaterialPoints(h!.AsArray())));
+                            geometry = MaterialEditing.Polygon(contours);
+                        }
+                        string regionName = AString(args, "regionName", $"영역 {candidate.MaterialRegions.Count + 1}");
+                        var region = MaterialEditing.Region(candidate, regionName, geometry, boundaryLayer.HasValue ? "closed_layer" : "polygon", boundaryLayer);
+                        candidate.MaterialRegions.Add(region); regionId = region.Id;
+                    }
+                    var (tileWidth, tileHeight) = AutomationTileSize(args, candidate, asset, null);
+                    var created = MaterialEditing.Apply(candidate, materialId, regionId, tileWidth, tileHeight, ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY"));
+                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight") || args.ContainsKey("background"))
+                    {
+                        var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1),
+                            Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : 0 };
                         MaterialEditing.ValidateFill(tuned, created.Pixels); created.Material = tuned; created.Pixels = MaterialRenderer.Render(tuned);
                     }
                     return created;
@@ -565,17 +629,22 @@ public sealed partial class MainWindow
             case "update_material":
                 var materialLayer = Target();
                 if (materialLayer.Material is not { } original) throw new AutomationFault("wrong_layer_kind", "재료 맵핑 레이어를 선택하세요.");
-                if (args.ContainsKey("materialId")) RegisterAutomationPattern(candidate, Guid.Parse(AString(args, "materialId")));
-                var material = args.ContainsKey("materialId") ? MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == Guid.Parse(AString(args, "materialId")))
+                var swapId = AutomationMaterialId(args);
+                if (swapId.HasValue) RegisterAutomationPattern(candidate, swapId.Value);
+                var material = swapId.HasValue ? MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == swapId.Value)
                     ?? throw new AutomationFault("material_not_found", "등록된 재료가 없습니다.") : original.Asset;
-                var replacement = original with { Asset = material, TileWidth = ANumber(args, "tileWidth", original.TileWidth), TileHeight = ANumber(args, "tileHeight", original.TileHeight),
+                var (width, height) = AutomationTileSize(args, candidate, material, original);
+                var replacement = original with { Asset = material, TileWidth = width, TileHeight = height,
                     Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY),
-                    Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight) };
+                    Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight),
+                    Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : original.Background };
                 if (replacement != original)
                 {
                     MaterialEditing.ValidateFill(replacement, materialLayer.Pixels);
                     materialLayer.Pixels = await CompatibilityImport.OnSta(() => MaterialRenderer.Render(replacement), token); materialLayer.Material = replacement;
                 }
+                if (args.ContainsKey("opacity")) materialLayer.Opacity = ANumber(args, "opacity");
+                if (args.ContainsKey("blend")) materialLayer.Blend = Enum.Parse<BlendMode>(AString(args, "blend"));
                 if (args.ContainsKey("name")) materialLayer.Name = AString(args, "name"); break;
             case "add_image":
                 string source = AutomationSourcePath(args);
