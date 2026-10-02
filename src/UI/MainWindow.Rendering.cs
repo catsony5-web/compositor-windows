@@ -24,7 +24,7 @@ public sealed partial class MainWindow
         pendingFullRender = false; pendingGestureRender = false;
         gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick;
         ++renderGeneration;
-        ClearTextMovePreview();
+        ClearTextMovePreview(); DropMovePlanes();
         renderCts?.Cancel(); jobCts?.Cancel();
     }
 
@@ -73,6 +73,10 @@ public sealed partial class MainWindow
             var snapshot = document.Snapshot();
             if (gesture && (stroke != null || IsRetouch(tool)) && snapshot.Active is { } active)
             { active.Pixels = active.Pixels.Clone(); if (active.Mask != null) active.Mask = (byte[])active.Mask.Clone(); }
+            // Record which state a full composite shows; a drag can start from it.
+            long scene = gesture ? 0 : compositeScene.Update(document);
+            if (gesture) compositeSource = null;
+            var watch = System.Diagnostics.Stopwatch.StartNew();
             var result = await Task.Run(() =>
             {
                 var rgb = Imaging.Render(snapshot, cts.Token); cts.Token.ThrowIfCancellationRequested();
@@ -82,6 +86,12 @@ public sealed partial class MainWindow
             var raster = result.Rgb;
             if (renderShutdown || cts.IsCancellationRequested || generation != renderGeneration || !ReferenceEquals(document, doc) || tab != activeTab) return;
             composite = raster; canvas.Composite = result.Display.Bitmap();
+            if (!gesture)
+            {
+                RememberComposite(document, raster, scene); lastCompositeMilliseconds = watch.Elapsed.TotalMilliseconds;
+                // Planes kept after a drop stay for the next drag only within the speculative budget.
+                if (movePlanes is { Bytes: > SpeculativeMovePlaneBytes }) DropMovePlanes();
+            }
             if (!gesture) { ClearTextMovePreview(); histogram.Update(result.Display); histogramInfo.Text = $"{doc.Width:N0} × {doc.Height:N0} px · {doc.Dpi:0.#} DPI · {(proof ? "CMYK 미리보기" : "RGB / 8 bit")}"; }
             canvas.InvalidateVisual();
             if (status.Text.StartsWith("CMYK 인쇄색을 준비합니다", StringComparison.Ordinal))
@@ -126,13 +136,20 @@ public sealed partial class MainWindow
             // Prepare fixed layers on either side of the moving object once.
             // Pointer events only update its matrix, even while caches load.
             ++renderGeneration; renderCts?.Cancel(); pendingGestureRender = false; pendingFullRender = false;
-            gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick;
+            gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick; movePlaneTimer.Stop();
             textPreviewDocument = doc; textPreviewLayerId = layer.Id;
             canvas.MovePreviewOpacity = layer.Opacity;
-            var (below, above) = CreateLayerMovePreviewStacks(doc, layer.Id);
-            var cts = textPreviewCts = new CancellationTokenSource();
-            long generation = textPreviewGeneration;
-            _ = RenderTextMoveBackground(below, above, layer.Pixels, doc, activeTab, generation, cts);
+            // Planes made while the object was selected, or kept from its last
+            // drag, show at once. Otherwise the composite on screen stands in.
+            var planes = textPreviewPlanes = EnsureMovePlanes(doc, layer, false);
+            textPreviewBitmap = layer.Pixels.Bitmap();
+            if (planes.Ready) ShowMovePlanes(planes);
+            else if (moveInterimSource is { } source && ReferenceEquals(source.Document, doc) && source.LayerId == layer.Id)
+            {
+                var cts = textPreviewCts = new CancellationTokenSource();
+                planes.Interim = RenderMoveInterim(planes, source, textPreviewGeneration, cts);
+            }
+            moveInterimSource = null;
         }
         canvas.MovePreviewMatrix = layer.Matrix;
         canvas.InvalidateVisual();
@@ -211,48 +228,13 @@ public sealed partial class MainWindow
         return (below, above);
     }
 
-    async Task RenderTextMoveBackground(Document below, Document above, Raster moving, Document document, int tab, long generation, CancellationTokenSource cts)
-    {
-        try
-        {
-            var cache = await Task.Run(() =>
-            {
-                var background = Imaging.Render(below, cts.Token).Bitmap();
-                cts.Token.ThrowIfCancellationRequested();
-                var foreground = above.Layers.Count == 0 ? null : Imaging.Render(above, cts.Token).Bitmap();
-                cts.Token.ThrowIfCancellationRequested();
-                var bitmap = moving.Bitmap();
-                cts.Token.ThrowIfCancellationRequested();
-                return (Background: background, Foreground: foreground, Layer: bitmap);
-            }, cts.Token);
-            if (renderShutdown || cts.IsCancellationRequested || generation != textPreviewGeneration || !ReferenceEquals(doc, document) || activeTab != tab) return;
-            // Publish the complete stack together on the dispatcher. Until now,
-            // the old composite stayed visible, with no partial-layer flashes.
-            textPreviewBitmap = cache.Layer;
-            canvas.MovePreviewBackground = cache.Background;
-            canvas.MovePreviewLayer = cache.Layer;
-            canvas.MovePreviewForeground = cache.Foreground;
-            canvas.InvalidateVisual();
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception e)
-        {
-            if (!renderShutdown && generation == textPreviewGeneration)
-            {
-                ClearTextMovePreview(); textPreviewFailed = true;
-                status.Text = "이동 미리보기 실패: " + e.Message;
-                // Resume the exact renderer even if the pointer has stopped;
-                // do not repeatedly retry a failing cache during this gesture.
-                QueueRender(dragging);
-            }
-        }
-        finally { cts.Dispose(); if (ReferenceEquals(textPreviewCts, cts)) textPreviewCts = null; }
-    }
     void ClearTextMovePreview()
     {
         ++textPreviewGeneration; textPreviewCts?.Cancel(); textPreviewCts = null;
         textPreviewDocument = null; textPreviewLayerId = null; textPreviewBitmap = null;
-        textPreviewFailed = false;
+        textPreviewPlanes = null; textPreviewInterim = false; textPreviewFailed = false;
+        // The planes themselves stay cached for the next drag of the same object.
         canvas.MovePreviewBackground = null; canvas.MovePreviewLayer = null; canvas.MovePreviewForeground = null;
+        canvas.MovePreviewForegroundBounds = null;
     }
 }

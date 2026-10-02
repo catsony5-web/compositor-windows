@@ -41,6 +41,10 @@ public sealed partial class CanvasView : FrameworkElement
     public BitmapSource? MovePreviewBackground { get; set; }
     public BitmapSource? MovePreviewLayer { get; set; }
     public BitmapSource? MovePreviewForeground { get; set; }
+    // Document rectangle the foreground covers. Null: the whole document. The
+    // interim frame shown while the fixed planes flatten covers only the dragged
+    // object's original footprint.
+    public Rect? MovePreviewForegroundBounds { get; set; }
     public Matrix MovePreviewMatrix { get; set; } = Matrix.Identity;
     public double MovePreviewOpacity { get; set; } = 1;
     double zoom = .65;
@@ -97,7 +101,7 @@ public sealed partial class CanvasView : FrameworkElement
             dc.Pop(); dc.Pop();
         }
         if (MovePreviewLayer != null && MovePreviewForeground is { } above)
-            dc.DrawImage(above, new Rect(0, 0, Document.Width, Document.Height));
+            dc.DrawImage(above, MovePreviewForegroundBounds ?? new Rect(0, 0, Document.Width, Document.Height));
         if (PixelGrid && Zoom >= 8)
         {
             var pen = new Pen(new SolidColorBrush(Color.FromArgb(65, 180, 190, 200)), 1 / Zoom);

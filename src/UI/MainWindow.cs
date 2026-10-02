@@ -204,6 +204,7 @@ public sealed partial class MainWindow : Window
         UpdateDocumentAvailability();
         if (render && HasDocument) QueueRender();
         else if (!dragging) ClearTextMovePreview();
+        MaintainMovePlanes();
         canvas.InvalidateVisual();
         documentTitle.Text = HasDocument ? $"{(history.Dirty(doc) ? "●  " : "")}{doc.Name}   ·   {doc.Width} × {doc.Height} px" : "";
         Title = HasDocument ? $"{(history.Dirty(doc) ? "* " : "")}{doc.Name} — Morupixel" : "Morupixel · 모루픽셀";

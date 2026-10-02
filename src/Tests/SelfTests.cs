@@ -58,6 +58,7 @@ public static class SelfTests
         MagneticPickingTests.Run(Test);
         MagneticSnapTests.Run(Test);
         MainWindow.RunMovePreviewTests(Test);
+        MainWindow.RunMovePlaneCacheTests(Test);
         MainWindow.RunGroupedMovePreviewTests(Test);
         MainWindow.RunPointerFeedbackTests(Test, directory);
         MainWindow.RunDrawingPerformanceTests(Test);

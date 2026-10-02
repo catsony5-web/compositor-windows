@@ -133,6 +133,7 @@ public sealed partial class MainWindow
             }
             beforeGesture = doc.Snapshot(); start = point; screenStart = screen; dragging = true; moveStarted = false;
             selectionMode = CurrentSelectionMode(); canvas.CaptureMouse();
+            if (tool == Tool.Move) CaptureMoveInterimSource();
             if (tool is Tool.Brush or Tool.Eraser)
             {
                 if (!maskEditing) DocumentFeatures.Rasterize(doc.Active!);

@@ -19,17 +19,24 @@ public sealed class SceneState
     int count = -1;
     Document? document;
     int width, height;
+    Guid? excluded;
     public long Version { get; private set; }
 
-    public long Update(Document doc)
+    public long Update(Document doc) => Update(doc, null);
+    // Ignores everything about one layer except which object sits at its place
+    // in the stack and under which parent: caches of the layers below and above
+    // a dragged object stay valid while that object moves, changes or hides.
+    public long Update(Document doc, Guid? except)
     {
         ArgumentNullException.ThrowIfNull(doc);
         var layers = doc.Layers;
-        bool changed = !ReferenceEquals(document, doc) || count != layers.Count || width != doc.Width || height != doc.Height;
+        bool changed = !ReferenceEquals(document, doc) || count != layers.Count || width != doc.Width || height != doc.Height || excluded != except;
+        excluded = except;
         if (entries.Length < layers.Count) Array.Resize(ref entries, layers.Count);
         for (int i = 0; i < layers.Count; i++)
         {
             var l = layers[i]; ref var e = ref entries[i];
+            if (except is { } skip && l.Id == skip && !changed && ReferenceEquals(e.Layer, l) && e.ParentId == l.ParentId) continue;
             int flags = Flags(l), spec = SpecHash(l);
             if (!changed && ReferenceEquals(e.Layer, l) && ReferenceEquals(e.Pixels, l.Pixels) && ReferenceEquals(e.Mask, l.Mask) &&
                 ReferenceEquals(e.Vector, l.Vector) && ReferenceEquals(e.Material, l.Material) && e.ParentId == l.ParentId &&
@@ -49,7 +56,7 @@ public sealed class SceneState
         return Version;
     }
 
-    public void Reset() { entries = []; count = -1; document = null; Version++; }
+    public void Reset() { entries = []; count = -1; document = null; excluded = null; Version++; }
     // True while the state still references a document's layers (until Reset).
     public bool HoldsScene => document != null;
     public bool Holds(Document doc) => ReferenceEquals(document, doc);
