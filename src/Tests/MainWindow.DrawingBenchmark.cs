@@ -97,6 +97,24 @@ public sealed partial class MainWindow
                 window.UpdatePointerHover(point); _ = window.CanvasCursorAt(point); Frame();
             });
 
+            // Object drag. The fast preview flattens the stack once, then each pointer move only
+            // updates the mover's matrix. Before, any Multiply material layer in the document made
+            // every drag frame queue a full composite of all objects instead.
+            var dragged = document.Layers.Last(l => l.Kind == LayerKind.Vector && l.Visible && !l.Locked);
+            document.ActiveId = dragged.Id; window.selectedLayers.Clear(); window.selectedLayers.Add(dragged.Id);
+            bool fast = CanPreviewLayerMove(document, dragged, 1);
+            report($"[{label}] drag eligible for fast move preview (materials below mover): {fast}");
+            if (fast)
+            {
+                watch.Restart(); var (below, above) = CreateLayerMovePreviewStacks(document, dragged.Id);
+                var background = Imaging.Render(below); var foreground = above.Layers.Count == 0 ? null : Imaging.Render(above);
+                report($"[{label}] drag start: flatten below/above once: {watch.ElapsedMilliseconds} ms ({below.Layers.Count} below, {above.Layers.Count} above)");
+                canvas.MovePreviewBackground = background.Bitmap(); canvas.MovePreviewLayer = dragged.Pixels.Bitmap(); canvas.MovePreviewForeground = foreground?.Bitmap();
+                Time("drag move frame (fast preview: matrix + frame)", 60, i => { dragged.X += i % 2 == 0 ? 3 : -2; canvas.MovePreviewMatrix = dragged.Matrix; Frame(); });
+                canvas.MovePreviewBackground = null; canvas.MovePreviewLayer = null; canvas.MovePreviewForeground = null;
+            }
+            Time("drag move frame (full composite, the old path)", 5, i => { dragged.X += i % 2 == 0 ? 3 : -2; canvas.Composite = Imaging.Render(document).Bitmap(); Frame(); });
+
             window.SetWorkspaceMode(false); Frame();
             Time("photo mode pan move", 60, i => { canvas.Pan += new Vector(i % 2 == 0 ? 6 : -4, 3); Frame(); });
             Time("photo mode wheel step", 12, i => { window.ClearPointerHover(); canvas.ZoomAt(i < 6 ? 1.15 : 1 / 1.15, center); window.UpdateStatus(); Frame(); });

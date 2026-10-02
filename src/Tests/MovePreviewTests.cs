@@ -36,6 +36,42 @@ public sealed partial class MainWindow
             Expect(!CanPreviewLayerMove(document, moving, 1), "Locked moving layer was eligible");
         });
 
+        test("move preview keeps the fast path with blended material layers below the mover and matches the full render", () =>
+        {
+            // A plan: white paper, two Multiply hatch fills, then the wall linework the user drags.
+            var document = new Document { Width = 48, Height = 40 };
+            document.Add(new Layer { Name = "paper", Pixels = Raster.Solid(48, 40, Colors.White), Locked = true });
+            var concrete = MaterialPresets.Create(MaterialKind.Concrete); document.Materials.Add(concrete);
+            var region = MaterialEditing.Region(document, "room", new RectangleGeometry(new Rect(4, 4, 30, 24)), "polygon"); document.MaterialRegions.Add(region);
+            var hatch = MaterialEditing.Apply(document, concrete.Id, region.Id, 12, 12); document.Layers.Add(hatch);
+            document.Add(new Layer { Name = "tint", Pixels = Raster.Solid(48, 40, Color.FromArgb(120, 200, 180, 120)), Blend = BlendMode.Multiply });
+            var walls = new Layer { Name = "walls", Pixels = Raster.Solid(20, 3, Colors.Black), X = 6, Y = 8 };
+            document.Add(walls); document.ActiveId = walls.Id;
+            Expect(hatch.Blend == BlendMode.Multiply, "Material layers multiply by default");
+            Expect(CanPreviewLayerMove(document, walls, 1), "Multiply layers below the mover must not disable the fast preview");
+
+            // The three planes composed like CanvasView (below, mover at its matrix, above) equal the full render.
+            var (below, above) = CreateLayerMovePreviewStacks(document, walls.Id);
+            Expect(above.Layers.Count == 0, "Nothing is above the walls");
+            var background = Imaging.Render(below);
+            var moved = document.Snapshot(); var movedWalls = moved.Layers.Single(l => l.Id == walls.Id); movedWalls.X += 7; movedWalls.Y += 5;
+            var expected = Imaging.Render(moved);
+            var composed = background.Clone();
+            for (int y = 0; y < 3; y++) for (int x = 0; x < 20; x++)
+            {
+                int dx = (int)movedWalls.X + x, dy = (int)movedWalls.Y + y;
+                if (dx < 0 || dy < 0 || dx >= composed.Width || dy >= composed.Height) continue;
+                int i = (dy * composed.Width + dx) * 4;
+                // Opaque black mover with normal blend: source-over simply replaces the pixel.
+                composed.Data[i] = 0; composed.Data[i + 1] = 0; composed.Data[i + 2] = 0; composed.Data[i + 3] = 255;
+            }
+            Expect(composed.Data.AsSpan().SequenceEqual(expected.Data), "Fast preview planes differ from the full compositor with Multiply layers below");
+
+            // The same Multiply layer ABOVE the mover reads the mover's pixels: full path required.
+            document.Layers.Remove(walls); document.Layers.Insert(document.Layers.IndexOf(hatch), walls);
+            Expect(!CanPreviewLayerMove(document, walls, 1), "A Multiply layer above the mover must fall back to the full compositor");
+        });
+
         test("move preview falls back for interdependent layers masks warps and excessive cache memory", () =>
         {
             var (document, moving) = Scene(); var upper = document.Layers[^1];

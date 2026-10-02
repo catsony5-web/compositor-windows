@@ -153,8 +153,19 @@ public sealed partial class MainWindow
         // Large or interdependent stacks retain the full compositor path.
         long estimatedBytes = (long)document.Width * document.Height * 16 + layer.Pixels.Data.LongLength;
         if (estimatedBytes > 512L * 1024 * 1024) return false;
-        if (!document.Layers.All(item => !item.Clipped && item.Kind != LayerKind.Adjustment && item.Blend == BlendMode.Normal &&
-            (item.Kind != LayerKind.Group || IsMovePreviewContainer(document, item)))) return false;
+        // The preview draws three planes: everything below the mover flattened, the mover, then
+        // everything above flattened with normal source-over. Normal source-over is associative, so
+        // a layer that reads its backdrop (Multiply hatch, clipping, adjustment) is only a problem
+        // ABOVE the mover, where its backdrop would include the moving pixels. Below the mover it is
+        // flattened in paint order by the same renderer and the result is exact — this is the common
+        // CAD case: hatch materials multiply under the linework the user drags.
+        int moverIndex = document.Layers.IndexOf(layer);
+        for (int i = 0; i < document.Layers.Count; i++)
+        {
+            var item = document.Layers[i];
+            if (item.Kind == LayerKind.Group && !IsMovePreviewContainer(document, item)) return false;
+            if (i > moverIndex && (item.Clipped || item.Kind == LayerKind.Adjustment || item.Blend != BlendMode.Normal)) return false;
+        }
         var lookup = document.Layers.ToDictionary(item => item.Id);
         var parent = layer.ParentId; int depth = 0;
         while (parent is { } id)
