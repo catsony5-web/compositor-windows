@@ -51,6 +51,7 @@ public sealed partial class MainWindow
         }
         CaptureFit(Dialogs.CreateFields(null, "캔버스 크기 · 좌측 상단 기준", [("너비 (px)", doc.Width.ToString()), ("높이 (px)", doc.Height.ToString())]).Dialog, "dialog-fields", 420);
         CaptureFit(new MessageDialog(null, "먼저 선택 도구로 자를 영역을 지정하세요.", "Morupixel", NoticeKind.Warning), "dialog-warning", 460);
+        CaptureFit(new LinePatternDialog(null, LinePatternSource.From(PreviewLinePatternScan()), "손그림 물결"), "line-pattern-dialog", 460);
         CaptureFit(new MessageDialog(null, "이 파일은 다른 문서 탭에서 편집 중입니다. 그 탭에서 저장하거나 새 파일 이름을 사용하세요.", "저장하지 못했습니다", NoticeKind.Error), "dialog-error", 460);
         CaptureFit(CreateAutomationSettingsDialog(), "ai-connection", 620);
         Capture(CompatibilityDialog.CleanupPreview(Path.Combine(directory, "평면 예시.dxf")), "import-cad-cleanup", 940, 700);

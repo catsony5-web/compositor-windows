@@ -27,6 +27,8 @@ public sealed class WorkspaceLayout
     public string[]? OpenedSections { get; init; }
     /// <summary>사용 목적 (UserProfiles id) the user chose; null until one is chosen.</summary>
     public string? Profile { get; init; }
+    /// <summary>Starred hatch patterns, in the order they were starred: built-in keys or "custom:" + ID (LinePatterns.FavoriteKey).</summary>
+    public string[]? PatternFavorites { get; init; }
 }
 
 public sealed record WindowBounds(double Left, double Top, double Width, double Height, bool Maximized);
@@ -37,6 +39,7 @@ public static class WorkspaceLayoutStore
 {
     public static readonly string[] PaneKeys = ["page0", "page1", "page2", "page3", "layers"];
     const int MaxStoreBytes = 64 * 1024;
+    public const int MaxPatternFavorites = 96;
     static readonly JsonSerializerOptions options = new() { WriteIndented = true };
 
     public static string DefaultStorePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Morupixel", "workspace.json");
@@ -92,7 +95,8 @@ public static class WorkspaceLayoutStore
             RecentColors = layout.RecentColors?.Where(c => c is { Length: 9 } && c[0] == '#' && uint.TryParse(c.AsSpan(1), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out _))
                 .Select(c => c.ToUpperInvariant()).Distinct().Take(ColorPalettePanel.RecentLimit).ToArray(),
             OpenedSections = layout.OpenedSections?.Where(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 80).Distinct().Take(64).ToArray(),
-            Profile = UserProfiles.Find(layout.Profile)?.Id
+            Profile = UserProfiles.Find(layout.Profile)?.Id,
+            PatternFavorites = layout.PatternFavorites?.Where(LinePatterns.IsFavoriteKey).Distinct(StringComparer.Ordinal).Take(MaxPatternFavorites).ToArray()
         };
     }
 }

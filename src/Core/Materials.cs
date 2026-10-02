@@ -36,7 +36,8 @@ public sealed record RegionPath(string Data, double M11 = 1, double M12 = 0, dou
 }
 public sealed record MaterialRegion(Guid Id, string Name, RegionPath Path, string Source, Guid? SourceLayerId = null);
 public sealed record MaterialFill(MaterialAsset Asset, Guid SourceRegionId, string RegionName, RegionPath Boundary, int Width, int Height,
-    double TileWidth, double TileHeight, double Angle = 0, double OffsetX = 0, double OffsetY = 0, uint Ink = 0, double LineWeight = 1);
+    double TileWidth, double TileHeight, double Angle = 0, double OffsetX = 0, double OffsetY = 0, uint Ink = 0, double LineWeight = 1, uint Background = 0);
+// Background: for line patterns, an optional #AARRGGBB color painted inside the region under the lines (0 = none, transparent).
 
 public static class MaterialEditing
 {
@@ -117,6 +118,9 @@ public static class MaterialEditing
                 // Built-in patterns are redrawn from geometry; copies made by other builds may carry
                 // slightly different fallback pixels and still name the same pattern.
                 if (HatchPatterns.TryGet(previous, out var kept) && HatchPatterns.TryGet(asset, out var next) && kept == next) continue;
+                // A renamed line pattern (the user's library entry) keeps its ID and tile; the first name wins.
+                if (LinePatterns.IsCustom(previous) && LinePatterns.IsCustom(asset) && previous.Pixels.Width == asset.Pixels.Width &&
+                    previous.Pixels.Height == asset.Pixels.Height && previous.Pixels.Data.AsSpan().SequenceEqual(asset.Pixels.Data)) continue;
                 if (!ReferenceEquals(previous, asset) && (previous.Name != asset.Name || previous.Source != asset.Source || previous.Tileable != asset.Tileable ||
                     previous.Pixels.Width != asset.Pixels.Width || previous.Pixels.Height != asset.Pixels.Height || !previous.Pixels.Data.AsSpan().SequenceEqual(asset.Pixels.Data)))
                     throw new InvalidDataException("같은 재료 ID에 다른 원본이 있습니다.");
@@ -220,12 +224,13 @@ public static class MaterialEditing
     public static double DefaultTile(int width, int height) => Math.Clamp(Math.Max(width, height) / 14d, 40, 320);
     // Default repeat width for this asset: large-cell patterns repeat over a longer distance.
     public static double DefaultTile(int width, int height, MaterialAsset asset) => DefaultTile(width, height) * RepeatScale(asset);
-    public static double RepeatScale(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern) ? HatchPatterns.RepeatScale(pattern) : 1;
+    public static double RepeatScale(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern) ? HatchPatterns.RepeatScale(pattern)
+        : LinePatterns.IsCustom(asset) ? LinePatternRenderer.RepeatScale(asset) : 1;
     // Height / width of the asset's pixels.
     public static double Aspect(MaterialAsset asset) => asset.Pixels.Height / (double)Math.Max(1, asset.Pixels.Width);
     // The user's vertical ratio: 1 keeps the asset's own proportions.
     public static double Stretch(MaterialFill fill) => fill.TileHeight / (fill.TileWidth * Aspect(fill.Asset));
-    // Another asset at the same relative size (크기 %), with the same ratio, direction, offset, ink and line weight.
+    // Another asset at the same relative size (크기 %), with the same ratio, direction, offset, ink, line weight and background.
     public static MaterialFill Swap(MaterialFill fill, MaterialAsset asset)
     {
         double width = fill.TileWidth * RepeatScale(asset) / RepeatScale(fill.Asset);
