@@ -1,3 +1,11 @@
+# Preview 41 drop and drag-order validation
+
+- Source self-tests: **748/748 passed** on Windows x64 (745 in Preview 40). The Preview 40 footprint-interim test is replaced by tile tests: redrawn tiles equal the flattened stack below byte for byte, the rest equals the document without the object, every foreground tile equals the flattened stack above, and an offscreen canvas render shows a line above the object covering it, the object beside the line, and no ghost at its old place or along tile seams (opaque and transparent pages); a jump into tiles not yet rendered waits, then follows. New settle checks: a drop in the drawing view redraws only the footprints (one patch, no whole-view render) and the settled frame equals a fresh crisp render byte for byte (two hatch fills, 137 % zoom); the composite that arrives afterwards does not render the view again; a drop that also changed another layer falls back to a whole-view render. The dirty-rectangle renderer equals a fresh render at 62.7 %, 100 % and 233 % zoom with hatch fills.
+- Hidden benchmark `--benchmark-drawing` (synthetic 2400×1707 plan, 19,004 objects, 4 multiply hatch fills; the PC was partly shared with other builds, so compare within a run): drop → settled crisp frame 1,734 ms → 148 ms on an idle PC (3,046 → 271 ms loaded), no whole-view crisp render after the drop; first moved frame with layers above the object 41–51 ms with correct stacking (Preview 40: 28–33 ms but drawn over the layers above); just-picked top object 56–62 ms on the first drag of a run; repeat drag and pre-selected object 12–17 ms.
+- No UI text changed (2,003 entries per language, 0 missing). Offscreen captures in Korean and English (89 each) are byte-identical to Preview 40 apart from the AI connection capture that shows the executable's own path.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered offscreen: real mouse drags (driven headlessly through the same gates, tiles and settle path).
+
 # Preview 40 validation
 
 - Source self-tests: **745/745 passed** on Windows x64 (710 in Preview 39; +35).
