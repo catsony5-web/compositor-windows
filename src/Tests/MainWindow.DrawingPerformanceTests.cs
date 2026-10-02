@@ -168,6 +168,18 @@ public sealed partial class MainWindow
             Check(stopped && passes == 1, $"A canceled render continued for {passes} passes");
         });
 
+        test("dragging a drawing object keeps the fast move preview although hatch materials multiply below it", () =>
+        {
+            var doc = SyntheticDrawing.Create(groups: 3, objectsPerGroup: 40, width: 600, height: 420, materials: 2);
+            var materials = doc.Layers.Where(l => l.Kind == LayerKind.Material).ToArray();
+            Check(materials.Length == 2 && materials.All(m => m.Blend == BlendMode.Multiply), "Synthetic drawing lost its Multiply materials");
+            var line = doc.Layers.Last(l => l.Kind == LayerKind.Vector && !l.Locked);
+            Check(doc.Layers.IndexOf(line) > materials.Max(m => doc.Layers.IndexOf(m)), "The linework must sit above the materials for this check");
+            Check(MainWindow.CanPreviewLayerMove(doc, line, 1), "A drawing object above Multiply hatch materials fell back to the full compositor");
+            // Moving a material layer itself (it multiplies with what is under it and above it) is not previewed this way.
+            Check(!MainWindow.CanPreviewLayerMove(doc, materials[0], 1), "A material layer is not a fast-preview mover");
+        });
+
         test("wheel zoom reuses the settled design viewport and renders once after input pauses", () =>
         {
             var doc = SyntheticDrawing.Create(groups: 4, objectsPerGroup: 120, width: 800, height: 560, materials: 1);
