@@ -43,7 +43,7 @@ public static class AutomationMaterials
             items = items.Where(i => new[] { "patternId", "name", "displayName" }.Any(k => i[k]!.GetValue<string>().Contains(nameContains, StringComparison.OrdinalIgnoreCase)));
         var list = items.ToArray();
         return new JsonObject { ["count"] = list.Length, ["surface"] = surface, ["patterns"] = new JsonArray(list.Cast<JsonNode?>().ToArray()),
-            ["usage"] = "Pass materialId to apply_material or update_material; the pattern is added to the document library automatically. ink and lineWeight tune it." };
+            ["usage"] = "Pass patternId (or materialId) to apply_material or update_material; the pattern is added to the document library automatically. scale, verticalRatio, angle, ink, lineWeight and opacity tune it." };
     }
     public static JsonObject Region(MaterialRegion region) => new()
     {
@@ -52,13 +52,16 @@ public static class AutomationMaterials
         ["coordinateSpace"] = "document", ["areaPixelsSquared"] = region.Path.Geometry.GetArea(),
         ["meaning"] = "Captured boundary template, not a semantic room or a live link to the original object."
     };
-    public static JsonObject Fill(MaterialFill fill) => new()
+    /// <summary>A material layer's fill. With the document, scale is the repeat width relative to the default for that document (the app's size % / 100).</summary>
+    public static JsonObject Fill(MaterialFill fill, Document? document = null) => new()
     {
         ["materialId"] = fill.Asset.Id.ToString(), ["materialName"] = fill.Asset.Name,
         ["sourceRegionId"] = fill.SourceRegionId.ToString(), ["regionName"] = fill.RegionName,
         ["tileWidth"] = fill.TileWidth, ["tileHeight"] = fill.TileHeight, ["angle"] = fill.Angle,
         ["offsetX"] = fill.OffsetX, ["offsetY"] = fill.OffsetY, ["patternSpace"] = "layer_local_pixels",
         ["ink"] = Ink(fill.Ink), ["lineWeight"] = fill.LineWeight,
+        ["verticalRatio"] = Math.Round(MaterialEditing.Stretch(fill), 6),
+        ["scale"] = document == null ? null : Math.Round(fill.TileWidth / MaterialEditing.DefaultTile(document.Width, document.Height, fill.Asset), 6),
         ["patternId"] = HatchPatterns.TryGet(fill.Asset, out var pattern) ? HatchPatterns.Key(pattern) : null,
         ["rendering"] = HatchPatterns.TryGet(fill.Asset, out _) ? "pattern_redrawn" : "image_tile",
         ["boundaryRetained"] = true, ["originalTextureRetained"] = true
@@ -69,6 +72,25 @@ public static class AutomationMaterials
 public static partial class AutomationCatalog
 {
     public static readonly string[] DrawingRoleNames = ["structure", "opening", "furniture", "annotation", "hatch", "other"];
+    public static readonly string[] DocumentExportFormats = ["pdf", "psd", "ai"];
+
+    /// <summary>Which material source, boundary and size fields of apply_material/update_material belong together.</summary>
+    static void ValidateMaterialFields(string command, JsonObject arguments)
+    {
+        bool Has(string key) => arguments.ContainsKey(key);
+        if (Has("materialId") && Has("patternId")) throw new ArgumentException("Use materialId or patternId, not both.");
+        if (Has("scale") && Has("tileWidth")) throw new ArgumentException("Use tileWidth (pixels) or scale (relative), not both.");
+        if (Has("verticalRatio") && Has("tileHeight")) throw new ArgumentException("Use tileHeight (pixels) or verticalRatio (relative), not both.");
+        if (command != "apply_material") return;
+        if (!Has("materialId") && !Has("patternId")) throw new ArgumentException("apply_material requires materialId or patternId.");
+        int boundaries = new[] { "regionId", "points", "boundaryLayerId" }.Count(Has);
+        if (boundaries != 1) throw new ArgumentException("apply_material requires exactly one boundary: regionId, points (with optional holes) or boundaryLayerId.");
+        if (Has("holes") && !Has("points")) throw new ArgumentException("holes belong to points only.");
+        if (Has("regionName") && Has("regionId")) throw new ArgumentException("regionName names a new region from points or boundaryLayerId; an existing regionId keeps its name.");
+        int count = (arguments["points"] as JsonArray)?.Count ?? 0;
+        count += (arguments["holes"] as JsonArray)?.Sum(h => (h as JsonArray)?.Count ?? 0) ?? 0;
+        if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
+    }
 
     static JsonObject MaterialArraySchema(string type)
     {

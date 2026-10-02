@@ -39,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 34); checks.push('MCP initialization and 34 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 35); checks.push('MCP initialization and 35 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -50,7 +50,7 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 7); assert.equal(capabilities.commands.length, 34);
+  assert.equal(capabilities.contractVersion, 8); assert.equal(capabilities.commands.length, 35);
   assert.equal(capabilities.materials.patterns.count, 19); assert.equal(capabilities.materials.patterns.autoRegister, true);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
@@ -162,6 +162,19 @@ async function main() {
   const lawn = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: state.layerId }));
   assert.equal(lawn.layer.material.rendering, 'pattern_redrawn'); assert.equal(lawn.layer.material.patternId, 'grass-sparse'); assert.equal(lawn.layer.material.ink, '#FF3D4A3F');
   checks.push('Built-in hatch pattern queried by surface, auto-registered and applied with ink and line weight');
+  const wall = [[400, 170], [660, 170], [660, 300], [400, 300]].map(([x, y]) => ({ x, y }));
+  await edit('apply_material', { patternId: 'brick', points: wall, regionName: 'Wall elevation', scale: .6, verticalRatio: 1.5, angle: 15, opacity: .9, name: 'Brick' });
+  const brickId = state.layerId; assert(state.regionId);
+  await edit('update_material', { layerId: brickId, angle: 0, ink: '#FF5A3A2A' });
+  const brick = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: brickId }));
+  assert.equal(brick.layer.material.patternId, 'brick'); assert.equal(brick.layer.material.verticalRatio, 1.5); assert.equal(brick.layer.material.angle, 0);
+  checks.push('One-call hatch insertion with an inline polygon, relative size and ratio, then update');
+  await edit('export_document', { path: path.join(output, 'material-study.pdf'), format: 'pdf' }); assert(state.pdfLayerCount > 0);
+  await edit('export_document', { path: path.join(output, 'material-study-flat.pdf'), format: 'pdf', layers: 'flatten' }); assert.equal(state.pdfLayerCount, 0);
+  await edit('export_document', { path: path.join(output, 'material-study.psd'), format: 'psd' }); assert(state.psdLayerCount > 0);
+  await edit('export_document', { path: path.join(output, 'material-study.ai'), format: 'ai' }); assert.equal(state.pageCount, 1);
+  await call('export_document', { documentId, expectedRevision: state.revision, path: path.join(output, 'material-study.psd'), format: 'psd' }, false);
+  checks.push('Layered PDF, flat PDF, layered .psd and .ai export with no-overwrite');
   state = data(await call('open_document', { path: project })); documentId = state.documentId;
   const persisted = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: fillId }));
   assert.equal(persisted.layer.material.angle, 90);

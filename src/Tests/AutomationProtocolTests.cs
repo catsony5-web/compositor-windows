@@ -18,7 +18,7 @@ public static class AutomationProtocolTests
         test("automation catalog advertises session revision and bounded typed arguments without sharing mutable schemas", () =>
         {
             var tools = AutomationCatalog.Tools();
-            Check(tools.Count == 34 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
+            Check(tools.Count == 35 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
             foreach (var tool in tools)
             {
                 var schema = tool!["inputSchema"]!.AsObject();
@@ -92,7 +92,7 @@ public static class AutomationProtocolTests
                 "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"]);
             Check(replies.Count == 3 && replies[0]["id"]!.GetValue<string>() == "initialize-id", "Notification reply or changed request ID.");
             Check(replies[0]["result"]!["protocolVersion"]!.GetValue<string>() == AutomationMcpServer.LegacyVersion, "Unsupported legacy version must negotiate the supported one.");
-            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 34 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
+            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 35 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
         });
 
         test("MCP modern discovery requires request metadata reports versions and includes complete cache metadata", () =>

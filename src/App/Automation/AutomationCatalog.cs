@@ -141,6 +141,13 @@ public static partial class AutomationCatalog
                 ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination.")), ("layerId", Id),
                 ("artboardId", Id), ("scale", Number(.05, 8, "Output scale multiplier; 1 is actual size, 2 doubles pixels.")),
                 ("keepTransparency", Bool("PNG/TIFF only; false fills transparent areas with white. Defaults to true."))), WriteRequired("path"));
+        Add("export_document", "Export the active document or one artboard as PDF, .psd or PDF-compatible .ai through the same writers as the app's PDF/PSD/AI export dialog. layers=keep (default) makes one PDF layer per top-level layer or group (pdf, ai) or keeps the .psd layer tree; layers=flatten writes one page or one image layer. RGB at document resolution. Existing files require overwrite=true. Not part of apply_batch.", false,
+            Mutation(("path", new("string", "Absolute Windows path whose extension matches format (.pdf, .psd or .ai).", MaxLength: 32767)),
+                ("format", Choice(DocumentExportFormats)),
+                ("layers", Choice("keep", "flatten")),
+                ("vectors", Bool("format=pdf with layers=flatten only: keep lines, text and shapes as vectors (true) or place one image of the page (false). Defaults to the app dialog's suggestion: true when the document has text, shapes, drawings or materials.")),
+                ("artboardId", Id),
+                ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path", "format"));
         Add("add_artboard", "Add an artboard in document pixels. The canvas grows to include it; a document without artboards first turns its whole canvas into one. Returns artboardId.", false,
             Mutation(("name", Name), ("x", Coordinate), ("y", Coordinate), ("width", Number(1, 16384)), ("height", Number(1, 16384))), WriteRequired("width", "height"));
         Add("update_artboard", "Rename, move or resize an existing artboard by artboardId from get_state.", false,
@@ -166,16 +173,26 @@ public static partial class AutomationCatalog
             Mutation(("name", Name), ("source", Choice("polygon", "closed_layer", "selection")), ("layerId", Id),
                 ("points", new("array", "Closed outer contour, at least 3 points. Closure is automatic.", ArrayShape: "points")),
                 ("holes", new("array", "Optional inner contours; at most 2048 points across all contours.", ArrayShape: "holes"))), WriteRequired("name", "source"));
-        var pattern = Fields(("materialId", Id), ("tileWidth", Number(1, 100000, "One texture repeat width in layer-local pixels, not millimeters.")),
-            ("tileHeight", Number(1, 100000, "One texture repeat height in layer-local pixels.")), ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
+        var pattern = Fields(("materialId", Id),
+            ("patternId", new("string", "Built-in hatch pattern key from query_patterns (e.g. brick, sand) instead of materialId.", Choices: HatchPatterns.All.Select(HatchPatterns.Key).ToArray())),
+            ("tileWidth", Number(1, 100000, "One texture repeat width in layer-local pixels, not millimeters. Cannot be combined with scale.")),
+            ("tileHeight", Number(1, 100000, "One texture repeat height in layer-local pixels. Cannot be combined with verticalRatio.")),
+            ("scale", Number(.1, 10, "Repeat size relative to the material's default size for this document, like the app's size % / 100; 1 is the default size. Cannot be combined with tileWidth.")),
+            ("verticalRatio", Number(.25, 4, "Vertical ratio like the app's vertical ratio % / 100; 1 keeps the material's own proportions. Patterns keep their marks and change vertical spacing only. Cannot be combined with tileHeight.")),
+            ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
             ("offsetX", Coordinate), ("offsetY", Coordinate), ("name", Name), ("ink", InkColor),
-            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Ignored for image materials.")));
+            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Ignored for image materials.")),
+            ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())));
         Add("query_patterns", "List the built-in line hatch patterns (lawn, sand, pavers, brick, …) with their materialId, ordered for a surface. No document is needed; apply_material registers a pattern automatically.", true,
             Fields(("nameContains", new("string", "Case-insensitive literal substring of patternId, Korean name or display name.", MaxLength: 256)),
                 ("surface", Choice("general", "wall", "floor", "ground"))));
-        Add("apply_material", "Create an editable material layer from a registered image or a built-in hatch pattern (query_patterns) and a region. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId; can be included in apply_batch.", false,
-            Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id), ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())) }).ToArray()), WriteRequired("materialId", "regionId", "tileWidth", "tileHeight"));
-        Add("update_material", "Change the source material (a registered image or a built-in hatch pattern) or repeat size, direction, offset, pattern ink and line weight of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
+        Add("apply_material", "Create an editable material layer from a registered image (materialId) or a built-in hatch pattern (patternId, or its materialId from query_patterns) inside a boundary: an existing regionId, or inline points/holes or a closed boundaryLayerId, stored as a new region template in the same step. Size with tileWidth/tileHeight in pixels or scale/verticalRatio relative to the default; omitted sizes use the app's default. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId (and regionId); can be included in apply_batch.", false,
+            Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id),
+                ("points", new Field("array", "Inline closed outer contour in document pixels instead of regionId, at least 3 points; stored as a polygon region template.", ArrayShape: "points")),
+                ("holes", new Field("array", "Optional inner contours for points; at most 2048 points across all contours.", ArrayShape: "holes")),
+                ("boundaryLayerId", Id with { Description = "Closed shape or closed CAD path layer used as the boundary instead of regionId, like define_region source=closed_layer." }),
+                ("regionName", Name with { Description = "Name of the region template created from points or boundaryLayerId." }) }).ToArray()), WriteRequired());
+        Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         return commands;
     }
@@ -255,6 +272,13 @@ public static partial class AutomationCatalog
             int count = (arguments["points"] as JsonArray)?.Count ?? 0;
             count += (arguments["holes"] as JsonArray)?.Sum(h => h!.AsArray().Count) ?? 0;
             if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
+        }
+        if (command is "apply_material" or "update_material") ValidateMaterialFields(command, arguments);
+        if (command == "export_document")
+        {
+            string format = arguments["format"]!.GetValue<string>(), layers = arguments["layers"]?.GetValue<string>() ?? "keep";
+            if (format == "ai" && layers != "keep") throw new ArgumentException(".ai export keeps layers; use format=pdf with layers=flatten for one flat page.");
+            if (arguments.ContainsKey("vectors") && (format != "pdf" || layers != "flatten")) throw new ArgumentException("vectors applies to format=pdf with layers=flatten only.");
         }
         if (command == "add_adjustment")
         {

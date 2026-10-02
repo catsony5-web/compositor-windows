@@ -73,6 +73,7 @@ public static class SelfTests
         AutomationTransportTests.Run(Test, directory);
         AutomationProtocolTests.Run(Test);
         MainWindow.RunAutomationCommandTests(Test, directory);
+        MainWindow.RunAutomationExportTests(Test, directory);
         MainWindow.RunCommandTests(Test, directory);
         MainWindow.RunBucketCommandTests(Test);
         MainWindow.RunRenderingLifecycleTests(Test);
