@@ -84,6 +84,7 @@ public sealed partial class MainWindow
         var anchor = handle == 8 ? pivot : DocumentFeatures.ToParentSpace(doc, layer, handles[opposite]);
         handleGesture = new(handle, handle < 4 && Keyboard.Modifiers.HasFlag(ModifierKeys.Control), original, parentPoint, anchor, pivot);
         beforeGesture = doc.Snapshot(); start = point; screenStart = screen; dragging = true; moveStarted = true; canvas.CaptureMouse();
+        CaptureMoveInterimSource();
         status.Text = handle == 8 ? "회전 · Shift: 15° 단위" : handleGesture.Distort ? "원근 왜곡 · 볼록 사각형 범위 · Esc: 취소" : "크기 조절 · Shift: 비율 고정 · Ctrl+꼭짓점: 원근 왜곡";
         return true;
     }

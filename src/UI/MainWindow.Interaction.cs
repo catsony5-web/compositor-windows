@@ -133,6 +133,7 @@ public sealed partial class MainWindow
             }
             beforeGesture = doc.Snapshot(); start = point; screenStart = screen; dragging = true; moveStarted = false;
             selectionMode = CurrentSelectionMode(); canvas.CaptureMouse();
+            if (tool == Tool.Move) CaptureMoveInterimSource();
             if (tool is Tool.Brush or Tool.Eraser)
             {
                 if (!maskEditing) DocumentFeatures.Rasterize(doc.Active!);
@@ -216,20 +217,7 @@ public sealed partial class MainWindow
             var bounds = canvas.GestureBounds;
             dragging = false; canvas.ReleaseMouseCapture(); canvas.GestureBounds = null; canvas.GesturePoints = null;
             ResetPointerFeedback(); Mouse.UpdateCursor();
-            if (stroke != null || IsRetouch(tool) || tool == Tool.Move)
-            {
-                if (beforeGesture != null)
-                {
-                    // Merely touching an empty area must not rasterize editable
-                    // text or erase redo history when no pixel actually changed.
-                    if (tool != Tool.Move && beforeGesture.Active is { } original && doc.Active is { } current &&
-                        original.Pixels.Data.AsSpan().SequenceEqual(current.Pixels.Data) &&
-                        (ReferenceEquals(original.Mask, current.Mask) || original.Mask != null && current.Mask != null && original.Mask.AsSpan().SequenceEqual(current.Mask)))
-                    { doc.Layers[doc.Layers.IndexOf(current)] = original.Snapshot(); }
-                    doc.Validate(); history.Commit(tool == Tool.Move ? "레이어 이동" : ToolLabel(tool), beforeGesture, doc);
-                }
-                beforeGesture = null; stroke = null; cloneSnapshot = null; Refresh(); UpdatePointerHover(point); ShowInteractionHint(); return;
-            }
+            if (stroke != null || IsRetouch(tool) || tool == Tool.Move) { CommitPointerGesture(point); return; }
             beforeGesture = null;
             if (tool == Tool.Lasso)
             {
@@ -258,6 +246,27 @@ public sealed partial class MainWindow
             if (beforeGesture != null) doc = beforeGesture;
             beforeGesture = null; stroke = null; dragging = false; canvas.ReleaseMouseCapture(); ResetInteractionTransient(); Refresh(); status.Text = "편집을 취소했습니다: " + error.Message;
         }
+    }
+
+    // Records a finished brush, retouch or move gesture. A move-tool click that never
+    // passed the drag threshold changed nothing: it updates the selection display but
+    // does not render the whole document again.
+    void CommitPointerGesture(Point point)
+    {
+        bool stationary = tool == Tool.Move && !moveStarted && stroke == null;
+        var revision = doc.Revision;
+        if (beforeGesture != null)
+        {
+            // Merely touching an empty area must not rasterize editable
+            // text or erase redo history when no pixel actually changed.
+            if (tool != Tool.Move && beforeGesture.Active is { } original && doc.Active is { } current &&
+                original.Pixels.Data.AsSpan().SequenceEqual(current.Pixels.Data) &&
+                (ReferenceEquals(original.Mask, current.Mask) || original.Mask != null && current.Mask != null && original.Mask.AsSpan().SequenceEqual(current.Mask)))
+            { doc.Layers[doc.Layers.IndexOf(current)] = original.Snapshot(); }
+            doc.Validate(); history.Commit(tool == Tool.Move ? "레이어 이동" : ToolLabel(tool), beforeGesture, doc);
+        }
+        beforeGesture = null; stroke = null; cloneSnapshot = null;
+        Refresh(!stationary || doc.Revision != revision); UpdatePointerHover(point); ShowInteractionHint();
     }
 
     void ContinueRetouch(Point point)
