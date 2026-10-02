@@ -61,7 +61,7 @@ public sealed partial class MainWindow
         IReadOnlyList<MaterialAsset> assets;
         try { assets = MaterialEditing.Assets(doc); } catch (InvalidDataException) { assets = []; }
         var custom = assets.Where(asset => !presetIds.Contains(asset.Id) && !asset.Source.StartsWith("morupixel:preset/", StringComparison.Ordinal)
-                && !asset.Source.StartsWith(HatchPatterns.SourcePrefix, StringComparison.Ordinal))
+                && !asset.Source.StartsWith(HatchPatterns.SourcePrefix, StringComparison.Ordinal) && !LinePatterns.IsCustom(asset))
             .Select(asset => (Asset: asset, Rank: SelectionMaterials.Named(asset.Name) is { } kind ? Array.IndexOf(suggestion.Order.ToArray(), kind) : -1)).ToArray();
         var result = custom.Where(c => c.Rank < 0).Select(c => new SelectionMaterialChoice(c.Asset, c.Asset.Name, false)).ToList();
         for (int i = 0; i < presets.Length; i++)
@@ -108,7 +108,7 @@ public sealed partial class MainWindow
             Theme.CaptionSize, Theme.Subtle);
         hint.Margin = new Thickness(2, 0, 2, 6); panel.Children.Add(hint);
         var current = target?.Material?.Asset.Id;
-        var tab = target?.Material?.Asset is { } held && HatchPatterns.TryGet(held, out _) ? MaterialPaletteTab.Patterns : materialPaletteTab;
+        var tab = LinePatterns.IsPattern(target?.Material?.Asset) ? MaterialPaletteTab.Patterns : materialPaletteTab;
         panel.Children.Add(MaterialPalette(tab, current, target != null, (asset, name) => ApplySelectionMaterial(asset, name),
             SelectionMaterialChoices(suggestion), SelectionMaterials.PatternOrder(suggestion.Surface),
             () => ChooseSelectionMaterialImage(), "내 재질 이미지를 문서에 등록하고 선택 영역에 채웁니다."));
@@ -134,14 +134,7 @@ public sealed partial class MainWindow
         void Show(MaterialPaletteTab shown)
         {
             body.Children.Clear();
-            if (shown == MaterialPaletteTab.Patterns)
-            {
-                var tiles = patternOrder.Select(PatternChoice).Select(choice => MaterialTile(choice, choice.Asset.Id == currentAssetId, swapping, apply));
-                body.Children.Add(QuickActions.Grid(4, tiles, 76));
-                var note = Theme.Label("도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.", Theme.CaptionSize, Theme.Subtle); note.Margin = new Thickness(2, 0, 2, 4);
-                body.Children.Add(note);
-                return;
-            }
+            if (shown == MaterialPaletteTab.Patterns) { AddPatternTab(body, patternOrder, currentAssetId, swapping, apply, () => Show(MaterialPaletteTab.Patterns)); return; }
             body.Children.Add(QuickActions.Grid(4, imageChoices.Select(choice => MaterialTile(choice, choice.Asset.Id == currentAssetId, swapping, apply)), 76));
             if (addImage != null)
                 body.Children.Add(Theme.ActionRow("이미지로 재질 추가…", () => Guard(() => { CommitFocusedInspectorField(); addImage(); }), addImageTip, Theme.Glyphs.Image));
@@ -159,13 +152,11 @@ public sealed partial class MainWindow
         button.Tag = choice;
         var content = new StackPanel();
         Border swatch;
-        if (HatchPatterns.TryGet(choice.Asset, out var pattern))
+        if (LinePatterns.IsPattern(choice.Asset))
         {
             // Patterns show on paper (white, also in the dark theme), repeated at a fixed scale so they stay crisp and seamless.
-            var tiled = new ImageBrush(HatchPatternRenderer.Swatch(pattern, 96)) { TileMode = TileMode.Tile, Viewport = new Rect(0, 0, 48, 48), ViewportUnits = BrushMappingMode.Absolute, Stretch = Stretch.Fill };
-            tiled.Freeze();
             swatch = new Border { Height = 46, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = current ? Theme.Accent : Theme.Stroke, Background = Brushes.White,
-                Child = new System.Windows.Shapes.Rectangle { Fill = tiled, RadiusX = 4, RadiusY = 4 } };
+                Child = new System.Windows.Shapes.Rectangle { Fill = PatternSwatchBrush(choice.Asset), RadiusX = 4, RadiusY = 4 } };
         }
         else
         {
@@ -189,11 +180,31 @@ public sealed partial class MainWindow
     }
 
     static BitmapSource MaterialThumbnail(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern) ? HatchPatternRenderer.Swatch(pattern, 96)
-        : materialThumbnails.GetValue(asset.Pixels, pixels => pixels.Thumbnail(96));
+        : LinePatterns.IsCustom(asset) ? LinePatternRenderer.Swatch(asset, 96) : materialThumbnails.GetValue(asset.Pixels, pixels => pixels.Thumbnail(96));
+
+    // A pattern swatch brush on 48 DIP repeats drawn at 96 px: on white paper for the palette, or with
+    // `ink` as a clear tile to lay over a fill's background. A user's pattern whose lines are thin for
+    // its size repeats larger (RepeatScale), as it does on the canvas, and keeps its own proportions.
+    internal static ImageBrush PatternSwatchBrush(MaterialAsset asset, uint? ink = null)
+    {
+        ImageBrush brush;
+        if (HatchPatterns.TryGet(asset, out var pattern))
+            brush = new ImageBrush(ink is { } color ? HatchPatternRenderer.Tile(pattern, 96, 96, 1.6, color) : HatchPatternRenderer.Swatch(pattern, 96)) { Viewport = new Rect(0, 0, 48, 48) };
+        else
+        {
+            int px = (int)Math.Clamp(Math.Round(96 * LinePatternRenderer.RepeatScale(asset)), 96, 256);
+            BitmapSource swatch = ink is { } color ? LinePatternRenderer.Tile(asset, px, Math.Clamp((int)Math.Round(px * MaterialEditing.Aspect(asset)), 1, 1024), 1, color)
+                : LinePatternRenderer.Swatch(asset, px);
+            brush = new ImageBrush(swatch) { Viewport = new Rect(0, 0, px / 2d, swatch.PixelHeight / 2d) };
+        }
+        brush.TileMode = TileMode.Tile; brush.ViewportUnits = BrushMappingMode.Absolute; brush.Stretch = Stretch.Fill; brush.Freeze();
+        return brush;
+    }
 
     // Layer name for a material: built-in swatches in the display language, a user's image by its own name.
     static string MaterialLayerName(MaterialAsset asset, string displayName) => HatchPatterns.TryGet(asset, out _)
         ? Loc.T("패턴 · ") + Loc.T(displayName)
+        : LinePatterns.IsCustom(asset) ? Loc.T("패턴 · ") + displayName
         : Loc.T("재질 · ") + (HatchPatterns.IsBuiltInMaterial(asset) ? Loc.T(displayName) : displayName);
 
     void ChooseSelectionMaterialImage()
@@ -221,6 +232,8 @@ public sealed partial class MainWindow
         CommitFocusedInspectorField();
         if (!HasDocument || selection is not { } region) { status.Text = "먼저 재질을 채울 영역을 선택하세요."; return null; }
         var library = MaterialEditing.Assets(doc);
+        // The document's own copy of this ID wins (a renamed library pattern keeps the name the document knows).
+        asset = library.FirstOrDefault(a => a.Id == asset.Id) ?? asset;
         bool known = library.Any(a => a.Id == asset.Id);
         if (!known && library.Count >= MaterialEditing.MaxAssets) { status.Text = "재료 라이브러리가 가득 찼습니다. 쓰지 않는 재질 레이어를 정리하세요."; return null; }
         // Built-in swatches are named in the display language; the user's own image keeps its name.

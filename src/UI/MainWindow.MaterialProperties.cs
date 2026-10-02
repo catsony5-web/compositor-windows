@@ -21,7 +21,7 @@ public sealed partial class MainWindow
     void AddMaterialProperties(Layer layer)
     {
         if (layer.Material is not { } fill) return;
-        bool locked = IsLockedWithParents(layer), pattern = HatchPatterns.TryGet(fill.Asset, out var hatch);
+        bool locked = IsLockedWithParents(layer), pattern = LinePatterns.IsPattern(fill.Asset), builtIn = HatchPatterns.TryGet(fill.Asset, out var hatch);
         var boundDocument = doc; long version = inspectorVersion;
         bool Current() => ReferenceEquals(doc, boundDocument) && inspectorVersion == version && doc.ActiveId == layer.Id && !IsLockedWithParents(layer);
         var controls = new List<UIElement>();
@@ -32,17 +32,22 @@ public sealed partial class MainWindow
         var swatch = new Border { Width = 40, Height = 40, CornerRadius = new CornerRadius(6), BorderBrush = Theme.Stroke, BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top };
         if (pattern)
         {
-            var tiled = new ImageBrush(HatchPatternRenderer.Swatch(hatch, 96)) { TileMode = TileMode.Tile, Viewport = new Rect(0, 0, 48, 48), ViewportUnits = BrushMappingMode.Absolute }; tiled.Freeze();
-            swatch.Background = Brushes.White; swatch.Child = new System.Windows.Shapes.Rectangle { Fill = tiled, RadiusX = 5, RadiusY = 5 };
+            // The pattern in its ink over its background color, on white paper.
+            swatch.Background = Brushes.White;
+            var layers = new Grid();
+            if (MaterialRenderer.Background(fill) is { } tint) layers.Children.Add(new System.Windows.Shapes.Rectangle { Fill = tint, RadiusX = 5, RadiusY = 5 });
+            layers.Children.Add(new System.Windows.Shapes.Rectangle { Fill = PatternSwatchBrush(fill.Asset, fill.Ink), RadiusX = 5, RadiusY = 5 });
+            swatch.Child = layers;
         }
         else { var texture = new ImageBrush(MaterialThumbnail(fill.Asset)) { Stretch = Stretch.UniformToFill }; texture.Freeze(); swatch.Background = texture; }
         DockPanel.SetDock(swatch, Dock.Left); identity.Children.Add(swatch);
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        string display = pattern ? HatchPatterns.Name(hatch) : PresetDisplayName(fill.Asset);
+        string display = builtIn ? HatchPatterns.Name(hatch) : PresetDisplayName(fill.Asset);
         var title = Theme.Label(display, Theme.BodySize); title.FontWeight = FontWeights.SemiBold;
         if (!HatchPatterns.IsBuiltInMaterial(fill.Asset)) Loc.Keep(title);
         titles.Children.Add(title);
-        var repeat = Theme.Label(pattern ? $"해치 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px" : $"재질 이미지 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px", Theme.CaptionSize, Theme.Muted);
+        var repeat = Theme.Label(builtIn ? $"해치 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px" : pattern ? $"내 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px"
+            : $"재질 이미지 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px", Theme.CaptionSize, Theme.Muted);
         titles.Children.Add(repeat); identity.Children.Add(titles);
         properties.Children.Add(identity);
 
@@ -87,6 +92,7 @@ public sealed partial class MainWindow
             chip.MinWidth = 120; chip.IsEnabled = !locked; DockPanel.SetDock(chip, Dock.Right); row.Children.Add(Control(chip));
             var caption = Theme.Label("잉크 색", Theme.BodySize, Theme.Muted); caption.Margin = new Thickness(1, 2, 8, 2); row.Children.Add(caption);
             properties.Children.Add(row);
+            AddPatternBackgroundRow(fill, locked, Current, Control<UIElement>);
         }
         var defaults = Theme.ActionRow("기본값으로 되돌리기", () => Guard(() =>
         {
@@ -202,7 +208,7 @@ public sealed partial class MainWindow
     // Names made by the app (selection swatches, CAD cleanup, apply_material) follow a swap; a name the user typed stays.
     static bool IsAutomaticMaterialName(string name, MaterialAsset asset)
     {
-        string own = HatchPatterns.TryGet(asset, out var pattern) ? HatchPatterns.Name(pattern) : PresetDisplayName(asset);
+        string own = HatchPatterns.TryGet(asset, out var pattern) ? HatchPatterns.Name(pattern) : LinePatterns.IsCustom(asset) ? asset.Name : PresetDisplayName(asset);
         return name.StartsWith(MaterialLayerName(asset, own), StringComparison.Ordinal) || name.StartsWith("재료 · ", StringComparison.Ordinal);
     }
 
@@ -212,6 +218,8 @@ public sealed partial class MainWindow
         if (!HasDocument || doc.Active is not { Material: { } fill }) return;
         if (fill.Asset.Id == asset.Id) { status.Text = "이미 이 재질이 적용되어 있습니다."; return; }
         var library = MaterialEditing.Assets(doc);
+        // The document's own copy of this ID wins (a renamed library pattern keeps the name the document knows).
+        asset = library.FirstOrDefault(a => a.Id == asset.Id) ?? asset;
         if (!library.Any(a => a.Id == asset.Id) && library.Count >= MaterialEditing.MaxAssets) { status.Text = "재료 라이브러리가 가득 찼습니다. 쓰지 않는 재질 레이어를 정리하세요."; return; }
         EditMaterial("재질 바꾸기", f => MaterialEditing.Swap(f, asset), asset, displayName);
         status.Text = $"재질을 바꿨습니다: {displayName}";
