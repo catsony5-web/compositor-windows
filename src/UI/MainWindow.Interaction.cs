@@ -266,6 +266,9 @@ public sealed partial class MainWindow
             doc.Validate(); history.Commit(tool == Tool.Move ? "레이어 이동" : ToolLabel(tool), beforeGesture, doc);
         }
         beforeGesture = null; stroke = null; cloneSnapshot = null;
+        if (tool == Tool.Move && moveStarted) SettleMovePreview();
+        // A click without a drag lets planes prepared at pointer down finish.
+        if (stationary) movePlanes?.Gate.TrySetResult();
         Refresh(!stationary || doc.Revision != revision); UpdatePointerHover(point); ShowInteractionHint();
     }
 

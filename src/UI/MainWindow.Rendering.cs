@@ -20,6 +20,7 @@ public sealed partial class MainWindow
     void StopRenderingForShutdown()
     {
         renderShutdown = true;
+        settleRenderTimer.Stop();
         canvas.CancelDesignPreview();
         pendingFullRender = false; pendingGestureRender = false;
         gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick;
@@ -52,6 +53,9 @@ public sealed partial class MainWindow
         pendingFullRender = true; pendingGestureRender = false;
         ++renderGeneration; renderCts?.Cancel();
         gestureRenderTimer.Stop(); gestureRenderTimer.Tick -= OnGestureRenderTick;
+        // A drop in the drawing view first redraws the crisp frame; the full composite,
+        // which competes for the same cores, starts right after it (or after a short wait).
+        if (canvas.MoveSettlePending) { DeferFullRenderForSettle(); return; }
         if (!rendering) StartQueuedRender();
     }
     void OnGestureRenderTick(object? sender, EventArgs e)
@@ -95,7 +99,8 @@ public sealed partial class MainWindow
                 // Planes kept after a drop stay for the next drag only within the speculative budget.
                 if (movePlanes is { Bytes: > SpeculativeMovePlaneBytes }) DropMovePlanes();
             }
-            if (!gesture) { ClearTextMovePreview(); histogram.Update(result.Display); histogramInfo.Text = $"{doc.Width:N0} × {doc.Height:N0} px · {doc.Dpi:0.#} DPI · {(proof ? "CMYK 미리보기" : "RGB / 8 bit")}"; }
+            bool settled = !gesture && canvas.MovePreviewSettled;
+            if (!gesture) { ClearTextMovePreview(); if (settled) canvas.AdoptComposite(); histogram.Update(result.Display); histogramInfo.Text = $"{doc.Width:N0} × {doc.Height:N0} px · {doc.Dpi:0.#} DPI · {(proof ? "CMYK 미리보기" : "RGB / 8 bit")}"; }
             canvas.InvalidateVisual();
             if (status.Text.StartsWith("CMYK 인쇄색을 준비합니다", StringComparison.Ordinal))
                 status.Text = proof ? "CMYK 인쇄색 미리보기 · RGB 원본 유지 · 상단 RGB 버튼으로 복귀" : "RGB 편집 화면";
@@ -151,13 +156,12 @@ public sealed partial class MainWindow
             textPreviewBitmap = layer.Pixels.Bitmap();
             if (planes.Ready) ShowMovePlanes(planes);
             else if (moveInterimSource is { } source && ReferenceEquals(source.Document, doc) && source.LayerId == layer.Id)
-            {
-                var cts = textPreviewCts = new CancellationTokenSource();
-                planes.Interim = RenderMoveInterim(planes, source, textPreviewGeneration, cts);
-            }
+                StartMoveInterim(planes, source, layer);
             moveInterimSource = null;
         }
-        canvas.MovePreviewMatrix = layer.Matrix;
+        // While the interim frame stands in, the object moves only where it is ready.
+        if (moveInterim is { } interim && ReferenceEquals(interim.Planes, textPreviewPlanes) && !interim.Planes.Ready) FollowMoveInterim(interim);
+        else canvas.MovePreviewMatrix = layer.Matrix;
         canvas.InvalidateVisual();
         return true;
     }
@@ -266,10 +270,11 @@ public sealed partial class MainWindow
         return failed || !above ? null : plan;
     }
 
-    internal static (Document Below, Document Above) CreateLayerMovePreviewStacks(Document document, Guid movingId)
+    // owned: the caller passes its own snapshot, whose layer copies may be rewritten.
+    internal static (Document Below, Document Above) CreateLayerMovePreviewStacks(Document document, Guid movingId, bool owned = false)
     {
         // Work on a snapshot: its layers are copies whose parents may be rewritten.
-        var source = document.Snapshot();
+        var source = owned ? document : document.Snapshot();
         if (!source.Layers.Any(layer => layer.Id == movingId)) throw new ArgumentException("이동할 레이어를 찾을 수 없습니다.", nameof(movingId));
         var plan = MovePreviewPlan(source, movingId) ?? throw new InvalidOperationException("그룹 변형에는 전체 합성 미리보기가 필요합니다.");
         var below = new List<Layer>(); var above = new List<Layer>();
@@ -278,7 +283,11 @@ public sealed partial class MainWindow
             if (item.Id == movingId) continue;
             item.ParentId = parent; (upper ? above : below).Add(item);
         }
-        var aboveDocument = source.Snapshot(); aboveDocument.Layers = above;
+        var aboveDocument = new Document
+        {
+            Width = source.Width, Height = source.Height, Dpi = source.Dpi, Name = source.Name, Revision = source.Revision,
+            Artboards = source.Artboards.ToList(), Materials = source.Materials.ToList(), MaterialRegions = source.MaterialRegions.ToList(), Layers = above
+        };
         source.Layers = below;
         source.ActiveId = Guid.Empty; aboveDocument.ActiveId = Guid.Empty;
         return (source, aboveDocument);
@@ -288,9 +297,9 @@ public sealed partial class MainWindow
     {
         ++textPreviewGeneration; textPreviewCts?.Cancel(); textPreviewCts = null;
         textPreviewDocument = null; textPreviewLayerId = null; textPreviewBitmap = null;
-        textPreviewPlanes = null; textPreviewInterim = false; textPreviewFailed = false;
+        textPreviewPlanes = null; textPreviewInterim = false; textPreviewFailed = false; canvas.MovePreviewSettled = false;
+        moveInterim = null; canvas.MovePreviewForegroundTiles = null; canvas.MovePreviewBackgroundTiles = null;
         // The planes themselves stay cached for the next drag of the same object.
         canvas.MovePreviewBackground = null; canvas.MovePreviewLayer = null; canvas.MovePreviewForeground = null;
-        canvas.MovePreviewForegroundBounds = null;
     }
 }

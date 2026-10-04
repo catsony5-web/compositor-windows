@@ -1,4 +1,10 @@
-# Morupixel 0.2.0 Preview 40 — instant drag start, my own hatch patterns, layered exports over the AI connection
+# Morupixel 0.2.0 Preview 41 — drops settle at once, dragged objects stay under the layers above
+
+- **Dropping an object in a drawing shows the crisp view right away.** After a drop the drawing view used to wait for a full render and then redraw the whole visible area (about 1.7 s on a synthetic 19,000-object plan). It now keeps the crisp picture from before the drag and redraws only where the object was and where it landed, so the dropped object is crisp within about 0.15–0.27 s. The result is identical to a full redraw.
+- **The dragged object stays under the layers above it from the first frame.** In Preview 40 the quick first frames (before the full move preview was ready) could draw the object over lines and fills that sit above it. The quick frames are now built in small tiles around the object, so content above always covers it, with no doubled or ghost content. The first moved frame still appears in about 40–60 ms.
+- **Validation.** 748 source checks passed. [Validation](VALIDATION.md) lists the details.
+
+## Preview 40 — instant drag start, my own hatch patterns, layered exports over the AI connection
 
 - **Dragging starts immediately in large drawings.** Picking up an object no longer freezes the canvas while the rest of the drawing is flattened. The first moved frame reuses the picture already on screen and re-renders only the object's original footprint — about 35 ms on a synthetic 19,000-object plan instead of about 1.1 s. An object that stays selected for a moment, or is dragged again after a drop, starts moving within a frame (6–10 ms) because its fixed layers are prepared in the background and kept until something else in the drawing changes. For the fraction of a second before the full preview is ready, the moving object can draw over lines that sit above it elsewhere in the drawing; the result after the drop is the full-quality render, unchanged.
 - **Fixed: move preview with folders that multiply.** A folder holding a multiply layer (or a clipped layer on top) over other content could make the drag preview differ from the final picture. The preview now treats such folders exactly as the renderer does, or falls back to the full render.

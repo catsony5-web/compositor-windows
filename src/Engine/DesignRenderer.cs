@@ -34,14 +34,36 @@ public static partial class DesignRenderer
         }
         return output;
     }
-    readonly record struct PathPasses(int Size, Action? Rendered);
+    // Cull: device pixels the caller will read. Layers that cannot touch them are
+    // skipped; everything else is drawn exactly as in the full render.
+    readonly record struct PathPasses(int Size, Action? Rendered, Rect? Cull = null);
+    // Render(doc, area, width, height) on the full surface, but only correct inside `dirty`:
+    // the same transforms and surfaces as a fresh render, without the layers that cannot
+    // reach those pixels. Inside `dirty` the pixels equal the fresh render's.
+    internal static Raster RenderDirty(Document doc, Rect area, int width, int height, Int32Rect dirty, CancellationToken token = default)
+    {
+        var cull = new Rect(dirty.X - 2, dirty.Y - 2, dirty.Width + 4, dirty.Height + 4);
+        return RenderCore(doc, area, width, height, true, token, new(0, null, cull));
+    }
+    static Matrix ViewMap(Rect area, int width, int height) =>
+        new(width / area.Width, 0, 0, height / area.Height, -area.X * width / area.Width, -area.Y * height / area.Height);
+    // The pixels `region` of Render(doc, area, width, height), drawn on a surface of that size only.
+    internal static Raster RenderRegion(Document doc, Rect area, int width, int height, Int32Rect region, CancellationToken token = default)
+    {
+        if (area.IsEmpty || area.Width <= 0 || area.Height <= 0 || !double.IsFinite(area.X + area.Y + area.Width + area.Height)) throw new ArgumentException("표시 영역이 올바르지 않습니다.");
+        var map = ViewMap(area, width, height); map.OffsetX -= region.X; map.OffsetY -= region.Y;
+        return RenderCore(doc, map, region.Width, region.Height, true, token, default);
+    }
     static Raster RenderCore(Document doc, Rect area, int width, int height, bool screen, CancellationToken token, PathPasses passes)
     {
-        Raster.ValidateSize(width, height);
         if (area.IsEmpty || area.Width <= 0 || area.Height <= 0 || !double.IsFinite(area.X + area.Y + area.Width + area.Height)) throw new ArgumentException("표시 영역이 올바르지 않습니다.");
+        return RenderCore(doc, ViewMap(area, width, height), width, height, screen, token, passes);
+    }
+    static Raster RenderCore(Document doc, Matrix map, int width, int height, bool screen, CancellationToken token, PathPasses passes)
+    {
+        Raster.ValidateSize(width, height);
         if (screen && (long)width * height > 16_777_216) throw new ArgumentException("한 번에 그릴 화면 영역이 너무 큽니다.");
         var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
-        var map = new Matrix(width / area.Width, 0, 0, height / area.Height, -area.X * width / area.Width, -area.Y * height / area.Height);
         Matrix World(Layer layer, Matrix parent) { var result = layer.Matrix; result.Append(parent); return result; }
         Raster Image(Layer layer, Matrix parent, int depth)
         {
@@ -81,10 +103,12 @@ public static partial class DesignRenderer
                     // compatible run in one surface instead of one per object.
                     while (end < stack.Length && !stack[end].Clipped &&
                         (end + 1 == stack.Length || !stack[end + 1].Clipped) && CanBatchPaths(stack[end], children, depth, token)) end++;
-                    var batch = DrawPathRun(stack, index, end, children, parent, width, height, passes, token);
-                    Imaging.Merge(output, batch, 1, BlendMode.Normal, false, token);
+                    // A run that drew nothing leaves the output unchanged.
+                    if (DrawPathRun(stack, index, end, children, parent, width, height, passes, token) is { } batch)
+                        Imaging.Merge(output, batch, 1, BlendMode.Normal, false, token);
                 }
                 else if (layer.Kind == LayerKind.Adjustment) Imaging.ApplyAdjustment(output, layer, token, World(layer, parent));
+                else if (passes.Cull is { } cull && layer.Kind != LayerKind.Group && layer.Warp == null && !Reaches(layer, World(layer, parent), cull)) { }
                 else
                 {
                     var image = Image(layer, parent, depth);
@@ -101,6 +125,12 @@ public static partial class DesignRenderer
             return output;
         }
         return Stack(doc.Layers.Where(l => l.ParentId == null).ToArray(), map, 0);
+    }
+    // Every leaf paints only inside its pixel rectangle (shapes and resampling add a pixel).
+    static bool Reaches(Layer layer, Matrix world, Rect cull)
+    {
+        var bounds = new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height); bounds.Transform(world);
+        return bounds.IntersectsWith(cull);
     }
     internal static DrawingGroup TextDrawing(TextSpec text) => textDrawings.GetValue(text, spec => DocumentFeatures.TextDrawing(spec).Drawing);
     internal static Raster RenderRetained(Layer layer, Matrix map, int width, int height, CancellationToken token)
