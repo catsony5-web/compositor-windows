@@ -152,6 +152,21 @@ public sealed partial class MainWindow
         ShowStudioPage(2); CapturePane(studioPanes[2], "color-palette", 360, 1180);
         ShowStudioPage(3); SelectBrushTip(BrushTip.Star); CapturePane(studioPanes[3], "brush-settings", 360, 1120);
         SelectBrushTip(BrushTip.Round);
+        // 내 프리셋 with saved brushes kept in memory (headless), the second one matching the current brush, and the save dialog.
+        void PreviewPreset(BrushTip tip, double size, double edge, double flow, double spacing, double angle, string name)
+        {
+            brushTip = tip; brushSize = size; hardness = edge; brushOpacity = flow; brushSpacing = spacing; brushAngle = angle; SyncBrushControls(); AddBrushPreset(name);
+        }
+        string statusBeforePresets = status.Text;
+        PreviewPreset(BrushTip.Round, 6, 1, 1, .05, 0, "도면 잉크 펜");
+        PreviewPreset(BrushTip.Star, 64, .8, .7, 1.2, 15, "별 스탬프");
+        PreviewPreset(BrushTip.Round, 220, .1, .35, .1, 0, "투시도 하늘 그라데이션용 부드럽고 큰 에어브러시");
+        PreviewPreset(BrushTip.Diamond, 30, .6, 1, .3, 45, Loc.Format("내 브러시 {0}", 1));
+        ApplyBrushPreset(brushPresets[1]); ShowStudioPage(3);
+        CapturePane(studioPanes[3], "brush-presets", 360, 1560);
+        CaptureFit(new BrushPresetDialog(null, brushTip, CurrentBrushSettings(), NextBrushPresetName()), "brush-preset-dialog", 440);
+        brushPresets.Clear(); RebuildBrushPresetList();
+        brushTip = BrushTip.Round; brushSize = 42; hardness = .8; brushOpacity = 1; brushSpacing = .1; brushAngle = 0; SyncBrushControls(); status.Text = statusBeforePresets;
         var text = doc.Layers.First(l => l.Text != null); doc.ActiveId = text.Id; BuildProperties(); ShowStudioPage(1);
         CapturePane(studioPanes[1], "text-properties", 360, 1160);
         var shape = VectorShapes.Create(new ShapeSpec { Width = 360, Height = 150, CornerRadius = 28, FillArgb = 0xD92E4862, StrokeEnabled = true, StrokeArgb = 0xFFC0D9F2, StrokeWidth = 2 }, 100, 100);

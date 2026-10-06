@@ -124,6 +124,8 @@ public static class SelfTests
         BrushTipTests.Run(Test, directory);
         MainWindow.RunBrushTipIntegrationTests(Test);
         MainWindow.RunBrushTipPlaceholderTests(Test);
+        BrushPresetTests.Run(Test, directory);
+        MainWindow.RunBrushPresetTests(Test, directory);
         PhotoDevelopTests.Run(Test, directory);
         BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);
