@@ -5,18 +5,31 @@ using System.Windows.Threading;
 
 namespace Compositor.Windows;
 
-// Hidden measurement: Morupixel.exe --benchmark-drawing <report.txt>
+// Hidden measurement: Morupixel.exe --benchmark-drawing <report.txt> [drawing.dwg|.dxf|.pdf]
 // Builds the synthetic 20k-object drawing offscreen (no visible window) and
 // times the UI-thread work of pan moves, wheel zoom steps and pointer hover,
 // plus how long the crisp design viewport takes to settle afterwards.
+// With a drawing file the same measurements run on that file instead, imported
+// like the import dialog's defaults with drawing cleanup on. The report names
+// the file only as "file" so it can be shared without the drawing's name.
 public sealed partial class MainWindow
 {
-    public static int RunDrawingBenchmark(string output)
+    public static int RunDrawingBenchmark(string output, string? drawing = null)
     {
         var lines = new List<string>();
         void Report(string line) { Console.WriteLine(line); lines.Add(line); File.WriteAllLines(output, lines); }
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
         var watch = Stopwatch.StartNew();
+        if (drawing != null)
+        {
+            var options = new CompatibilityOptions(Page: 1, Dpi: 150, CadLongEdge: 2400, SeparateLayers: false, CadLayout: null,
+                CadStructure: CadImportStructure.Objects, GroupDrawingObjects: true,
+                Cleanup: new CadCleanup(true, HatchTreatment.Suggest, null, null));
+            var imported = CompatibilityImport.ReadAsync(Path.GetFullPath(drawing), options, CancellationToken.None).GetAwaiter().GetResult().Document;
+            Report($"file drawing: {imported.Width}x{imported.Height}, {imported.Layers.Count(l => l.Kind != LayerKind.Group):N0} objects, {imported.Layers.Count(l => l.Kind == LayerKind.Group)} groups, {imported.Layers.Count(l => l.Kind == LayerKind.Material)} materials, imported in {watch.ElapsedMilliseconds} ms");
+            MeasureDrawingInteraction("file", imported, Report);
+            return 0;
+        }
         var synthetic = SyntheticDrawing.Create();
         Report($"synthetic drawing: {synthetic.Width}x{synthetic.Height}, {synthetic.Layers.Count(l => l.Kind != LayerKind.Group):N0} objects, {synthetic.Layers.Count(l => l.Kind == LayerKind.Group)} groups, built in {watch.ElapsedMilliseconds} ms");
         MeasureDrawingInteraction("synthetic", synthetic, Report);

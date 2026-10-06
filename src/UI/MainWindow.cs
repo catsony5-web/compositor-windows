@@ -24,6 +24,7 @@ public sealed partial class MainWindow : Window
     readonly ColorSwatches colorSwatches;
     readonly StackPanel brushOptions = new() { Orientation = Orientation.Horizontal }, opacityOptions = new() { Orientation = Orientation.Horizontal }, gradientOptions = new() { Orientation = Orientation.Horizontal };
     readonly Slider sizeSlider, hardnessSlider;
+    Slider? opacitySlider;
     readonly OptionToggle autoSelectToggle;
     readonly TextBlock brushLabel = Theme.Label("", Theme.CaptionSize, Theme.Muted);
     readonly TextBlock documentInfo = Theme.Label("", Theme.CaptionSize, Theme.Subtle);
@@ -68,8 +69,8 @@ public sealed partial class MainWindow : Window
         brushOptions.Children.Add(OptionLabel("크기", "브러시 지름 · Alt + 좌우 드래그로도 조절"));
         sizeSlider = Slider(1, MaxBrushSize, brushSize, 115, v => { brushSize = v; UpdateBrushLabel(); }); brushOptions.Children.Add(sizeSlider);
         brushLabel.Width = 50; brushOptions.Children.Add(brushLabel); brushOptions.Children.Add(OptionLabel("경도", "가장자리 선명도 · 낮을수록 부드럽게"));
-        hardnessSlider = Slider(0, 1, hardness, 75, v => { hardness = v; studioHardness?.SetValue(v * 100); }); brushOptions.Children.Add(hardnessSlider); options.Children.Add(brushOptions);
-        opacityOptions.Children.Add(OptionLabel("농도", "한 번 칠할 때의 불투명도")); opacityOptions.Children.Add(Slider(.01, 1, brushOpacity, 75, v => brushOpacity = v)); options.Children.Add(opacityOptions);
+        hardnessSlider = Slider(0, 1, hardness, 75, v => { hardness = v; studioHardness?.SetValue(v * 100); UpdateBrushStrokePreviews(); }); brushOptions.Children.Add(hardnessSlider); options.Children.Add(brushOptions);
+        opacityOptions.Children.Add(OptionLabel("농도", "한 번 칠할 때의 불투명도")); opacitySlider = Slider(.01, 1, brushOpacity, 75, v => { brushOpacity = v; UpdateBrushPresetMarks(); }); opacityOptions.Children.Add(opacitySlider); options.Children.Add(opacityOptions);
         var gradientMode = new ComboBox { ItemsSource = new[] { "전경색 → 투명", "전경색 → 배경색" }, SelectedIndex = 0, Width = 150, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(5) };
         gradientMode.SelectionChanged += (_, _) => { gradientToBackground = gradientMode.SelectedIndex == 1; UpdateStatus(); }; gradientOptions.Children.Add(gradientMode); options.Children.Add(gradientOptions);
         autoSelectToggle = new OptionToggle(Theme.Glyphs.AutoSelect, "자동 선택", "이동 도구(V): 클릭한 대상의 레이어를 선택합니다. 끄면 목록에서 선택한 레이어만 이동합니다.", true) { Margin = new Thickness(4, 0, 4, 0) };
@@ -112,7 +113,7 @@ public sealed partial class MainWindow : Window
         RebuildRibbon();
 
         canvas.MouseDown += OnDown; canvas.MouseMove += OnMove; canvas.MouseUp += OnUp;
-        Loaded += (_, _) => LoadCustomBrushTips();
+        Loaded += (_, _) => { LoadCustomBrushTips(); LoadBrushPresets(); };
         canvas.AddHandler(Mouse.QueryCursorEvent, new QueryCursorEventHandler((_, e) =>
         {
             e.Cursor = HasDocument ? CanvasCursorAt(canvas.ToDocument(e.GetPosition(canvas)), Keyboard.IsKeyDown(Key.Space)) : Cursors.Arrow;
@@ -487,7 +488,12 @@ public sealed partial class MainWindow : Window
         if (beforeGesture != null) doc = beforeGesture;
         beforeGesture = null; stroke = null; canvas.GestureBounds = null; canvas.ReleaseMouseCapture(); canvas.Document = doc; RenderGesture();
     }
-    void OnKey(object sender, KeyEventArgs e) => InteractionKey(sender, e);
+    void OnKey(object sender, KeyEventArgs e)
+    {
+        // Esc during a drag across the layer eyes puts every swept row back.
+        if (e.Key == Key.Escape && EyeSweepActive) { ReleaseLayerEye(true); e.Handled = true; return; }
+        InteractionKey(sender, e);
+    }
     void Help() => MessageDialog.Show(this,
         $"Morupixel · 모루픽셀 {typeof(MainWindow).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).Cast<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion}\n독립적인 Windows 이미지 편집기\n\n" +
         "레이어 그룹·클리핑·14 혼합 모드·마스크·6종 조정 레이어·편집 가능한 텍스트\n올가미·마술봉·페더·복제·복구·스머지·액화·주변으로 채우기·AI 배경 제거\n\n" +

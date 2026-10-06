@@ -124,6 +124,8 @@ public static class SelfTests
         BrushTipTests.Run(Test, directory);
         MainWindow.RunBrushTipIntegrationTests(Test);
         MainWindow.RunBrushTipPlaceholderTests(Test);
+        BrushPresetTests.Run(Test, directory);
+        MainWindow.RunBrushPresetTests(Test, directory);
         PhotoDevelopTests.Run(Test, directory);
         BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);
@@ -139,6 +141,7 @@ public static class SelfTests
         PrecisionWandTests.Run(Test);
         MainWindow.RunWandCommandTests(Test);
         MainWindow.RunLayerWandTests(Test, directory);
+        MainWindow.RunLayerEyeSweepTests(Test);
         MainWindow.RunMaterialPropertiesTests(Test);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);

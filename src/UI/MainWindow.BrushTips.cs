@@ -74,7 +74,7 @@ public sealed partial class MainWindow
         try
         {
             customBrushTips.Clear(); customBrushTips.AddRange(BrushTipStore.LoadAll());
-            UpdateCustomBrushList();
+            UpdateCustomBrushList(); RebuildBrushPresetList();
         }
         catch (Exception error) { status.Text = "사용자 브러시를 읽지 못했습니다: " + error.Message; }
     }
@@ -90,7 +90,7 @@ public sealed partial class MainWindow
         var tip = BrushTipStore.Import(open.FileName);
         BrushTipStore.Save(tip);
         customBrushTips.RemoveAll(item => item.Id == tip.Id);
-        customBrushTips.Add(tip); UpdateCustomBrushList(); SelectBrushTip(tip);
+        customBrushTips.Add(tip); UpdateCustomBrushList(); RebuildBrushPresetList(); SelectBrushTip(tip);
         status.Text = "사용자 브러시 저장 · " + tip.Name;
     }
 
@@ -146,6 +146,7 @@ public sealed partial class MainWindow
     /// <summary>Redraws the current-brush stroke and each preset's stroke in the active shape.</summary>
     internal void UpdateBrushStrokePreviews()
     {
+        UpdateBrushPresetMarks();
         // The page is rebuilt when shown, so a hidden panel need not repaint on every size drag.
         if (IsLoaded && selectedBrushPreview is { IsVisible: false }) return;
         if (selectedBrushPreview != null)
