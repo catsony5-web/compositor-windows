@@ -158,9 +158,9 @@ public sealed partial class MainWindow
             brushTip = tip; brushSize = size; hardness = edge; brushOpacity = flow; brushSpacing = spacing; brushAngle = angle; SyncBrushControls(); AddBrushPreset(name);
         }
         string statusBeforePresets = status.Text;
-        PreviewPreset(BrushTip.Round, 6, 1, 1, .05, 0, "도면 잉크 펜");
-        PreviewPreset(BrushTip.Star, 64, .8, .7, 1.2, 15, "별 스탬프");
-        PreviewPreset(BrushTip.Round, 220, .1, .35, .1, 0, "투시도 하늘 그라데이션용 부드럽고 큰 에어브러시");
+        PreviewPreset(BrushTip.Round, 6, 1, 1, .05, 0, Loc.T("도면 잉크 펜"));
+        PreviewPreset(BrushTip.Star, 64, .8, .7, 1.2, 15, Loc.T("별 스탬프"));
+        PreviewPreset(BrushTip.Round, 220, .1, .35, .1, 0, Loc.T("투시도 하늘 그라데이션용 부드럽고 큰 에어브러시"));
         PreviewPreset(BrushTip.Diamond, 30, .6, 1, .3, 45, Loc.Format("내 브러시 {0}", 1));
         ApplyBrushPreset(brushPresets[1]); ShowStudioPage(3);
         CapturePane(studioPanes[3], "brush-presets", 360, 1560);

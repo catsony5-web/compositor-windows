@@ -150,7 +150,7 @@ public sealed partial class MainWindow
 
     void BuildBrushPresetSection(Panel host)
     {
-        host.Children.Add(Theme.Section("내 프리셋"));
+        host.Children.Add(Theme.Section("내 브러시 프리셋"));
         brushPresetList = new StackPanel();
         host.Children.Add(brushPresetList);
         host.Children.Add(Theme.ActionRow("현재 브러시를 프리셋으로 저장…", () => Guard(() => SaveBrushPresetWithDialog()),

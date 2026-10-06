@@ -148,6 +148,10 @@
   "file": "Core/Artboard.cs"
  },
  {
+  "ko": "브러시 프리셋",
+  "file": "Core/BrushPreset.cs"
+ },
+ {
   "ko": "원형",
   "file": "Core/BrushTip.cs"
  },
@@ -2580,22 +2584,6 @@
   "file": "UI/Controls/LayerRow.cs"
  },
  {
-  "ko": "레이어 숨기기",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "레이어 표시",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "Shift+클릭: 마지막으로 누른 눈(없으면 맨 위 레이어)의 상태를 여기까지 적용",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
-  "ko": "Alt+클릭: 이 레이어만 보기",
-  "file": "UI/Controls/LayerRow.cs"
- },
- {
   "ko": "표시됨",
   "file": "UI/Controls/LayerRow.cs"
  },
@@ -2645,6 +2633,26 @@
  },
  {
   "ko": "레이어 잠금: {0}, {1}",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 숨기기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "레이어 표시",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "Shift+클릭: 마지막으로 누른 눈(없으면 맨 위 레이어)의 상태를 여기까지 적용",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "Alt+클릭: 이 레이어만 보기",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "위아래로 드래그(Shift+드래그도 가능): 지나간 눈에 같은 상태 적용 · Esc 취소",
   "file": "UI/Controls/LayerRow.cs"
  },
  {
@@ -2848,6 +2856,58 @@
   "file": "UI/Controls/TextPropertiesPanel.cs"
  },
  {
+  "ko": "브러시 프리셋 저장",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "현재 브러시를 프리셋으로 저장",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "모양, 크기, 경도, 농도, 모양 회전, 찍는 간격을 함께 저장합니다. 내 프리셋을 누르면 한 번에 적용됩니다.",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "브러시 획 미리보기",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "모양",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "크기",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "경도",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "농도",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "모양 회전",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "찍는 간격",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "프리셋 이름",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "취소",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
+  "ko": "저장",
+  "file": "UI/Dialogs/BrushPresetDialog.cs"
+ },
+ {
   "ko": "Morupixel · CMYK 인쇄용 내보내기",
   "file": "UI/Dialogs/CmykExportDialog.cs"
  },
@@ -2937,10 +2997,6 @@
  },
  {
   "ko": "색상 적용",
-  "file": "UI/Dialogs/ColorPickerDialog.cs"
- },
- {
-  "ko": "취소",
   "file": "UI/Dialogs/ColorPickerDialog.cs"
  },
  {
@@ -3561,10 +3617,6 @@
  },
  {
   "ko": "양",
-  "file": "UI/Dialogs/EditingDialogs.cs"
- },
- {
-  "ko": "크기",
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
@@ -4952,6 +5004,90 @@
   "file": "UI/MainWindow.BrushOptions.cs"
  },
  {
+  "ko": "내 브러시 {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "내 프리셋은 {0}개까지 보관합니다. 쓰지 않는 프리셋을 삭제하세요.",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "내 프리셋에 저장했습니다: {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "저장한 이미지 브러시 모양을 찾지 못해 원형으로 적용했습니다: {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "브러시 프리셋을 적용했습니다: {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "프리셋 이름을 바꿨습니다: {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "현재 설정으로 덮어썼습니다: {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "내 프리셋에서 삭제했습니다: {0}",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "내 브러시 프리셋",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "현재 브러시를 프리셋으로 저장…",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "모양, 크기, 경도, 농도, 모양 회전, 찍는 간격을 이름을 붙여 저장합니다.",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "자주 쓰는 브러시 설정을 저장하면 여기에 표시됩니다. 누르면 한 번에 적용됩니다.",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "{0}px · 경도 {1}% · 농도 {2}%",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "이미지 모양 없음 · 원형으로 적용",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "클릭: 이 브러시 설정 적용 · 마우스 오른쪽 단추: 이름 바꾸기, 덮어쓰기, 삭제",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "이름 바꾸기…",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "프리셋 이름 바꾸기",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "현재 설정으로 덮어쓰기",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "위로 이동",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "아래로 이동",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
+  "ko": "내 프리셋에서 삭제",
+  "file": "UI/MainWindow.BrushPresets.cs"
+ },
+ {
   "ko": "현재 브러시 획 미리보기",
   "file": "UI/MainWindow.BrushTips.cs"
  },
@@ -5013,10 +5149,6 @@
  },
  {
   "ko": "이미지를 레이어로 가져오기 · Ctrl+Shift+O",
-  "file": "UI/MainWindow.Chrome.cs"
- },
- {
-  "ko": "저장",
   "file": "UI/MainWindow.Chrome.cs"
  },
  {
@@ -5176,15 +5308,7 @@
   "file": "UI/MainWindow.cs"
  },
  {
-  "ko": "경도",
-  "file": "UI/MainWindow.cs"
- },
- {
   "ko": "가장자리 선명도 · 낮을수록 부드럽게",
-  "file": "UI/MainWindow.cs"
- },
- {
-  "ko": "농도",
   "file": "UI/MainWindow.cs"
  },
  {
@@ -6028,6 +6152,26 @@
   "file": "UI/MainWindow.LayerExport.cs"
  },
  {
+  "ko": "레이어 표시 드래그를 취소했습니다",
+  "file": "UI/MainWindow.LayerEyeSweep.cs"
+ },
+ {
+  "ko": "레이어 범위 표시",
+  "file": "UI/MainWindow.LayerEyeSweep.cs"
+ },
+ {
+  "ko": "레이어 범위 숨기기",
+  "file": "UI/MainWindow.LayerEyeSweep.cs"
+ },
+ {
+  "ko": "드래그로 레이어 {0}개를 표시했습니다",
+  "file": "UI/MainWindow.LayerEyeSweep.cs"
+ },
+ {
+  "ko": "드래그로 레이어 {0}개를 숨겼습니다",
+  "file": "UI/MainWindow.LayerEyeSweep.cs"
+ },
+ {
   "ko": "선택 레이어의 혼합 모드",
   "file": "UI/MainWindow.LayerQuickBar.cs"
  },
@@ -6112,14 +6256,6 @@
   "file": "UI/MainWindow.LayerSelection.cs"
  },
  {
-  "ko": "레이어 범위 표시",
-  "file": "UI/MainWindow.LayerVisibility.cs"
- },
- {
-  "ko": "레이어 범위 숨기기",
-  "file": "UI/MainWindow.LayerVisibility.cs"
- },
- {
   "ko": "레이어 {0}개를 기준 레이어처럼 표시했습니다",
   "file": "UI/MainWindow.LayerVisibility.cs"
  },
@@ -6185,10 +6321,6 @@
  },
  {
   "ko": "즐겨찾기에 추가",
-  "file": "UI/MainWindow.LinePatterns.cs"
- },
- {
-  "ko": "이름 바꾸기…",
   "file": "UI/MainWindow.LinePatterns.cs"
  },
  {
@@ -6684,6 +6816,10 @@
   "file": "UI/MainWindow.Modes.cs"
  },
  {
+  "ko": "이동 미리보기 실패: ",
+  "file": "UI/MainWindow.MovePlanes.cs"
+ },
+ {
   "ko": "닿는 객체 선택 ←",
   "file": "UI/MainWindow.ObjectSelection.cs"
  },
@@ -6729,6 +6865,18 @@
  },
  {
   "ko": "2층 평면도.dwg",
+  "file": "UI/MainWindow.Preview.cs"
+ },
+ {
+  "ko": "도면 잉크 펜",
+  "file": "UI/MainWindow.Preview.cs"
+ },
+ {
+  "ko": "별 스탬프",
+  "file": "UI/MainWindow.Preview.cs"
+ },
+ {
+  "ko": "투시도 하늘 그라데이션용 부드럽고 큰 에어브러시",
   "file": "UI/MainWindow.Preview.cs"
  },
  {
@@ -6944,15 +7092,11 @@
   "file": "UI/MainWindow.Rendering.cs"
  },
  {
-  "ko": "그룹 변형에는 전체 합성 미리보기가 필요합니다.",
-  "file": "UI/MainWindow.Rendering.cs"
- },
- {
   "ko": "이동할 레이어를 찾을 수 없습니다.",
   "file": "UI/MainWindow.Rendering.cs"
  },
  {
-  "ko": "이동 미리보기 실패: ",
+  "ko": "그룹 변형에는 전체 합성 미리보기가 필요합니다.",
   "file": "UI/MainWindow.Rendering.cs"
  },
  {
