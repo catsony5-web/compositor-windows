@@ -25,11 +25,11 @@ public static class Program
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
         }
-        if (args.Length == 2 && args[0] == "--benchmark-drawing")
+        if (args.Length is 2 or 3 && args[0] == "--benchmark-drawing")
         {
-            // Offscreen timing of large-drawing pan, zoom and hover work.
+            // Offscreen timing of large-drawing pan, zoom and hover work; optionally on a real drawing file.
             System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
-            try { return MainWindow.RunDrawingBenchmark(args[1]); }
+            try { return MainWindow.RunDrawingBenchmark(args[1], args.Length == 3 ? args[2] : null); }
             finally { System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown(); }
         }
         if (args.Length > 0 && args[0] is "--mcp" or "--automation-list" or "--automation-command")
