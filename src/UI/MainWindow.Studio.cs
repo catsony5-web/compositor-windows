@@ -21,7 +21,7 @@ public sealed partial class MainWindow
     TextBlock? studioColorValue;
     ColorPalettePanel? studioPalette;
     ColorSwatches? studioColorSwatches;
-    ParameterSlider? studioDiameter, studioHardness;
+    ParameterSlider? studioDiameter, studioHardness, studioAngle, studioSpacing;
     FrameworkElement BuildStudioTop()
     {
         var stack = new StackPanel();
@@ -197,11 +197,12 @@ public sealed partial class MainWindow
         UpdateBrushStrokePreviews();
         var diameter = studioDiameter = new ParameterSlider("크기 px", 1, MaxBrushSize, brushSize, 42); diameter.Changed += v => { brushSize = v; UpdateBrushLabel(); }; studioContent.Children.Add(diameter);
         var soft = studioHardness = new ParameterSlider("경도 %", 0, 100, hardness * 100, 80); soft.Changed += v => { hardness = v / 100; UpdateBrushLabel(); }; studioContent.Children.Add(soft);
-        var angle = new ParameterSlider("모양 회전 °", -180, 180, brushAngle);
+        var angle = studioAngle = new ParameterSlider("모양 회전 °", -180, 180, brushAngle);
         angle.Changed += v => { brushAngle = v; UpdateBrushTipCursor(); }; studioContent.Children.Add(angle);
-        var spacing = new ParameterSlider("찍는 간격 %", 1, 150, brushSpacing * 100, 10);
+        var spacing = studioSpacing = new ParameterSlider("찍는 간격 %", 1, 150, brushSpacing * 100, 10);
         spacing.Changed += v => { brushSpacing = v / 100; UpdateBrushStrokePreviews(); }; studioContent.Children.Add(spacing);
         spacing.ToolTip = "간격을 늘리면 모양을 띄워 그립니다. 브러시·지우개·마스크에 적용됩니다.";
         diameter.ToolTip = "Alt + 좌우 드래그로 크기 조절";
+        BuildBrushPresetSection(studioContent);
     }
 }
