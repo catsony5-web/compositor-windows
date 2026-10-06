@@ -97,6 +97,7 @@ public sealed partial class MainWindow
 
         layerList.ToolTip = "레이어를 드래그하여 순서 변경";
         layerList.CreateRow = CreateLayerRow;
+        HookEyeSweep();
         layerList.Margin = new Thickness(6, 0, 6, 0);
         Grid.SetRow(layerList, 2); panel.Children.Add(layerList);
         var hint = BuildLayerEmptyHint(); Grid.SetRow(hint, 2); panel.Children.Add(hint);
@@ -343,7 +344,8 @@ public sealed partial class MainWindow
         UpdateLayerQuickBar(entries.Length);
     }
 
-    // Eye clicks: plain toggles, Shift applies the reference row's state to a range, Alt isolates.
+    // Eye clicks: plain toggles, Shift applies the reference row's state to a range, Alt isolates;
+    // a press on an eye also arms a drag across the eyes (MainWindow.LayerEyeSweep.cs).
     LayerRow CreateLayerRow(LayerListEntry entry)
     {
         var id = entry.Layer.Id;
@@ -353,6 +355,9 @@ public sealed partial class MainWindow
                 _ => ClickLayerEye(entry, Keyboard.Modifiers), () => ToggleSourceLayer(members), entry.Expanded,
                 () => { foreach (var member in members) if (entry.Expanded) collapsedGroups.Add(member); else collapsedGroups.Remove(member); BuildLayers(); }, entry.Description);
             grouped.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1);
+            grouped.Eye.PreviewMouseLeftButtonDown += (_, _) => PressLayerEye(entry, Keyboard.Modifiers);
+            // A grouped row lists a copy; a row scrolled into view during a sweep shows the live runs.
+            if (eyeSweep is { } sweep) grouped.ShowVisible(members.Any(m => sweep.Layers.TryGetValue(m, out var run) && run.Visible));
             return grouped;
         }
         var row = new LayerRow(entry.Layer, entry.Selected,
@@ -361,6 +366,7 @@ public sealed partial class MainWindow
             () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
             entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); }, entry.Description);
         row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;
+        row.Eye.PreviewMouseLeftButtonDown += (_, _) => PressLayerEye(entry, Keyboard.Modifiers);
         EnableLayerDrag(row, id);
         return row;
     }

@@ -80,5 +80,5 @@ internal sealed class LayerList : ListBox
         }));
     }
 
-    ScrollViewer? ScrollHost() => GetTemplateChild("PART_ScrollViewer") as ScrollViewer;
+    internal ScrollViewer? ScrollHost() => GetTemplateChild("PART_ScrollViewer") as ScrollViewer;
 }

@@ -139,6 +139,7 @@ public static class SelfTests
         PrecisionWandTests.Run(Test);
         MainWindow.RunWandCommandTests(Test);
         MainWindow.RunLayerWandTests(Test, directory);
+        MainWindow.RunLayerEyeSweepTests(Test);
         MainWindow.RunMaterialPropertiesTests(Test);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);

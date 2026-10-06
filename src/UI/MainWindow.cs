@@ -487,7 +487,12 @@ public sealed partial class MainWindow : Window
         if (beforeGesture != null) doc = beforeGesture;
         beforeGesture = null; stroke = null; canvas.GestureBounds = null; canvas.ReleaseMouseCapture(); canvas.Document = doc; RenderGesture();
     }
-    void OnKey(object sender, KeyEventArgs e) => InteractionKey(sender, e);
+    void OnKey(object sender, KeyEventArgs e)
+    {
+        // Esc during a drag across the layer eyes puts every swept row back.
+        if (e.Key == Key.Escape && EyeSweepActive) { ReleaseLayerEye(true); e.Handled = true; return; }
+        InteractionKey(sender, e);
+    }
     void Help() => MessageDialog.Show(this,
         $"Morupixel · 모루픽셀 {typeof(MainWindow).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).Cast<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion}\n독립적인 Windows 이미지 편집기\n\n" +
         "레이어 그룹·클리핑·14 혼합 모드·마스크·6종 조정 레이어·편집 가능한 텍스트\n올가미·마술봉·페더·복제·복구·스머지·액화·주변으로 채우기·AI 배경 제거\n\n" +

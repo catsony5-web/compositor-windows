@@ -11,9 +11,12 @@ namespace Compositor.Windows;
 public sealed class LayerRow : Grid
 {
     public Button DragHandle { get; }
+    // The visibility eye; a press here never starts a reorder drag (that starts on DragHandle).
+    public Button Eye { get; }
+    readonly string layerName;
     public LayerRow(Layer layer, bool selected, Action select, Action<bool> setVisible, Action toggleLock, bool expanded = true, Action? toggleExpand = null, string? description = null)
     {
-        MinHeight = 40;
+        MinHeight = 40; layerName = layer.Name;
         Background = selected ? Theme.Selected : Brushes.Transparent;
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
@@ -68,8 +71,7 @@ public sealed class LayerRow : Grid
             MouseLeave += (_, _) => Background = Brushes.Transparent;
         }
 
-        var visible = IconButton(EyeIcon(layer.Visible), string.Join(" · ", layer.Visible ? "레이어 숨기기" : "레이어 표시",
-            "Shift+클릭: 마지막으로 누른 눈(없으면 맨 위 레이어)의 상태를 여기까지 적용", "Alt+클릭: 이 레이어만 보기"), () => setVisible(!layer.Visible));
+        var visible = Eye = IconButton(EyeIcon(layer.Visible), EyeTip(layer.Visible), () => setVisible(!layer.Visible));
         AutomationProperties.SetName(visible, $"레이어 표시: {layer.Name}, {(layer.Visible ? "표시됨" : "숨김")}");
         Children.Add(visible);
 
@@ -102,6 +104,17 @@ public sealed class LayerRow : Grid
         button.Focusable = false;
         return button;
     }
+
+    // Shows a new state while a drag across the eyes is still running, without rebuilding the row.
+    public void ShowVisible(bool visible)
+    {
+        Eye.Content = EyeIcon(visible); Eye.ToolTip = EyeTip(visible);
+        AutomationProperties.SetName(Eye, $"레이어 표시: {layerName}, {(visible ? "표시됨" : "숨김")}");
+    }
+
+    internal static string EyeTip(bool visible) => string.Join("\n", visible ? "레이어 숨기기" : "레이어 표시",
+        "Shift+클릭: 마지막으로 누른 눈(없으면 맨 위 레이어)의 상태를 여기까지 적용", "Alt+클릭: 이 레이어만 보기",
+        "위아래로 드래그(Shift+드래그도 가능): 지나간 눈에 같은 상태 적용 · Esc 취소");
 
     static UIElement EyeIcon(bool visible) => Theme.Glyph(visible ? Theme.Glyphs.Eye : Theme.Glyphs.EyeSlash, 18, visible ? Theme.Muted : Theme.Subtle);
 
