@@ -10,6 +10,32 @@ namespace Compositor.Windows;
 // round trips, reversible edits and cancellable previews.
 public static class DesignStyleTests
 {
+    // Which layers differ between two documents built the same way: kind, name, placement, settings and pixels.
+    static string Differences(Document a, Document b)
+    {
+        var notes = new List<string>();
+        if (a.Layers.Count != b.Layers.Count) notes.Add($"layer count {a.Layers.Count} vs {b.Layers.Count}");
+        for (int i = 0; i < Math.Min(a.Layers.Count, b.Layers.Count) && notes.Count < 6; i++)
+        {
+            Layer x = a.Layers[i], y = b.Layers[i]; var parts = new List<string>();
+            if (x.Kind != y.Kind || x.Name != y.Name) parts.Add($"kind/name {x.Kind} {x.Name} vs {y.Kind} {y.Name}");
+            if (x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.Opacity != y.Opacity || x.Visible != y.Visible || x.Blend != y.Blend || x.Clipped != y.Clipped)
+                parts.Add($"placement ({x.X},{x.Y},{x.Scale},{x.Opacity}) vs ({y.X},{y.Y},{y.Scale},{y.Opacity})");
+            if (!Equals(x.Adjustment, y.Adjustment)) parts.Add("adjustment settings");
+            if (!Equals(x.Text, y.Text)) parts.Add("text settings");
+            if (x.Pixels.Width != y.Pixels.Width || x.Pixels.Height != y.Pixels.Height) parts.Add($"size {x.Pixels.Width}x{x.Pixels.Height} vs {y.Pixels.Width}x{y.Pixels.Height}");
+            else if (!x.Pixels.Data.AsSpan().SequenceEqual(y.Pixels.Data))
+            {
+                int count = 0, worst = 0, first = -1;
+                for (int k = 0; k < x.Pixels.Data.Length; k++) { int d = Math.Abs(x.Pixels.Data[k] - y.Pixels.Data[k]); if (d > 0) { count++; worst = Math.Max(worst, d); if (first < 0) first = k / 4; } }
+                parts.Add($"pixels {count} bytes differ (worst {worst}, first pixel {first % Math.Max(1, x.Pixels.Width)},{first / Math.Max(1, x.Pixels.Width)})");
+            }
+            if ((x.Mask == null) != (y.Mask == null) || x.Mask != null && !x.Mask.AsSpan().SequenceEqual(y.Mask)) parts.Add("mask");
+            if (parts.Count > 0) notes.Add($"#{i} {x.Kind} '{x.Name}': " + string.Join(", ", parts));
+        }
+        return notes.Count == 0 ? "no layer differs (render only)" : string.Join(" | ", notes);
+    }
+
     static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
     internal static readonly StyleServices Services = new() { SubjectMask = SyntheticPhoto.SubjectMask, Year = 2026 };
 
@@ -103,7 +129,7 @@ public static class DesignStyleTests
                     var after = Imaging.Render(doc);
                     Check(!after.Data.SequenceEqual(before.Data), "The style did not change how the document looks");
                     var again = sample.Snapshot(); DesignStyleEngine.Apply(again, new StyleRequest(style.Id), Services);
-                    Check(Imaging.Render(again).Data.SequenceEqual(after.Data), "The style is not deterministic");
+                    Check(Imaging.Render(again).Data.SequenceEqual(after.Data), "The style is not deterministic: " + Differences(doc, again));
                     bool Effect(AdjustmentKind kind, Func<AdjustmentSpec, bool>? also = null, bool clipped = false) =>
                         members.Any(l => l.Kind == LayerKind.Adjustment && l.Adjustment!.Kind == kind && l.Clipped == clipped && (also == null || also(l.Adjustment)));
                     switch (style.Id)

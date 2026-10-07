@@ -12,8 +12,11 @@ public static class SelfTests
         var results = new List<string>(); int failed = 0;
         string directory = Path.GetDirectoryName(Path.GetFullPath(output))!; Directory.CreateDirectory(directory);
         File.WriteAllText(output, "");
+        // MORUPIXEL_TEST_FILTER runs only the tests whose name contains it (for reproducing one failure).
+        string? only = Environment.GetEnvironmentVariable("MORUPIXEL_TEST_FILTER");
         void Test(string name, Action test)
         {
+            if (!string.IsNullOrEmpty(only) && !name.Contains(only, StringComparison.OrdinalIgnoreCase)) return;
             // Retain the last test even if a native renderer aborts the process.
             File.AppendAllText(output, "RUN " + name + Environment.NewLine);
             Console.WriteLine("RUN " + name);
