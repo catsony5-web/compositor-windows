@@ -15,7 +15,7 @@ public static class DesignStyleTests
 
     // What must not change on the original layers (pixel buffers compared by reference: rasters are immutable).
     static (Guid Id, string Name, bool Visible, double X, double Y, double Opacity, BlendMode Blend, Guid? Parent, byte[] Pixels, byte[]? Mask)[] Originals(Document doc) =>
-        doc.Layers.Where(l => DesignStyles.GroupOf(doc, l) == null).Select(l => (l.Id, l.Name, l.Visible, l.X, l.Y, l.Opacity, l.Blend, l.ParentId, l.Pixels.Data, l.Mask)).ToArray();
+        doc.Layers.Where(l => !DesignStyles.StyledLayers(doc).Contains(l.Id)).Select(l => (l.Id, l.Name, l.Visible, l.X, l.Y, l.Opacity, l.Blend, l.ParentId, l.Pixels.Data, l.Mask)).ToArray();
 
     static Raster Ink(int width, int height, Action<DrawingContext> draw) => Imaging.Draw(width, height, dc =>
     {
@@ -265,6 +265,15 @@ public static class DesignStyleTests
             Check(Difference(look, Imaging.Render(flat)) < 8, "The layered PDF lost the style's look");
         });
 
+        test("the poster keeps a drawing whole under its title", () =>
+        {
+            var doc = SyntheticPlan.Create(1200, 800);
+            var outcome = DesignStyleEngine.Apply(doc, new StyleRequest(DesignStyles.NeoBrutalistPoster), Services);
+            var members = doc.Layers.Where(l => l.ParentId == outcome.GroupId).ToArray();
+            Check(members.Any(l => l.Kind == LayerKind.Text && l.Name == "제목") && !members.Any(l => l.Kind == LayerKind.Raster && l.Mask != null),
+                "A drawing was cut out in front of the poster title");
+        });
+
         test("design style previews render miniatures and cancel cleanly", () =>
         {
             var preview = StylePreview.Create(SyntheticPlan.Create(), 320, Services);
@@ -273,6 +282,18 @@ public static class DesignStyleTests
             Check(image.Width == preview.Proxy.Width && image.Height == preview.Proxy.Height, "The preview render has the wrong size");
             var styled = SyntheticPlan.Create(); DesignStyleEngine.Apply(styled, new StyleRequest(DesignStyles.DarkSection), Services);
             Check(!StylePreview.Create(styled, 200, Services).Proxy.Layers.Any(DesignStyles.IsStyleGroup), "The miniature kept an applied style folder");
+            // The miniature reads its line work at the document's size, so the card shows the rooms the applied style will fill.
+            string Tones(StyleContext context)
+            {
+                var map = context.Services.LineRegions(context)!;
+                var tones = StyleRecipes.Classify(map, RegionDetection.Neighbors(map, Math.Max(3, (int)Math.Round(map.Width / 220d))), .55);
+                return string.Join(" ", tones.Values.GroupBy(t => t).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"));
+            }
+            var none = new Dictionary<string, double>();
+            var whole = new StyleContext(DesignStyleEngine.AnalysisDocument(SyntheticPlan.Create(), null), true, none, Services, default);
+            var mini = new StyleContext(DesignStyleEngine.AnalysisDocument(preview.Proxy, null), true, none, preview.Services, default);
+            Check(Tones(mini) == Tones(whole), $"The miniature found other rooms ({Tones(mini)}) than the document ({Tones(whole)})");
+            Check(ReferenceEquals(preview.Services.LineRegions(mini), preview.Services.LineRegions(mini)), "The miniature's rooms are found again for every render");
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             bool stopped = false; try { preview.Render(DesignStyles.ScreentonePlan, null, cancelled.Token); } catch (OperationCanceledException) { stopped = true; }
             Check(stopped, "A cancelled preview render did not stop");

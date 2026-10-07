@@ -93,8 +93,8 @@ public static class DesignStyleEngine
     public static Guid[]? ResolveTargets(Document doc, IReadOnlyList<Guid>? requested)
     {
         if (requested is not { Count: > 0 }) return null;
-        var index = doc.Layers.ToDictionary(l => l.Id);
-        var kept = requested.Distinct().Where(id => index.TryGetValue(id, out var layer) && DesignStyles.GroupOf(doc, layer) == null).ToArray();
+        var index = doc.Layers.ToDictionary(l => l.Id); var styled = DesignStyles.StyledLayers(doc);
+        var kept = requested.Distinct().Where(id => index.ContainsKey(id) && !styled.Contains(id)).ToArray();
         return kept.Length == 0 ? null : kept;
     }
 
@@ -122,10 +122,11 @@ public static class DesignStyleEngine
     public static bool IsDrawing(Document doc, IReadOnlyCollection<Guid>? targets)
     {
         var categories = DrawingLayers.Categories(doc); var scope = targets is { Count: > 0 } ? targets.SelectMany(id => Subtree(doc, id)).ToHashSet() : null;
+        var styled = DesignStyles.StyledLayers(doc);
         long drawing = 0, photo = 0;
         foreach (var layer in doc.Layers)
         {
-            if (!layer.Visible || layer.Kind == LayerKind.Group || DesignStyles.GroupOf(doc, layer) != null || scope != null && !scope.Contains(layer.Id)) continue;
+            if (!layer.Visible || layer.Kind == LayerKind.Group || styled.Contains(layer.Id) || scope != null && !scope.Contains(layer.Id)) continue;
             if (layer.Kind is LayerKind.Adjustment or LayerKind.Material) continue;
             // Line work counts per object; photos by their pixels; text and shapes (labels, frames) barely.
             long weight = layer.Kind switch { LayerKind.Raster => (long)layer.Pixels.Width * layer.Pixels.Height, LayerKind.Vector => 1_000_000, LayerKind.Shape => 100_000, _ => 20_000 };

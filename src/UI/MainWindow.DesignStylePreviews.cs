@@ -27,7 +27,7 @@ public sealed partial class MainWindow
         SavePng(image, path);
     }
 
-    internal void RenderDesignStylePreviews(string directory, List<string>? timings = null)
+    internal void RenderDesignStylePreviews(string directory)
     {
         Directory.CreateDirectory(directory);
         void Gallery(string name)
@@ -48,14 +48,13 @@ public sealed partial class MainWindow
         RenderPane(studioPanes[1], Path.Combine(directory, "design-style-properties.png"), 360, 1080);
         // Re-opening the gallery on the selected folder: settings loaded, "다시 적용" and "스타일 제거".
         Gallery("design-styles-reapply");
-        RenderDesignStyleSamples(directory, timings);
+        RenderDesignStyleSamples(directory);
     }
 
-    internal static void RenderDesignStyleSamples(string directory, List<string>? timings = null)
+    internal static void RenderDesignStyleSamples(string directory)
     {
         Directory.CreateDirectory(directory);
         var plan = SyntheticPlan.Create(); var photo = SamplePhotoDocument();
-        void Save(Raster image, string name) => SavePng(image.Bitmap(), Path.Combine(directory, name + ".png"));
         foreach (var (style, source, suffix) in new[]
         {
             (DesignStyles.ScreentonePlan, plan, "plan"), (DesignStyles.DarkSection, plan, "plan"), (DesignStyles.Cyanotype, plan, "plan"),
@@ -63,10 +62,8 @@ public sealed partial class MainWindow
         })
         {
             var doc = source.Snapshot();
-            var outcome = DesignStyleEngine.Apply(doc, new StyleRequest(style));
-            var watch = System.Diagnostics.Stopwatch.StartNew(); var image = Imaging.Render(doc); watch.Stop();
-            Save(image, $"style-{style}-{suffix}");
-            timings?.Add($"{style} on {suffix}: apply {outcome.Elapsed.TotalMilliseconds:0} ms, render {watch.Elapsed.TotalMilliseconds:0} ms, {outcome.LayerCount} layers; {string.Join(" / ", outcome.Notes)}");
+            DesignStyleEngine.Apply(doc, new StyleRequest(style));
+            SavePng(Imaging.Render(doc).Bitmap(), Path.Combine(directory, $"style-{style}-{suffix}.png"));
         }
     }
 }

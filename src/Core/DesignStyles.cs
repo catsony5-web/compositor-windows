@@ -113,6 +113,17 @@ public static class DesignStyles
             if ((removing == null || !removing.Contains(edit.LayerId)) && doc.Layers.FirstOrDefault(l => l.Id == edit.LayerId) is { } layer) layer.Visible = edit.Visible;
     }
 
+    /// <summary>Ids of every style folder and everything inside one, found in one pass over the document.</summary>
+    public static HashSet<Guid> StyledLayers(Document doc)
+    {
+        var styled = doc.Layers.Where(IsStyleGroup).Select(l => l.Id).ToHashSet();
+        if (styled.Count == 0) return styled;
+        var children = doc.Layers.Where(l => l.ParentId != null).ToLookup(l => l.ParentId!.Value);
+        var pending = new Stack<Guid>(styled);
+        while (pending.Count > 0) foreach (var child in children[pending.Pop()]) if (styled.Add(child.Id)) pending.Push(child.Id);
+        return styled;
+    }
+
     /// <summary>The style folder that contains the layer (or the layer itself), if any.</summary>
     public static Layer? GroupOf(Document doc, Layer? layer)
     {

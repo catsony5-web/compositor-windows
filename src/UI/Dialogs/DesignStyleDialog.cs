@@ -121,11 +121,11 @@ public sealed class DesignStyleDialog : Window
 
     Card CreateCard(DesignStyle style, bool drawing)
     {
-        var image = new Image { Stretch = Stretch.Uniform, Height = 112 };
+        var image = new Image { Stretch = Stretch.Uniform, Height = 104 };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
         var pendingText = DialogShell.Note("미리보기 준비 중…"); pendingText.HorizontalAlignment = HorizontalAlignment.Center; pendingText.VerticalAlignment = VerticalAlignment.Center; pendingText.Margin = new Thickness(6);
         var frame = new Grid(); frame.Children.Add(image); frame.Children.Add(pendingText);
-        var thumb = new Border { Background = Theme.Stage, CornerRadius = new CornerRadius(6), Padding = new Thickness(4), Child = frame, MinHeight = 120 };
+        var thumb = new Border { Background = Theme.Stage, CornerRadius = new CornerRadius(6), Padding = new Thickness(4), Child = frame, MinHeight = 112 };
         var content = new StackPanel();
         content.Children.Add(thumb);
         var heading = new DockPanel { Margin = new Thickness(2, 8, 2, 0) };
@@ -226,7 +226,7 @@ public sealed class DesignStyleDialog : Window
         {
             var snapshot = document;
             // Both miniatures share one cached subject cut-out per size.
-            (small, large) = await CompatibilityImport.OnSta(() => (StylePreview.Create(snapshot, 480, services, token), StylePreview.Create(snapshot, 820, services, token)), token);
+            (small, large) = await CompatibilityImport.OnSta(() => (StylePreview.Create(snapshot, 300, services, token), StylePreview.Create(snapshot, 820, services, token)), token);
             if (closed) return;
             ScheduleLarge(0);
             EnsureCards();
@@ -255,8 +255,7 @@ public sealed class DesignStyleDialog : Window
             pending++;
             try
             {
-                // Rendered larger and averaged down, so fine screens read as tones instead of moiré.
-                var image = await CompatibilityImport.OnSta(() => PreviewScaling.Fit(source.Render(style.Id, settings, token), 300, token), token);
+                var image = await CompatibilityImport.OnSta(() => source.Render(style.Id, settings, token), token);
                 if (closed) return;
                 // A newer change to this card's settings asked for another render.
                 if (card.Rendered == at) { card.Image.Source = image.Bitmap(); card.Pending.Visibility = Visibility.Collapsed; ThumbnailsRendered++; }

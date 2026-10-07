@@ -39,12 +39,13 @@ public static class StyleRecipes
         // Coloured hatch fills of the drawing would muddy the screens: they are hidden while the style is on.
         foreach (var layer in c.Source.Layers.Where(l => l.Kind == LayerKind.Material && Shown(c.Source, l)))
             if (kit.Original(layer.Id) is { } original) kit.Hide(original);
-        var map = LineRegions(c);
+        var map = c.Services.LineRegions(c);
         var classes = map == null ? [] : Classify(map, RegionDetection.Neighbors(map, Math.Max(3, (int)Math.Round(map.Width / 220d)), c.Token), strength);
         if (classes.Count == 0) c.Notes.Add("닫힌 영역을 찾지 못했습니다. 끊긴 벽선을 이으면 방이 채워집니다.");
         else
         {
-            double pitch = Math.Clamp(Math.Max(c.Width, c.Height) / 250d, 4, 40);
+            // A miniature keeps screens of at least 3 of its own pixels so they read as screens, not moiré.
+            double pitch = Math.Max(c.Measure(1 / 250d, 4, 40), c.Reduction > 1 ? 3.2 : 0);
             int grow = Math.Max(1, (int)Math.Round(map!.Width / 900d));
             List<Point[]> Outlines(ScreenTone tone) => RegionDetection.Outlines(map, classes.Where(p => p.Value == tone).Select(p => p.Key).ToArray(), grow, .8, c.Token);
             kit.FillRegions("포셰", Outlines(ScreenTone.Poche), StyleKit.Poche, 16);
@@ -76,7 +77,9 @@ public static class StyleRecipes
         foreach (var role in new[] { DrawingRole.Annotation, DrawingRole.Hatch, DrawingRole.Furniture })
             foreach (var id in DrawingLineCleanup.RoleLayers(lines, role)) skip.Add(id);
         foreach (var layer in lines.Layers) if (layer.Kind is LayerKind.Material or LayerKind.Text || skip.Contains(layer.Id)) layer.Visible = false;
-        int longest = Math.Max(c.Width, c.Height); double scale = Math.Min(1, 2000d / longest);
+        // At most 2000 px, and a gallery miniature is read at the size its document would be, so it finds the same rooms.
+        int longest = Math.Max(c.Width, c.Height);
+        double scale = Math.Min(2000, longest * c.Reduction) / longest;
         int w = Math.Max(1, (int)Math.Round(c.Width * scale)), h = Math.Max(1, (int)Math.Round(c.Height * scale));
         if (w < 24 || h < 24) return null;
         var image = DesignRenderer.Render(lines, new Rect(0, 0, c.Width, c.Height), w, h, c.Token);
@@ -133,10 +136,11 @@ public static class StyleRecipes
         kit.AddLevels("선 밝기", 4 + 10 * strength, 250 - 95 * strength, 1 + .25 * strength);
         if (c.Value("grid") >= .5)
         {
-            double cell = Math.Clamp(Math.Max(c.Width, c.Height) / 42d, 12, 400);
+            double cell = c.Measure(1 / 42d, 12, 400);
             kit.FillCanvas("격자", HatchPatternRenderer.Create(HatchPattern.Grid), cell * 4, 0xFF8C8C8C, 1, BlendMode.Screen, .34);
         }
         kit.AddGrain("단면 질감", TextureKind.Section, .55 + .45 * strength, BlendMode.Screen, .8);
+        // upgrade: 빛 번짐 (glow) adjustment from codex/style-effects for a faint bloom on the white lines.
     }
 
     // ---- 3. 청사진 (사이아노타입) --------------------------------------------------------------
@@ -204,7 +208,8 @@ public static class StyleRecipes
         var spec = probe with { FontSize = size, LineHeight = size * (hangul ? .98 : .84) };
         double titleHeight = Math.Min(h * .46, StyleKit.Measure(spec).Height * scale);
         // upgrade: "피사체를 글자 앞으로" from codex/text-poster.
-        var subject = kit.CutOutSubject("피사체");
+        // A drawing has no subject to lift: its line work stays under the title.
+        var subject = c.IsDrawing ? null : kit.CutOutSubject("피사체");
         // The title sits behind the top of the subject, so the cut-out overlaps its lower part.
         double titleY = subject is { } found ? Math.Clamp(found.Core.Y - titleHeight * .62, h * .07, h * .5) : h * .085;
         var region = new Rect(w * .04, titleY, w * .92, titleHeight);
@@ -217,7 +222,7 @@ public static class StyleRecipes
             kit.AddCurves("피사체 대비", StyleKit.Contrast(.35 + .65 * contrast), clipped: true);
         }
         // Small text blocks in the corners and a column under the title.
-        double small = Math.Max(9, unit * .021);
+        double small = c.AtLeast(unit * .021, 9);
         string font = StyleKit.HasFont("Bahnschrift") ? "Bahnschrift SemiBold SemiCondensed" : "Segoe UI Semibold";
         void Block(string name, string content, double x, double y, TextAlignment alignment, double sizeFactor = 1)
         {
@@ -268,6 +273,7 @@ public static class StyleRecipes
         int w = c.Width, h = c.Height; double unit = Math.Min(w, h);
         kit.AddCurves("부드러운 톤", [new(0, .07), new(.5, .52), new(1, .95)]);
         kit.AddHueSaturation("차분한 색", 0, -24);
+        // upgrade: 빛 번짐 (glow) adjustment from codex/style-effects for soft, haloed highlights.
         var panel = position switch
         {
             0 => new Rect(w * .06, h * .08, w * .34, h * .84),
@@ -280,11 +286,11 @@ public static class StyleRecipes
         double veil = .26 + .16 * blur;
         int pw = Math.Max(1, (int)Math.Round(panel.Width)), ph = Math.Max(1, (int)Math.Round(panel.Height));
         kit.AddShape("반투명 패널 · 종이", new ShapeSpec { Width = pw, Height = ph, FillArgb = 0xFFFFFFFF, StrokeEnabled = false }, panel.X, panel.Y, veil);
-        kit.AddShape("반투명 패널 · 테두리", new ShapeSpec { Width = pw, Height = ph, FillEnabled = false, StrokeEnabled = true, StrokeArgb = 0xB3FFFFFF, StrokeWidth = Math.Max(1, unit / 900) }, panel.X, panel.Y);
+        kit.AddShape("반투명 패널 · 테두리", new ShapeSpec { Width = pw, Height = ph, FillEnabled = false, StrokeEnabled = true, StrokeArgb = 0xB3FFFFFF, StrokeWidth = c.AtLeast(unit / 900, 1) }, panel.X, panel.Y);
         // Text over the veiled panel: dark unless the panel stays dark.
         double under = AverageLuminance(c, panel) * (1 - veil) + veil;
         uint ink = under >= .55 ? 0xFF1C1D20u : 0xFFF6F6F2u;
-        double margin = Math.Max(8, unit * .03), small = Math.Max(9, unit * .017);
+        double margin = c.AtLeast(unit * .03, 8), small = c.AtLeast(unit * .017, 9);
         string sans = StyleKit.HasFont("Segoe UI") ? "Segoe UI" : "Malgun Gothic", serif = StyleKit.HasFont("Georgia") ? "Georgia" : sans;
         string titleText = c.Source.Name.Trim(); if (titleText.Length == 0) titleText = "Title"; if (titleText.Length > 60) titleText = titleText[..60].TrimEnd();
         bool hangul = StyleKit.HasHangul(titleText);

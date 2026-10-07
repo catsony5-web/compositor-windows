@@ -144,6 +144,6 @@ public sealed partial class MainWindow
     void AddDesignStyleCommands(StackPanel panel)
     {
         WorkspaceSection(panel, UserProfiles.DesignStyle, "사진이나 도면을 한 번에 꾸미고, 결과를 편집할 수 있는 레이어 묶음으로 더합니다.");
-        WorkspaceCommands(panel, (Theme.Glyphs.Style, "디자인 스타일", ShowDesignStyles, "미리보기를 보며 디자인 스타일을 고르고 편집할 수 있는 레이어로 적용", null));
+        panel.Children.Add(Theme.ActionRow("디자인 스타일", Run(ShowDesignStyles), "미리보기를 보며 디자인 스타일을 고르고 편집할 수 있는 레이어로 적용", Theme.Glyphs.Style));
     }
 }

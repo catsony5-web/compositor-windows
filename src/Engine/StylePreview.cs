@@ -9,12 +9,19 @@ public sealed class StylePreview
     public Document Proxy { get; }
     public bool IsDrawing { get; }
     readonly Lazy<byte[]> subject;
-    StylePreview(Document proxy, bool drawing, StyleServices services)
+    RegionMap? regions;
+    StylePreview(Document proxy, bool drawing, StyleServices services, double reduction)
     {
         Proxy = proxy; IsDrawing = drawing;
         // The subject cut-out of the poster is found once per proxy and reused for every parameter change.
         subject = new(() => services.SubjectMask(DesignRenderer.RenderOutput(DesignStyleEngine.AnalysisDocument(proxy, null)), CancellationToken.None), LazyThreadSafetyMode.ExecutionAndPublication);
-        Services = new StyleServices { Year = services.Year, SubjectMask = (image, token) => image.Width == proxy.Width && image.Height == proxy.Height ? subject.Value : services.SubjectMask(image, token) };
+        Services = new StyleServices
+        {
+            Year = services.Year, Reduction = reduction,
+            SubjectMask = (image, token) => image.Width == proxy.Width && image.Height == proxy.Height ? subject.Value : services.SubjectMask(image, token),
+            // The line work does not change while the gallery is open: its rooms are found once (previews have no targets).
+            LineRegions = context => regions ??= services.LineRegions(context),
+        };
     }
 
     /// <summary>The services used for preview renders (the subject cut-out is cached).</summary>
@@ -37,7 +44,7 @@ public sealed class StylePreview
                 root.X *= factor; root.Y *= factor; root.Scale = Math.Clamp(root.Scale * factor, .01, 20);
             }
         proxy.Artboards = [];
-        return new StylePreview(proxy, drawing, services ?? StyleServices.Default);
+        return new StylePreview(proxy, drawing, services ?? StyleServices.Default, 1 / factor);
     }
 
     /// <summary>The proxy with the style applied, rendered.</summary>

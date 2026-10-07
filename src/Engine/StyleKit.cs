@@ -8,12 +8,16 @@ namespace Compositor.Windows;
 /// <summary>Coverage for a layer of width × height pixels, each covering <c>scale</c> document pixels.</summary>
 public delegate byte[] MaskSource(int width, int height, double scale);
 
-/// <summary>Replaceable services a style uses: the subject cut-out (local AI background removal) and the year for placeholders.</summary>
+/// <summary>Replaceable services a style uses: the subject cut-out (local AI background removal), the closed areas of the line work and the year for placeholders.</summary>
 public sealed class StyleServices
 {
     public static readonly StyleServices Default = new();
     public Func<Raster, CancellationToken, byte[]> SubjectMask { get; init; } = (image, token) => BackgroundRemoval.CreateMask(image, cancellationToken: token);
+    /// <summary>Closed areas of the line work (the screentone plan); the gallery finds them once per miniature.</summary>
+    public Func<StyleContext, RegionMap?> LineRegions { get; init; } = StyleRecipes.LineRegions;
     public int Year { get; init; } = DateTime.Now.Year;
+    /// <summary>How many times larger the real document is than the one being styled: above 1 for a gallery miniature, so sizes with a minimum keep their proportion.</summary>
+    public double Reduction { get; init; } = 1;
 }
 
 /// <summary>What a recipe works from: the document as it looks without style folders (only the targets shown), its kind and the parameter values.</summary>
@@ -28,6 +32,12 @@ public sealed class StyleContext(Document source, bool drawing, IReadOnlyDiction
     public CancellationToken Token { get; } = token;
     public List<string> Notes { get; } = [];
     public double Value(string key) => Values.TryGetValue(key, out var value) ? value : 0;
+    /// <summary>How many times larger the real document is (1 unless this is a gallery miniature).</summary>
+    public double Reduction => Math.Max(1, Services.Reduction);
+    /// <summary>A size as a fraction of the long side, clamped in pixels of the real document (a miniature scales the result down).</summary>
+    public double Measure(double fraction, double min, double max) => Math.Clamp(Math.Max(Width, Height) * Reduction * fraction, min, max) / Reduction;
+    /// <summary>At least <paramref name="min"/> pixels of the real document.</summary>
+    public double AtLeast(double value, double min) => Math.Max(value, min / Reduction);
     /// <summary>Slider value as 0–1.</summary>
     public double Unit(string key) => Math.Clamp(Value(key) / 100, 0, 1);
     Raster? composite;
@@ -106,8 +116,12 @@ public sealed class StyleKit
 
     /// <summary>Line work and screens snapped toward pure black and white.</summary>
     // upgrade: 한계값 (threshold) adjustment layer from codex/style-effects, with the level as its parameter.
-    public Layer AddThreshold(string name, double level, double softness = 24) =>
-        AddLevels(name, Math.Clamp(level - softness, 0, 250), Math.Clamp(level + softness, 4, 255));
+    // A miniature has averaged its screens into greys, so its threshold softens in proportion and keeps those tones.
+    public Layer AddThreshold(string name, double level, double softness = 24)
+    {
+        softness *= Context.Reduction;
+        return AddLevels(name, Math.Clamp(level - softness, 0, 250), Math.Clamp(level + softness, 4, 255));
+    }
 
     // ---- Texture layers -------------------------------------------------------------------------
 
@@ -382,16 +396,19 @@ public sealed class StyleKit
     public static bool HasFont(string family) => fonts.GetOrAdd(family, name => installed.Value.Contains(name));
     public static bool HasHangul(string text) => text.Any(c => c is >= '가' and <= '힣' or >= 'ㄱ' and <= 'ㅣ');
 
+    // Sizes derived from tiny or very narrow canvases stay within what a text layer accepts.
+    static TextSpec Safe(TextSpec spec) => spec with { FontSize = Math.Clamp(spec.FontSize, 1, 1024), LineHeight = Math.Clamp(spec.LineHeight, 0, 8192) };
+
     public static (double Width, double Height) Measure(TextSpec spec)
     {
-        var layout = DocumentFeatures.TextDrawing(spec); return (layout.Width - 8, layout.Height - 8);
+        var layout = DocumentFeatures.TextDrawing(Safe(spec)); return (layout.Width - 8, layout.Height - 8);
     }
 
     /// <summary>An editable text layer; the layer scale takes over beyond the largest font size.</summary>
     // upgrade: text outline (stroke / outline-only) and paragraph box width from codex/text-poster.
     public Layer AddText(string name, TextSpec spec, double x, double y, double scale = 1)
     {
-        spec.Validate();
+        spec = Safe(spec); spec.Validate();
         var layer = DocumentFeatures.CreateText(spec, x, y); layer.Scale = Math.Clamp(scale, .01, 20);
         return Add(layer, name);
     }
