@@ -25,7 +25,8 @@ public static partial class AutomationCatalog
 
         public JsonObject Schema()
         {
-            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
+            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : ArrayShape == "ids" ? IdArraySchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
+            if (Type == "object") { var shape = StyleParametersSchema(); shape["description"] = Description; return shape; }
             var schema = new JsonObject { ["type"] = Type, ["description"] = Description };
             if (Minimum is { } min) schema["minimum"] = min;
             if (Maximum is { } max) schema["maximum"] = max;
@@ -48,8 +49,8 @@ public static partial class AutomationCatalog
     static readonly Field InkColor = new("string", "Hatch pattern ink: #RRGGBB, #AARRGGBB with alpha 01-FF, or default (dark grey). Ignored for image materials.", MaxLength: 9, Ink: true);
     const string BackgroundPattern = "^(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|none)$";
     static readonly Field BackgroundColor = new("string", "Line pattern background painted inside the boundary under the lines: #RRGGBB, #AARRGGBB, or none (transparent, the default). An alpha of 00 also means none. Ignored for image materials.", MaxLength: 9, TextPattern: BackgroundPattern);
-    // Built-in keys (brick, grass-sparse, …) or a user line pattern "custom:<32 hex>" from query_patterns.
-    public const string PatternIdPattern = "^([a-z]+(-[a-z]+)*|custom:[0-9a-f]{32})$";
+    // Built-in keys (brick, grass-sparse, dot-screen-30, …) or a user line pattern "custom:<32 hex>" from query_patterns.
+    public const string PatternIdPattern = "^([a-z]+(-[a-z0-9]+)*|custom:[0-9a-f]{32})$";
     static readonly Field Coordinate = Number(-100_000, 100_000, "Position in parent-layer pixels; document pixels for root layers. See get_capabilities for coordinate conventions.");
     static readonly Dictionary<string, Command> Commands = CreateCommands();
 
@@ -75,9 +76,16 @@ public static partial class AutomationCatalog
         var textFields = Fields(("text", new("string", "Text content, including line breaks.", MaxLength: 100_000, EmptyAllowed: true)),
             ("fontFamily", new("string", "Installed font family name.", MaxLength: 256)), ("fontSize", Number(1, 1024)),
             ("color", Color), ("x", Coordinate), ("y", Coordinate), ("name", Name), ("bold", Bool("Bold text.")),
-            ("italic", Bool("Italic text.")), ("alignment", Choice("Left", "Center", "Right")),
+            ("italic", Bool("Italic text.")),
+            ("alignment", new("string", "Left, Center, Right or Justify. Justify spreads the wrapped lines of a paragraph box (boxWidth) to both edges; the last line of each paragraph stays left.", Choices: ["Left", "Center", "Right", "Justify"])),
             ("lineHeight", Number(0, 8192, "Line height in pixels; zero uses natural spacing.")),
-            ("tracking", Number(-200, 2000, "Tracking in 1/1000 em.")));
+            ("tracking", Number(-200, 2000, "Tracking in 1/1000 em.")),
+            ("boxWidth", Number(0, TextSpec.MaxBoxWidth, "Paragraph box width in pixels: lines wrap between words to fit it (Korean keeps whole words). 0 = no wrapping, one line per line break.")),
+            ("outline", Bool("Letter outline around the glyphs. Omitted: true when another outline argument is given, otherwise the current value (false for new text).")),
+            ("outlineWidth", Number(.5, TextSpec.MaxOutlineWidth, "Outline width in pixels; defaults to 4.")),
+            ("outlineColor", Color with { Description = "Outline color: #RRGGBB, #AARRGGBB, or transparent; defaults to black." }),
+            ("outlinePosition", new("string", "outside (default): the outline grows outward from the letter shapes; center: it straddles the letter edges.", Choices: ["outside", "center"])),
+            ("outlineOnly", Bool("Hollow letters: draw only the outline, without the fill. Turns the outline on unless outline=false.")));
         Add("list_sessions", "List Morupixel windows where the user enabled AI control. Does not open or focus a window.", true, Fields());
         Add("get_state", "Inspect document identifiers, revisions and counts. Use includeLayers=false for a compact overview, then query_layers/get_layer for objects. The legacy default includes all layers.", true,
             Fields(("documentId", Id), ("includeLayers", Bool("Defaults to true for existing clients. Set false to omit the potentially large layer inventory."))));
@@ -129,16 +137,27 @@ public static partial class AutomationCatalog
         Add("delete_layer", "Delete the specified layer through the document undo history.", false, Mutation(("layerId", Id)), WriteRequired("layerId"));
         Add("reorder_layer", "Move a layer one position up or down in the layer stack.", false,
             Mutation(("layerId", Id), ("direction", Choice("up", "down"))), WriteRequired("layerId", "direction"));
-        var adjustments = Mutation(("kind", Choice("exposure", "levels", "hue_saturation", "photo_develop")), ("name", Name),
+        var adjustments = Mutation(("kind", Choice("exposure", "levels", "hue_saturation", "photo_develop", "threshold", "halftone", "paper_texture", "glow")), ("name", Name),
             ("exposure", Number(-20, 20, "Exposure EV; photo_develop accepts -5 to 5.")), ("offset", Number(-.5, .5)),
             ("gamma", Number(.1, 9.99)), ("black", Number(0, 254)), ("white", Number(1, 255)), ("hue", Number(-360, 360)),
             ("saturation", Number(-100, 100)), ("lightness", Number(-100, 100)));
         foreach (var key in new[] { "temperature", "tint", "contrast", "highlights", "shadows", "whites", "blacks", "texture", "clarity", "dehaze", "vibrance" })
             adjustments.Add(key, Number(-100, 100));
-        Add("add_adjustment", "Add a reversible RGB8 adjustment layer. photo_develop is an image adjustment, not camera RAW decoding. Supply only parameters for the chosen kind.",
+        foreach (var (key, field) in StyleEffectFields()) adjustments.Add(key, field);
+        Add("add_adjustment", "Add a reversible RGB8 adjustment layer. photo_develop is an image adjustment, not camera RAW decoding. threshold makes a black/white bitmap, halftone a printed dot screen, paper_texture paper/photocopy texture with rough edges, glow light that spreads from bright areas; their lengths are document pixels and their seeded patterns are deterministic. Supply only parameters for the chosen kind; omitted ones use the app's defaults.",
             false, adjustments, WriteRequired("kind"));
         Add("remove_background", "Create a layer mask using the bundled local AI model. Existing edits remain undoable.", false,
             Mutation(("layerId", Id)), WriteRequired("layerId"));
+        Add("clean_sketch", "Turn a photographed hand sketch (a raster photo layer) into clean line art, like the app's sketch photo cleanup: find the sheet (or use corners), flatten its perspective, even out shadows and uneven light, and keep the dark pen and pencil lines as a transparent layer (lineColor=original keeps each pen's color) above an optional white layer, in a new group directly above the photo, which stays in the document hidden. If the photo is the document's only layer the canvas becomes the flattened sheet; otherwise the result is fitted into the photo's bounds. One undo step; can be included in apply_batch. Returns layerId (the new group), lineLayerId, backgroundLayerId, the corners used and the detection confidence.", false,
+            Mutation(("layerId", Id with { Description = "The photo layer (kind Raster) holding the sketch photo." }),
+                ("corners", new("array", "Sheet corners in the photo layer's own pixels, in the order top-left, top-right, bottom-right, bottom-left. Omit to find the sheet automatically.", ArrayShape: "corners")),
+                ("flatten", Bool("Flatten the sheet's perspective (default true). false cleans the whole photo as it is and cannot be combined with corners.")),
+                ("threshold", Number(0, 1, "Line threshold in paper-normalized darkness, 0 paper … 1 ink; lower keeps fainter lines. Omit for the automatic value measured from the photo.")),
+                ("speckSize", Integer(0, 1_000_000, "Marks smaller than this many pixels (at the result's resolution) are removed; 0 keeps every mark. Omit for the automatic size that removes dust.")),
+                ("boldness", Number(0, 1, "0..1: makes faint lines and soft edges more solid. Defaults to 0.")),
+                ("lineColor", new("string", "original (default: each pen's own color), black, or #RRGGBB for one color.", MaxLength: 8, TextPattern: "^(original|black|#[0-9a-fA-F]{6})$")),
+                ("background", new("string", "white (default) adds a white layer under the lines; none leaves the lines on transparency.", Choices: ["white", "none"])),
+                ("name", Name with { Description = "Name of the new group; defaults to the app's own name for it." })), WriteRequired("layerId"));
         Add("save_project", "Save the active document to an absolute .moruproj path. Existing files require overwrite=true.", false,
             Mutation(("path", Path), ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path"));
         Add("export_image", "Export the active document, one artboard or one selected layer to PNG, JPEG or TIFF, optionally scaled. Existing files require overwrite=true.", false,
@@ -191,19 +210,30 @@ public static partial class AutomationCatalog
             ("verticalRatio", Number(.25, 4, "Vertical ratio like the app's vertical ratio % / 100; 1 keeps the material's own proportions. Patterns keep their marks and change vertical spacing only. Cannot be combined with tileHeight.")),
             ("angle", Number(-36000, 36000, "Pattern rotation in degrees around the local origin.")),
             ("offsetX", Coordinate), ("offsetY", Coordinate), ("name", Name), ("ink", InkColor),
-            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Ignored for image materials.")),
+            ("lineWeight", Number(.1, 8, "Hatch pattern line and dot weight multiplier; 1 is the default. Screentone dots and lines scale with it, so their ink coverage changes. Ignored for image materials, solid-black and the gradient screentones.")),
             ("background", BackgroundColor),
+            ("gradientAngle", Number(-36000, 36000, "dot-gradient and stipple-gradient only: direction in degrees along which the density runs across the region, clockwise from left-to-right (0); 90 runs top to bottom (the default).")),
+            ("gradientStart", Number(0, 1, "dot-gradient and stipple-gradient only: ink coverage 0-1 at the region's first edge along the direction (0.1 = 10%, the default).")),
+            ("gradientEnd", Number(0, 1, "dot-gradient and stipple-gradient only: ink coverage 0-1 at the region's last edge along the direction (0.9 = 90%, the default).")),
+            ("gradientSeed", Integer(0, ToneGradient.MaxSeed, "dot-gradient and stipple-gradient only: another random arrangement of the stipple's dots at the same density (default 0); kept but unused by dot-gradient.")),
             ("opacity", Number(0, 1)), ("blend", Choice(Enum.GetNames<BlendMode>())));
-        Add("query_patterns", "List the built-in line hatch patterns (lawn, sand, pavers, brick, …) ordered for a surface, then the user's line patterns (My patterns library and those carried by the document) with patternId custom:<id>. No document is needed; with documentId (default: the active document) its own user patterns are included. apply_material registers a pattern automatically.", true,
+        Add("query_patterns", "List the built-in line hatch patterns (lawn, sand, pavers, brick, …) ordered for a surface, then the screentones (dot, line and grid screens by ink coverage, solid-black poché, and the dot-gradient and stipple-gradient fills whose density runs across the region), then the user's line patterns (My patterns library and those carried by the document) with patternId custom:<id>. Each entry has group (basic, screentone, custom), coverage (nominal ink coverage 0-1 of a uniform screentone) and gradient. No document is needed; with documentId (default: the active document) its own user patterns are included. apply_material registers a pattern automatically.", true,
             Fields(("documentId", Id), ("nameContains", new("string", "Case-insensitive literal substring of patternId, Korean name or display name.", MaxLength: 256)),
                 ("surface", Choice("general", "wall", "floor", "ground"))));
-        Add("apply_material", "Create an editable material layer from a registered image (materialId) or a built-in hatch pattern (patternId, or its materialId from query_patterns) inside a boundary: an existing regionId, or inline points/holes or a closed boundaryLayerId, stored as a new region template in the same step. Size with tileWidth/tileHeight in pixels or scale/verticalRatio relative to the default; omitted sizes use the app's default. Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId (and regionId); can be included in apply_batch.", false,
+        Add("apply_material", "Create an editable material layer from a registered image (materialId) or a built-in hatch pattern (patternId, or its materialId from query_patterns) inside a boundary: an existing regionId, or inline points/holes or a closed boundaryLayerId, stored as a new region template in the same step. Size with tileWidth/tileHeight in pixels or scale/verticalRatio relative to the default; omitted sizes use the app's default. dot-gradient and stipple-gradient take gradientAngle, gradientStart, gradientEnd and gradientSeed (density across the region). Original texture and vector boundary remain stored. Added above existing layers with Multiply by default to keep drawing lines visible. Returns layerId (and regionId); can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Concat(new[] { ("regionId", Id),
                 ("points", new Field("array", "Inline closed outer contour in document pixels instead of regionId, at least 3 points; stored as a polygon region template.", ArrayShape: "points")),
                 ("holes", new Field("array", "Optional inner contours for points; at most 2048 points across all contours.", ArrayShape: "holes")),
                 ("boundaryLayerId", Id with { Description = "Closed shape or closed CAD path layer used as the boundary instead of regionId, like define_region source=closed_layer." }),
                 ("regionName", Name with { Description = "Name of the region template created from points or boundaryLayerId." }) }).ToArray()), WriteRequired());
-        Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
+        Add("query_styles", "List the design styles: styleId, Korean name and description, what each suits (drawing, photo or any) and its 1–3 parameters with type, range, default and choices. Also lists the style folders of a document (documentId, default the active document) with their groupId, styleId and parameters. No document is needed for the registry.", true,
+            Fields(("documentId", Id)));
+        Add("apply_style", "Apply a design style as one undo step. It adds an editable pass-through folder (named like folderName in query_styles) of adjustment, pattern fill, texture and text layers above what it reads; the original layers stay unchanged (the screentone plan hides the drawing's own hatch fills while it is on and shows them again when its folder is deleted). parameters maps a parameter key to a number (sliders 0–100), a boolean (toggles) or a choice key (or index) from query_styles; omitted keys use defaults. targetLayerIds limits what the style reads (default: the whole document, placed on top). groupId re-applies that style folder in place, keeping its ID, position, visibility and opacity, with new parameters or another styleId. Returns groupId. Remove a style with delete_layer on its groupId. The poster style cuts out the subject with the bundled local AI model.", false,
+            Mutation(("styleId", Choice(DesignStyles.All.Select(style => style.Id).ToArray())),
+                ("parameters", new("object", "Parameter key → value for the chosen style (see query_styles).")),
+                ("targetLayerIds", new("array", "Layers the style reads (with their descendants); the folder goes right above the topmost of them. Omit for the whole document.", ArrayShape: "ids")),
+                ("groupId", Id with { Description = "A style folder to re-apply in place (from query_styles or a previous apply_style)." })), WriteRequired("styleId"));
+        Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, gradient (gradientAngle, gradientStart, gradientEnd, gradientSeed of dot-gradient and stipple-gradient), opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         return commands;
     }
@@ -229,6 +259,7 @@ public static partial class AutomationCatalog
                 "string" => kind == JsonValueKind.String,
                 "boolean" => kind is JsonValueKind.True or JsonValueKind.False,
                 "array" => kind == JsonValueKind.Array,
+                "object" => kind == JsonValueKind.Object,
                 _ => kind == JsonValueKind.Number
             };
             if (!validType)
@@ -236,9 +267,10 @@ public static partial class AutomationCatalog
             if (field.Type == "array")
             {
                 if (field.ArrayShape == null) ValidateBatchSteps(value!.AsArray(), arguments);
+                else if (field.ArrayShape == "ids") ValidateIdArray(value!.AsArray());
                 else ValidateMaterialArray(value!.AsArray(), field.ArrayShape);
             }
-            else if (field.Type == "boolean")
+            else if (field.Type is "boolean" or "object")
             {
                 // Type validation above already guarantees a JSON boolean.
             }
@@ -270,6 +302,8 @@ public static partial class AutomationCatalog
         }
         if (command is "new_document" or "add_shape" && (double)NumberValue(arguments, "width") * NumberValue(arguments, "height") > 16_777_216)
             throw new ArgumentException("Automation images must not exceed 16,777,216 pixels.");
+        if (command is "add_text" or "update_text" && NumberValue(arguments, "boxWidth") is > 0 and < 1)
+            throw new ArgumentException("boxWidth must be 0 (no wrapping) or at least 1 pixel.");
         if (command is "query_layers" or "query_materials" or "query_regions")
         {
             if (arguments.ContainsKey("parentId") && arguments["rootsOnly"]?.GetValue<bool>() == true)
@@ -287,6 +321,9 @@ public static partial class AutomationCatalog
             if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
         }
         if (command is "apply_material" or "update_material") ValidateMaterialFields(command, arguments);
+        if (command == "clean_sketch" && arguments.ContainsKey("corners") && arguments["flatten"]?.GetValue<bool>() == false)
+            throw new ArgumentException("corners need flatten=true (the default); flatten=false keeps the whole photo.");
+        if (command == "apply_style") ValidateStyleArguments(arguments);
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
             throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))
@@ -305,6 +342,7 @@ public static partial class AutomationCatalog
                 "exposure" => ["exposure", "offset", "gamma"],
                 "levels" => ["black", "white", "gamma"],
                 "hue_saturation" => ["hue", "saturation", "lightness"],
+                "threshold" or "halftone" or "paper_texture" or "glow" => StyleEffectParameters[kind],
                 _ => ["temperature", "tint", "exposure", "contrast", "highlights", "shadows", "whites", "blacks", "texture", "clarity", "dehaze", "vibrance", "saturation"]
             };
             foreach (string key in arguments.Select(p => p.Key))
@@ -316,6 +354,42 @@ public static partial class AutomationCatalog
                 throw new ArgumentException("photo_develop exposure must be between -5 and 5 EV.");
         }
     }
+
+    // Parameters of the design-style adjustment kinds (names unique within add_adjustment). A method, not a
+    // field: the command table is built while the type initializes, before later static fields exist.
+    static (string Key, Field Field)[] StyleEffectFields() =>
+    [
+        ("level", Number(0, 255, "threshold: 8-bit luminance where white begins; a gray of exactly this value is white. Default 128.")),
+        ("smoothness", Number(0, 64, "threshold: soft transition width in luminance levels; 0 (default) is pure black and white.")),
+        ("keepAlpha", Bool("threshold: keep the original transparency (default true); false also makes alpha 0 or 255 at 50%.")),
+        ("cellSize", Number(2, 256, "halftone: screen period in document pixels. Default 8.")),
+        ("angle", Number(-360, 360, "halftone: screen angle in degrees, clockwise. Default 45.")),
+        ("dotShape", new("string", "halftone: round (default), line or square.", Choices: ["round", "line", "square"])),
+        ("ink", new("string", "halftone: dot color #RRGGBB or #AARRGGBB (default #000000); transparent prints dots in the image's own colors.", MaxLength: 11, Color: true)),
+        ("paper", new("string", "halftone: color between dots #RRGGBB or #AARRGGBB (default #FFFFFF); transparent keeps the image between dots.", MaxLength: 11, Color: true)),
+        ("seed", Integer(0, int.MaxValue, "paper_texture: pattern number; the same number always draws the same texture. Default 1.")),
+        ("textureSize", Number(.5, 32, "paper_texture: size of the finest paper grain in document pixels; fibres and specks scale with it. Default 2.")),
+        ("paperTint", Number(0, 1, "paper_texture: how much white takes paperColor (0-1). Default 0.5.")),
+        ("paperColor", new("string", "paper_texture: paper color #RRGGBB or #AARRGGBB. Default #F1EADA.", MaxLength: 11, Color: true)),
+        ("grain", Number(0, 1, "paper_texture: paper tooth and cloudy density (0-1). Default 0.35.")),
+        ("fibers", Number(0, 1, "paper_texture: paper fibres (0-1). Default 0.3.")),
+        ("toner", Number(0, 1, "paper_texture: photocopy toner specks and dropouts (0-1). Default 0.")),
+        ("streaks", Number(0, 1, "paper_texture: photocopy streaks (0-1). Default 0.")),
+        ("edges", Number(0, 1, "paper_texture: rough, burned edges (0-1). Default 0.")),
+        ("edgeWidth", Number(.01, .5, "paper_texture: edge reach as a fraction of the shorter page side. Default 0.08.")),
+        ("edgeColor", new("string", "paper_texture: color the edges turn toward #RRGGBB or #AARRGGBB; dark burns, white fades. Default #2A1D12.", MaxLength: 11, Color: true)),
+        ("threshold", Number(0, 1, "glow: brightness (0-1, strongest color channel) where light starts to glow. Default 0.7.")),
+        ("radius", Number(1, 1000, "glow: how far light spreads in document pixels. Default 32.")),
+        ("intensity", Number(0, 4, "glow: strength; 0 leaves the image unchanged. Default 1.")),
+        ("glowColor", new("string", "glow: light color; #AARRGGBB alpha is how much the glow takes it (#RRGGBB = fully). Default transparent (each light's own color).", MaxLength: 11, Color: true)),
+    ];
+    static readonly Dictionary<string, string[]> StyleEffectParameters = new(StringComparer.Ordinal)
+    {
+        ["threshold"] = ["level", "smoothness", "keepAlpha"],
+        ["halftone"] = ["cellSize", "angle", "dotShape", "ink", "paper"],
+        ["paper_texture"] = ["seed", "textureSize", "paperTint", "paperColor", "grain", "fibers", "toner", "streaks", "edges", "edgeWidth", "edgeColor"],
+        ["glow"] = ["threshold", "radius", "intensity", "glowColor"]
+    };
 
     static double NumberValue(JsonObject arguments, string key, double fallback = 0)
         => arguments[key] is { } value ? JsonSerializer.Deserialize<double>(value.ToJsonString()) : fallback;

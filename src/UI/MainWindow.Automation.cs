@@ -289,6 +289,7 @@ public sealed partial class MainWindow
         if (command == "query_patterns") return AutomationPatternQuery(args);
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
+        if (command == "query_styles") return AutomationStyleQuery(args);
         RequireAutomationIdle(token);
         if (command is "query_materials" or "query_regions") return AutomationMaterialQuery(command, args);
         if (command is "register_material" or "define_region") return await AutomationRegisterMaterialAsync(command, args, token);
@@ -457,12 +458,16 @@ public sealed partial class MainWindow
             finally { if (File.Exists(staging)) File.Delete(staging); }
         }
 
+        automationStyleOutcome = null;
         var affected = await ApplyAutomationEditAsync(candidate, command, args, token);
+        var details = automationStepDetails;
         candidate.Validate(); Recheck();
         CommitAutomationCandidate("AI · " + command, before, candidate, affected);
         var edited = AutomationResult(affected);
+        if (command == "apply_style" && automationStyleOutcome is { } styled) AutomationStyleResult(edited, styled, doc);
         if (command == "apply_material" && affected is { } mappedId && doc.Layers.FirstOrDefault(l => l.Id == mappedId)?.Material is { } mappedFill)
             edited["regionId"] = mappedFill.SourceRegionId.ToString();
+        if (details != null) foreach (var (key, value) in details) edited[key] = value?.DeepClone();
         return edited;
     }
 
@@ -559,9 +564,20 @@ public sealed partial class MainWindow
         return (width, Math.Max(1, width * MaterialEditing.Aspect(asset) * ratio));
     }
 
+    /// <summary>The gradient of a dot-gradient or stipple-gradient fill with the request's gradient fields applied over `current`.</summary>
+    static ToneGradient AutomationGradient(JsonObject args, ToneGradient? current)
+    {
+        var gradient = current ?? ToneGradient.Default;
+        return gradient with
+        {
+            Angle = ANumber(args, "gradientAngle", gradient.Angle), Start = ANumber(args, "gradientStart", gradient.Start),
+            End = ANumber(args, "gradientEnd", gradient.End), Seed = (int)ANumber(args, "gradientSeed", gradient.Seed)
+        };
+    }
+
     async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
     {
-        Guid? affected = null;
+        Guid? affected = null; automationStepDetails = null;
         Layer Target(bool allowUnlock = false)
         {
             var id = Guid.Parse(AString(args, "layerId"));
@@ -582,6 +598,7 @@ public sealed partial class MainWindow
                 RegisterAutomationPattern(candidate, materialId);
                 var asset = MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == materialId)
                     ?? throw new AutomationFault("material_not_found", "등록된 재료 ID가 없습니다.");
+                if (AutomationMaterials.HasGradient(args) && !HatchPatterns.IsGradient(asset)) throw new AutomationFault("invalid_arguments", AutomationMaterials.GradientOnly);
                 Guid? boundaryLayer = args.ContainsKey("boundaryLayerId") ? Guid.Parse(AString(args, "boundaryLayerId")) : null;
                 if (args.ContainsKey("regionId"))
                 {
@@ -615,10 +632,11 @@ public sealed partial class MainWindow
                     }
                     var (tileWidth, tileHeight) = AutomationTileSize(args, candidate, asset, null);
                     var created = MaterialEditing.Apply(candidate, materialId, regionId, tileWidth, tileHeight, ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY"));
-                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight") || args.ContainsKey("background"))
+                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight") || args.ContainsKey("background") || AutomationMaterials.HasGradient(args))
                     {
                         var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1),
-                            Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : 0 };
+                            Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : 0,
+                            Gradient = AutomationMaterials.HasGradient(args) ? AutomationGradient(args, null) : null };
                         MaterialEditing.ValidateFill(tuned, created.Pixels); created.Material = tuned; created.Pixels = MaterialRenderer.Render(tuned);
                     }
                     return created;
@@ -633,11 +651,13 @@ public sealed partial class MainWindow
                 if (swapId.HasValue) RegisterAutomationPattern(candidate, swapId.Value);
                 var material = swapId.HasValue ? MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == swapId.Value)
                     ?? throw new AutomationFault("material_not_found", "등록된 재료가 없습니다.") : original.Asset;
+                if (AutomationMaterials.HasGradient(args) && !HatchPatterns.IsGradient(material)) throw new AutomationFault("invalid_arguments", AutomationMaterials.GradientOnly);
                 var (width, height) = AutomationTileSize(args, candidate, material, original);
                 var replacement = original with { Asset = material, TileWidth = width, TileHeight = height,
                     Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY),
                     Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight),
-                    Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : original.Background };
+                    Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : original.Background,
+                    Gradient = AutomationMaterials.HasGradient(args) ? AutomationGradient(args, original.Gradient) : original.Gradient };
                 if (replacement != original)
                 {
                     MaterialEditing.ValidateFill(replacement, materialLayer.Pixels);
@@ -698,10 +718,16 @@ public sealed partial class MainWindow
                 break;
             case "add_adjustment":
                 Add(await CompatibilityImport.OnSta(() => DocumentFeatures.CreateAdjustment(candidate, AutomationAdjustment(args)), token)); break;
+            case "apply_style":
+                affected = await AutomationApplyStyleAsync(candidate, args, token); break;
             case "remove_background":
                 var masked = Target();
                 if (masked.Kind is LayerKind.Group or LayerKind.Adjustment) throw new AutomationFault("wrong_layer_kind", "이미지·텍스트·도형 레이어를 선택하세요.");
                 masked.Mask = await Task.Run(() => BackgroundRemoval.CreateMask(masked.Pixels, cancellationToken: token), token); break;
+            case "clean_sketch":
+                var photo = Target();
+                automationStepDetails = await AutomationCleanSketchAsync(candidate, photo, args, token);
+                affected = Guid.Parse(automationStepDetails["groupId"]!.GetValue<string>()); break;
             default: throw new ArgumentException("Unknown command: " + command);
         }
         return affected;
@@ -748,16 +774,55 @@ public sealed partial class MainWindow
         FontSize = ANumber(args, "fontSize", current.FontSize), ColorArgb = VectorShapes.Argb(AColor(args, "color", VectorShapes.Color(current.ColorArgb))),
         Bold = ABool(args, "bold", current.Bold), Italic = ABool(args, "italic", current.Italic),
         Alignment = args.ContainsKey("alignment") ? Enum.Parse<TextAlignment>(AString(args, "alignment")) : current.Alignment,
-        LineHeight = ANumber(args, "lineHeight", current.LineHeight), Tracking = ANumber(args, "tracking", current.Tracking)
+        LineHeight = ANumber(args, "lineHeight", current.LineHeight), Tracking = ANumber(args, "tracking", current.Tracking),
+        BoxWidth = ANumber(args, "boxWidth", current.BoxWidth),
+        // Giving an outline width, colour or position (or hollow letters) asks for an outline.
+        Outline = args.ContainsKey("outline") ? ABool(args, "outline")
+            : new[] { "outlineWidth", "outlineColor", "outlinePosition" }.Any(args.ContainsKey) || ABool(args, "outlineOnly") || current.Outline,
+        OutlineWidth = ANumber(args, "outlineWidth", current.OutlineWidth),
+        OutlineArgb = VectorShapes.Argb(AColor(args, "outlineColor", VectorShapes.Color(current.OutlineArgb))),
+        OutlinePosition = args.ContainsKey("outlinePosition") ? AString(args, "outlinePosition") == "center" ? TextOutlinePosition.Center : TextOutlinePosition.Outside : current.OutlinePosition,
+        OutlineOnly = ABool(args, "outlineOnly", current.OutlineOnly)
     };
-    static AdjustmentSpec AutomationAdjustment(JsonObject args) => new()
+    static AdjustmentSpec AutomationAdjustment(JsonObject args) => AutomationStyleEffect(args, new()
     {
-        Kind = AString(args, "kind") switch { "exposure" => AdjustmentKind.Exposure, "levels" => AdjustmentKind.Levels, "hue_saturation" => AdjustmentKind.HueSaturation, _ => AdjustmentKind.PhotoDevelop },
+        Kind = AString(args, "kind") switch
+        {
+            "exposure" => AdjustmentKind.Exposure, "levels" => AdjustmentKind.Levels, "hue_saturation" => AdjustmentKind.HueSaturation,
+            "threshold" => AdjustmentKind.Threshold, "halftone" => AdjustmentKind.Halftone, "paper_texture" => AdjustmentKind.PaperTexture, "glow" => AdjustmentKind.Glow,
+            _ => AdjustmentKind.PhotoDevelop
+        },
         Exposure = ANumber(args, "exposure"), Offset = ANumber(args, "offset"), ExposureGamma = ANumber(args, "gamma", 1),
         Black = ANumber(args, "black"), White = ANumber(args, "white", 255), Gamma = ANumber(args, "gamma", 1),
         Hue = ANumber(args, "hue"), Saturation = ANumber(args, "saturation"), Lightness = ANumber(args, "lightness"),
         PhotoDevelop = new PhotoDevelopSpec { Temperature = ANumber(args, "temperature"), Tint = ANumber(args, "tint"), Exposure = AString(args, "kind") == "photo_develop" ? ANumber(args, "exposure") : 0,
             Contrast = ANumber(args, "contrast"), Highlights = ANumber(args, "highlights"), Shadows = ANumber(args, "shadows"), Whites = ANumber(args, "whites"), Blacks = ANumber(args, "blacks"),
             Texture = ANumber(args, "texture"), Clarity = ANumber(args, "clarity"), Dehaze = ANumber(args, "dehaze"), Vibrance = ANumber(args, "vibrance"), Saturation = ANumber(args, "saturation") }
-    };
+    });
+    // Settings of the design-style kinds; omitted parameters keep the same defaults as the app's dialog.
+    static AdjustmentSpec AutomationStyleEffect(JsonObject args, AdjustmentSpec spec)
+    {
+        uint Argb(string key, uint fallback) => args.ContainsKey(key) ? VectorShapes.Argb(AColor(args, key, Colors.Transparent)) : fallback;
+        switch (spec.Kind)
+        {
+            case AdjustmentKind.Threshold:
+                var threshold = spec.Threshold;
+                return spec with { Threshold = threshold with { Level = ANumber(args, "level", threshold.Level), Smoothness = ANumber(args, "smoothness", threshold.Smoothness), KeepAlpha = ABool(args, "keepAlpha", threshold.KeepAlpha) } };
+            case AdjustmentKind.Halftone:
+                var halftone = spec.Halftone;
+                return spec with { Halftone = halftone with { CellSize = ANumber(args, "cellSize", halftone.CellSize), Angle = ANumber(args, "angle", halftone.Angle),
+                    Shape = AString(args, "dotShape", "round") switch { "line" => HalftoneShape.Line, "square" => HalftoneShape.Square, _ => HalftoneShape.Round },
+                    InkArgb = Argb("ink", halftone.InkArgb), PaperArgb = Argb("paper", halftone.PaperArgb) } };
+            case AdjustmentKind.PaperTexture:
+                var paper = spec.Paper;
+                return spec with { Paper = paper with { Seed = (int)ANumber(args, "seed", paper.Seed), Scale = ANumber(args, "textureSize", paper.Scale), Tint = ANumber(args, "paperTint", paper.Tint),
+                    TintArgb = Argb("paperColor", paper.TintArgb), Grain = ANumber(args, "grain", paper.Grain), Fibers = ANumber(args, "fibers", paper.Fibers), Toner = ANumber(args, "toner", paper.Toner),
+                    Streaks = ANumber(args, "streaks", paper.Streaks), Edges = ANumber(args, "edges", paper.Edges), EdgeWidth = ANumber(args, "edgeWidth", paper.EdgeWidth), EdgeArgb = Argb("edgeColor", paper.EdgeArgb) } };
+            case AdjustmentKind.Glow:
+                var glow = spec.Glow;
+                return spec with { Glow = glow with { Threshold = ANumber(args, "threshold", glow.Threshold), Radius = ANumber(args, "radius", glow.Radius),
+                    Intensity = ANumber(args, "intensity", glow.Intensity), TintArgb = Argb("glowColor", glow.TintArgb) } };
+            default: return spec;
+        }
+    }
 }

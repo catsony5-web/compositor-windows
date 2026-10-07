@@ -92,7 +92,7 @@ public sealed partial class MainWindow
         button = make(Theme.Glyphs.Adjustment, "조정 레이어 추가", () =>
         {
             var menu = new ContextMenu { PlacementTarget = button, Placement = PlacementMode.Top };
-            foreach (var (label, kind) in new[] { ("노출…", AdjustmentKind.Exposure), ("레벨…", AdjustmentKind.Levels), ("곡선…", AdjustmentKind.Curves), ("색조 / 채도…", AdjustmentKind.HueSaturation), ("그라데이션 맵…", AdjustmentKind.GradientMap), ("그레인…", AdjustmentKind.Grain), ("사진 현상…", AdjustmentKind.PhotoDevelop) })
+            foreach (var (label, kind) in new[] { ("노출…", AdjustmentKind.Exposure), ("레벨…", AdjustmentKind.Levels), ("곡선…", AdjustmentKind.Curves), ("색조 / 채도…", AdjustmentKind.HueSaturation), ("그라데이션 맵…", AdjustmentKind.GradientMap), ("그레인…", AdjustmentKind.Grain), ("한계값…", AdjustmentKind.Threshold), ("망점 (하프톤)…", AdjustmentKind.Halftone), ("종이·인쇄 질감…", AdjustmentKind.PaperTexture), ("빛 번짐…", AdjustmentKind.Glow), ("사진 현상…", AdjustmentKind.PhotoDevelop) })
             {
                 var item = new MenuItem { Header = label }; var chosen = kind;
                 item.Click += (_, _) => Guard(() => ShowAdjustment(chosen));

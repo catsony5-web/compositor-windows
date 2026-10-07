@@ -36,8 +36,28 @@ public sealed record RegionPath(string Data, double M11 = 1, double M12 = 0, dou
 }
 public sealed record MaterialRegion(Guid Id, string Name, RegionPath Path, string Source, Guid? SourceLayerId = null);
 public sealed record MaterialFill(MaterialAsset Asset, Guid SourceRegionId, string RegionName, RegionPath Boundary, int Width, int Height,
-    double TileWidth, double TileHeight, double Angle = 0, double OffsetX = 0, double OffsetY = 0, uint Ink = 0, double LineWeight = 1, uint Background = 0);
+    double TileWidth, double TileHeight, double Angle = 0, double OffsetX = 0, double OffsetY = 0, uint Ink = 0, double LineWeight = 1, uint Background = 0,
+    ToneGradient? Gradient = null);
 // Background: for line patterns, an optional #AARRGGBB color painted inside the region under the lines (0 = none, transparent).
+// Gradient: for the gradient screentones, how their density runs across the region (null = ToneGradient.Default).
+// Other materials keep a value they were given (a swap back restores it) and ignore it.
+
+// The density of a gradient screentone (점 그라데이션, 점묘 그라데이션): ink coverage runs from Start to
+// End (0–1) across the region along Angle in degrees (0 = left to right, 90 = top to bottom, clockwise
+// like the layer rotation), measured over the region's own extent, so the fill does not repeat. Seed
+// picks another random arrangement of the stipple's dots at the same density.
+public sealed record ToneGradient(double Angle = 90, double Start = .1, double End = .9, int Seed = 0)
+{
+    public const int MaxSeed = 999_999;
+    public static readonly ToneGradient Default = new();
+    public static ToneGradient Of(MaterialFill fill) => fill.Gradient ?? Default;
+    public static void Validate(ToneGradient gradient)
+    {
+        if (gradient == null || !double.IsFinite(gradient.Angle) || Math.Abs(gradient.Angle) > 36000 || !double.IsFinite(gradient.Start) || !double.IsFinite(gradient.End)
+            || gradient.Start < 0 || gradient.Start > 1 || gradient.End < 0 || gradient.End > 1 || gradient.Seed < 0 || gradient.Seed > MaxSeed)
+            throw new InvalidDataException("그라데이션 방향·시작·끝 농도를 확인하세요.");
+    }
+}
 
 public static class MaterialEditing
 {
@@ -98,6 +118,7 @@ public static class MaterialEditing
             fill.TileWidth < 1 || fill.TileHeight < 1 || fill.TileWidth > 100_000 || fill.TileHeight > 100_000 || fill.LineWeight < .1 || fill.LineWeight > 8 ||
             Math.Abs(fill.Angle) > 36000 || Math.Abs(fill.OffsetX) > 100_000 || Math.Abs(fill.OffsetY) > 100_000)
             throw new InvalidDataException("재료의 반복 크기·방향·위치를 확인하세요.");
+        if (fill.Gradient is { } gradient) ToneGradient.Validate(gradient);
         var bounds = fill.Boundary.Geometry.Bounds;
         if (bounds.X < -.00001 || bounds.Y < -.00001 || bounds.Right > fill.Width + .00001 || bounds.Bottom > fill.Height + .00001 ||
             dimensions && (fill.Width != pixels.Width || fill.Height != pixels.Height))
@@ -230,7 +251,7 @@ public static class MaterialEditing
     public static double Aspect(MaterialAsset asset) => asset.Pixels.Height / (double)Math.Max(1, asset.Pixels.Width);
     // The user's vertical ratio: 1 keeps the asset's own proportions.
     public static double Stretch(MaterialFill fill) => fill.TileHeight / (fill.TileWidth * Aspect(fill.Asset));
-    // Another asset at the same relative size (크기 %), with the same ratio, direction, offset, ink, line weight and background.
+    // Another asset at the same relative size (크기 %), with the same ratio, direction, offset, ink, line weight, background and gradient.
     public static MaterialFill Swap(MaterialFill fill, MaterialAsset asset)
     {
         double width = fill.TileWidth * RepeatScale(asset) / RepeatScale(fill.Asset);

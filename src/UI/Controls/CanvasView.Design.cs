@@ -179,8 +179,9 @@ public sealed partial class CanvasView
     internal void CaptureMoveBase()
     {
         moveBase = null; pendingSettle = null;
+        // Spreading light (빛 번짐) changes pixels beyond a moved object's footprints: those drops render the whole view.
         if (!MoveSettleEnabled || !DesignMode || Document == null || MovePreviewBackground != null && !MovePreviewSettled || designCache.Count == 0 ||
-            !DesignRenderer.HasRetainedContent(Document) || CurrentDesignRequest() is not { } request) return;
+            !DesignRenderer.HasRetainedContent(Document) || StyleEffects.Spreads(Document) || CurrentDesignRequest() is not { } request) return;
         int exact = designCache.FindIndex(entry => entry.Request == request);
         if (exact >= 0 && !request.Proof) moveBase = designCache[exact];
     }

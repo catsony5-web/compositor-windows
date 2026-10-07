@@ -32,11 +32,12 @@ public static class HatchPatternTests
         static byte[] Alpha(Raster image) { var a = new byte[image.Width * image.Height]; for (int i = 0; i < a.Length; i++) a[i] = image.Data[i * 4 + 3]; return a; }
         static byte[] AlphaOf(BitmapSource bitmap) => Alpha(Raster.FromBitmap(bitmap));
 
-        test("hatch catalog: 19 patterns with stable distinct IDs, keys, names and a spoof-proof identity", () =>
+        test("hatch catalog: 19 line patterns and 13 screentones with stable distinct IDs, keys, names and a spoof-proof identity", () =>
         {
             var all = HatchPatterns.All;
-            Check(all.Count == 19 && all.Select(p => (int)p).SequenceEqual(Enumerable.Range(0, 19)), "The catalog is not the 19 append-only patterns");
-            Check(all.Select(HatchPatterns.StableId).Distinct().Count() == 19 && all.Select(HatchPatterns.Key).Distinct().Count() == 19 && all.Select(HatchPatterns.Name).Distinct().Count() == 19, "IDs, keys or names repeat");
+            Check(all.Count == 32 && all.Select(p => (int)p).SequenceEqual(Enumerable.Range(0, 32)) && all.Take(19).All(p => HatchPatterns.Group(p) == HatchGroup.Line)
+                && all.Skip(19).All(HatchPatterns.IsScreentone), "The catalog is not the 19 line patterns followed by the 13 screentones, append-only");
+            Check(all.Select(HatchPatterns.StableId).Distinct().Count() == 32 && all.Select(HatchPatterns.Key).Distinct().Count() == 32 && all.Select(HatchPatterns.Name).Distinct().Count() == 32, "IDs, keys or names repeat");
             Check(all.All(p => HatchPatterns.Source(p) == "morupixel:pattern/" + HatchPatterns.Key(p) + "@1"), "Sources do not follow the reserved form");
             Check(HatchPatterns.StableId(HatchPattern.GrassSparse) == Guid.Parse("4d6f7275-7069-7865-6c70-6174746e0100"), "The lawn ID changed: " + HatchPatterns.StableId(HatchPattern.GrassSparse));
             Check(all.All(p => HatchPatterns.TryParseKey(HatchPatterns.Key(p), out var back) && back == p) && !HatchPatterns.TryParseKey("gras", out _), "Keys do not round-trip");
@@ -75,7 +76,9 @@ public static class HatchPatternTests
                     if (tile.Data[i + 3] == 0) clear++;
                     if (tile.Data[i + 3] >= 200) Check(tile.Data[i] < 90 && tile.Data[i + 1] < 90 && tile.Data[i + 2] < 90, $"{p}: an opaque pixel is not dark ink");
                 }
-                Check(clear >= tile.Width * tile.Height * .35, $"{p}: only {clear * 100.0 / (tile.Width * tile.Height):0}% of the tile is clear");
+                // Line patterns are mostly paper; a screentone's share of ink is its coverage (ScreentoneTests).
+                if (HatchPatterns.Group(p) == HatchGroup.Line)
+                    Check(clear >= tile.Width * tile.Height * .35, $"{p}: only {clear * 100.0 / (tile.Width * tile.Height):0}% of the tile is clear");
                 var red = Raster.FromBitmap(HatchPatternRenderer.Tile(p, 128, 128, 1.6, 0xFFC03020)); int ink = 0;
                 for (int i = 0; i < red.Data.Length; i += 4)
                     if (red.Data[i + 3] >= 150) { ink++; Check(red.Data[i + 2] > red.Data[i + 1] + 60, $"{p}: the ink color was not used"); }

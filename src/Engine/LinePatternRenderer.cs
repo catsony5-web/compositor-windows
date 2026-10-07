@@ -252,8 +252,8 @@ public static class LinePatternRenderer
 
 // Turns a picked image (a scanned or drawn hatch tile) into a line pattern tile: dark strokes become
 // ink coverage, light paper becomes transparent. The image is reduced to LinePatterns.MaxSide with
-// area averaging first; an automatic threshold (Otsu) separates paper from ink, and the band between
-// the two keeps the antialiased edges.
+// area averaging first; the shared line-art core (LineArt: darkness, automatic threshold, coverage
+// band) separates paper from ink and keeps the antialiased edges.
 public sealed class LinePatternSource
 {
     public const long MaxFileBytes = 96L * 1024 * 1024;
@@ -269,7 +269,7 @@ public sealed class LinePatternSource
 
     LinePatternSource(int width, int height, float[] darkness)
     {
-        Width = width; Height = height; Darkness = darkness; AutoThreshold = Otsu(darkness);
+        Width = width; Height = height; Darkness = darkness; AutoThreshold = LineArt.Otsu(darkness);
     }
 
     public static LinePatternSource Load(string path)
@@ -299,40 +299,10 @@ public sealed class LinePatternSource
     public static LinePatternSource From(Raster image)
     {
         if (image.Width < LinePatterns.MinSide || image.Height < LinePatterns.MinSide) throw new InvalidDataException($"패턴 이미지는 한 변 {LinePatterns.MinSide}px 이상이어야 합니다.");
-        var darkness = new float[image.Width * image.Height];
-        for (int i = 0, p = 0; i < darkness.Length; i++, p += 4)
-        {
-            double luminance = (.0722 * image.Data[p] + .7152 * image.Data[p + 1] + .2126 * image.Data[p + 2]) / 255;
-            darkness[i] = (float)(image.Data[p + 3] / 255d * (1 - luminance));
-        }
+        var darkness = LineArt.Darkness(image);
         double fit = Math.Min(1, LinePatterns.MaxSide / (double)Math.Max(image.Width, image.Height));
         int width = Math.Max(LinePatterns.MinSide, (int)Math.Round(image.Width * fit)), height = Math.Max(LinePatterns.MinSide, (int)Math.Round(image.Height * fit));
         return new(width, height, LinePatternRenderer.Resample(darkness, image.Width, image.Height, width, height));
-    }
-
-    static double Otsu(float[] values)
-    {
-        var histogram = new long[256];
-        foreach (var v in values) histogram[Math.Clamp((int)(v * 255 + .5), 0, 255)]++;
-        double total = values.Length, sum = 0;
-        for (int i = 0; i < 256; i++) sum += i * (double)histogram[i];
-        var between = new double[255]; double below = 0, belowSum = 0, best = -1;
-        for (int t = 0; t < 255; t++)
-        {
-            below += histogram[t]; belowSum += t * (double)histogram[t];
-            double above = total - below;
-            between[t] = -1;
-            if (below == 0 || above == 0) continue;
-            double meanBelow = belowSum / below, meanAbove = (sum - belowSum) / above;
-            between[t] = below * above * (meanBelow - meanAbove) * (meanBelow - meanAbove);
-            best = Math.Max(best, between[t]);
-        }
-        if (best <= 0) return .5;
-        // Empty bins between paper and ink give equal splits: take the middle of that plateau, so the
-        // threshold sits between the tones rather than at the edge of the paper's grain.
-        int first = Array.FindIndex(between, v => v >= best * (1 - 1e-9)), last = Array.FindLastIndex(between, v => v >= best * (1 - 1e-9));
-        // The class boundary lies between bins t and t+1.
-        return Math.Clamp(((first + last) / 2d + .5) / 255, .02, .98);
     }
 
     // The coverage tile (straight alpha in the alpha channel) for `threshold` (0..1, darkness). Paper
@@ -342,18 +312,11 @@ public sealed class LinePatternSource
     public Raster Convert(double threshold, bool trim = false)
     {
         if (!double.IsFinite(threshold)) threshold = AutoThreshold;
-        threshold = Math.Clamp(threshold, .01, .99);
-        double paper = 0, ink = 0; long papers = 0, inks = 0;
-        foreach (var d in Darkness) if (d < threshold) { paper += d; papers++; } else { ink += d; inks++; }
-        if (inks == 0) throw new InvalidDataException("이미지에서 선을 찾지 못했습니다. 선 인식 기준을 낮춰 보세요.");
-        paper = papers > 0 ? paper / papers : 0; ink /= inks;
-        if (ink - paper < .06) throw new InvalidDataException("선과 바탕의 밝기 차이가 너무 작습니다. 밝은 바탕에 어두운 선이 있는 이미지를 사용하세요.");
-        double low = (paper + threshold) / 2, high = Math.Max(low + .002, (threshold + ink) / 2);
+        var band = LineArt.Measure(Darkness, threshold);
         var coverage = new byte[Darkness.Length]; long solid = 0;
         for (int i = 0; i < coverage.Length; i++)
         {
-            double c = Math.Clamp((Darkness[i] - low) / (high - low), 0, 1);
-            coverage[i] = (byte)Math.Round(c * 255);
+            coverage[i] = (byte)Math.Round(band.Coverage(Darkness[i]) * 255);
             if (coverage[i] >= 128) solid++;
         }
         if (solid == 0) throw new InvalidDataException("이미지에서 선을 찾지 못했습니다. 선 인식 기준을 낮춰 보세요.");

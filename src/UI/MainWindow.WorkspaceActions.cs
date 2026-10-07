@@ -37,6 +37,13 @@ public sealed partial class MainWindow
             (Theme.Glyphs.GradientMap, "그라데이션 맵", () => ShowAdjustment(AdjustmentKind.GradientMap), "명암에 따라 색상 매핑"),
             (Theme.Glyphs.Grain, "그레인", () => ShowAdjustment(AdjustmentKind.Grain), "필름 입자 추가"));
         panel.Children.Add(Theme.ActionRow("선택한 조정 레이어 편집", Run(EditAdjustment), "선택한 조정 레이어의 값을 다시 편집", Theme.Glyphs.Sliders));
+        WorkspaceSection(panel, "스타일 효과", "흑백 비트맵, 인쇄 망점, 종이와 복사 질감, 빛 번짐을 원본을 유지하는 조정 레이어로 더합니다.");
+        WorkspaceTiles(panel, 2,
+            (Theme.Glyphs.Threshold, "한계값", () => ShowAdjustment(AdjustmentKind.Threshold), "기준 밝기로 나눠 순수한 흑백 비트맵 만들기"),
+            (Theme.Glyphs.Halftone, "망점", () => ShowAdjustment(AdjustmentKind.Halftone), "어두운 곳일수록 크게 찍히는 인쇄 망점으로 바꾸기"),
+            (Theme.Glyphs.PaperTexture, "종이·인쇄 질감", () => ShowAdjustment(AdjustmentKind.PaperTexture), "종이 섬유·복사 토너·줄무늬·탄 가장자리 질감 더하기"),
+            (Theme.Glyphs.Glow, "빛 번짐", () => ShowAdjustment(AdjustmentKind.Glow), "밝은 창과 조명의 빛이 주변으로 번지게 하기"));
+        AddDesignStyleCommands(panel);
 
         WorkspaceSection(panel, "선택과 마스크", "선택 영역을 만들고 마스크나 새 레이어로 바꿉니다.");
         WorkspaceCommands(panel,
@@ -44,22 +51,28 @@ public sealed partial class MainWindow
             (Theme.Glyphs.Mask, "선택 영역 마스크", () => WorkspacePixelAction(AddMask), "현재 선택 영역으로 마스크 만들기 · 선택이 없으면 전체 표시", null),
             (Theme.Glyphs.Duplicate, "선택 픽셀 복제", ExtractSelection, "선택한 픽셀을 새 레이어에 복사", null),
             (Theme.Glyphs.Sparkle, "AI 배경 제거", () => WorkspacePixelAction(RemoveAiBackground), "이 컴퓨터에서 배경을 분석해 레이어 마스크 만들기", null));
+        panel.Children.Add(Theme.ActionRow("피사체를 글자 앞으로", Run(PlaceSubjectInFront), SubjectFrontTip, Theme.Glyphs.SubjectFront));
         WorkspaceSection(panel, "리터치", "잡티를 지우고 빈 곳을 주변 픽셀로 채웁니다.");
         WorkspaceCommands(panel,
             (ToolIcons.PathData(Tool.Heal), "복구 브러시", () => SetTool(Tool.Heal), "Alt+클릭으로 참조 위치 지정 후 드래그", null),
             (ToolIcons.PathData(Tool.CloneStamp), "복제 도장", () => SetTool(Tool.CloneStamp), "Alt+클릭으로 참조 위치 지정 후 복제", null),
             (Theme.Glyphs.FillSelection, "주변으로 채우기", FillFromSurroundings, "제거할 부분을 선택한 뒤 주변 픽셀로 채우기", null),
             (ToolIcons.PathData(Tool.Brush), "브러시 설정", () => ShowStudioPage(3), "크기와 경도, 브러시 프리셋", null));
+        WorkspaceSection(panel, UserProfiles.SketchPhoto, "종이에 그린 스케치를 휴대폰으로 찍은 사진을 깨끗한 선 그림으로 바꿉니다.");
+        panel.Children.Add(Theme.ActionRow("스케치 사진 정리", Run(CleanSketchPhoto),
+            "선택한 사진에서 종이를 반듯하게 펴고 그림자와 종이 결을 지워 선만 남깁니다 · 원본 사진은 숨겨 두고 한 번에 실행 취소할 수 있습니다", Theme.Glyphs.Sketch));
     }
 
     void BuildDesignActions(StackPanel panel)
     {
+        AddDesignStyleFeature(panel);
         WorkspaceSection(panel, "만들기", "도형·텍스트를 이미지와 함께 배치합니다.");
         WorkspaceTiles(panel, 4,
             (Theme.Glyphs.Text, "새 텍스트", () => OpenTextProperties(null), "편집 가능한 텍스트 추가 후 문자·단락 속성 열기"),
             (ToolIcons.PathData(Tool.Rectangle), "사각형", () => SetTool(Tool.Rectangle), "캔버스에서 드래그하여 편집 가능한 사각형 만들기"),
             (ToolIcons.PathData(Tool.Ellipse), "타원", () => SetTool(Tool.Ellipse), "캔버스에서 드래그하여 편집 가능한 타원 만들기"),
             (Theme.Glyphs.FillStroke, "채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께 조절"));
+        panel.Children.Add(Theme.ActionRow("피사체를 글자 앞으로", Run(PlaceSubjectInFront), SubjectFrontTip, Theme.Glyphs.SubjectFront));
         WorkspaceSection(panel, "캔버스에 정렬", "선택한 이미지·도형·텍스트 각각을 캔버스 기준으로 정렬합니다.");
         panel.Children.Add(QuickActions.IconStrip(CanvasAlignments.Select(a => (a.Glyph, a.Name, Run(() => AlignWorkspaceLayers(a.Direction)))), out _));
         WorkspaceSection(panel, "배치와 그룹");

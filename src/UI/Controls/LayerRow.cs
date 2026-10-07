@@ -35,13 +35,13 @@ public sealed class LayerRow : Grid
             Background = ThumbnailBacking(layer), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
         };
         thumb.Child = layer.Kind is LayerKind.Group or LayerKind.Adjustment
-            ? Theme.Glyph(layer.Kind == LayerKind.Group ? Theme.Glyphs.Folder : Theme.Glyphs.Adjustment, 16, Theme.Accent, 1.6)
+            ? Theme.Glyph(layer.Kind == LayerKind.Adjustment ? Theme.Glyphs.Adjustment : layer.Style != null ? Theme.Glyphs.Style : Theme.Glyphs.Folder, 16, Theme.Accent, 1.6)
             : new Image { Source = (layer.Material is { } fill ? MaterialRenderer.PatternThumbnail(fill) : null) ?? layer.Pixels.Thumbnail(), Stretch = Stretch.Uniform, Margin = new Thickness(2) };
         content.Children.Add(thumb);
 
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 4, 4, 4) };
         labels.Children.Add(Loc.Keep(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = layer.Name }));
-        var kind = layer.Kind switch { LayerKind.Material when LinePatterns.IsPattern(layer.Material?.Asset) => "해치 패턴", LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group => "그룹", _ => "이미지" };
+        var kind = layer.Kind switch { LayerKind.Material when LinePatterns.IsPattern(layer.Material?.Asset) => "해치 패턴", LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group when layer.Style != null => "스타일 그룹", LayerKind.Group => "그룹", _ => "이미지" };
         var detail = description ?? $"{kind} · {layer.Opacity * 100:0}%";
         if (layer.Clipped) detail += " · 클리핑";
         if (layer.Mask != null) detail += " · 마스크";

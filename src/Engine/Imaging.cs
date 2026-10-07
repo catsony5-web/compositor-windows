@@ -56,7 +56,8 @@ public static class Imaging
     public static Raster Render(Document doc, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (doc.Layers.Any(l => DrawingLayers.IsContainer(l) || l.Kind == LayerKind.Material)) return DesignRenderer.RenderOutput(doc, cancellationToken);
+        // Pass-through folders (design styles) are composited by the design renderer only.
+        if (doc.Layers.Any(l => DrawingLayers.IsContainer(l) || l.Kind == LayerKind.Material || DesignRenderer.IsPassThrough(l))) return DesignRenderer.RenderOutput(doc, cancellationToken);
         var root = doc.Layers.Where(l => l.ParentId == null).ToArray();
         var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
         var directGroups = new Dictionary<(Guid Id, int Width, int Height), bool>();
@@ -150,7 +151,13 @@ public static class Imaging
     }
     internal static void ApplyAdjustment(Raster target, Layer layer, CancellationToken token, Matrix? transform = null)
     {
-        var adjusted = DocumentFeatures.ApplyAdjustment(target, layer.Adjustment!, token);
+        var spec = layer.Adjustment!;
+        bool effect = StyleEffects.Handles(spec.Kind);
+        if (effect && StyleEffects.IsIdentity(spec)) return;
+        // Design-style effects measure screens, grain and radii in the layer's pixels, wherever the target raster sits.
+        var adjusted = effect ? StyleEffects.Apply(target, spec, transform ?? layer.Matrix, layer.Pixels.Width, layer.Pixels.Height, token)
+            : DocumentFeatures.ApplyAdjustment(target, spec, token);
+        bool alpha = effect && StyleEffects.ChangesAlpha(spec);
         var coverageLayer = layer.Snapshot(); coverageLayer.Pixels = Raster.Solid(layer.Pixels.Width, layer.Pixels.Height, Colors.White); coverageLayer.Blend = BlendMode.Normal; coverageLayer.Opacity = 1;
         var coverage = new Raster(target.Width, target.Height); Composite(coverage, coverageLayer, token, transform);
         Parallel.For(0, target.Height, new ParallelOptions { CancellationToken = token }, y =>
@@ -160,6 +167,7 @@ public static class Imaging
                 int i = (y * target.Width + x) * 4; double a = coverage.Data[i + 3] / 255.0 * layer.Opacity;
                 var rgb = BlendRgb(target.Data[i + 2] / 255.0, target.Data[i + 1] / 255.0, target.Data[i] / 255.0, adjusted.Data[i + 2] / 255.0, adjusted.Data[i + 1] / 255.0, adjusted.Data[i] / 255.0, layer.Blend);
                 target.Data[i] = Byte(target.Data[i] * (1 - a) + rgb.B * a * 255); target.Data[i + 1] = Byte(target.Data[i + 1] * (1 - a) + rgb.G * a * 255); target.Data[i + 2] = Byte(target.Data[i + 2] * (1 - a) + rgb.R * a * 255);
+                if (alpha) target.Data[i + 3] = Byte(target.Data[i + 3] * (1 - a) + adjusted.Data[i + 3] * a);
             }
         });
     }

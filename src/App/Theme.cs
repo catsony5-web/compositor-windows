@@ -203,6 +203,8 @@ public static class Theme
         public const string Star = "M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z";
         public const string StarFilled = "M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z | *M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z";
         public const string Hatch = "M4 4H20V20H4Z | ~M4 12L12 4M4 20L20 4M12 20L20 12";
+        // Tone screens (스크린톤): a frame with dots that grow from the light corner to the dark one.
+        public const string Screentone = "M4 4H20V20H4Z | ~M8 7.6A.4 .4 0 1 0 8 8.4A.4 .4 0 1 0 8 7.6Z M12 7.4A.6 .6 0 1 0 12 8.6A.6 .6 0 1 0 12 7.4Z M8 11.4A.6 .6 0 1 0 8 12.6A.6 .6 0 1 0 8 11.4Z | M16 7.2A.8 .8 0 1 0 16 8.8A.8 .8 0 1 0 16 7.2Z M12 11.1A.9 .9 0 1 0 12 12.9A.9 .9 0 1 0 12 11.1Z M8 15.2A.8 .8 0 1 0 8 16.8A.8 .8 0 1 0 8 15.2Z M16 10.8A1.2 1.2 0 1 0 16 13.2A1.2 1.2 0 1 0 16 10.8Z M12 14.8A1.2 1.2 0 1 0 12 17.2A1.2 1.2 0 1 0 12 14.8Z M16 14.5A1.5 1.5 0 1 0 16 17.5A1.5 1.5 0 1 0 16 14.5Z | *M16 14.5A1.5 1.5 0 1 0 16 17.5A1.5 1.5 0 1 0 16 14.5Z M16 10.8A1.2 1.2 0 1 0 16 13.2A1.2 1.2 0 1 0 16 10.8Z M12 14.8A1.2 1.2 0 1 0 12 17.2A1.2 1.2 0 1 0 12 14.8Z";
         public const string Info = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M12 11V16.5 M12 7.8V7.9 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";
         public const string Warning = "M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z | M12 9.5V13.5 M12 16.8V16.9 | *M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z";
         public const string Error = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M9 9L15 15 M15 9L9 15 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";
@@ -223,6 +225,12 @@ public static class Theme
         public const string HueSaturation = "M12 3.5C12 3.5 5.5 10.4 5.5 14.6A6.5 6.5 0 0 0 18.5 14.6C18.5 10.4 12 3.5 12 3.5Z | *M12 3.5C12 3.5 18.5 10.4 18.5 14.6A6.5 6.5 0 0 1 12 21.1Z";
         public const string GradientMap = "M5.5 6H18.5A2.5 2.5 0 0 1 21 8.5V15.5A2.5 2.5 0 0 1 18.5 18H5.5A2.5 2.5 0 0 1 3 15.5V8.5A2.5 2.5 0 0 1 5.5 6Z | *M5.5 6H9V18H5.5A2.5 2.5 0 0 1 3 15.5V8.5A2.5 2.5 0 0 1 5.5 6Z | ~M13 6V18 M17 6V18";
         public const string Grain = "M7 5.95A1.05 1.05 0 1 0 7 8.05A1.05 1.05 0 1 0 7 5.95Z M17 5.95A1.05 1.05 0 1 0 17 8.05A1.05 1.05 0 1 0 17 5.95Z M12 10.95A1.05 1.05 0 1 0 12 13.05A1.05 1.05 0 1 0 12 10.95Z M7 15.95A1.05 1.05 0 1 0 7 18.05A1.05 1.05 0 1 0 7 15.95Z M17 15.95A1.05 1.05 0 1 0 17 18.05A1.05 1.05 0 1 0 17 15.95Z | ~M12 5.95A1.05 1.05 0 1 0 12 8.05A1.05 1.05 0 1 0 12 5.95Z M7 10.95A1.05 1.05 0 1 0 7 13.05A1.05 1.05 0 1 0 7 10.95Z M17 10.95A1.05 1.05 0 1 0 17 13.05A1.05 1.05 0 1 0 17 10.95Z M12 15.95A1.05 1.05 0 1 0 12 18.05A1.05 1.05 0 1 0 12 15.95Z";
+        // Design-style effects: a black/white step (한계값), dots growing with darkness (망점),
+        // a sheet with fibres and specks (종이·인쇄 질감) and a light with its halo (빛 번짐).
+        public const string Threshold = "M6 4H18A2 2 0 0 1 20 6V18A2 2 0 0 1 18 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z | M8 16H12V8H16 | *M6 4H12V20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z";
+        public const string Halftone = "M18 4.3A1.7 1.7 0 1 0 18 7.7A1.7 1.7 0 1 0 18 4.3Z M12 10.3A1.7 1.7 0 1 0 12 13.7A1.7 1.7 0 1 0 12 10.3Z M18 9.8A2.2 2.2 0 1 0 18 14.2A2.2 2.2 0 1 0 18 9.8Z M6 16.3A1.7 1.7 0 1 0 6 19.7A1.7 1.7 0 1 0 6 16.3Z M12 15.8A2.2 2.2 0 1 0 12 20.2A2.2 2.2 0 1 0 12 15.8Z M18 15.3A2.7 2.7 0 1 0 18 20.7A2.7 2.7 0 1 0 18 15.3Z | ~M6 5.2A0.8 0.8 0 1 0 6 6.8A0.8 0.8 0 1 0 6 5.2Z M12 4.8A1.2 1.2 0 1 0 12 7.2A1.2 1.2 0 1 0 12 4.8Z M6 10.8A1.2 1.2 0 1 0 6 13.2A1.2 1.2 0 1 0 6 10.8Z | *M18 9.8A2.2 2.2 0 1 0 18 14.2A2.2 2.2 0 1 0 18 9.8Z M12 15.8A2.2 2.2 0 1 0 12 20.2A2.2 2.2 0 1 0 12 15.8Z M18 15.3A2.7 2.7 0 1 0 18 20.7A2.7 2.7 0 1 0 18 15.3Z";
+        public const string PaperTexture = "M6.5 3.5H14L19 8.5V19A1.5 1.5 0 0 1 17.5 20.5H6.5A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6.5 3.5Z M14 3.5V8.5H19 | ~M8 12C9.2 11.2 10.4 12.6 11.6 11.8 M9.5 15.5C10.8 14.6 12.2 16.2 14.5 15.2 M14.6 11.65A0.55 0.55 0 1 0 14.6 12.75A0.55 0.55 0 1 0 14.6 11.65Z M16 17.1A0.5 0.5 0 1 0 16 18.1A0.5 0.5 0 1 0 16 17.1Z | *M6.5 3.5H14L19 8.5V19A1.5 1.5 0 0 1 17.5 20.5H6.5A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6.5 3.5Z";
+        public const string Glow = "M12 9A3 3 0 1 0 12 15A3 3 0 1 0 12 9Z | ~M12 6A6 6 0 1 0 12 18A6 6 0 1 0 12 6Z M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | *M12 6A6 6 0 1 0 12 18A6 6 0 1 0 12 6Z";
         public const string Sliders = "M4 7H12.5 M17.5 7H20 M15 4.8A2.2 2.2 0 1 0 15 9.2A2.2 2.2 0 1 0 15 4.8Z M4 12H6 M10.5 12H20 M8.2 9.8A2.2 2.2 0 1 0 8.2 14.2A2.2 2.2 0 1 0 8.2 9.8Z M4 17H11 M16 17H20 M13.5 14.8A2.2 2.2 0 1 0 13.5 19.2A2.2 2.2 0 1 0 13.5 14.8Z";
         public const string SelectAlpha = "M3.5 8.5V6.5A3 3 0 0 1 6.5 3.5H8.5 M10.5 3.5H13.5 M15.5 3.5H17.5A3 3 0 0 1 20.5 6.5V8.5 M20.5 10.5V13.5 M20.5 15.5V17.5A3 3 0 0 1 17.5 20.5H15.5 M13.5 20.5H10.5 M8.5 20.5H6.5A3 3 0 0 1 3.5 17.5V15.5 M3.5 13.5V10.5 | M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z | *M10 8.5H14A1.5 1.5 0 0 1 15.5 10V14A1.5 1.5 0 0 1 14 15.5H10A1.5 1.5 0 0 1 8.5 14V10A1.5 1.5 0 0 1 10 8.5Z";
         public const string Mask = "M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z | M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z | *M12 7.5A4.5 4.5 0 1 0 12 16.5A4.5 4.5 0 1 0 12 7.5Z";
@@ -261,6 +269,8 @@ public static class Theme
         // Drawing work (사용 목적 · 건축학과): a floor plan with a door swing, and three line weights.
         public const string Plan = "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z M12 4V10.5 M4 13H8.5 | ~M12 13.5V20 M12 13.5A6.5 6.5 0 0 1 18.5 20 | *M12 13.5A6.5 6.5 0 0 1 18.5 20H12Z";
         public const string LineWeight = "M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z M4 13H20 | ~M4 18.5H20 | *M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z";
+        // 스케치 사진 정리: a sheet seen in perspective with a hand-drawn stroke on it.
+        public const string Sketch = "M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z | M8 15.5C9.4 12.2 11 14.6 12.4 11.6C13.6 9.2 15.2 9.6 16.6 7.6 | *M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z";
         // An object and the shadow it casts toward the lower right.
         public const string Shadow = "M6 4.5H12.5A1.5 1.5 0 0 1 14 6V12.5A1.5 1.5 0 0 1 12.5 14H6A1.5 1.5 0 0 1 4.5 12.5V6A1.5 1.5 0 0 1 6 4.5Z | ~M13.6 5L19.5 10.9V18A1.5 1.5 0 0 1 18 19.5H10.9L5 13.6 | *M13.6 5L19.5 10.9V18A1.5 1.5 0 0 1 18 19.5H10.9L5 13.6L6 14H12.5A1.5 1.5 0 0 0 14 12.5V6Z";
         // Canvas alignment: a guide line and two bars.
@@ -274,6 +284,11 @@ public static class Theme
         public const string TextLeft = "M4 6H20 M4 14H20 | ~M4 10H14 M4 18H14";
         public const string TextCenter = "M4 6H20 M4 14H20 | ~M7 10H17 M7 18H17";
         public const string TextRight = "M4 6H20 M4 14H20 | ~M10 10H20 M10 18H20";
+        public const string TextJustify = "M4 6H20 M4 14H20 | ~M4 10H20 M4 18H13";
+        // A cut-out figure standing in front of a large letter T (피사체를 글자 앞으로).
+        public const string SubjectFront = "M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z | ~M3 4.5H17 M8.5 4.5V20.5 | *M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
+        // 디자인 스타일: a picture split on its diagonal, one half restyled (tint) and the other screened (strokes).
+        public const string Style = "M6 4.5H18A1.5 1.5 0 0 1 19.5 6V18A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z | M5 19L19 5 | ~M11.5 19.5L19.5 11.5 M15.5 19.5L19.5 15.5 | *M6 4.5H18.5L4.5 18.5V6A1.5 1.5 0 0 1 6 4.5Z";
     }
 }

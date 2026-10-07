@@ -88,7 +88,15 @@ internal static class PsdLayerExport
                 // Clipped layers without a drawable base are never shown in the editor either.
                 bool orphan = layer.Clipped && (basis < 0 || stack[basis].Kind == LayerKind.Adjustment);
                 Node node;
-                if (layer.Kind == LayerKind.Group && layer.Warp == null && depth < limit)
+                if (DesignRenderer.IsPassThrough(layer) && !layer.Clipped)
+                {
+                    // A pass-through folder (a design style) changes the layers below it like an adjustment
+                    // layer: stored as everything below with the folder applied, keeping its opacity and mask.
+                    var region = LayerExportRender.StackArea(document, ancestors);
+                    node = new Node(layer, ancestors, NodeKind.Adjustment) { Members = [.. stack.Take(i), LayerExportRender.Plain(layer)], Region = region, HasMask = layer.Mask != null || !Covers(layer, ancestors, region) };
+                    adjustments++;
+                }
+                else if (layer.Kind == LayerKind.Group && layer.Warp == null && depth < limit)
                 {
                     node = new Node(layer, ancestors, NodeKind.Folder) { Region = LayerExportRender.Footprint(document, layer, ancestors), HasMask = layer.Mask != null };
                     node.Children.AddRange(Stack(LayerExportRender.ChildrenOf(layer, children), [.. ancestors, layer], depth + 1));

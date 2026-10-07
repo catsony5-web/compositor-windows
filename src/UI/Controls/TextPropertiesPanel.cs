@@ -12,20 +12,22 @@ public sealed class TextPropertiesPanel : StackPanel
 {
     readonly TextSpec original;
     readonly Func<TextSpec, string?> commit;
-    readonly TextBox editor, size, leading, tracking;
+    readonly TextBox editor, size, leading, tracking, boxWidth, outlineWidth;
     readonly ComboBox family, style;
     readonly TextBlock message;
-    readonly Button colorButton;
+    readonly Button colorButton, outlineColorButton;
+    readonly CheckBox outline, outlineOnly;
+    readonly SegmentedChoice<TextOutlinePosition> outlinePosition;
     readonly List<Button> alignmentButtons = [];
     TextAlignment alignment;
-    Color color;
+    Color color, outlineColor;
     bool composing;
     public event Action? EditingStarted;
     public Action CommitPending => () => TryApply();
 
     public TextPropertiesPanel(TextSpec spec, Func<TextSpec, string?> commit, Func<Color, Color?> pickColor, Action<string> alignLayer)
     {
-        original = spec; this.commit = commit; alignment = spec.Alignment; color = DocumentFeatures.Color(spec.ColorArgb);
+        original = spec; this.commit = commit; alignment = spec.Alignment; color = DocumentFeatures.Color(spec.ColorArgb); outlineColor = DocumentFeatures.Color(spec.OutlineArgb);
         Margin = new Thickness(2, 4, 2, 12);
         Children.Add(Theme.Section("문자 · 단락"));
         AddLabel("텍스트 내용");
@@ -47,16 +49,47 @@ public sealed class TextPropertiesPanel : StackPanel
         colorButton = PropertyRows.ColorChip(color, "글자 색상", () => { if (pickColor(color) is { } selected) { color = selected; UpdateColor(); ClearError(); } }, "글자 색상");
         Children.Add(PropertyRows.Pair("자간 · 1/1000 em", tracking, "색상", colorButton, new Thickness(0, 0, 0, 4)));
         AddLabel("단락 정렬");
-        var alignments = new UniformGrid { Columns = 3, Margin = new Thickness(0, 3, 0, 9) };
+        var alignments = new UniformGrid { Columns = 4, Margin = new Thickness(0, 3, 0, 9) };
         // Whole sentences per alignment so each language can order the words itself.
-        foreach (var (label, value, glyph) in new[] { ("단락 왼쪽 정렬", TextAlignment.Left, Theme.Glyphs.TextLeft), ("단락 가운데 정렬", TextAlignment.Center, Theme.Glyphs.TextCenter), ("단락 오른쪽 정렬", TextAlignment.Right, Theme.Glyphs.TextRight) })
+        foreach (var (label, value, glyph) in new[] { ("단락 왼쪽 정렬", TextAlignment.Left, Theme.Glyphs.TextLeft), ("단락 가운데 정렬", TextAlignment.Center, Theme.Glyphs.TextCenter),
+            ("단락 오른쪽 정렬", TextAlignment.Right, Theme.Glyphs.TextRight), ("단락 양쪽 정렬", TextAlignment.Justify, Theme.Glyphs.TextJustify) })
         {
             var button = Theme.Button("", () => { alignment = value; UpdateAlignment(); ClearError(); }, label);
             button.Content = Theme.Glyph(glyph, 18, Theme.Text); AutomationProperties.SetName(button, label);
             button.MinHeight = 34; button.Padding = new Thickness(4); button.Margin = new Thickness(1); button.Tag = value; button.HorizontalContentAlignment = HorizontalAlignment.Center;
             alignmentButtons.Add(button); alignments.Children.Add(button);
         }
+        alignmentButtons[^1].ToolTip = "단락 양쪽 정렬 · 자동 줄바꿈 폭 안에서 줄 끝을 맞춤 · 단락의 마지막 줄은 왼쪽 정렬";
         Children.Add(alignments); UpdateAlignment();
+        boxWidth = Number(spec.BoxWidth, "자동 줄바꿈 폭 px · 0은 줄바꿈 없음");
+        boxWidth.ToolTip = "단락 상자 너비 · 이 폭 안에서 낱말 사이로 줄을 바꿈 · 0 = 줄바꿈 없음 · Enter 적용";
+        Children.Add(PropertyRows.Inline("자동 줄바꿈 폭 · px", boxWidth, 78, new Thickness(0, 0, 0, 10)));
+        // Letter outline: switch and colour on one row like a shape's stroke, then width and position.
+        // Switches, position and colour apply at once as their own undo steps; the width applies with Enter.
+        var outlineRow = new Grid { Margin = new Thickness(0, 2, 0, 6) };
+        outlineRow.ColumnDefinitions.Add(new ColumnDefinition()); outlineRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 120 });
+        outline = new CheckBox { Content = "글자 외곽선", IsChecked = spec.Outline, Foreground = Theme.Text, VerticalAlignment = VerticalAlignment.Center, ToolTip = "글자 둘레에 외곽선을 그립니다" };
+        AutomationProperties.SetName(outline, "글자 외곽선"); outlineRow.Children.Add(outline);
+        outlineColorButton = PropertyRows.ColorChip(outlineColor, "외곽선 색상", () =>
+        {
+            if (pickColor(outlineColor) is not { } selected) return;
+            outlineColor = selected; UpdateOutlineColor(); ClearError(); TryApply();
+        }, "외곽선 색상");
+        outlineColorButton.Margin = new Thickness(8, 0, 0, 0); Grid.SetColumn(outlineColorButton, 1); outlineRow.Children.Add(outlineColorButton);
+        Children.Add(outlineRow);
+        outlineWidth = Number(spec.OutlineWidth, "외곽선 두께 px");
+        outlineWidth.ToolTip = $"외곽선 두께 px · 0.5~{TextSpec.MaxOutlineWidth:0} · Enter 적용";
+        outlinePosition = new SegmentedChoice<TextOutlinePosition>([(TextOutlinePosition.Outside, "바깥"), (TextOutlinePosition.Center, "가운데")], spec.OutlinePosition)
+        { MinHeight = Theme.ControlHeight, ToolTip = "바깥: 글자 모양 밖으로 그림 · 가운데: 글자 가장자리를 중심으로 그림" };
+        AutomationProperties.SetName(outlinePosition, "외곽선 위치");
+        outlinePosition.Changed += _ => { ClearError(); TryApply(); };
+        Children.Add(PropertyRows.Pair("두께 · px", outlineWidth, "위치", outlinePosition, new Thickness(0, 0, 0, 6)));
+        outlineOnly = new CheckBox { Content = "외곽선만 그리기", IsChecked = spec.OutlineOnly, Foreground = Theme.Text, Margin = new Thickness(0, 0, 0, 10),
+            ToolTip = "채우기 없이 외곽선만 그려 속이 빈 글자를 만듭니다" };
+        AutomationProperties.SetName(outlineOnly, "외곽선만 그리기"); Children.Add(outlineOnly);
+        outline.Click += (_, _) => { UpdateOutlineRows(); ClearError(); TryApply(); };
+        outlineOnly.Click += (_, _) => { ClearError(); TryApply(); };
+        UpdateOutlineRows();
         var apply = Theme.Styled(Theme.Button("텍스트 적용", () => TryApply(), "내용과 문자 서식을 한 번에 적용 · Ctrl+Enter"), "PrimaryButton"); apply.MinHeight = 34;
         apply.Margin = new Thickness(0, 0, 0, 4); Children.Add(apply);
         message = Theme.Label("", Theme.CaptionSize, Theme.Muted); message.TextWrapping = TextWrapping.Wrap; message.Visibility = Visibility.Collapsed; Children.Add(message);
@@ -69,7 +102,7 @@ public sealed class TextPropertiesPanel : StackPanel
         {
             if (e.OriginalSource is not DependencyObject source) return;
             bool inContent = ReferenceEquals(source, editor) || editor.IsAncestorOf(source);
-            bool inField = inContent || new FrameworkElement[] { size, leading, tracking }.Any(field => ReferenceEquals(source, field) || field.IsAncestorOf(source)) || source is TextBox && family.IsAncestorOf(source);
+            bool inField = inContent || new FrameworkElement[] { size, leading, tracking, boxWidth, outlineWidth }.Any(field => ReferenceEquals(source, field) || field.IsAncestorOf(source)) || source is TextBox && family.IsAncestorOf(source);
             if ((inField || e.KeyboardDevice.Modifiers.HasFlag(ModifierKeys.Control)) && ShouldApplyKey(e.Key, e.KeyboardDevice.Modifiers, inContent, family.IsDropDownOpen || style.IsDropDownOpen, composing, e.ImeProcessedKey))
             { TryApply(); e.Handled = true; }
         };
@@ -91,10 +124,15 @@ public sealed class TextPropertiesPanel : StackPanel
         if (composing) return false;
         try
         {
+            double box = Parse(boxWidth, 0, TextSpec.MaxBoxWidth, "자동 줄바꿈 폭");
+            if (box is > 0 and < 1) throw new FormatException($"자동 줄바꿈 폭: 0 또는 1~{TextSpec.MaxBoxWidth:0} 사이의 숫자를 입력하세요.");
             var next = original with { Content = editor.Text, FontFamily = family.Text.Trim(), FontSize = Parse(size, 1, 1024, "글자 크기"),
                 LineHeight = Parse(leading, 0, 8192, "줄 간격"), Tracking = Parse(tracking, -200, 2000, "자간"),
                 Bold = (style.SelectedIndex & 1) != 0, Italic = (style.SelectedIndex & 2) != 0, Alignment = alignment,
-                ColorArgb = (uint)(color.A << 24 | color.R << 16 | color.G << 8 | color.B) };
+                ColorArgb = (uint)(color.A << 24 | color.R << 16 | color.G << 8 | color.B), BoxWidth = box,
+                Outline = outline.IsChecked == true, OutlineWidth = Parse(outlineWidth, .5, TextSpec.MaxOutlineWidth, "외곽선 두께"),
+                OutlineArgb = (uint)(outlineColor.A << 24 | outlineColor.R << 16 | outlineColor.G << 8 | outlineColor.B),
+                OutlinePosition = outlinePosition.Selected, OutlineOnly = outlineOnly.IsChecked == true };
             next.Validate();
             string? error = commit(next); if (error != null) { SetError(error); return false; }
             ClearError();
@@ -112,6 +150,14 @@ public sealed class TextPropertiesPanel : StackPanel
     void SetError(string error) { message.Text = error; message.Foreground = Theme.Danger; message.Visibility = Visibility.Visible; }
     void ClearError() { if (message == null) return; message.Text = ""; message.Visibility = Visibility.Collapsed; }
     void UpdateColor() => PropertyRows.SetChipColor(colorButton, color, "글자 색상");
+    void UpdateOutlineColor() => PropertyRows.SetChipColor(outlineColorButton, outlineColor, "외곽선 색상");
+    // Width, position, colour and hollow letters only mean something with the outline on.
+    void UpdateOutlineRows()
+    {
+        bool on = outline.IsChecked == true;
+        foreach (var control in new UIElement[] { outlineWidth, outlinePosition, outlineColorButton, outlineOnly }) control.IsEnabled = on;
+        outlinePosition.Opacity = on ? 1 : .45;
+    }
     void UpdateAlignment() { foreach (var button in alignmentButtons) { button.Background = Equals(button.Tag, alignment) ? Theme.Selected : Theme.Surface; button.BorderBrush = Equals(button.Tag, alignment) ? Theme.Accent : Theme.Line; } }
     void AddLabel(string label) { var text = PropertyRows.Caption(label); text.Margin = new Thickness(0, 10, 0, 3); Children.Add(text); }
     static TextBox Number(double value, string name)
@@ -123,5 +169,12 @@ public sealed class TextPropertiesPanel : StackPanel
     internal TextBox SizeForTesting => size;
     internal TextBox LeadingForTesting => leading;
     internal TextBox TrackingForTesting => tracking;
+    internal TextBox BoxWidthForTesting => boxWidth;
+    internal TextBox OutlineWidthForTesting => outlineWidth;
+    internal CheckBox OutlineForTesting => outline;
+    internal CheckBox OutlineOnlyForTesting => outlineOnly;
+    internal SegmentedChoice<TextOutlinePosition> OutlinePositionForTesting => outlinePosition;
+    internal Button OutlineColorForTesting => outlineColorButton;
+    internal IReadOnlyList<Button> AlignmentButtonsForTesting => alignmentButtons;
     internal string ValidationForTesting => message.Text;
 }

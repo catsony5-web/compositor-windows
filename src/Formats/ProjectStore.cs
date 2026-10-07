@@ -63,7 +63,13 @@ public static partial class ProjectStore
         // Optional and written only for shadow layers: older readers ignore it and keep the rendered pixels.
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public ShadowSpec? Shadow { get; set; }
-        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()) };
+        // Optional and written only for design style folders: older readers ignore both, keep the
+        // folder's layers and draw it as an ordinary (isolated) group.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+        public bool PassThrough { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public StyleTag? Style { get; set; }
+        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()), PassThrough = PassThrough, Style = Style };
     }
     public sealed record VectorInfo(VectorFormat Format, int Width, int Height, int Page);
     public static void AtomicWrite(string path, Action<Stream> write)
@@ -98,6 +104,7 @@ public static partial class ProjectStore
                 Category = l.Category, SourceLayerName = l.SourceLayerName, Material = MaterialFillInfo.From(l.Material),
                 Vector = l.Vector is { } vector ? new(vector.Format, vector.Width, vector.Height, vector.Page) : null, SharedGroupPixelsIndex = sharedGroupIndex });
             manifest.Layers[^1]!.Shadow = l.Shadow;
+            manifest.Layers[^1]!.PassThrough = l.PassThrough; manifest.Layers[^1]!.Style = l.Style;
         }
         if (doc.Artboards.Count > 0 || doc.Layers.Any(l => l.Category != LayerCategory.Automatic || l.SourceLayerName != null)) manifest.Version = 5;
         if (materials.Count > 0 || doc.MaterialRegions.Count > 0) manifest.Version = 6;

@@ -133,7 +133,7 @@ public sealed partial class MainWindow
             ("실행 취소", "기록"), ("합성 이미지 복사", "클립보드"), ("선택 픽셀 지우기", "채우기·지우기"), ("대지 편집", "캔버스"),
             ("레이어 복제", "레이어"), ("마스크 추가", "마스크"), ("선택 레이어 그룹화", "그룹·합성"), ("전체 선택", "선택"),
             ("레벨", "보정"), ("사진 현상", "필터"), ("화면에 맞춤", "화면"), ("가이드 추가", "가이드·격자"), ("명령 찾기", "도움·작업 공간"),
-            ("샘플 작업", "배우기"), ("로컬 연결", "AI 연결"), ("선택 레이어 이미지로", "내보내기"), ("그림자", "그림자")
+            ("샘플 작업", "배우기"), ("로컬 연결", "AI 연결"), ("선택 레이어 이미지로", "내보내기"), ("그림자", "그림자"), ("스케치 사진", "스케치")
         ];
         foreach (var (key, title) in titles) if (header.StartsWith(key, StringComparison.Ordinal)) return title;
         return tab;
@@ -263,7 +263,7 @@ public sealed partial class MainWindow
             ("Compositor .comp 내보내기", Theme.Glyphs.Export), ("선택 레이어 이미지로", Theme.Glyphs.Export), ("현재 문서 닫기", Theme.Glyphs.Close),
             ("실행 취소", Theme.Glyphs.Undo), ("다시 실행", Theme.Glyphs.Redo), ("합성 이미지 복사", Theme.Glyphs.Duplicate), ("이미지 붙여넣기", Theme.Glyphs.Paste),
             ("선택 픽셀 지우기", Theme.Glyphs.Delete), ("전경색으로", ToolIcons.PathData(Tool.Bucket)), ("배경색으로", ToolIcons.PathData(Tool.Bucket)), ("버킷", ToolIcons.PathData(Tool.Bucket)),
-            ("대지", ToolIcons.PathData(Tool.Artboard)), ("캔버스 크기", Theme.Glyphs.Fit), ("이미지 크기", Theme.Glyphs.Transform), ("선택 영역으로 자르기", ToolIcons.PathData(Tool.Crop)),
+            ("대지", ToolIcons.PathData(Tool.Artboard)), ("캔버스 크기", Theme.Glyphs.Fit), ("이미지 크기", Theme.Glyphs.Transform), ("선택 영역으로 자르기", ToolIcons.PathData(Tool.Crop)), ("스케치 사진", Theme.Glyphs.Sketch),
             ("레이어 복제", Theme.Glyphs.Duplicate), ("이름 변경", Theme.Glyphs.Rename), ("변형", Theme.Glyphs.Transform), ("가로 뒤집기", Theme.Glyphs.FlipHorizontal), ("세로 뒤집기", Theme.Glyphs.FlipVertical),
             ("마스크 추가", Theme.Glyphs.MaskAdd), ("마스크 반전", Theme.Glyphs.MaskInvert), ("마스크 제거", Theme.Glyphs.MaskRemove), ("마스크", Theme.Glyphs.Mask), ("모든 레이어 병합", Theme.Glyphs.GroupRemove), ("레이어 삭제", Theme.Glyphs.Delete), ("선택 레이어 그룹화", Theme.Glyphs.GroupAdd),
             ("그룹 해제", Theme.Glyphs.GroupRemove), ("그룹으로 이동", Theme.Glyphs.Folder), ("클리핑", Theme.Glyphs.Clip), ("아래 레이어와 병합", Theme.Glyphs.Backward),
@@ -278,7 +278,9 @@ public sealed partial class MainWindow
             ("픽셀 격자", Theme.Glyphs.Grain), ("명령 찾기", Theme.Glyphs.Search), ("도움말", Theme.Glyphs.Info), ("사진 편집 작업 공간", Theme.Glyphs.Camera), ("디자인 작업 공간", Theme.Glyphs.Shape),
             ("RGB / CMYK", Theme.Glyphs.Palette), ("CMYK ICC", Theme.Glyphs.Palette), ("Windows 기본 CMYK", Theme.Glyphs.Palette), ("패널 배치", Theme.Glyphs.Reset), ("히스토그램", Theme.Glyphs.Levels),
             ("리본", Theme.Glyphs.Sliders), ("샘플", Theme.Glyphs.Learn), ("로컬 연결", Theme.Glyphs.Sparkle), ("연결 설정", Theme.Glyphs.Sliders),
-            ("그림자", Theme.Glyphs.Shadow)
+            ("피사체를 글자 앞으로", Theme.Glyphs.SubjectFront),
+            ("그림자", Theme.Glyphs.Shadow), ("한계값", Theme.Glyphs.Threshold), ("망점", Theme.Glyphs.Halftone), ("종이·인쇄 질감", Theme.Glyphs.PaperTexture), ("빛 번짐", Theme.Glyphs.Glow),
+            ("디자인 스타일", Theme.Glyphs.Style)
         ];
         if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
         if (UserProfiles.All.FirstOrDefault(p => p.Name == label) is { } profile) return profile.Glyph;

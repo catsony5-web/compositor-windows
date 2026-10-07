@@ -187,8 +187,13 @@ public static class Loc
     public static void PrepareOffscreen(FrameworkElement root)
     {
         if (!Active) return;
+        // Most elements are both a logical and a visual child of their parent. Visit each once:
+        // walking both trees without this doubled the work at every level, which made deep panels
+        // (an English capture of the full studio) run for hours.
+        var seen = new HashSet<DependencyObject>(ReferenceEqualityComparer.Instance);
         void Walk(DependencyObject node)
         {
+            if (!seen.Add(node)) return;
             if (node is FrameworkElement element) { if (Kept(element)) return; Apply(element); }
             foreach (var child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>()) Walk(child);
             if (node is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D)

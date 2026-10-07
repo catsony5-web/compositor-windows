@@ -12,8 +12,11 @@ public static class SelfTests
         var results = new List<string>(); int failed = 0;
         string directory = Path.GetDirectoryName(Path.GetFullPath(output))!; Directory.CreateDirectory(directory);
         File.WriteAllText(output, "");
+        // MORUPIXEL_TEST_FILTER runs only the tests whose name contains it (for reproducing one failure).
+        string? only = Environment.GetEnvironmentVariable("MORUPIXEL_TEST_FILTER");
         void Test(string name, Action test)
         {
+            if (!string.IsNullOrEmpty(only) && !name.Contains(only, StringComparison.OrdinalIgnoreCase)) return;
             // Retain the last test even if a native renderer aborts the process.
             File.AppendAllText(output, "RUN " + name + Environment.NewLine);
             Console.WriteLine("RUN " + name);
@@ -61,6 +64,7 @@ public static class SelfTests
         MainWindow.RunMovePlaneCacheTests(Test);
         MainWindow.RunMovePreviewIsolationTests(Test);
         MainWindow.RunMoveSettleTests(Test);
+        MainWindow.RunMovePreviewStyleTests(Test);
         MainWindow.RunGroupedMovePreviewTests(Test);
         MainWindow.RunPointerFeedbackTests(Test, directory);
         MainWindow.RunDrawingPerformanceTests(Test);
@@ -119,6 +123,8 @@ public static class SelfTests
         DialogLayoutTests.Run(Test, directory);
         TextEditorDialogTests.Run(Test);
         MainWindow.RunTextPropertiesTests(Test, directory);
+        TextPosterTests.Run(Test, directory);
+        MainWindow.RunTextPosterUiTests(Test, directory);
         ColorPaletteTests.Run(Test);
         ColorShadePaletteTests.Run(Test);
         BrushTipTests.Run(Test, directory);
@@ -127,6 +133,8 @@ public static class SelfTests
         BrushPresetTests.Run(Test, directory);
         MainWindow.RunBrushPresetTests(Test, directory);
         PhotoDevelopTests.Run(Test, directory);
+        StyleEffectTests.Run(Test, directory);
+        MainWindow.RunStyleEffectTests(Test);
         BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);
         ShadowTests.Run(Test, directory);
@@ -137,14 +145,20 @@ public static class SelfTests
         MaterialMappingTests.Run(Test, directory);
         HatchPatternTests.Run(Test, directory);
         HatchPatternQualityTests.Run(Test);
+        ScreentoneTests.Run(Test, directory);
         CompatibilityDialog.RunHatchSummaryTests(Test);
         PrecisionWandTests.Run(Test);
         MainWindow.RunWandCommandTests(Test);
         MainWindow.RunLayerWandTests(Test, directory);
         MainWindow.RunLayerEyeSweepTests(Test);
         MainWindow.RunMaterialPropertiesTests(Test);
+        DesignStyleTests.Run(Test, directory);
+        MainWindow.RunDesignStyleTests(Test, directory);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);
+        SketchCleanupTests.Run(Test);
+        MainWindow.RunSketchCleanupTests(Test, directory);
+        MainWindow.RunScreentoneTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);

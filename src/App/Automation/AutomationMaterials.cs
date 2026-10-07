@@ -7,6 +7,20 @@ public static class AutomationMaterials
 {
     /// <summary>A built-in key (brick) or "custom:&lt;32 hex&gt;" for a user line pattern; null for an image material.</summary>
     public static string? PatternId(MaterialAsset asset) => LinePatterns.IsPattern(asset) ? LinePatterns.FavoriteKey(asset) : null;
+    /// <summary>The palette group of a pattern: basic (line hatches), screentone or custom; null for an image material.</summary>
+    public static string? PatternGroup(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var p) ? Group(p) : LinePatterns.IsCustom(asset) ? "custom" : null;
+    static string Group(HatchPattern p) => HatchPatterns.IsScreentone(p) ? "screentone" : "basic";
+
+    // Gradient parameters of apply_material/update_material (dot-gradient and stipple-gradient only).
+    public static readonly string[] GradientFields = ["gradientAngle", "gradientStart", "gradientEnd", "gradientSeed"];
+    public const string GradientOnly = "gradientAngle, gradientStart, gradientEnd and gradientSeed apply to dot-gradient and stipple-gradient only.";
+    public static bool HasGradient(JsonObject arguments) => GradientFields.Any(arguments.ContainsKey);
+    public static JsonObject Gradient(ToneGradient gradient) => new()
+    {
+        ["angle"] = gradient.Angle, ["start"] = gradient.Start, ["end"] = gradient.End, ["seed"] = gradient.Seed,
+        ["meaning"] = "Ink coverage runs linearly from start (0-1) at the region's first edge to end at its last edge along angle (degrees, 0 = left to right, 90 = top to bottom)."
+    };
+
     public static JsonObject Asset(MaterialAsset asset)
     {
         bool builtIn = HatchPatterns.TryGet(asset, out _), custom = LinePatterns.IsCustom(asset);
@@ -14,8 +28,9 @@ public static class AutomationMaterials
         {
             ["materialId"] = asset.Id.ToString(), ["name"] = asset.Name, ["width"] = asset.Pixels.Width, ["height"] = asset.Pixels.Height,
             ["source"] = asset.Source, ["tileable"] = asset.Tileable, ["kind"] = builtIn || custom ? "pattern" : "image", ["patternId"] = PatternId(asset),
-            ["patternKind"] = builtIn ? "builtin" : custom ? "custom" : null,
-            ["tileableMeaning"] = builtIn ? "Built-in seamless pattern, redrawn from vector geometry at display and export resolution."
+            ["patternKind"] = builtIn ? "builtin" : custom ? "custom" : null, ["patternGroup"] = PatternGroup(asset),
+            ["tileableMeaning"] = HatchPatterns.IsGradient(asset) ? "Built-in gradient screentone: its density runs across each region it fills, redrawn at display and export resolution; the stored tile is a fallback for older versions."
+                : builtIn ? "Built-in seamless pattern, redrawn from vector geometry at display and export resolution."
                 : custom ? "User line pattern converted from an image; its coverage tile is recolored with ink, line weight and background at display and export resolution."
                 : "Caller-declared; no seamless-image generation or verification is performed."
         };
@@ -52,6 +67,7 @@ public static class AutomationMaterials
         {
             ["patternId"] = HatchPatterns.Key(p), ["materialId"] = HatchPatterns.StableId(p).ToString(), ["kind"] = "builtin", ["name"] = HatchPatterns.Name(p),
             ["displayName"] = Loc.T(HatchPatterns.Name(p)), ["defaultInk"] = Ink(HatchPatterns.DefaultInk), ["favorite"] = Favorite(HatchPatterns.Key(p)),
+            ["group"] = Group(p), ["coverage"] = HatchPatterns.Coverage(p), ["gradient"] = HatchPatterns.IsGradient(p),
             ["surfaces"] = new JsonArray(new[] { (SurfaceHint.Wall, "wall"), (SurfaceHint.Floor, "floor"), (SurfaceHint.Ground, "ground") }
                 .Where(s => SelectionMaterials.LeadPatterns(s.Item1).Contains(p)).Select(s => (JsonNode?)JsonValue.Create(s.Item2)).ToArray()),
             ["cadKeywords"] = new JsonArray(DrawingCleanup.PatternKeywords(p).Select(k => (JsonNode?)JsonValue.Create(k)).ToArray())
@@ -61,6 +77,7 @@ public static class AutomationMaterials
             {
                 ["patternId"] = LinePatterns.FavoriteKey(a), ["materialId"] = a.Id.ToString(), ["kind"] = "custom", ["name"] = a.Name, ["displayName"] = a.Name,
                 ["defaultInk"] = Ink(HatchPatterns.DefaultInk), ["favorite"] = Favorite(LinePatterns.FavoriteKey(a)),
+                ["group"] = "custom", ["coverage"] = null, ["gradient"] = false,
                 ["inLibrary"] = library?.Any(p => p.Id == a.Id) == true, ["inDocument"] = documentPatterns?.Any(p => p.Id == a.Id) == true,
                 ["width"] = a.Pixels.Width, ["height"] = a.Pixels.Height, ["surfaces"] = new JsonArray(), ["cadKeywords"] = new JsonArray()
             });
@@ -70,7 +87,7 @@ public static class AutomationMaterials
         var list = items.ToArray();
         return new JsonObject { ["count"] = list.Length, ["customCount"] = list.Count(i => i["kind"]!.GetValue<string>() == "custom"), ["surface"] = surface,
             ["patterns"] = new JsonArray(list.Cast<JsonNode?>().ToArray()),
-            ["usage"] = "Pass patternId (or materialId) to apply_material or update_material; the pattern is added to the document library automatically. scale, verticalRatio, angle, ink, lineWeight, background and opacity tune it. favorite mirrors the user's starred patterns (read-only)." };
+            ["usage"] = "Pass patternId (or materialId) to apply_material or update_material; the pattern is added to the document library automatically. scale, verticalRatio, angle, ink, lineWeight, background and opacity tune it; gradient entries (dot-gradient, stipple-gradient) also take gradientAngle, gradientStart, gradientEnd and gradientSeed. group is the palette group (basic, screentone, custom); coverage is a uniform screentone's nominal ink coverage at lineWeight 1. favorite mirrors the user's starred patterns (read-only)." };
     }
     public static JsonObject Region(MaterialRegion region) => new()
     {
@@ -90,6 +107,7 @@ public static class AutomationMaterials
         ["verticalRatio"] = Math.Round(MaterialEditing.Stretch(fill), 6),
         ["scale"] = document == null ? null : Math.Round(fill.TileWidth / MaterialEditing.DefaultTile(document.Width, document.Height, fill.Asset), 6),
         ["patternId"] = PatternId(fill.Asset), ["patternKind"] = HatchPatterns.TryGet(fill.Asset, out _) ? "builtin" : LinePatterns.IsCustom(fill.Asset) ? "custom" : null,
+        ["patternGroup"] = PatternGroup(fill.Asset), ["gradient"] = HatchPatterns.IsGradient(fill.Asset) ? Gradient(ToneGradient.Of(fill)) : null,
         ["rendering"] = LinePatterns.IsPattern(fill.Asset) ? "pattern_redrawn" : "image_tile",
         ["boundaryRetained"] = true, ["originalTextureRetained"] = true
     };
@@ -108,6 +126,9 @@ public static partial class AutomationCatalog
         if (Has("materialId") && Has("patternId")) throw new ArgumentException("Use materialId or patternId, not both.");
         if (Has("patternId") && arguments["patternId"]!.GetValue<string>() is var key && !key.StartsWith(LinePatterns.CustomKeyPrefix, StringComparison.Ordinal) && !HatchPatterns.TryParseKey(key, out _))
             throw new ArgumentException($"Unknown patternId '{key}': use a key from query_patterns.");
+        // A patternId names the material up front; with materialId or a kept material the editor checks on apply.
+        if (AutomationMaterials.HasGradient(arguments) && Has("patternId") && !(HatchPatterns.TryParseKey(arguments["patternId"]!.GetValue<string>(), out var named) && HatchPatterns.IsGradient(named)))
+            throw new ArgumentException(AutomationMaterials.GradientOnly);
         if (Has("scale") && Has("tileWidth")) throw new ArgumentException("Use tileWidth (pixels) or scale (relative), not both.");
         if (Has("verticalRatio") && Has("tileHeight")) throw new ArgumentException("Use tileHeight (pixels) or verticalRatio (relative), not both.");
         if (command != "apply_material") return;
@@ -143,6 +164,7 @@ public static partial class AutomationCatalog
             ["type"] = "object", ["required"] = Strings(["x", "y"]), ["additionalProperties"] = false,
             ["properties"] = new JsonObject { ["x"] = coordinate.DeepClone(), ["y"] = coordinate.DeepClone() }
         };
+        if (type == "corners") return new JsonObject { ["type"] = "array", ["minItems"] = 4, ["maxItems"] = 4, ["items"] = point };
         var contour = new JsonObject { ["type"] = "array", ["minItems"] = 3, ["maxItems"] = 2048, ["items"] = point };
         return type == "points" ? contour : new JsonObject { ["type"] = "array", ["maxItems"] = 16, ["items"] = contour };
     }
@@ -178,7 +200,12 @@ public static partial class AutomationCatalog
             }
             return;
         }
-        if (type == "points")
+        if (type == "corners")
+        {
+            if (array.Count != 4) throw new ArgumentException("corners needs exactly four points: top-left, top-right, bottom-right, bottom-left.");
+            _ = MaterialPoints(array);
+        }
+        else if (type == "points")
         {
             if (array.Count is < 3 or > 2048) throw new ArgumentException("A contour needs 3..2048 points.");
             _ = MaterialPoints(array);

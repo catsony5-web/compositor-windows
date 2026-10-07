@@ -129,6 +129,11 @@ public sealed class Layer
     public AdjustmentSpec? Adjustment { get; set; }
     public WarpQuad? Warp { get; set; }
     public ShadowSpec? Shadow { get; set; }
+    // A pass-through folder paints its children straight onto the layers below it instead of an
+    // isolated surface, so its adjustment layers and blend modes reach what lies underneath.
+    // Design style folders use it (Core/DesignStyles.cs); other folders stay isolated.
+    public bool PassThrough { get; set; }
+    public StyleTag? Style { get; set; }
     public Layer Snapshot()
     {
         var copy = (Layer)MemberwiseClone();
@@ -276,6 +281,8 @@ public sealed class Document
         if (layer.Kind == LayerKind.Adjustment) (layer.Adjustment ?? throw new InvalidDataException("조정 정보가 없습니다.")).Validate();
         else if (layer.Adjustment != null) throw new InvalidDataException("조정 레이어 종류가 일치하지 않습니다.");
         ShadowSpec.ValidateLayer(layer);
+        if ((layer.PassThrough || layer.Style != null) && layer.Kind != LayerKind.Group) throw new InvalidDataException("디자인 스타일 정보는 그룹에만 둘 수 있습니다.");
+        layer.Style?.Validate();
         layer.Warp?.Validate();
     }
 }
@@ -340,7 +347,7 @@ public sealed class History
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
                 x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Material != y.Material || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
-            if (x.Shadow != y.Shadow) return false;
+            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style) return false;
         }
         return true;
     }

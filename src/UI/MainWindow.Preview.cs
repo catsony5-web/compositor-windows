@@ -145,7 +145,7 @@ public sealed partial class MainWindow
             }
             finally { host.Child = null; ShowStudioPage(studioPage, false); }
         }
-        ShowStudioPage(0); CapturePane(studioPanes[0], "photo-actions", 360, 720);
+        ShowStudioPage(0); CapturePane(studioPanes[0], "photo-actions", 360, 800);
         ShowStudioPage(1); CapturePane(studioPanes[1], "image-properties", 360, 840);
         // A folded section keeps its title; its rows return when it is opened again.
         SectionHeader.SetCollapsedKeys(["위치와 변형"]); CapturePane(studioPanes[1], "image-properties-folded", 360, 640); SectionHeader.SetCollapsedKeys([]);
@@ -174,18 +174,42 @@ public sealed partial class MainWindow
         doc.Add(shape); SetWorkspaceMode(true); Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
         ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
+        TrimPreviewTabs();
+        RenderSketchPreviews(Capture);
+        TrimPreviewTabs();
         RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
+        TrimPreviewTabs();
         RenderHatchPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
+        TrimPreviewTabs();
+        RenderScreentonePreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
+        TrimPreviewTabs();
         RenderProfilePreviews(directory);
+        TrimPreviewTabs();
+        RenderTextPosterPreviews(directory);
+        TrimPreviewTabs();
         RenderShadowPreviews(Capture, CapturePane);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
         string plan = Path.Combine(directory, "평면 예시.dxf");
         var drawing = CompatibilityImport.ReadAsync(plan, new ImportSettings { CadLongEdge = 900 }.Options(plan)).GetAwaiter().GetResult().Document;
+        TrimPreviewTabs();
         AddTab(drawing, null); var hatch = doc.Layers.First(l => l.Kind == LayerKind.Material);
         doc.ActiveId = hatch.Id; selectedLayers.Clear(); selectedLayers.Add(hatch.Id); ShowStudioPage(1);
         Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "drawing-photo-layers", 1480, 920);
+        TrimPreviewTabs();
+        RenderStyleEffectPreviews(directory, Capture);
+        TrimPreviewTabs();
+        RenderDesignStylePreviews(directory);
     }
+    // Each review group opens its own sample documents; drop every tab but the active one between
+    // groups so the whole review stays under the 8-document limit (no save prompts: review only).
+    void TrimPreviewTabs()
+    {
+        if (tabs.Count <= 1) return;
+        StoreTab(); var keep = tabs[activeTab];
+        tabs.RemoveAll(tab => !ReferenceEquals(tab, keep)); activeTab = 0; RebuildTabs();
+    }
+
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)
     {

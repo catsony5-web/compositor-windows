@@ -299,7 +299,7 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 8 && capabilities["commands"]!.AsArray().Count == 35,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["commands"]!.AsArray().Count == 38,
                 "Running editor did not advertise its command contract");
             Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
                 "Supported 2D mapping must remain distinct from unsupported 3D operations");
@@ -555,7 +555,7 @@ public sealed partial class MainWindow
         {
             var all = Success(Call(window, "query_patterns"));
             var keys = all["patterns"]!.AsArray().Select(p => Text(p!.AsObject(), "patternId")).ToArray();
-            Check(all["count"]!.GetValue<int>() == 19 && keys.SequenceEqual(HatchPatterns.All.Select(HatchPatterns.Key)), "query_patterns did not list every pattern in catalog order");
+            Check(all["count"]!.GetValue<int>() == HatchPatterns.All.Count && keys.SequenceEqual(HatchPatterns.All.Select(HatchPatterns.Key)), "query_patterns did not list every pattern in catalog order");
             var ground = Success(Call(window, "query_patterns", new JsonObject { ["surface"] = "ground" }))["patterns"]!.AsArray().Select(p => Text(p!.AsObject(), "patternId"));
             Check(ground.SequenceEqual(SelectionMaterials.PatternOrder(SurfaceHint.Ground).Select(HatchPatterns.Key)), "Ground order differs from the palette");
             var wall = Success(Call(window, "query_patterns", new JsonObject { ["surface"] = "wall" }))["patterns"]![0]!.AsObject();

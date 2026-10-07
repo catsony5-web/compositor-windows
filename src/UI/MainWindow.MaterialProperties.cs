@@ -9,9 +9,10 @@ using Microsoft.Win32;
 namespace Compositor.Windows;
 
 // Properties of a material layer: what fills it, swapping to another material or hatch pattern,
-// and its repeat size, vertical ratio, rotation and (for patterns) line weight and ink. Slider
-// ticks change only the fill description for a live preview; the pixels are re-rendered and one
-// undo step is recorded when the change settles.
+// and its repeat size, vertical ratio, rotation and (for patterns) line weight and ink; a gradient
+// screentone adds its direction and the density at each end (and, for the stipple, another random
+// arrangement), black poché only its colors. Slider ticks change only the fill description for a
+// live preview; the pixels are re-rendered and one undo step is recorded when the change settles.
 public sealed partial class MainWindow
 {
     sealed record MaterialPreviewState(Document Document, Document Before, string Label, IReadOnlyDictionary<Guid, MaterialFill> Fills);
@@ -22,6 +23,8 @@ public sealed partial class MainWindow
     {
         if (layer.Material is not { } fill) return;
         bool locked = IsLockedWithParents(layer), pattern = LinePatterns.IsPattern(fill.Asset), builtIn = HatchPatterns.TryGet(fill.Asset, out var hatch);
+        // Black poché has no repeat or line weight; a gradient screentone's density comes from its gradient, not the line weight.
+        bool solid = builtIn && hatch == HatchPattern.SolidBlack, gradient = builtIn && HatchPatterns.IsGradient(hatch), screentone = builtIn && HatchPatterns.IsScreentone(hatch);
         var boundDocument = doc; long version = inspectorVersion;
         bool Current() => ReferenceEquals(doc, boundDocument) && inspectorVersion == version && doc.ActiveId == layer.Id && !IsLockedWithParents(layer);
         var controls = new List<UIElement>();
@@ -32,11 +35,11 @@ public sealed partial class MainWindow
         var swatch = new Border { Width = 40, Height = 40, CornerRadius = new CornerRadius(6), BorderBrush = Theme.Stroke, BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top };
         if (pattern)
         {
-            // The pattern in its ink over its background color, on white paper.
+            // The pattern in its ink over its background color, on white paper (a gradient with its own ramp).
             swatch.Background = Brushes.White;
             var layers = new Grid();
             if (MaterialRenderer.Background(fill) is { } tint) layers.Children.Add(new System.Windows.Shapes.Rectangle { Fill = tint, RadiusX = 5, RadiusY = 5 });
-            layers.Children.Add(new System.Windows.Shapes.Rectangle { Fill = PatternSwatchBrush(fill.Asset, fill.Ink), RadiusX = 5, RadiusY = 5 });
+            layers.Children.Add(new System.Windows.Shapes.Rectangle { Fill = PatternSwatchBrush(fill.Asset, fill.Ink, gradient ? ToneGradient.Of(fill) : null), RadiusX = 5, RadiusY = 5 });
             swatch.Child = layers;
         }
         else { var texture = new ImageBrush(MaterialThumbnail(fill.Asset)) { Stretch = Stretch.UniformToFill }; texture.Freeze(); swatch.Background = texture; }
@@ -46,8 +49,10 @@ public sealed partial class MainWindow
         var title = Theme.Label(display, Theme.BodySize); title.FontWeight = FontWeights.SemiBold;
         if (!HatchPatterns.IsBuiltInMaterial(fill.Asset)) Loc.Keep(title);
         titles.Children.Add(title);
-        var repeat = Theme.Label(builtIn ? $"해치 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px" : pattern ? $"내 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px"
-            : $"재질 이미지 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px", Theme.CaptionSize, Theme.Muted);
+        var tone = ToneGradient.Of(fill);
+        var repeat = Theme.Label(solid ? "스크린톤 · 잉크 색으로 채움" : gradient ? $"스크린톤 · 농도 {tone.Start * 100:0}% → {tone.End * 100:0}%"
+            : screentone ? $"스크린톤 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px" : builtIn ? $"해치 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px"
+            : pattern ? $"내 패턴 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px" : $"재질 이미지 · 반복 {fill.TileWidth:0}×{fill.TileHeight:0}px", Theme.CaptionSize, Theme.Muted);
         titles.Children.Add(repeat); identity.Children.Add(titles);
         properties.Children.Add(identity);
 
@@ -63,7 +68,7 @@ public sealed partial class MainWindow
             properties.Children.Add(palette);
         }
 
-        properties.Children.Add(Theme.Section("패턴 크기와 방향"));
+        properties.Children.Add(Theme.Section(solid ? "패턴 색" : "패턴 크기와 방향"));
         double baseTile = MaterialEditing.DefaultTile(doc.Width, doc.Height, fill.Asset);
         ParameterSlider Slider(string label, double min, double max, double value, double reset, string? tip, string history, Func<MaterialFill, double, MaterialFill> change, bool logarithmic = false)
         {
@@ -71,14 +76,19 @@ public sealed partial class MainWindow
             slider.Changed += v => { if (Current()) PreviewMaterialEdit(history, f => change(f, v)); };
             properties.Children.Add(Control(slider)); return slider;
         }
-        Slider("크기 %", 10, 1000, fill.TileWidth / baseTile * 100, 100, "100%는 새 재질의 기본 크기입니다. 무늬 간격과 길이가 함께 바뀝니다.", "재질 크기",
-            (f, v) => MaterialEditing.Sized(f, baseTile * v / 100, MaterialEditing.Stretch(f)), logarithmic: true);
-        Slider("세로 비율 %", 25, 400, MaterialEditing.Stretch(fill) * 100, 100, "100%는 원래 비율입니다. 해치 패턴은 무늬 모양을 유지한 채 세로 간격만, 재질 이미지는 이미지를 세로로 늘입니다.", "재질 비율",
-            (f, v) => MaterialEditing.Sized(f, f.TileWidth, v / 100), logarithmic: true);
-        Slider("회전 °", -180, 180, NormalizeAngle(fill.Angle), 0, null, "재질 회전", (f, v) => f with { Angle = v });
+        if (!solid)
+        {
+            Slider("크기 %", 10, 1000, fill.TileWidth / baseTile * 100, 100, "100%는 새 재질의 기본 크기입니다. 무늬 간격과 길이가 함께 바뀝니다.", "재질 크기",
+                (f, v) => MaterialEditing.Sized(f, baseTile * v / 100, MaterialEditing.Stretch(f)), logarithmic: true);
+            Slider("세로 비율 %", 25, 400, MaterialEditing.Stretch(fill) * 100, 100, "100%는 원래 비율입니다. 해치 패턴은 무늬 모양을 유지한 채 세로 간격만, 재질 이미지는 이미지를 세로로 늘입니다.", "재질 비율",
+                (f, v) => MaterialEditing.Sized(f, f.TileWidth, v / 100), logarithmic: true);
+            Slider("회전 °", -180, 180, NormalizeAngle(fill.Angle), 0, null, "재질 회전", (f, v) => f with { Angle = v });
+        }
         if (pattern)
         {
-            Slider("선 굵기 %", 25, 400, fill.LineWeight * 100, 100, "해치 패턴의 선과 점 굵기를 바꿉니다.", "패턴 선 굵기", (f, v) => f with { LineWeight = v / 100 });
+            if (!solid && !gradient)
+                Slider("선 굵기 %", 25, 400, fill.LineWeight * 100, 100, screentone ? "스크린톤의 점과 선 굵기를 바꿉니다. 굵을수록 농도가 진해집니다." : "해치 패턴의 선과 점 굵기를 바꿉니다.",
+                    "패턴 선 굵기", (f, v) => f with { LineWeight = v / 100 });
             uint ink = fill.Ink == 0 ? HatchPatterns.DefaultInk : fill.Ink;
             var row = new DockPanel { Margin = new Thickness(2, 2, 2, 8) };
             var reset = Theme.IconButton(Theme.Glyphs.Revert, () => Guard(() => { if (Current()) EditMaterial("패턴 잉크 색", f => f with { Ink = 0 }); }), "잉크 색 기본값", 26, 14);
@@ -94,10 +104,27 @@ public sealed partial class MainWindow
             properties.Children.Add(row);
             AddPatternBackgroundRow(fill, locked, Current, Control<UIElement>);
         }
+        if (gradient)
+        {
+            // The density runs across the region: its direction and the density at each end.
+            properties.Children.Add(Theme.Section("그라데이션"));
+            Slider("방향 °", -180, 180, NormalizeAngle(tone.Angle), ToneGradient.Default.Angle, "농도가 바뀌는 방향입니다. 0°는 왼쪽에서 오른쪽, 90°는 위에서 아래입니다.", "그라데이션 방향",
+                (f, v) => f with { Gradient = ToneGradient.Of(f) with { Angle = v } });
+            Slider("시작 농도 %", 0, 100, tone.Start * 100, ToneGradient.Default.Start * 100, "영역이 시작하는 가장자리의 잉크 농도입니다.", "그라데이션 시작 농도",
+                (f, v) => f with { Gradient = ToneGradient.Of(f) with { Start = v / 100 } });
+            Slider("끝 농도 %", 0, 100, tone.End * 100, ToneGradient.Default.End * 100, "영역이 끝나는 가장자리의 잉크 농도입니다.", "그라데이션 끝 농도",
+                (f, v) => f with { Gradient = ToneGradient.Of(f) with { End = v / 100 } });
+            if (hatch == HatchPattern.StippleGradient)
+                properties.Children.Add(Control(Theme.ActionRow("점 배치 바꾸기", () => Guard(() =>
+                {
+                    if (Current()) EditMaterial("점 배치 바꾸기", f => f with { Gradient = ToneGradient.Of(f) with { Seed = (ToneGradient.Of(f).Seed + 1) % (ToneGradient.MaxSeed + 1) } });
+                }), "같은 농도로 점의 무작위 배치만 바꿉니다.", Theme.Glyphs.Grain)));
+        }
         var defaults = Theme.ActionRow("기본값으로 되돌리기", () => Guard(() =>
         {
-            if (Current()) EditMaterial("재질 기본값", f => MaterialEditing.Sized(f, baseTile, 1) with { Angle = 0, LineWeight = 1, Ink = 0 });
-        }), pattern ? "크기 100%, 세로 비율 100%, 회전 0°, 선 굵기 100%, 기본 잉크 색으로 되돌립니다." : "크기 100%, 세로 비율 100%, 회전 0°로 되돌립니다.", Theme.Glyphs.Revert);
+            if (Current()) EditMaterial("재질 기본값", f => MaterialEditing.Sized(f, baseTile, 1) with { Angle = 0, LineWeight = 1, Ink = 0, Gradient = gradient ? null : f.Gradient });
+        }), solid ? "기본 잉크 색으로 되돌립니다." : gradient ? "크기 100%, 세로 비율 100%, 회전 0°, 기본 잉크 색과 그라데이션 기본값으로 되돌립니다."
+            : pattern ? "크기 100%, 세로 비율 100%, 회전 0°, 선 굵기 100%, 기본 잉크 색으로 되돌립니다." : "크기 100%, 세로 비율 100%, 회전 0°로 되돌립니다.", Theme.Glyphs.Revert);
         defaults.IsEnabled = !locked; properties.Children.Add(Control(defaults));
         if (locked) foreach (var control in controls) control.IsEnabled = false;
     }
