@@ -214,20 +214,19 @@ public static class StyleRecipes
         double cell = c.Measure(1 / 230d, 3, 48), level = Math.Clamp(MedianLuminance(c) * 255, 70, 190);
         void Treatment(bool subject)
         {
-            string Name(string name) => subject ? "피사체 · " + name : name;
             switch (look)
             {
                 case 1:
-                    kit.AddThreshold(Name("비트맵"), level, 3, subject);
-                    kit.AddGradientMap(Name("두 색"), dark, light, clipped: subject);
+                    kit.AddThreshold(subject ? "피사체 · 비트맵" : "비트맵", level, 3, subject);
+                    kit.AddGradientMap(subject ? "피사체 · 두 색" : "두 색", dark, light, clipped: subject);
                     break;
                 case 2:
-                    kit.AddGradientMap(Name("듀오톤"), dark, light, clipped: subject);
-                    kit.AddCurves(Name("대비"), StyleKit.Contrast(.8), clipped: subject);
+                    kit.AddGradientMap(subject ? "피사체 · 듀오톤" : "듀오톤", dark, light, clipped: subject);
+                    kit.AddCurves(subject ? "피사체 · 대비" : "대비", StyleKit.Contrast(.8), clipped: subject);
                     break;
                 default:
-                    kit.AddCurves(Name("대비"), StyleKit.Contrast(.85), clipped: subject);
-                    kit.AddHalftone(Name("망점"), cell, 45, dark, light, HalftoneShape.Round, subject);
+                    kit.AddCurves(subject ? "피사체 · 대비" : "대비", StyleKit.Contrast(.85), clipped: subject);
+                    kit.AddHalftone(subject ? "피사체 · 망점" : "망점", cell, 45, dark, light, HalftoneShape.Round, subject);
                     break;
             }
         }
@@ -264,6 +263,12 @@ public static class StyleRecipes
         var region = new Rect(w * .04, titleY, w * .92, titleHeight);
         uint titleColor = Readable(c, region, dark, light, accent);
         spec = spec with { ColorArgb = titleColor, OutlineArgb = titleColor };
+        // Over a hard bitmap the letters cross solid ink as well as paper: a thin knockout edge keeps them whole.
+        if (!hollow && look == 1)
+        {
+            uint edge = Math.Abs(Luminance(titleColor) - Luminance(light)) >= Math.Abs(Luminance(titleColor) - Luminance(dark)) ? light : dark;
+            spec = spec with { Outline = true, OutlinePosition = TextOutlinePosition.Outside, OutlineWidth = Math.Max(.5, spec.FontSize * .018), OutlineArgb = edge };
+        }
         var titleLayer = kit.AddText("제목", spec, w * .04 - size * scale * .02, titleY, scale);
         if (subject != null) { kit.MoveBelow(titleLayer, subject.Layer); Treatment(true); }
         // Small text blocks in the corners and a justified column under the title, each on a solid label so it

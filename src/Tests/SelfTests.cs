@@ -61,6 +61,7 @@ public static class SelfTests
         MainWindow.RunMovePlaneCacheTests(Test);
         MainWindow.RunMovePreviewIsolationTests(Test);
         MainWindow.RunMoveSettleTests(Test);
+        MainWindow.RunMovePreviewStyleTests(Test);
         MainWindow.RunGroupedMovePreviewTests(Test);
         MainWindow.RunPointerFeedbackTests(Test, directory);
         MainWindow.RunDrawingPerformanceTests(Test);

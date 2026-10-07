@@ -193,9 +193,19 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 - `groupId`: 기존 스타일 그룹을 같은 자리에서 다시 적용합니다. 그룹 ID·위치·표시·불투명도와 사용자가 바꾼 이름이 유지되고, 같은 스타일이면 지정하지 않은 매개변수는 그룹의 값을 그대로 씁니다. 다른 `styleId`를 주면 그 그룹을 다른 스타일로 바꿉니다. `targetLayerIds`와 함께 쓸 수 없습니다. 잠긴 그룹은 `layer_locked`, 스타일 그룹이 아니면 `wrong_layer_kind`입니다.
 - 결과에는 `groupId`(= `layerId`), `styleId`, 실제로 쓴 `parameters`, 그룹 안 레이어 수 `layerCount`, 사용자에게 보여 줄 `notes`(예: 닫힌 영역을 찾지 못함)가 들어갑니다. 스타일을 없애려면 `delete_layer`로 그룹을 지웁니다(숨겼던 해치도 다시 표시). `apply_batch`에는 포함하지 않습니다.
 
+| `styleId` | 매개변수 (기본값) | 그룹 안의 레이어 |
+| --- | --- | --- |
+| `screentone-plan` | `strength` 0~100 (55), `texture` 0~100 (45) | 흑백 변환, 선 정리(한계값), 방마다 스크린톤 채우기(검정 채움 포셰, 점 스크린 10~75%, 점묘·점 그라데이션), 복사 질감(종이·인쇄 질감: 토너·줄무늬) |
+| `dark-section` | `grid` true/false (true), `strength` (70) | 흰 선·검은 바탕(그라데이션 맵), 선 밝기(레벨), 격자 패턴, 인쇄 질감 |
+| `cyanotype` | `strength` (70), `paper` (60) | 프러시안 블루(도면은 그라데이션 맵, 사진은 곡선), 종이 섬유와 붓 자국 가장자리(종이·인쇄 질감) |
+| `neo-brutalist-poster` | `color` `mono`·`red`·`blue`·`orange` (`mono`), `photo` `halftone`·`bitmap`·`duotone` (`halftone`), `title` `fill`·`outline` (`fill`) | 사진 표현(대비+망점, 한계값+두 색 또는 듀오톤), 큰 제목(`outline`이면 외곽선만), 피사체(사진 레이어 하나면 그 레이어의 복사본에 피사체 마스크, 같은 표현을 클리핑), 라벨 위 작은 글(단락 상자·양쪽 정렬), 인쇄 질감 |
+| `translucent-editorial` | `blur` (60), `panel` `left`·`center`·`right`·`bottom` (`right`), `glow` 0~100 (35, 0이면 빛 번짐 레이어 없음) | 흐린 패널, 부드러운 톤·차분한 색, 빛 번짐, 반투명 종이·테두리, 제목·본문(단락 상자), 종이 질감 |
+
 ```json
 { "command": "apply_style", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
   "styleId": "screentone-plan", "parameters": { "strength": 70, "texture": 30 } } }
+{ "command": "apply_style", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "styleId": "neo-brutalist-poster", "parameters": { "photo": "bitmap", "title": "outline", "color": "red" } } }
 ```
 
 흑백 스크린톤 평면은 도면 선(치수·문자·가구·해치 역할 레이어 제외)으로 닫힌 영역을 찾아 바깥은 비우고, 얇거나 작은 영역(벽 속, 기둥)은 포셰, 방은 이웃끼리 다른 망점과 점묘 그라데이션으로 채웁니다. 단계마다 패턴 레이어가 하나씩 생기므로 앱의 재질 속성에서 패턴을 바꿀 수 있습니다. 네오 브루탈리즘 포스터는 내장 로컬 AI 모델로 피사체를 오려 제목 앞에 둡니다. 결과는 `preview`로 확인하세요.
