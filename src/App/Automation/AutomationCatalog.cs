@@ -75,9 +75,16 @@ public static partial class AutomationCatalog
         var textFields = Fields(("text", new("string", "Text content, including line breaks.", MaxLength: 100_000, EmptyAllowed: true)),
             ("fontFamily", new("string", "Installed font family name.", MaxLength: 256)), ("fontSize", Number(1, 1024)),
             ("color", Color), ("x", Coordinate), ("y", Coordinate), ("name", Name), ("bold", Bool("Bold text.")),
-            ("italic", Bool("Italic text.")), ("alignment", Choice("Left", "Center", "Right")),
+            ("italic", Bool("Italic text.")),
+            ("alignment", new("string", "Left, Center, Right or Justify. Justify spreads the wrapped lines of a paragraph box (boxWidth) to both edges; the last line of each paragraph stays left.", Choices: ["Left", "Center", "Right", "Justify"])),
             ("lineHeight", Number(0, 8192, "Line height in pixels; zero uses natural spacing.")),
-            ("tracking", Number(-200, 2000, "Tracking in 1/1000 em.")));
+            ("tracking", Number(-200, 2000, "Tracking in 1/1000 em.")),
+            ("boxWidth", Number(0, TextSpec.MaxBoxWidth, "Paragraph box width in pixels: lines wrap between words to fit it (Korean keeps whole words). 0 = no wrapping, one line per line break.")),
+            ("outline", Bool("Letter outline around the glyphs. Omitted: true when another outline argument is given, otherwise the current value (false for new text).")),
+            ("outlineWidth", Number(.5, TextSpec.MaxOutlineWidth, "Outline width in pixels; defaults to 4.")),
+            ("outlineColor", Color with { Description = "Outline color: #RRGGBB, #AARRGGBB, or transparent; defaults to black." }),
+            ("outlinePosition", new("string", "outside (default): the outline grows outward from the letter shapes; center: it straddles the letter edges.", Choices: ["outside", "center"])),
+            ("outlineOnly", Bool("Hollow letters: draw only the outline, without the fill. Turns the outline on unless outline=false.")));
         Add("list_sessions", "List Morupixel windows where the user enabled AI control. Does not open or focus a window.", true, Fields());
         Add("get_state", "Inspect document identifiers, revisions and counts. Use includeLayers=false for a compact overview, then query_layers/get_layer for objects. The legacy default includes all layers.", true,
             Fields(("documentId", Id), ("includeLayers", Bool("Defaults to true for existing clients. Set false to omit the potentially large layer inventory."))));
@@ -270,6 +277,8 @@ public static partial class AutomationCatalog
         }
         if (command is "new_document" or "add_shape" && (double)NumberValue(arguments, "width") * NumberValue(arguments, "height") > 16_777_216)
             throw new ArgumentException("Automation images must not exceed 16,777,216 pixels.");
+        if (command is "add_text" or "update_text" && NumberValue(arguments, "boxWidth") is > 0 and < 1)
+            throw new ArgumentException("boxWidth must be 0 (no wrapping) or at least 1 pixel.");
         if (command is "query_layers" or "query_materials" or "query_regions")
         {
             if (arguments.ContainsKey("parentId") && arguments["rootsOnly"]?.GetValue<bool>() == true)

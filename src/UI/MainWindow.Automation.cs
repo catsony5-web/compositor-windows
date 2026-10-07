@@ -748,7 +748,15 @@ public sealed partial class MainWindow
         FontSize = ANumber(args, "fontSize", current.FontSize), ColorArgb = VectorShapes.Argb(AColor(args, "color", VectorShapes.Color(current.ColorArgb))),
         Bold = ABool(args, "bold", current.Bold), Italic = ABool(args, "italic", current.Italic),
         Alignment = args.ContainsKey("alignment") ? Enum.Parse<TextAlignment>(AString(args, "alignment")) : current.Alignment,
-        LineHeight = ANumber(args, "lineHeight", current.LineHeight), Tracking = ANumber(args, "tracking", current.Tracking)
+        LineHeight = ANumber(args, "lineHeight", current.LineHeight), Tracking = ANumber(args, "tracking", current.Tracking),
+        BoxWidth = ANumber(args, "boxWidth", current.BoxWidth),
+        // Giving an outline width, colour or position (or hollow letters) asks for an outline.
+        Outline = args.ContainsKey("outline") ? ABool(args, "outline")
+            : new[] { "outlineWidth", "outlineColor", "outlinePosition" }.Any(args.ContainsKey) || ABool(args, "outlineOnly") || current.Outline,
+        OutlineWidth = ANumber(args, "outlineWidth", current.OutlineWidth),
+        OutlineArgb = VectorShapes.Argb(AColor(args, "outlineColor", VectorShapes.Color(current.OutlineArgb))),
+        OutlinePosition = args.ContainsKey("outlinePosition") ? AString(args, "outlinePosition") == "center" ? TextOutlinePosition.Center : TextOutlinePosition.Outside : current.OutlinePosition,
+        OutlineOnly = ABool(args, "outlineOnly", current.OutlineOnly)
     };
     static AdjustmentSpec AutomationAdjustment(JsonObject args) => new()
     {

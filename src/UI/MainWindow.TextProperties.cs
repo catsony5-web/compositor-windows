@@ -48,10 +48,11 @@ public sealed partial class MainWindow
             if (layer.Text == spec) return null;
             // Prepare on a snapshot: invalid dimensions stay inline, and masks,
             // warps, and rasterization are computed once before recording undo.
-            Layer prepared;
+            Layer prepared; var previous = layer.Text;
             try { prepared = layer.Snapshot(); DocumentFeatures.UpdateText(prepared, spec); }
             catch (Exception error) when (error is System.IO.InvalidDataException or ArgumentException) { return error.Message; }
-            EditLayer("문자와 단락 속성", active =>
+            // Outline switches and colours are their own steps in the history list.
+            EditLayer(previous != null && spec.SameExceptOutline(previous) ? "글자 외곽선" : "문자와 단락 속성", active =>
             {
                 active.Pixels = prepared.Pixels; active.Mask = prepared.Mask; active.Text = prepared.Text;
                 active.X = prepared.X; active.Y = prepared.Y;
