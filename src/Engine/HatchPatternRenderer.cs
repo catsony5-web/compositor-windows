@@ -494,7 +494,7 @@ public static class HatchPatternRenderer
                 for (int i = 0; i < LineScreenLines; i++) m.Line(new Point(0, (i + .5) / LineScreenLines), Thin, new Vector(0, 0), new Vector(1, 0));
                 pens[Thin] = coverage / LineScreenLines; break;
             case HatchPattern.GridScreen30:
-                // Two crossing families cover 1 − (1 − c)² each way; each family covers c = 1 − √(1 − coverage).
+                // Two crossing families of coverage c together cover 1 − (1 − c)², so each has c = 1 − √(1 − coverage).
                 for (int i = 0; i < GridScreenLines; i++)
                 {
                     m.Line(new Point(0, (i + .5) / GridScreenLines), Thin, new Vector(0, 0), new Vector(1, 0));
