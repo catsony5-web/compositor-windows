@@ -1,13 +1,18 @@
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Media;
 
 namespace Compositor.Windows;
 
+// Outside: the outline grows outward from the letter shapes. Center: it straddles their edges.
+public enum TextOutlinePosition { Outside, Center }
+
 public sealed record TextSpec
 {
+    public const double MaxOutlineWidth = 512, MaxBoxWidth = 30_000;
     public string Content { get; init; } = "텍스트";
     public string FontFamily { get; init; } = "Segoe UI";
     public double FontSize { get; init; } = 48;
@@ -17,7 +22,23 @@ public sealed record TextSpec
     public double LineHeight { get; init; }
     public double Tracking { get; init; }
     public uint ColorArgb { get; init; } = 0xFFFFFFFF;
+    // Justify spreads wrapped lines to the paragraph box; the last line of a paragraph stays at the start.
     public TextAlignment Alignment { get; init; }
+    // Letter outline (글자 외곽선) in pixels. Projects without these values read as no outline.
+    public bool Outline { get; init; }
+    public double OutlineWidth { get; init; } = 4;
+    public uint OutlineArgb { get; init; } = 0xFF000000;
+    public TextOutlinePosition OutlinePosition { get; init; }
+    // Hollow letters: only the outline is drawn. Without an outline the letters stay filled.
+    public bool OutlineOnly { get; init; }
+    // Paragraph box width (자동 줄바꿈 폭) in pixels: lines wrap between words to fit it. 0 keeps one line per line break.
+    public double BoxWidth { get; init; }
+    [JsonIgnore] public bool DrawsFill => !(Outline && OutlineOnly);
+    // How far the outline reaches beyond the letter edges.
+    [JsonIgnore] public double OutlineExtent => !Outline ? 0 : OutlinePosition == TextOutlinePosition.Outside ? OutlineWidth : OutlineWidth / 2;
+    // The same letters and layout; only the outline differs.
+    public bool SameExceptOutline(TextSpec other) =>
+        this with { Outline = other.Outline, OutlineWidth = other.OutlineWidth, OutlineArgb = other.OutlineArgb, OutlinePosition = other.OutlinePosition, OutlineOnly = other.OutlineOnly } == other;
     public void Validate()
     {
         if (Content == null || Content.Length > 100_000 || string.IsNullOrWhiteSpace(FontFamily) || FontFamily.Length > 256 ||
@@ -25,6 +46,10 @@ public sealed record TextSpec
             !double.IsFinite(LineHeight) || LineHeight < 0 || LineHeight > 8192 ||
             !double.IsFinite(Tracking) || Tracking < -200 || Tracking > 2000)
             throw new InvalidDataException("텍스트 속성이 올바르지 않습니다.");
+        if (!double.IsFinite(OutlineWidth) || OutlineWidth < .5 || OutlineWidth > MaxOutlineWidth || !Enum.IsDefined(OutlinePosition))
+            throw new InvalidDataException("글자 외곽선 속성이 올바르지 않습니다.");
+        if (!double.IsFinite(BoxWidth) || BoxWidth != 0 && (BoxWidth < 1 || BoxWidth > MaxBoxWidth))
+            throw new InvalidDataException("자동 줄바꿈 폭은 0(줄바꿈 없음) 또는 1~30,000px로 입력하세요.");
     }
 }
 
@@ -174,10 +199,15 @@ public static class DocumentFeatures
     {
         var layout = TextDrawing(spec); return Imaging.Draw(layout.Width, layout.Height, dc => dc.DrawDrawing(layout.Drawing));
     }
+    // Layout first (paragraph box, tracked lines or natural lines), then the letter outline around it.
     internal static (DrawingGroup Drawing, int Width, int Height) TextDrawing(TextSpec spec)
     {
         spec.Validate();
-        if (spec.Tracking != 0) return Typography.LayoutTracked(spec);
+        var layout = spec.BoxWidth > 0 ? Typography.LayoutBox(spec) : spec.Tracking != 0 ? Typography.LayoutTracked(spec) : NaturalText(spec);
+        return spec.Outline ? TextOutline.Apply(spec, layout) : layout;
+    }
+    static (DrawingGroup Drawing, int Width, int Height) NaturalText(TextSpec spec)
+    {
         var face = new Typeface(new FontFamily(spec.FontFamily), spec.Italic ? FontStyles.Italic : FontStyles.Normal, spec.Bold ? FontWeights.Bold : FontWeights.Normal, FontStretches.Normal);
         var text = new FormattedText(string.IsNullOrEmpty(spec.Content) ? " " : spec.Content, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, face, spec.FontSize, new SolidColorBrush(Color(spec.ColorArgb)), 1);
         if (spec.LineHeight > 0) text.LineHeight = spec.LineHeight;
@@ -195,16 +225,22 @@ public static class DocumentFeatures
         var pixels = RenderText(spec);
         bool resized = pixels.Width != layer.Pixels.Width || pixels.Height != layer.Pixels.Height;
         Point? warpedOrigin = resized && layer.Warp != null ? layer.Document(new Point()) : null;
+        // The outline widens the surface by its reach on every side. Keep the letters where they
+        // are on the canvas: the old surface origin lands on the new surface at that reach.
+        double reach = spec.OutlineExtent - (layer.Text?.OutlineExtent ?? 0);
+        Point? letters = reach != 0 && layer.Warp == null ? layer.Document(new Point()) : null;
         if (resized && layer.Mask is { } oldMask)
         {
             int oldWidth = layer.Pixels.Width, oldHeight = layer.Pixels.Height;
             var mask = new byte[pixels.Width * pixels.Height];
             // Masks follow the text's normalized surface. Clamped bilinear sampling preserves
             // fully visible/hidden masks and soft coverage without modifying history buffers.
+            // An outline change only pads the surface around unchanged letters: the mask moves with them.
+            bool padded = letters != null && layer.Text is { } previous && spec.SameExceptOutline(previous);
             for (int y = 0; y < pixels.Height; y++) for (int x = 0; x < pixels.Width; x++)
             {
-                double xx = Math.Clamp((x + .5) * oldWidth / pixels.Width - .5, 0, oldWidth - 1);
-                double yy = Math.Clamp((y + .5) * oldHeight / pixels.Height - .5, 0, oldHeight - 1);
+                double xx = Math.Clamp(padded ? x - reach : (x + .5) * oldWidth / pixels.Width - .5, 0, oldWidth - 1);
+                double yy = Math.Clamp(padded ? y - reach : (y + .5) * oldHeight / pixels.Height - .5, 0, oldHeight - 1);
                 int x0 = (int)xx, y0 = (int)yy, x1 = Math.Min(oldWidth - 1, x0 + 1), y1 = Math.Min(oldHeight - 1, y0 + 1);
                 double fx = xx - x0, fy = yy - y0;
                 mask[y * pixels.Width + x] = Imaging.Byte(oldMask[y0 * oldWidth + x0] * (1 - fx) * (1 - fy) + oldMask[y0 * oldWidth + x1] * fx * (1 - fy) + oldMask[y1 * oldWidth + x0] * (1 - fx) * fy + oldMask[y1 * oldWidth + x1] * fx * fy);
@@ -217,6 +253,10 @@ public static class DocumentFeatures
             // Keep the existing destination quadrilateral. Compensate for the affine
             // transform's changed raster center so all four document corners stay fixed.
             var movedOrigin = layer.Document(new Point()); layer.X += origin.X - movedOrigin.X; layer.Y += origin.Y - movedOrigin.Y;
+        }
+        if (letters is { } before)
+        {
+            var after = layer.Document(new Point(reach, reach)); layer.X += before.X - after.X; layer.Y += before.Y - after.Y;
         }
     }
     public static void Rasterize(Layer layer)

@@ -119,6 +119,8 @@ public static class SelfTests
         DialogLayoutTests.Run(Test, directory);
         TextEditorDialogTests.Run(Test);
         MainWindow.RunTextPropertiesTests(Test, directory);
+        TextPosterTests.Run(Test, directory);
+        MainWindow.RunTextPosterUiTests(Test, directory);
         ColorPaletteTests.Run(Test);
         ColorShadePaletteTests.Run(Test);
         BrushTipTests.Run(Test, directory);

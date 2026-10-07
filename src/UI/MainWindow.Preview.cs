@@ -179,6 +179,7 @@ public sealed partial class MainWindow
         RenderHatchPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderScreentonePreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
+        RenderTextPosterPreviews(directory);
         RenderShadowPreviews(Capture, CapturePane);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
         string plan = Path.Combine(directory, "평면 예시.dxf");

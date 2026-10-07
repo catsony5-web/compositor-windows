@@ -112,24 +112,6 @@ public sealed partial class MainWindow
         };
     }
 
-    // A photo layer's right-click menu. Each item first makes the clicked row the selected layer.
-    ContextMenu PhotoLayerMenu(Guid id)
-    {
-        var menu = new ContextMenu();
-        void Item(string header, Action run)
-        {
-            var item = new MenuItem { Header = header };
-            item.Click += (_, _) => Guard(() => { if (doc.Layers.Any(l => l.Id == id)) { SelectLayer(id); run(); } });
-            menu.Items.Add(item);
-        }
-        Item("스케치 사진 정리…", CleanSketchPhoto);
-        menu.Items.Add(new Separator());
-        Item("이름 변경…", Rename);
-        Item("레이어 복제", Duplicate);
-        Item("레이어 삭제", DeleteLayer);
-        return menu;
-    }
-
     // ---- Offscreen review --------------------------------------------------------------------
 
     // The dialog on a synthetic phone photo (found sheet, live result) at its default and minimum size

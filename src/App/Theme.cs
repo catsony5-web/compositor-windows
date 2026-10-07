@@ -284,6 +284,9 @@ public static class Theme
         public const string TextLeft = "M4 6H20 M4 14H20 | ~M4 10H14 M4 18H14";
         public const string TextCenter = "M4 6H20 M4 14H20 | ~M7 10H17 M7 18H17";
         public const string TextRight = "M4 6H20 M4 14H20 | ~M10 10H20 M10 18H20";
+        public const string TextJustify = "M4 6H20 M4 14H20 | ~M4 10H20 M4 18H13";
+        // A cut-out figure standing in front of a large letter T (피사체를 글자 앞으로).
+        public const string SubjectFront = "M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z | ~M3 4.5H17 M8.5 4.5V20.5 | *M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
     }
 }

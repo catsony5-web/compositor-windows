@@ -110,9 +110,12 @@ public static class CompositorPackage
             if (layer.Shape != null) warnings.Add($"{layer.Name}: 도형은 .comp에서 픽셀 이미지로 저장됩니다. 벡터 속성은 .moruproj로 보존하세요.");
             if (layer.Locked) warnings.Add($"{layer.Name}: 원본 형식에 잠금 속성이 없어 잠금 상태는 저장하지 않습니다.");
             object? text = null;
-            if (layer.Text is { } advancedText && (advancedText.Tracking != 0 || advancedText.LineHeight != 0))
+            bool spacing = layer.Text is { } spaced && (spaced.Tracking != 0 || spaced.LineHeight != 0);
+            bool poster = layer.Text is { } styled && (styled.Outline || styled.BoxWidth > 0 || styled.Alignment == TextAlignment.Justify);
+            if (spacing || poster)
             {
-                warnings.Add($"{layer.Name}: 자간·줄 간격이 있는 텍스트는 .comp에서 모양을 유지하는 픽셀 이미지로 저장됩니다. 편집 가능한 문자 속성은 .moruproj로 보존하세요.");
+                if (spacing) warnings.Add($"{layer.Name}: 자간·줄 간격이 있는 텍스트는 .comp에서 모양을 유지하는 픽셀 이미지로 저장됩니다. 편집 가능한 문자 속성은 .moruproj로 보존하세요.");
+                if (poster) warnings.Add($"{layer.Name}: 글자 외곽선·자동 줄바꿈 폭·양쪽 정렬이 있는 텍스트는 .comp에서 모양을 유지하는 픽셀 이미지로 저장됩니다. 편집 가능한 문자 속성은 .moruproj로 보존하세요.");
             }
             else if (layer.Text is { } t)
             {
