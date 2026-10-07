@@ -30,12 +30,12 @@ public sealed partial class MainWindow
                 {
                     window.SetWorkspaceMode(design);
                     var buttons = Descendants(window.studioContents[0]).OfType<Button>().ToArray();
-                    // The photo panel adds the 스케치 사진 section's one action to the shared count.
-                    Check(buttons.Length == (design ? 16 : 17), "Quick actions are missing or duplicated");
+                    // Photo mode adds the 스케치 사진 section's action and the four 스타일 효과 tiles.
+                    Check(buttons.Length == (design ? 16 : 21), "Quick actions are missing or duplicated");
                     Check(buttons.All(b => b.Content is not string && !string.IsNullOrWhiteSpace(AutomationProperties.GetName(b)) && b.ToolTip is string { Length: > 0 }), "A quick action is text-only or lacks a name or tooltip");
                     var names = buttons.Select(AutomationProperties.GetName).ToArray();
                     Check(names.Distinct().Count() == names.Length && names.All(n => !n.Contains('…') && !n.Contains("...")), "Quick action names repeat or are abbreviated");
-                    Check(window.studioContents[0].Children.OfType<SectionHeader>().Count() == 4, "Quick action groups are not collapsible sections");
+                    Check(window.studioContents[0].Children.OfType<SectionHeader>().Count() == (design ? 4 : 5), "Quick action groups are not collapsible sections");
                 }
                 Check(Descendants(window.studioContents[0]).OfType<Button>().Any(b => AutomationProperties.GetName(b) == "선택 레이어 내보내기"), "A shortened label lost its complete name");
                 window.AddShape(new Rect(20, 24, 10, 8), false);

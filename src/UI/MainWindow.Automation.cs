@@ -756,14 +756,45 @@ public sealed partial class MainWindow
         Alignment = args.ContainsKey("alignment") ? Enum.Parse<TextAlignment>(AString(args, "alignment")) : current.Alignment,
         LineHeight = ANumber(args, "lineHeight", current.LineHeight), Tracking = ANumber(args, "tracking", current.Tracking)
     };
-    static AdjustmentSpec AutomationAdjustment(JsonObject args) => new()
+    static AdjustmentSpec AutomationAdjustment(JsonObject args) => AutomationStyleEffect(args, new()
     {
-        Kind = AString(args, "kind") switch { "exposure" => AdjustmentKind.Exposure, "levels" => AdjustmentKind.Levels, "hue_saturation" => AdjustmentKind.HueSaturation, _ => AdjustmentKind.PhotoDevelop },
+        Kind = AString(args, "kind") switch
+        {
+            "exposure" => AdjustmentKind.Exposure, "levels" => AdjustmentKind.Levels, "hue_saturation" => AdjustmentKind.HueSaturation,
+            "threshold" => AdjustmentKind.Threshold, "halftone" => AdjustmentKind.Halftone, "paper_texture" => AdjustmentKind.PaperTexture, "glow" => AdjustmentKind.Glow,
+            _ => AdjustmentKind.PhotoDevelop
+        },
         Exposure = ANumber(args, "exposure"), Offset = ANumber(args, "offset"), ExposureGamma = ANumber(args, "gamma", 1),
         Black = ANumber(args, "black"), White = ANumber(args, "white", 255), Gamma = ANumber(args, "gamma", 1),
         Hue = ANumber(args, "hue"), Saturation = ANumber(args, "saturation"), Lightness = ANumber(args, "lightness"),
         PhotoDevelop = new PhotoDevelopSpec { Temperature = ANumber(args, "temperature"), Tint = ANumber(args, "tint"), Exposure = AString(args, "kind") == "photo_develop" ? ANumber(args, "exposure") : 0,
             Contrast = ANumber(args, "contrast"), Highlights = ANumber(args, "highlights"), Shadows = ANumber(args, "shadows"), Whites = ANumber(args, "whites"), Blacks = ANumber(args, "blacks"),
             Texture = ANumber(args, "texture"), Clarity = ANumber(args, "clarity"), Dehaze = ANumber(args, "dehaze"), Vibrance = ANumber(args, "vibrance"), Saturation = ANumber(args, "saturation") }
-    };
+    });
+    // Settings of the design-style kinds; omitted parameters keep the same defaults as the app's dialog.
+    static AdjustmentSpec AutomationStyleEffect(JsonObject args, AdjustmentSpec spec)
+    {
+        uint Argb(string key, uint fallback) => args.ContainsKey(key) ? VectorShapes.Argb(AColor(args, key, Colors.Transparent)) : fallback;
+        switch (spec.Kind)
+        {
+            case AdjustmentKind.Threshold:
+                var threshold = spec.Threshold;
+                return spec with { Threshold = threshold with { Level = ANumber(args, "level", threshold.Level), Smoothness = ANumber(args, "smoothness", threshold.Smoothness), KeepAlpha = ABool(args, "keepAlpha", threshold.KeepAlpha) } };
+            case AdjustmentKind.Halftone:
+                var halftone = spec.Halftone;
+                return spec with { Halftone = halftone with { CellSize = ANumber(args, "cellSize", halftone.CellSize), Angle = ANumber(args, "angle", halftone.Angle),
+                    Shape = AString(args, "dotShape", "round") switch { "line" => HalftoneShape.Line, "square" => HalftoneShape.Square, _ => HalftoneShape.Round },
+                    InkArgb = Argb("ink", halftone.InkArgb), PaperArgb = Argb("paper", halftone.PaperArgb) } };
+            case AdjustmentKind.PaperTexture:
+                var paper = spec.Paper;
+                return spec with { Paper = paper with { Seed = (int)ANumber(args, "seed", paper.Seed), Scale = ANumber(args, "textureSize", paper.Scale), Tint = ANumber(args, "paperTint", paper.Tint),
+                    TintArgb = Argb("paperColor", paper.TintArgb), Grain = ANumber(args, "grain", paper.Grain), Fibers = ANumber(args, "fibers", paper.Fibers), Toner = ANumber(args, "toner", paper.Toner),
+                    Streaks = ANumber(args, "streaks", paper.Streaks), Edges = ANumber(args, "edges", paper.Edges), EdgeWidth = ANumber(args, "edgeWidth", paper.EdgeWidth), EdgeArgb = Argb("edgeColor", paper.EdgeArgb) } };
+            case AdjustmentKind.Glow:
+                var glow = spec.Glow;
+                return spec with { Glow = glow with { Threshold = ANumber(args, "threshold", glow.Threshold), Radius = ANumber(args, "radius", glow.Radius),
+                    Intensity = ANumber(args, "intensity", glow.Intensity), TintArgb = Argb("glowColor", glow.TintArgb) } };
+            default: return spec;
+        }
+    }
 }

@@ -8,7 +8,7 @@ using Microsoft.Win32;
 
 namespace Compositor.Windows;
 
-public sealed class AdjustmentDialog : Window
+public sealed partial class AdjustmentDialog : Window
 {
     /// <summary>Long side of the preview rasters the dialog keeps; larger documents are box-filtered down after rendering.</summary>
     internal const int PreviewMaxSide = 2560;
@@ -64,17 +64,17 @@ public sealed class AdjustmentDialog : Window
     public AdjustmentDialog(Window? owner, Document document, AdjustmentSpec initial, Guid? editingId = null, Selection? selection = null)
     {
         initial.Validate(); Spec = initial.Snapshot(); original = document.Snapshot(); this.editingId = editingId;
-        bool photoDevelop = initial.Kind == AdjustmentKind.PhotoDevelop;
+        bool photoDevelop = initial.Kind == AdjustmentKind.PhotoDevelop, styleEffect = StyleEffects.Handles(initial.Kind), wide = photoDevelop || styleEffect;
         info.TextWrapping = TextWrapping.Wrap;
         selectionMask = editingId == null && selection != null ? SelectionTools.Mask(selection, document.Width, document.Height) : null;
-        Owner = owner; Title = "Morupixel · " + (photoDevelop ? "사진 현상" : initial.Kind.ToString()); Width = photoDevelop ? 1040 : 1000; Height = photoDevelop ? 760 : 660; MinWidth = 860; MinHeight = 580;
+        Owner = owner; Title = "Morupixel · " + (photoDevelop ? "사진 현상" : styleEffect ? StyleEffectTitle(initial.Kind) : initial.Kind.ToString()); Width = wide ? 1040 : 1000; Height = wide ? 760 : 660; MinWidth = 860; MinHeight = 580;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; Background = Theme.Header; Foreground = Theme.Text;
-        var grid = new Grid { Margin = new Thickness(12) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(photoDevelop ? 360 : 320) });
+        var grid = new Grid { Margin = new Thickness(12) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(wide ? 360 : 320) });
         grid.RowDefinitions.Add(new RowDefinition()); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Content = grid;
         grid.Children.Add(BuildCompareStage());
         var controls = new StackPanel { Margin = new Thickness(15) };
         var controlScroll = new ScrollViewer { Content = controls, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; var glass = new GlassPanel { Child = controlScroll, Margin = new Thickness(12, 0, 0, 0) }; Grid.SetColumn(glass, 1); grid.Children.Add(glass);
-        var heading = Theme.Label(initial.Kind switch { AdjustmentKind.Exposure => "노출", AdjustmentKind.Curves => "곡선", AdjustmentKind.Levels => "레벨", AdjustmentKind.HueSaturation => "색조 / 채도", AdjustmentKind.Grain => "그레인", AdjustmentKind.PhotoDevelop => "사진 현상", _ => "그라데이션 맵" }, 23);
+        var heading = Theme.Label(styleEffect ? StyleEffectTitle(initial.Kind) : initial.Kind switch { AdjustmentKind.Exposure => "노출", AdjustmentKind.Curves => "곡선", AdjustmentKind.Levels => "레벨", AdjustmentKind.HueSaturation => "색조 / 채도", AdjustmentKind.Grain => "그레인", AdjustmentKind.PhotoDevelop => "사진 현상", _ => "그라데이션 맵" }, 23);
         heading.FontSize = Theme.TitleSize; heading.FontWeight = FontWeights.SemiBold; heading.Margin = new Thickness(2, 0, 2, 8);
         heading.ToolTip = "원본 픽셀을 보존하는 조정 레이어"; controls.Children.Add(heading);
         if (photoDevelop)
@@ -139,6 +139,8 @@ public sealed class AdjustmentDialog : Window
                     var button = Theme.Button(label, () => { var color = Dialogs.ColorPicker(this, DocumentFeatures.Color(dark ? Spec.DarkColor : Spec.LightColor)); if (color == null) return; var c = color.Value; uint value = (uint)(c.A << 24 | c.R << 16 | c.G << 8 | c.B); Spec = dark ? Spec with { DarkColor = value } : Spec with { LightColor = value }; Schedule(); }); controls.Children.Add(button);
                 }
                 ColorButton("어두운 영역 색상", true); ColorButton("밝은 영역 색상", false); break;
+            case AdjustmentKind.Threshold or AdjustmentKind.Halftone or AdjustmentKind.PaperTexture or AdjustmentKind.Glow:
+                AddStyleEffectControls(controls, initial.Kind); break;
         }
         if (!photoDevelop) controls.Children.Add(enabled);
         controls.Children.Add(info); enabled.Click += (_, _) => RefreshView();
@@ -301,6 +303,7 @@ public sealed class AdjustmentDialog : Window
     {
         if (closed) return;
         long generation = ++version; var spec = Spec; string? failure = null;
+        ScheduleDetail(spec);
         previewCts?.Cancel(); var cts = previewCts = new CancellationTokenSource(); afterPending++;
         try
         {

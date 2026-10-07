@@ -132,7 +132,25 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 재료 작업은 **이미지 준비 → 원본 등록 → 영역 지정 → 적용 → 미리보기** 순서입니다. 닫힌 도형·CAD 경로, 현재 선택 영역, 직접 지정한 다각형을 사용할 수 있습니다. 재료와 경계를 저장하고 반복 크기·회전·위치·원본 교체를 지원합니다. [재료 맵핑 안내와 요청 예시](MATERIAL_MAPPING.md)
 
-문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형과 타원을 지원합니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상을 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
+문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형과 타원을 지원합니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상과 디자인 스타일 효과(한계값·망점·종이·인쇄 질감·빛 번짐)를 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
+
+### 디자인 스타일 효과 넣기
+
+`add_adjustment`의 `kind`에 다음 네 가지를 쓰면 앱의 **레이어 → 새 조정 레이어**와 같은 조정 레이어가 추가됩니다. 원본 픽셀은 바뀌지 않고, 나중에 앱에서 값을 다시 고치거나 실행 취소할 수 있으며, 마스크·클리핑·불투명도·혼합 모드도 다른 조정 레이어와 같습니다. 길이 값은 **문서 픽셀** 단위라 화면 배율이나 `export_image`의 `scale`과 관계없이 같은 크기로 보이고, 무늬는 시드로 정해져 다시 그려도 같은 픽셀이 나옵니다. 생략한 값은 앱 창의 기본값을 씁니다. 다른 종류의 인자를 섞으면 `invalid_arguments`입니다. `.psd`·PDF 레이어 내보내기는 다른 조정 레이어처럼 적용 결과를 픽셀로 담고, `.comp` 내보내기는 이 효과를 지원하지 않는다고 알립니다.
+
+| `kind` | 인자(기본값) |
+| --- | --- |
+| `threshold` (한계값: 흑백 비트맵) | `level` 0~255(128, 이 밝기 이상은 흰색), `smoothness` 0~64(0, 경계 아래쪽의 부드러운 단계), `keepAlpha`(true; false면 투명도도 50% 기준으로 0 또는 255) |
+| `halftone` (망점) | `cellSize` 2~256(8, 망점 간격 px), `angle` -360~360(45, 시계 방향), `dotShape` `round`·`line`·`square`(round), `ink`(`#000000`, `transparent`면 이미지 색으로 찍음), `paper`(`#FFFFFF`, `transparent`면 망점 사이에 이미지가 보임) |
+| `paper_texture` (종이·인쇄 질감) | `seed` 정수(1), `textureSize` 0.5~32(2, 가장 고운 결 px), `paperTint` 0~1(0.5)·`paperColor`(`#F1EADA`), `grain` 0~1(0.35), `fibers` 0~1(0.3), `toner` 0~1(0), `streaks` 0~1(0), `edges` 0~1(0, 거칠게 타거나 바랜 가장자리), `edgeWidth` 0.01~0.5(0.08, 짧은 변 대비), `edgeColor`(`#2A1D12`, 흰색이면 바랜 여백) |
+| `glow` (빛 번짐) | `threshold` 0~1(0.7, 가장 강한 색 채널 기준), `radius` 1~1000(32 px), `intensity` 0~4(1, 0이면 변화 없음), `glowColor`(`transparent`; `#AARRGGBB`의 알파가 빛 색을 입히는 정도) |
+
+```json
+{ "command": "add_adjustment", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "kind": "halftone", "cellSize": 10, "angle": 45, "dotShape": "round", "ink": "#1B1464", "paper": "#F4EFE4", "name": "포스터 망점" } }
+```
+
+`get_layer`의 `adjustment`에는 `Threshold`, `Halftone`(`Shape`: 0 원형·1 선·2 사각형), `Paper`, `Glow` 설정이 그대로 들어갑니다.
 
 편집은 **RGB 8비트** 기준입니다. `save_project`는 편집 가능한 `.moruproj`를 저장하고, `export_image`는 **PNG·JPEG·TIFF**로 출력합니다. `layerId`를 지정하면 해당 레이어를, `artboardId`를 지정하면 그 대지 영역만 출력합니다(둘 중 하나만). `scale`(0.05~8, 기본 1)로 크기를 바꾸고, PNG·TIFF는 `keepTransparency: false`로 투명한 곳을 흰색으로 채웁니다. JPEG는 투명도가 없어 이 옵션을 받지 않습니다. 결과에는 출력 `width`·`height`가 들어갑니다.
 
