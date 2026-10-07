@@ -63,6 +63,43 @@ public static partial class DesignRenderer
     {
         Raster.ValidateSize(width, height);
         if (screen && (long)width * height > 16_777_216) throw new ArgumentException("한 번에 그릴 화면 영역이 너무 큽니다.");
+        // Light that spreads (빛 번짐) reaches the requested pixels from around them: draw the document's
+        // border around the area too, so a viewport, a tile or a chunk shows what the whole image shows.
+        if (passes.Cull == null && SpreadMargin(doc, map) is > 0 and var margin)
+        {
+            var page = new Rect(0, 0, doc.Width, doc.Height); page.Transform(map);
+            int left = Math.Min(0, Math.Max(-margin, (int)Math.Floor(page.Left))), top = Math.Min(0, Math.Max(-margin, (int)Math.Floor(page.Top)));
+            int right = Math.Max(width, Math.Min(width + margin, (int)Math.Ceiling(page.Right))), bottom = Math.Max(height, Math.Min(height + margin, (int)Math.Ceiling(page.Bottom)));
+            if ((left < 0 || top < 0 || right > width || bottom > height) && (long)(right - left) * (bottom - top) <= 4L * Math.Max(16_777_216L, (long)width * height))
+            {
+                var inner = map; inner.OffsetX -= left; inner.OffsetY -= top;
+                var wide = RenderLayers(doc, inner, right - left, bottom - top, token, passes);
+                var output = new Raster(width, height);
+                for (int row = 0; row < height; row++) Buffer.BlockCopy(wide.Data, ((row - top) * (right - left) - left) * 4, output.Data, row * width * 4, width * 4);
+                return output;
+            }
+        }
+        return RenderLayers(doc, map, width, height, token, passes);
+    }
+    // Device pixels a render must add on each side for the widest visible spreading effect.
+    static int SpreadMargin(Document doc, Matrix map)
+    {
+        if (!doc.Layers.Any(l => l.Kind == LayerKind.Adjustment && l.Visible && l.Adjustment is { } spec && StyleEffects.Reach(spec) > 0)) return 0;
+        var lookup = new Dictionary<Guid, Layer>(doc.Layers.Count); int margin = 0;
+        foreach (var layer in doc.Layers) lookup.TryAdd(layer.Id, layer);
+        foreach (var layer in doc.Layers)
+        {
+            if (layer.Kind != LayerKind.Adjustment || !layer.Visible || layer.Adjustment is not { } spec || StyleEffects.Reach(spec) <= 0) continue;
+            var world = layer.Matrix;
+            int depth = 0;
+            for (var parent = layer.ParentId; parent is { } id && depth++ < 17 && lookup.TryGetValue(id, out var group); parent = group.ParentId) world.Append(group.Matrix);
+            world.Append(map);
+            margin = Math.Max(margin, StyleEffects.ReachPixels(spec, Math.Sqrt(Math.Abs(world.M11 * world.M22 - world.M12 * world.M21))));
+        }
+        return margin;
+    }
+    static Raster RenderLayers(Document doc, Matrix map, int width, int height, CancellationToken token, PathPasses passes)
+    {
         var children = doc.Layers.Where(l => l.ParentId != null).GroupBy(l => l.ParentId!.Value).ToDictionary(g => g.Key, g => g.ToArray());
         Matrix World(Layer layer, Matrix parent) { var result = layer.Matrix; result.Append(parent); return result; }
         Raster Image(Layer layer, Matrix parent, int depth)

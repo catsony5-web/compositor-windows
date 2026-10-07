@@ -185,6 +185,7 @@ public sealed partial class MainWindow
         doc.ActiveId = hatch.Id; selectedLayers.Clear(); selectedLayers.Add(hatch.Id); ShowStudioPage(1);
         Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "drawing-photo-layers", 1480, 920);
+        RenderStyleEffectPreviews(directory, Capture);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)

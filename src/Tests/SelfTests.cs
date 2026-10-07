@@ -127,6 +127,8 @@ public static class SelfTests
         BrushPresetTests.Run(Test, directory);
         MainWindow.RunBrushPresetTests(Test, directory);
         PhotoDevelopTests.Run(Test, directory);
+        StyleEffectTests.Run(Test, directory);
+        MainWindow.RunStyleEffectTests(Test);
         BeforeAfterTests.Run(Test);
         SelectedLayerExportTests.Run(Test, directory);
         ShadowTests.Run(Test, directory);

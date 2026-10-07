@@ -129,13 +129,14 @@ public static partial class AutomationCatalog
         Add("delete_layer", "Delete the specified layer through the document undo history.", false, Mutation(("layerId", Id)), WriteRequired("layerId"));
         Add("reorder_layer", "Move a layer one position up or down in the layer stack.", false,
             Mutation(("layerId", Id), ("direction", Choice("up", "down"))), WriteRequired("layerId", "direction"));
-        var adjustments = Mutation(("kind", Choice("exposure", "levels", "hue_saturation", "photo_develop")), ("name", Name),
+        var adjustments = Mutation(("kind", Choice("exposure", "levels", "hue_saturation", "photo_develop", "threshold", "halftone", "paper_texture", "glow")), ("name", Name),
             ("exposure", Number(-20, 20, "Exposure EV; photo_develop accepts -5 to 5.")), ("offset", Number(-.5, .5)),
             ("gamma", Number(.1, 9.99)), ("black", Number(0, 254)), ("white", Number(1, 255)), ("hue", Number(-360, 360)),
             ("saturation", Number(-100, 100)), ("lightness", Number(-100, 100)));
         foreach (var key in new[] { "temperature", "tint", "contrast", "highlights", "shadows", "whites", "blacks", "texture", "clarity", "dehaze", "vibrance" })
             adjustments.Add(key, Number(-100, 100));
-        Add("add_adjustment", "Add a reversible RGB8 adjustment layer. photo_develop is an image adjustment, not camera RAW decoding. Supply only parameters for the chosen kind.",
+        foreach (var (key, field) in StyleEffectFields()) adjustments.Add(key, field);
+        Add("add_adjustment", "Add a reversible RGB8 adjustment layer. photo_develop is an image adjustment, not camera RAW decoding. threshold makes a black/white bitmap, halftone a printed dot screen, paper_texture paper/photocopy texture with rough edges, glow light that spreads from bright areas; their lengths are document pixels and their seeded patterns are deterministic. Supply only parameters for the chosen kind; omitted ones use the app's defaults.",
             false, adjustments, WriteRequired("kind"));
         Add("remove_background", "Create a layer mask using the bundled local AI model. Existing edits remain undoable.", false,
             Mutation(("layerId", Id)), WriteRequired("layerId"));
@@ -305,6 +306,7 @@ public static partial class AutomationCatalog
                 "exposure" => ["exposure", "offset", "gamma"],
                 "levels" => ["black", "white", "gamma"],
                 "hue_saturation" => ["hue", "saturation", "lightness"],
+                "threshold" or "halftone" or "paper_texture" or "glow" => StyleEffectParameters[kind],
                 _ => ["temperature", "tint", "exposure", "contrast", "highlights", "shadows", "whites", "blacks", "texture", "clarity", "dehaze", "vibrance", "saturation"]
             };
             foreach (string key in arguments.Select(p => p.Key))
@@ -316,6 +318,42 @@ public static partial class AutomationCatalog
                 throw new ArgumentException("photo_develop exposure must be between -5 and 5 EV.");
         }
     }
+
+    // Parameters of the design-style adjustment kinds (names unique within add_adjustment). A method, not a
+    // field: the command table is built while the type initializes, before later static fields exist.
+    static (string Key, Field Field)[] StyleEffectFields() =>
+    [
+        ("level", Number(0, 255, "threshold: 8-bit luminance where white begins; a gray of exactly this value is white. Default 128.")),
+        ("smoothness", Number(0, 64, "threshold: soft transition width in luminance levels; 0 (default) is pure black and white.")),
+        ("keepAlpha", Bool("threshold: keep the original transparency (default true); false also makes alpha 0 or 255 at 50%.")),
+        ("cellSize", Number(2, 256, "halftone: screen period in document pixels. Default 8.")),
+        ("angle", Number(-360, 360, "halftone: screen angle in degrees, clockwise. Default 45.")),
+        ("dotShape", new("string", "halftone: round (default), line or square.", Choices: ["round", "line", "square"])),
+        ("ink", new("string", "halftone: dot color #RRGGBB or #AARRGGBB (default #000000); transparent prints dots in the image's own colors.", MaxLength: 11, Color: true)),
+        ("paper", new("string", "halftone: color between dots #RRGGBB or #AARRGGBB (default #FFFFFF); transparent keeps the image between dots.", MaxLength: 11, Color: true)),
+        ("seed", Integer(0, int.MaxValue, "paper_texture: pattern number; the same number always draws the same texture. Default 1.")),
+        ("textureSize", Number(.5, 32, "paper_texture: size of the finest paper grain in document pixels; fibres and specks scale with it. Default 2.")),
+        ("paperTint", Number(0, 1, "paper_texture: how much white takes paperColor (0-1). Default 0.5.")),
+        ("paperColor", new("string", "paper_texture: paper color #RRGGBB or #AARRGGBB. Default #F1EADA.", MaxLength: 11, Color: true)),
+        ("grain", Number(0, 1, "paper_texture: paper tooth and cloudy density (0-1). Default 0.35.")),
+        ("fibers", Number(0, 1, "paper_texture: paper fibres (0-1). Default 0.3.")),
+        ("toner", Number(0, 1, "paper_texture: photocopy toner specks and dropouts (0-1). Default 0.")),
+        ("streaks", Number(0, 1, "paper_texture: photocopy streaks (0-1). Default 0.")),
+        ("edges", Number(0, 1, "paper_texture: rough, burned edges (0-1). Default 0.")),
+        ("edgeWidth", Number(.01, .5, "paper_texture: edge reach as a fraction of the shorter page side. Default 0.08.")),
+        ("edgeColor", new("string", "paper_texture: color the edges turn toward #RRGGBB or #AARRGGBB; dark burns, white fades. Default #2A1D12.", MaxLength: 11, Color: true)),
+        ("threshold", Number(0, 1, "glow: brightness (0-1, strongest color channel) where light starts to glow. Default 0.7.")),
+        ("radius", Number(1, 1000, "glow: how far light spreads in document pixels. Default 32.")),
+        ("intensity", Number(0, 4, "glow: strength; 0 leaves the image unchanged. Default 1.")),
+        ("glowColor", new("string", "glow: light color; #AARRGGBB alpha is how much the glow takes it (#RRGGBB = fully). Default transparent (each light's own color).", MaxLength: 11, Color: true)),
+    ];
+    static readonly Dictionary<string, string[]> StyleEffectParameters = new(StringComparer.Ordinal)
+    {
+        ["threshold"] = ["level", "smoothness", "keepAlpha"],
+        ["halftone"] = ["cellSize", "angle", "dotShape", "ink", "paper"],
+        ["paper_texture"] = ["seed", "textureSize", "paperTint", "paperColor", "grain", "fibers", "toner", "streaks", "edges", "edgeWidth", "edgeColor"],
+        ["glow"] = ["threshold", "radius", "intensity", "glowColor"]
+    };
 
     static double NumberValue(JsonObject arguments, string key, double fallback = 0)
         => arguments[key] is { } value ? JsonSerializer.Deserialize<double>(value.ToJsonString()) : fallback;

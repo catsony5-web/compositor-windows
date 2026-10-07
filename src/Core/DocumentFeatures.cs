@@ -28,7 +28,8 @@ public sealed record TextSpec
     }
 }
 
-public enum AdjustmentKind { Levels, Curves, HueSaturation, Exposure, GradientMap, Grain, PhotoDevelop }
+// Stored by number in projects: append new kinds at the end.
+public enum AdjustmentKind { Levels, Curves, HueSaturation, Exposure, GradientMap, Grain, PhotoDevelop, Threshold, Halftone, PaperTexture, Glow }
 public sealed record CurvePoint(double X, double Y);
 public sealed record LevelsRange
 {
@@ -64,6 +65,10 @@ public sealed record AdjustmentSpec
     public double GrainSize { get; init; } = 1.5;
     public double GrainRoughness { get; init; } = .5;
     public PhotoDevelopSpec PhotoDevelop { get; init; } = new();
+    public ThresholdSpec Threshold { get; init; } = new();
+    public HalftoneSpec Halftone { get; init; } = new();
+    public PaperTextureSpec Paper { get; init; } = new();
+    public GlowSpec Glow { get; init; } = new();
     public uint DarkColor { get; init; } = 0xFF000000;
     public uint LightColor { get; init; } = 0xFFFFFFFF;
     public CurvePoint[] Curve { get; init; } = [new(0, 0), new(1, 1)];
@@ -83,6 +88,10 @@ public sealed record AdjustmentSpec
             throw new InvalidDataException("조정 레이어 속성이 올바르지 않습니다.");
         if (!In(GrainSize, .5, 20) || !In(GrainRoughness, 0, 1)) throw new InvalidDataException("그레인 속성이 올바르지 않습니다.");
         (PhotoDevelop ?? throw new InvalidDataException("사진 현상 설정이 없습니다.")).Validate();
+        (Threshold ?? throw new InvalidDataException("한계값 설정이 없습니다.")).Validate();
+        (Halftone ?? throw new InvalidDataException("망점 설정이 없습니다.")).Validate();
+        (Paper ?? throw new InvalidDataException("종이·인쇄 질감 설정이 없습니다.")).Validate();
+        (Glow ?? throw new InvalidDataException("빛 번짐 설정이 없습니다.")).Validate();
         foreach (var range in new[] { RedLevels, GreenLevels, BlueLevels }) (range ?? throw new InvalidDataException("채널 레벨 정보가 없습니다.")).Validate();
         foreach (var curve in new[] { Curve, RedCurve, GreenCurve, BlueCurve })
         {
@@ -218,8 +227,14 @@ public static class DocumentFeatures
     public static Layer CreateGroup(Document doc, string name = "그룹") => new() { Name = name, Kind = LayerKind.Group, Pixels = new Raster(doc.Width, doc.Height) };
     public static Layer CreateAdjustment(Document doc, AdjustmentSpec spec, string? name = null)
     {
-        spec.Validate(); return new() { Name = name ?? (spec.Kind == AdjustmentKind.PhotoDevelop ? "사진 현상" : spec.Kind.ToString()), Kind = LayerKind.Adjustment, Adjustment = spec.Snapshot(), Pixels = new Raster(doc.Width, doc.Height) };
+        spec.Validate(); return new() { Name = name ?? DefaultAdjustmentName(spec.Kind), Kind = LayerKind.Adjustment, Adjustment = spec.Snapshot(), Pixels = new Raster(doc.Width, doc.Height) };
     }
+    /// <summary>Korean name of a new adjustment layer (translated by the UI); earlier kinds keep their established names.</summary>
+    public static string DefaultAdjustmentName(AdjustmentKind kind) => kind switch
+    {
+        AdjustmentKind.PhotoDevelop => "사진 현상", AdjustmentKind.Threshold => "한계값", AdjustmentKind.Halftone => "망점",
+        AdjustmentKind.PaperTexture => "종이·인쇄 질감", AdjustmentKind.Glow => "빛 번짐", _ => kind.ToString()
+    };
     public static Layer Group(Document doc, IEnumerable<Guid> layerIds, string name = "그룹")
     {
         var ids = layerIds.ToHashSet(); var selected = doc.Layers.Where(l => ids.Contains(l.Id)).ToArray();
@@ -286,6 +301,8 @@ public static class DocumentFeatures
     {
         spec.Validate();
         if (spec.Kind == AdjustmentKind.PhotoDevelop) return PhotoDevelop.Apply(source, spec.PhotoDevelop, cancellationToken);
+        // Without a view transform the raster is the layer itself: one raster pixel is one document pixel.
+        if (StyleEffects.Handles(spec.Kind)) return StyleEffects.Apply(source, spec, Matrix.Identity, source.Width, source.Height, cancellationToken);
         var result = source.Clone();
         var redCurve = BuildCurve(spec.RedCurve, spec.Curve); var greenCurve = BuildCurve(spec.GreenCurve, spec.Curve); var blueCurve = BuildCurve(spec.BlueCurve, spec.Curve);
         var exposure = Enumerable.Range(0, 256).Select(index =>

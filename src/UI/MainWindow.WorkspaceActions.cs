@@ -37,6 +37,12 @@ public sealed partial class MainWindow
             (Theme.Glyphs.GradientMap, "그라데이션 맵", () => ShowAdjustment(AdjustmentKind.GradientMap), "명암에 따라 색상 매핑"),
             (Theme.Glyphs.Grain, "그레인", () => ShowAdjustment(AdjustmentKind.Grain), "필름 입자 추가"));
         panel.Children.Add(Theme.ActionRow("선택한 조정 레이어 편집", Run(EditAdjustment), "선택한 조정 레이어의 값을 다시 편집", Theme.Glyphs.Sliders));
+        WorkspaceSection(panel, "스타일 효과", "흑백 비트맵, 인쇄 망점, 종이와 복사 질감, 빛 번짐을 원본을 유지하는 조정 레이어로 더합니다.");
+        WorkspaceTiles(panel, 2,
+            (Theme.Glyphs.Threshold, "한계값", () => ShowAdjustment(AdjustmentKind.Threshold), "기준 밝기로 나눠 순수한 흑백 비트맵 만들기"),
+            (Theme.Glyphs.Halftone, "망점", () => ShowAdjustment(AdjustmentKind.Halftone), "어두운 곳일수록 크게 찍히는 인쇄 망점으로 바꾸기"),
+            (Theme.Glyphs.PaperTexture, "종이·인쇄 질감", () => ShowAdjustment(AdjustmentKind.PaperTexture), "종이 섬유·복사 토너·줄무늬·탄 가장자리 질감 더하기"),
+            (Theme.Glyphs.Glow, "빛 번짐", () => ShowAdjustment(AdjustmentKind.Glow), "밝은 창과 조명의 빛이 주변으로 번지게 하기"));
 
         WorkspaceSection(panel, "선택과 마스크", "선택 영역을 만들고 마스크나 새 레이어로 바꿉니다.");
         WorkspaceCommands(panel,
