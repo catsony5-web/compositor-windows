@@ -31,6 +31,8 @@ public static class UserProfiles
     public const string PhotoLead = "사진 보정";
     /// <summary>Sections only profiles place (MainWindow.Profiles.cs). 리터치 there is the photo panel's 리터치 plus the blur brush and eraser.</summary>
     public const string LineCleanup = "선 정리", Retouch = "리터치";
+    /// <summary>The 디자인 스타일 section of the photo and design panels (MainWindow.DesignStyles.cs).</summary>
+    public const string DesignStyle = "디자인 스타일";
 
     public static readonly UserProfile Default = new(DefaultId, "기본", "사진 보정과 디자인 작업을 고르게 보여 줍니다.", Theme.Glyphs.Image);
 
@@ -38,8 +40,8 @@ public static class UserProfiles
     public static readonly UserProfile Architecture = new(ArchitectureId, "건축학과", "도면 선 정리와 리터치를 먼저 보여 주고, 발표 보드 크기로 시작합니다.", Theme.Glyphs.Plan)
     {
         TabCaption = "도면", PaneCaption = "도면 작업",
-        PhotoSections = [LineCleanup, Retouch, "배치와 그룹", PhotoLead, "조정 레이어", "선택과 마스크"],
-        DesignSections = [LineCleanup, Retouch, "배치와 그룹", PhotoLead, "조정 레이어", "만들기", "캔버스에 정렬", "색상과 내보내기"],
+        PhotoSections = [LineCleanup, Retouch, "배치와 그룹", DesignStyle, PhotoLead, "조정 레이어", "선택과 마스크"],
+        DesignSections = [LineCleanup, Retouch, "배치와 그룹", DesignStyle, PhotoLead, "조정 레이어", "만들기", "캔버스에 정렬", "색상과 내보내기"],
         ToolGroups =
         [
             ("선택", [Tool.Move, Tool.MagicWand, Tool.PolygonLasso, Tool.RectangleSelect, Tool.Lasso, Tool.EllipseSelect]),

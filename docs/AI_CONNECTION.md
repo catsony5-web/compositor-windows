@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **35개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **37개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -81,6 +81,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 재료 등록·조회 | `morupixel_register_material`, `morupixel_query_materials`, `morupixel_query_patterns`(기본 해치 패턴) |
 | 적용 영역 등록·조회 | `morupixel_define_region`, `morupixel_query_regions` |
 | 재료 적용·패턴 변경 | `morupixel_apply_material`, `morupixel_update_material` |
+| 디자인 스타일 조회·적용 | `morupixel_query_styles`, `morupixel_apply_style` |
 
 기본 해치 패턴 19종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, 알파 01~FF의 `#AARRGGBB`, `default`; 완전히 투명한 잉크는 `invalid_arguments`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그리며, `export_image`의 `scale`이 1이 아니면 출력 크기로 다시 그려 내보냅니다. 없는 패턴 ID는 `material_not_found`이며 `query_patterns`로 올바른 ID를 찾습니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
 
@@ -138,6 +139,24 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 자동화로 새 문서나 도형을 만들 때는 한 변 8,192px, 전체 16,777,216픽셀까지 허용합니다. 열린 문서 최대 8개, 기존 문서·레이어 한도도 적용됩니다. `preview`는 긴 변 최대 1,024px의 PNG를 반환하며 문서를 수정하지 않습니다.
 
+### 디자인 스타일 적용하기
+
+`query_styles`는 디자인 스타일 5종(`screentone-plan` 흑백 스크린톤 평면, `dark-section` 어두운 단면, `cyanotype` 청사진(사이아노타입), `neo-brutalist-poster` 네오 브루탈리즘 포스터, `translucent-editorial` 반투명 에디토리얼)의 `styleId`, 한국어 이름·설명, 어울리는 대상(`target`: `drawing`·`photo`·`any`), 매개변수 1~3개(`key`, 종류 `number`·`boolean`·`choice`, 범위, 기본값, 선택지)를 돌려줍니다. 문서가 없어도 되며, `documentId`(생략 시 현재 문서)가 있으면 그 문서의 `documentKind`(`drawing`·`photo`)와 이미 적용한 스타일 그룹 목록(`folders`: `groupId`, `styleId`, `parameters`, `targetLayerIds`, 숨긴 레이어 수)도 함께 돌려줍니다.
+
+`apply_style`은 앱의 **디자인 스타일** 창과 같은 엔진으로 스타일을 실행 취소 한 번에 적용합니다. 결과는 원본 위의 통과(pass-through) 그룹 `스타일 · <이름>`이고, 안의 조정 레이어·패턴 채우기·질감·텍스트 레이어는 모두 그대로 편집할 수 있습니다. 그룹 안의 조정 레이어는 그룹 아래 레이어에 적용됩니다. 원본 레이어는 바뀌지 않으며, 흑백 스크린톤 평면만 도면에 이미 있던 해치 재질 레이어를 스타일이 켜져 있는 동안 숨겼다가 그룹을 지우면 다시 표시합니다.
+
+- `parameters`: 매개변수 키 → 값. 슬라이더는 0~100 숫자, 켜고 끄기는 `true`/`false`, 선택지는 `query_styles`의 키(예: `"color": "blue"`) 또는 번호입니다. 생략한 키는 기본값이고, 모르는 키·범위 밖 값·잘못된 선택지는 `invalid_arguments`입니다.
+- `targetLayerIds`: 스타일이 읽을 레이어(하위 레이어 포함). 그룹은 그 가운데 가장 위 레이어 바로 위에 들어갑니다. 생략하면 문서 전체를 읽고 맨 위에 둡니다. 스타일 그룹이나 그 안의 레이어는 대상이 될 수 없습니다.
+- `groupId`: 기존 스타일 그룹을 같은 자리에서 다시 적용합니다. 그룹 ID·위치·표시·불투명도와 사용자가 바꾼 이름이 유지되고, 같은 스타일이면 지정하지 않은 매개변수는 그룹의 값을 그대로 씁니다. 다른 `styleId`를 주면 그 그룹을 다른 스타일로 바꿉니다. `targetLayerIds`와 함께 쓸 수 없습니다. 잠긴 그룹은 `layer_locked`, 스타일 그룹이 아니면 `wrong_layer_kind`입니다.
+- 결과에는 `groupId`(= `layerId`), `styleId`, 실제로 쓴 `parameters`, 그룹 안 레이어 수 `layerCount`, 사용자에게 보여 줄 `notes`(예: 닫힌 영역을 찾지 못함)가 들어갑니다. 스타일을 없애려면 `delete_layer`로 그룹을 지웁니다(숨겼던 해치도 다시 표시). `apply_batch`에는 포함하지 않습니다.
+
+```json
+{ "command": "apply_style", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "styleId": "screentone-plan", "parameters": { "strength": 70, "texture": 30 } } }
+```
+
+흑백 스크린톤 평면은 도면 선(치수·문자·가구·해치 역할 레이어 제외)으로 닫힌 영역을 찾아 바깥은 비우고, 얇거나 작은 영역(벽 속, 기둥)은 포셰, 방은 이웃끼리 다른 망점과 점묘 그라데이션으로 채웁니다. 단계마다 패턴 레이어가 하나씩 생기므로 앱의 재질 속성에서 패턴을 바꿀 수 있습니다. 네오 브루탈리즘 포스터는 내장 로컬 AI 모델로 피사체를 오려 제목 앞에 둡니다. 결과는 `preview`로 확인하세요.
+
 ### AI가 큰 도면을 다루는 순서
 
 1. `get_capabilities`로 현재 편집기의 명령·좌표계·제한을 읽습니다. 새 MCP 실행 파일을 등록해도 이미 열린 이전 버전의 편집기가 업그레이드되지는 않습니다.
@@ -163,7 +182,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
 
-파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거는 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
+파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거, 디자인 스타일 적용은 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 
 ## MCP 없이 PowerShell에서 사용하기
 

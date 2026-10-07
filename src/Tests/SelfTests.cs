@@ -12,8 +12,10 @@ public static class SelfTests
         var results = new List<string>(); int failed = 0;
         string directory = Path.GetDirectoryName(Path.GetFullPath(output))!; Directory.CreateDirectory(directory);
         File.WriteAllText(output, "");
+        string? devFilter = Environment.GetEnvironmentVariable("MORUPIXEL_DEV_FILTER"); // DEV-ONLY: remove
         void Test(string name, Action test)
         {
+            if (devFilter != null && !name.Contains(devFilter, StringComparison.OrdinalIgnoreCase)) return; // DEV-ONLY: remove
             // Retain the last test even if a native renderer aborts the process.
             File.AppendAllText(output, "RUN " + name + Environment.NewLine);
             Console.WriteLine("RUN " + name);
@@ -143,6 +145,8 @@ public static class SelfTests
         MainWindow.RunLayerWandTests(Test, directory);
         MainWindow.RunLayerEyeSweepTests(Test);
         MainWindow.RunMaterialPropertiesTests(Test);
+        DesignStyleTests.Run(Test, directory);
+        MainWindow.RunDesignStyleTests(Test, directory);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);

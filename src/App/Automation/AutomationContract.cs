@@ -81,6 +81,13 @@ public static partial class AutomationCatalog
                 ["meaning"] = "Transparent line-art hatches redrawn from vector geometry at display and export resolution (export_image scale included); scale or tileWidth scales spacing and mark length, verticalRatio or tileHeight changes vertical spacing only, lineWeight scales pen width. apply_material with points or boundaryLayerId stores the boundary as a region template and applies in one step."
             }
         },
+        ["styles"] = new JsonObject
+        {
+            ["query"] = "query_styles", ["apply"] = "apply_style", ["count"] = DesignStyles.All.Count, ["ids"] = Strings(DesignStyles.All.Select(s => s.Id)),
+            ["folder"] = "pass-through group of editable layers (folderName in query_styles); adjustments inside it change the layers below it",
+            ["reapply"] = "apply_style with groupId keeps the folder ID, position, visibility and opacity", ["remove"] = "delete_layer on the folder's groupId; layers the style hid are shown again",
+            ["undoSteps"] = 1, ["batch"] = false, ["projectSaved"] = true
+        },
         ["unsupportedViaMcp"] = Strings(["image_generation", "3d_uv_mapping", "automatic_room_detection", "physical_cad_scale", "vector_path_editing", "group_creation", "cmyk_export"]),
         ["workflow"] = Strings(["discover", "inspect", "query", "validate", "commit", "preview"])
     };

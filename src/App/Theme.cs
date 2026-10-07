@@ -275,5 +275,7 @@ public static class Theme
         public const string TextCenter = "M4 6H20 M4 14H20 | ~M7 10H17 M7 18H17";
         public const string TextRight = "M4 6H20 M4 14H20 | ~M10 10H20 M10 18H20";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
+        // 디자인 스타일: a picture split on its diagonal, one half restyled (tint) and the other screened (strokes).
+        public const string Style = "M6 4.5H18A1.5 1.5 0 0 1 19.5 6V18A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z | M5 19L19 5 | ~M11.5 19.5L19.5 11.5 M15.5 19.5L19.5 15.5 | *M6 4.5H18.5L4.5 18.5V6A1.5 1.5 0 0 1 6 4.5Z";
     }
 }

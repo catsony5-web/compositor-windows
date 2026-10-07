@@ -10,6 +10,34 @@ public sealed partial class MainWindow
     public void RenderStudioPreview(string directory)
     {
         Directory.CreateDirectory(directory);
+        if (Environment.GetEnvironmentVariable("MORUPIXEL_DEV_I18N") is { } extra && File.Exists(extra) && Loc.Language != "ko") // DEV-ONLY: remove
+        {
+            using var embedded = typeof(Loc).Assembly.GetManifestResourceStream($"Morupixel.i18n.{Loc.Language}.json")!;
+            var table = System.Text.Json.JsonDocument.Parse(embedded).RootElement.GetProperty("strings").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString() ?? "");
+            foreach (var p in System.Text.Json.JsonDocument.Parse(File.ReadAllText(extra)).RootElement.EnumerateObject()) table[p.Name] = p.Value.GetProperty(Loc.Language).GetString()!;
+            Loc.Use(Loc.Language, table);
+        }
+        if (Environment.GetEnvironmentVariable("MORUPIXEL_DEV_STYLES") == "3") // DEV-ONLY: remove
+        {
+            var log = new List<string>();
+            foreach (var (source, label) in new[] { (SyntheticDrawing.Create(), "synthetic drawing 2400x1707, 19000 objects"), (SyntheticPhoto.Create(3840, 2160), "4K photo 3840x2160") })
+            {
+                var w0 = System.Diagnostics.Stopwatch.StartNew(); var plain = Imaging.Render(source); log.Add($"{label}: render without style {w0.ElapsedMilliseconds} ms");
+                foreach (var style in DesignStyles.All)
+                {
+                    if (style.Target == StyleTarget.Photo && label.StartsWith("synthetic") || style.Target == StyleTarget.Drawing && label.StartsWith("4K")) continue;
+                    for (int run = 0; run < 2; run++)
+                    {
+                        var copy = source.Snapshot(); var outcome = DesignStyleEngine.Apply(copy, new StyleRequest(style.Id));
+                        var w1 = System.Diagnostics.Stopwatch.StartNew(); var image = Imaging.Render(copy); w1.Stop();
+                        log.Add($"{label} · {style.Id} run {run + 1}: apply {outcome.Elapsed.TotalMilliseconds:0} ms, full render {w1.ElapsedMilliseconds} ms, {outcome.LayerCount} layers");
+                        if (run == 1) SavePng(PreviewScaling.Fit(image, 1600).Bitmap(), Path.Combine(directory, $"timing-{style.Id}-{(label.StartsWith("4K") ? "4k" : "drawing")}.png"));
+                    }
+                }
+            }
+            File.WriteAllLines(Path.Combine(directory, "timings.txt"), log); return;
+        }
+        if (Environment.GetEnvironmentVariable("MORUPIXEL_DEV_STYLES") is "1" or "2") { headlessTesting = true; var log = new List<string>(); if (Environment.GetEnvironmentVariable("MORUPIXEL_DEV_STYLES") == "2") RenderDesignStylePreviews(directory, log); else RenderDesignStyleSamples(directory, log); File.WriteAllLines(Path.Combine(directory, "timings.txt"), log); return; } // DEV-ONLY: remove
         RenderPreview(Path.Combine(directory, "startup.png"));
         // Synthetic entries show the recent-documents list without reading the user's history.
         recentDocuments = [@"C:\작업\예시\여름 캠페인 포스터.moruproj", @"C:\작업\예시\제품 사진 보정.png", @"C:\작업\예시\카드뉴스 3장.moruproj"];
@@ -185,6 +213,7 @@ public sealed partial class MainWindow
         doc.ActiveId = hatch.Id; selectedLayers.Clear(); selectedLayers.Add(hatch.Id); ShowStudioPage(1);
         Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "drawing-photo-layers", 1480, 920);
+        RenderDesignStylePreviews(directory);
     }
     // Render the actual WPF controls without showing a window or taking input focus.
     public void RenderPreview(string path)

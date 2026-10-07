@@ -16,7 +16,7 @@ public static partial class DesignRenderer
     internal static Raster Render(Document doc, Rect area, int width, int height, CancellationToken token, int passSize, Action? passRendered = null)
         => RenderCore(doc, area, width, height, true, token, new(passSize, passRendered));
     public static Raster RenderOutput(Document doc, CancellationToken token = default)
-        => HasRetainedContent(doc) || doc.Layers.Any(DrawingLayers.IsContainer) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token, default) : Imaging.Render(doc, token);
+        => HasRetainedContent(doc) || doc.Layers.Any(l => DrawingLayers.IsContainer(l) || IsPassThrough(l)) ? RenderCore(doc, new Rect(0, 0, doc.Width, doc.Height), doc.Width, doc.Height, false, token, default) : Imaging.Render(doc, token);
     // The document area drawn at width×height (any scale) in chunks of at most 4096 px: exports at 2x and
     // more draw vectors, text and hatch patterns at the output resolution instead of resampling 1x pixels.
     public static Raster RenderScaled(Document doc, Rect area, int width, int height, CancellationToken token = default)
@@ -92,6 +92,44 @@ public static partial class DesignRenderer
         Raster Stack(Layer[] stack, Matrix parent, int depth)
         {
             var output = new Raster(width, height);
+            Paint(stack, parent, depth, output);
+            return output;
+        }
+        // A pass-through folder (a design style) paints its children onto this surface, so their
+        // adjustments and blend modes read the layers below the folder. Its opacity and mask blend
+        // the result with what was there before; it has no blend mode or clip rectangle of its own.
+        void PassThrough(Layer group, Matrix parent, int depth, Raster output)
+        {
+            if (depth > 16) throw new InvalidOperationException("그룹 계층이 너무 깊습니다.");
+            var world = World(group, parent); var members = children.GetValueOrDefault(group.Id) ?? [];
+            if (group.Opacity >= 1 && group.Mask == null) { Paint(members, world, depth + 1, output); return; }
+            var before = output.Clone(); Paint(members, world, depth + 1, output);
+            var inverse = world; inverse.Invert(); var mask = group.Mask; int maskWidth = group.Pixels.Width, maskHeight = group.Pixels.Height;
+            Parallel.For(0, height, new ParallelOptions { CancellationToken = token }, y =>
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    double amount = group.Opacity;
+                    if (mask != null)
+                    {
+                        var p = inverse.Transform(new Point(x + .5, y + .5));
+                        amount *= p.X < 0 || p.Y < 0 || p.X >= maskWidth || p.Y >= maskHeight ? 0 : mask[(int)p.Y * maskWidth + (int)p.X] / 255d;
+                    }
+                    if (amount >= 1) continue;
+                    int i = (y * width + x) * 4;
+                    // Mix in premultiplied space so the alpha of either state never tints the other.
+                    double a0 = before.Data[i + 3] / 255d, a1 = output.Data[i + 3] / 255d, a = a0 + (a1 - a0) * amount;
+                    for (int c = 0; c < 3; c++)
+                    {
+                        double v = before.Data[i + c] * a0 + (output.Data[i + c] * a1 - before.Data[i + c] * a0) * amount;
+                        output.Data[i + c] = a > 0 ? Imaging.Byte(v / a) : (byte)0;
+                    }
+                    output.Data[i + 3] = Imaging.Byte(a * 255);
+                }
+            });
+        }
+        void Paint(Layer[] stack, Matrix parent, int depth, Raster output)
+        {
             for (int index = 0; index < stack.Length; index++)
             {
                 token.ThrowIfCancellationRequested(); var layer = stack[index]; if (layer.Clipped) continue;
@@ -108,6 +146,7 @@ public static partial class DesignRenderer
                         Imaging.Merge(output, batch, 1, BlendMode.Normal, false, token);
                 }
                 else if (layer.Kind == LayerKind.Adjustment) Imaging.ApplyAdjustment(output, layer, token, World(layer, parent));
+                else if (end == index + 1 && IsPassThrough(layer)) PassThrough(layer, parent, depth, output);
                 else if (passes.Cull is { } cull && layer.Kind != LayerKind.Group && layer.Warp == null && !Reaches(layer, World(layer, parent), cull)) { }
                 else
                 {
@@ -122,10 +161,14 @@ public static partial class DesignRenderer
                 }
                 index = end - 1;
             }
-            return output;
         }
         return Stack(doc.Layers.Where(l => l.ParentId == null).ToArray(), map, 0);
     }
+    /// <summary>
+    /// A folder whose children paint onto the surface below it (see <see cref="Layer.PassThrough"/>).
+    /// Giving the folder its own blend mode or a perspective makes it an isolated group again.
+    /// </summary>
+    public static bool IsPassThrough(Layer layer) => layer.Kind == LayerKind.Group && layer.PassThrough && layer.Warp == null && layer.Blend == BlendMode.Normal;
     // Every leaf paints only inside its pixel rectangle (shapes and resampling add a pixel).
     static bool Reaches(Layer layer, Matrix world, Rect cull)
     {

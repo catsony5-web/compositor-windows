@@ -37,6 +37,7 @@ public sealed partial class MainWindow
             (Theme.Glyphs.GradientMap, "그라데이션 맵", () => ShowAdjustment(AdjustmentKind.GradientMap), "명암에 따라 색상 매핑"),
             (Theme.Glyphs.Grain, "그레인", () => ShowAdjustment(AdjustmentKind.Grain), "필름 입자 추가"));
         panel.Children.Add(Theme.ActionRow("선택한 조정 레이어 편집", Run(EditAdjustment), "선택한 조정 레이어의 값을 다시 편집", Theme.Glyphs.Sliders));
+        AddDesignStyleCommands(panel);
 
         WorkspaceSection(panel, "선택과 마스크", "선택 영역을 만들고 마스크나 새 레이어로 바꿉니다.");
         WorkspaceCommands(panel,
@@ -54,6 +55,7 @@ public sealed partial class MainWindow
 
     void BuildDesignActions(StackPanel panel)
     {
+        AddDesignStyleFeature(panel);
         WorkspaceSection(panel, "만들기", "도형·텍스트를 이미지와 함께 배치합니다.");
         WorkspaceTiles(panel, 4,
             (Theme.Glyphs.Text, "새 텍스트", () => OpenTextProperties(null), "편집 가능한 텍스트 추가 후 문자·단락 속성 열기"),
