@@ -176,6 +176,7 @@ public sealed partial class MainWindow
         ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
         RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderHatchPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
+        RenderScreentonePreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
         RenderShadowPreviews(Capture, CapturePane);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.

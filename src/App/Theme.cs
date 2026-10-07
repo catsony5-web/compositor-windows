@@ -203,6 +203,8 @@ public static class Theme
         public const string Star = "M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z";
         public const string StarFilled = "M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z | *M12 3.8L14.4 8.9L20 9.6L15.9 13.4L17 19L12 16.2L7 19L8.1 13.4L4 9.6L9.6 8.9Z";
         public const string Hatch = "M4 4H20V20H4Z | ~M4 12L12 4M4 20L20 4M12 20L20 12";
+        // Tone screens (스크린톤): a frame with dots that grow from the light corner to the dark one.
+        public const string Screentone = "M4 4H20V20H4Z | ~M8 7.6A.4 .4 0 1 0 8 8.4A.4 .4 0 1 0 8 7.6Z M12 7.4A.6 .6 0 1 0 12 8.6A.6 .6 0 1 0 12 7.4Z M8 11.4A.6 .6 0 1 0 8 12.6A.6 .6 0 1 0 8 11.4Z | M16 7.2A.8 .8 0 1 0 16 8.8A.8 .8 0 1 0 16 7.2Z M12 11.1A.9 .9 0 1 0 12 12.9A.9 .9 0 1 0 12 11.1Z M8 15.2A.8 .8 0 1 0 8 16.8A.8 .8 0 1 0 8 15.2Z M16 10.8A1.2 1.2 0 1 0 16 13.2A1.2 1.2 0 1 0 16 10.8Z M12 14.8A1.2 1.2 0 1 0 12 17.2A1.2 1.2 0 1 0 12 14.8Z M16 14.5A1.5 1.5 0 1 0 16 17.5A1.5 1.5 0 1 0 16 14.5Z | *M16 14.5A1.5 1.5 0 1 0 16 17.5A1.5 1.5 0 1 0 16 14.5Z M16 10.8A1.2 1.2 0 1 0 16 13.2A1.2 1.2 0 1 0 16 10.8Z M12 14.8A1.2 1.2 0 1 0 12 17.2A1.2 1.2 0 1 0 12 14.8Z";
         public const string Info = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M12 11V16.5 M12 7.8V7.9 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";
         public const string Warning = "M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z | M12 9.5V13.5 M12 16.8V16.9 | *M10.3 4.6A2 2 0 0 1 13.7 4.6L21.2 17.6A2 2 0 0 1 19.5 20.6H4.5A2 2 0 0 1 2.8 17.6Z";
         public const string Error = "M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z | M9 9L15 15 M15 9L9 15 | *M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z";

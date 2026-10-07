@@ -137,6 +137,7 @@ public static class SelfTests
         MaterialMappingTests.Run(Test, directory);
         HatchPatternTests.Run(Test, directory);
         HatchPatternQualityTests.Run(Test);
+        ScreentoneTests.Run(Test, directory);
         CompatibilityDialog.RunHatchSummaryTests(Test);
         PrecisionWandTests.Run(Test);
         MainWindow.RunWandCommandTests(Test);
@@ -145,6 +146,7 @@ public static class SelfTests
         MainWindow.RunMaterialPropertiesTests(Test);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);
+        MainWindow.RunScreentoneTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);

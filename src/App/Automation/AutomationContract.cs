@@ -69,7 +69,16 @@ public static partial class AutomationCatalog
             ["patterns"] = new JsonObject
             {
                 ["count"] = HatchPatterns.All.Count, ["query"] = "query_patterns", ["autoRegister"] = true,
-                ["parameters"] = Strings(["patternId", "scale", "verticalRatio", "tileWidth", "tileHeight", "angle", "offsetX", "offsetY", "ink", "lineWeight", "background", "opacity", "blend"]),
+                ["parameters"] = Strings(["patternId", "scale", "verticalRatio", "tileWidth", "tileHeight", "angle", "offsetX", "offsetY", "ink", "lineWeight", "background", "opacity", "blend", .. AutomationMaterials.GradientFields]),
+                ["groups"] = Strings(["basic", "screentone", "custom"]),
+                ["screentones"] = new JsonObject
+                {
+                    ["count"] = HatchPatterns.All.Count(HatchPatterns.IsScreentone),
+                    ["meaning"] = "Tone screens sized to their repeat, so a screen keeps its ink coverage (query_patterns coverage) at any scale; lineWeight scales their dots and lines. solid-black fills the boundary with the ink.",
+                    ["gradientPatterns"] = Strings(HatchPatterns.All.Where(HatchPatterns.IsGradient).Select(HatchPatterns.Key)),
+                    ["gradientParameters"] = Strings(AutomationMaterials.GradientFields),
+                    ["gradientMeaning"] = "Not a repeating tile: ink coverage runs linearly from gradientStart (0-1) at the region's first edge to gradientEnd at its last edge along gradientAngle (degrees, 0 = left to right, 90 = top to bottom; defaults 90, 0.1, 0.9). dot-gradient grows a round-dot screen through a checkerboard into round holes; stipple-gradient thresholds random grain (gradientSeed picks another arrangement). Scale, verticalRatio, angle and offset move the lattice or grain."
+                },
                 ["custom"] = new JsonObject
                 {
                     ["patternIdFormat"] = "custom:<32 hex>", ["register"] = "register_material kind=line_pattern (threshold, trim, saveToMyPatterns)",

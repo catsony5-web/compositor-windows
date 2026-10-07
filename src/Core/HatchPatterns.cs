@@ -1,13 +1,19 @@
 namespace Compositor.Windows;
 
-// Built-in line-art hatch patterns for drawings (lawn, sand, pavers, brick, …). The values are
-// stored in documents through the asset ID, so they are explicit and append-only.
+// Built-in line-art hatch patterns for drawings (lawn, sand, pavers, brick, …) and tone screens
+// (스크린톤: dot, line and cross screens by ink coverage, black poché and density gradients). The
+// values are stored in documents through the asset ID, so they are explicit and append-only.
 public enum HatchPattern
 {
     GrassSparse = 0, Meadow = 1, Sand = 2, DotsSparse = 3, DashDiagonal = 4, DashHorizontal = 5, Dots = 6, PavingSmall = 7,
     Lines = 8, Stipple = 9, Flagstone = 10, Cobble = 11, Gravel = 12, Concrete = 13, Brick = 14, Diagonal = 15, Crosshatch = 16,
-    Grid = 17, Insulation = 18
+    Grid = 17, Insulation = 18,
+    DotScreen10 = 19, DotScreen20 = 20, DotScreen30 = 21, DotScreen45 = 22, DotScreen60 = 23, DotScreen75 = 24,
+    LineScreen20 = 25, LineScreen35 = 26, LineScreen50 = 27, GridScreen30 = 28, SolidBlack = 29, DotGradient = 30, StippleGradient = 31
 }
+
+// The palette groups of the built-in patterns: line hatches (기본 패턴) and tone screens (스크린톤).
+public enum HatchGroup { Line, Screentone }
 
 // Catalog of the built-in patterns: keys, Korean names and stable material IDs. A pattern is an
 // ordinary MaterialAsset with a reserved ID and Source; the engine (HatchPatternRenderer) draws it.
@@ -29,7 +35,13 @@ public static class HatchPatterns
         HatchPattern.Dots => "dots", HatchPattern.PavingSmall => "paving-small", HatchPattern.Lines => "lines", HatchPattern.Stipple => "stipple",
         HatchPattern.Flagstone => "flagstone", HatchPattern.Cobble => "cobble", HatchPattern.Gravel => "gravel", HatchPattern.Concrete => "concrete",
         HatchPattern.Brick => "brick", HatchPattern.Diagonal => "diagonal", HatchPattern.Crosshatch => "crosshatch", HatchPattern.Grid => "grid",
-        HatchPattern.Insulation => "insulation", _ => throw new ArgumentOutOfRangeException(nameof(p))
+        HatchPattern.Insulation => "insulation",
+        HatchPattern.DotScreen10 => "dot-screen-10", HatchPattern.DotScreen20 => "dot-screen-20", HatchPattern.DotScreen30 => "dot-screen-30",
+        HatchPattern.DotScreen45 => "dot-screen-45", HatchPattern.DotScreen60 => "dot-screen-60", HatchPattern.DotScreen75 => "dot-screen-75",
+        HatchPattern.LineScreen20 => "line-screen-20", HatchPattern.LineScreen35 => "line-screen-35", HatchPattern.LineScreen50 => "line-screen-50",
+        HatchPattern.GridScreen30 => "grid-screen-30", HatchPattern.SolidBlack => "solid-black",
+        HatchPattern.DotGradient => "dot-gradient", HatchPattern.StippleGradient => "stipple-gradient",
+        _ => throw new ArgumentOutOfRangeException(nameof(p))
     };
 
     // Korean display name; also the translation key.
@@ -40,12 +52,32 @@ public static class HatchPatterns
         HatchPattern.PavingSmall => "작은 포장석", HatchPattern.Lines => "가로줄", HatchPattern.Stipple => "고운 점", HatchPattern.Flagstone => "판석",
         HatchPattern.Cobble => "자연석", HatchPattern.Gravel => "자갈", HatchPattern.Concrete => "콘크리트", HatchPattern.Brick => "벽돌",
         HatchPattern.Diagonal => "사선", HatchPattern.Crosshatch => "교차 사선", HatchPattern.Grid => "사각 격자", HatchPattern.Insulation => "단열재",
+        HatchPattern.DotScreen10 => "점 스크린 10%", HatchPattern.DotScreen20 => "점 스크린 20%", HatchPattern.DotScreen30 => "점 스크린 30%",
+        HatchPattern.DotScreen45 => "점 스크린 45%", HatchPattern.DotScreen60 => "점 스크린 60%", HatchPattern.DotScreen75 => "점 스크린 75%",
+        HatchPattern.LineScreen20 => "선 스크린 20%", HatchPattern.LineScreen35 => "선 스크린 35%", HatchPattern.LineScreen50 => "선 스크린 50%",
+        HatchPattern.GridScreen30 => "격자 스크린 30%", HatchPattern.SolidBlack => "검정 채움",
+        HatchPattern.DotGradient => "점 그라데이션", HatchPattern.StippleGradient => "점묘 그라데이션",
         _ => throw new ArgumentOutOfRangeException(nameof(p))
     };
 
     // Repeat size relative to the default material size. Large stones hold four times the cells in a
     // repeat twice as wide, so the stones keep their size and the repeat does not read as a lattice.
     public static double RepeatScale(HatchPattern p) => p is HatchPattern.Flagstone or HatchPattern.Cobble ? 2 : 1;
+
+    public static HatchGroup Group(HatchPattern p) => p >= HatchPattern.DotScreen10 ? HatchGroup.Screentone : HatchGroup.Line;
+    public static bool IsScreentone(HatchPattern p) => Group(p) == HatchGroup.Screentone;
+    // A screentone whose density runs across the region (MaterialFill.Gradient) instead of repeating.
+    public static bool IsGradient(HatchPattern p) => p is HatchPattern.DotGradient or HatchPattern.StippleGradient;
+    public static bool IsGradient(MaterialAsset? asset) => TryGet(asset, out var p) && IsGradient(p);
+
+    // Nominal ink coverage (0–1) of a uniform screentone at line weight 100% and its own proportions;
+    // null for line hatches and gradients (their coverage is set by the fill's gradient).
+    public static double? Coverage(HatchPattern p) => p switch
+    {
+        HatchPattern.DotScreen10 => .1, HatchPattern.DotScreen20 => .2, HatchPattern.DotScreen30 => .3, HatchPattern.DotScreen45 => .45,
+        HatchPattern.DotScreen60 => .6, HatchPattern.DotScreen75 => .75, HatchPattern.LineScreen20 => .2, HatchPattern.LineScreen35 => .35,
+        HatchPattern.LineScreen50 => .5, HatchPattern.GridScreen30 => .3, HatchPattern.SolidBlack => 1, _ => null
+    };
 
     public static string AssetName(HatchPattern p) => NamePrefix + Name(p);
     public static string Source(HatchPattern p) => SourcePrefix + Key(p) + "@" + GeneratorVersion;

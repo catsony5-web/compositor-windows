@@ -26,14 +26,17 @@ public static class MaterialTextures
 public static partial class ProjectStore
 {
     public sealed record MaterialInfo(Guid Id, string Name, string Source, bool Tileable, int Width, int Height);
+    // Gradient is written only when a fill has one: files without gradient screentones keep their exact
+    // shape, and older readers ignore the field (they show the pattern's stored fallback tile).
     public sealed record MaterialFillInfo(Guid MaterialId, Guid SourceRegionId, string RegionName, RegionPath Boundary,
-        int Width, int Height, double TileWidth, double TileHeight, double Angle, double OffsetX, double OffsetY, uint Ink = 0, double LineWeight = 1, uint Background = 0)
+        int Width, int Height, double TileWidth, double TileHeight, double Angle, double OffsetX, double OffsetY, uint Ink = 0, double LineWeight = 1, uint Background = 0,
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] ToneGradient? Gradient = null)
     {
         public static MaterialFillInfo? From(MaterialFill? fill) => fill == null ? null : new(fill.Asset.Id, fill.SourceRegionId, fill.RegionName,
-            fill.Boundary, fill.Width, fill.Height, fill.TileWidth, fill.TileHeight, fill.Angle, fill.OffsetX, fill.OffsetY, fill.Ink, fill.LineWeight, fill.Background);
+            fill.Boundary, fill.Width, fill.Height, fill.TileWidth, fill.TileHeight, fill.Angle, fill.OffsetX, fill.OffsetY, fill.Ink, fill.LineWeight, fill.Background, fill.Gradient);
         public MaterialFill Fill(IReadOnlyDictionary<Guid, MaterialAsset> assets) => new(
             assets.TryGetValue(MaterialId, out var asset) ? asset : throw new InvalidDataException("재료 원본 참조가 없습니다."),
-            SourceRegionId, RegionName, Boundary, Width, Height, TileWidth, TileHeight, Angle, OffsetX, OffsetY, Ink, LineWeight, Background);
+            SourceRegionId, RegionName, Boundary, Width, Height, TileWidth, TileHeight, Angle, OffsetX, OffsetY, Ink, LineWeight, Background, Gradient);
     }
     static Dictionary<Guid, MaterialAsset> ValidateMaterials(Manifest manifest)
     {
