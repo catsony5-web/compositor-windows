@@ -39,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 36); checks.push('MCP initialization and 36 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 38); checks.push('MCP initialization and 38 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -50,10 +50,12 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 9); assert.equal(capabilities.commands.length, 36);
+  assert.equal(capabilities.contractVersion, 9); assert.equal(capabilities.commands.length, 38);
   assert.equal(capabilities.materials.patterns.count, 32); assert.equal(capabilities.materials.patterns.screentones.count, 13); assert.equal(capabilities.materials.patterns.autoRegister, true);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
+  const styles = data(await call('query_styles')); assert.equal(styles.count, 5); assert.equal(capabilities.styles.count, 5);
+  assert(styles.styles.every(s => s.parameters.length >= 1 && s.parameters.length <= 3)); checks.push('Design styles are listed with their parameters');
   let state = data(await call('get_state')); assert.equal(state.documents.length, 0);
   state = data(await call('new_document', { name: 'AI 연결 데모', width: 960, height: 600, background: '#141B29' }));
   let documentId = state.documentId;

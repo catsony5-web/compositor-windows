@@ -148,6 +148,8 @@ public static class SelfTests
         MainWindow.RunLayerWandTests(Test, directory);
         MainWindow.RunLayerEyeSweepTests(Test);
         MainWindow.RunMaterialPropertiesTests(Test);
+        DesignStyleTests.Run(Test, directory);
+        MainWindow.RunDesignStyleTests(Test, directory);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);
         SketchCleanupTests.Run(Test);

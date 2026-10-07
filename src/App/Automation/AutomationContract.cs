@@ -101,6 +101,13 @@ public static partial class AutomationCatalog
             ["result"] = "A new group (layerId) above the photo holding the transparent line layer (lineLayerId) and, with background=white, a white layer (backgroundLayerId). The photo stays, hidden. A photo that is the document's only layer (no artboards) makes the canvas the flattened sheet (canvasResized=true); otherwise the result is centered and fitted into the photo's bounds.",
             ["meaning"] = "Photo cleanup for hand drawings: flattening, even lighting, line extraction with antialiased edges, ruled lines and specks dropped. Not vector tracing and not the CAD line-weight cleanup of imported drawings."
         },
+        ["styles"] = new JsonObject
+        {
+            ["query"] = "query_styles", ["apply"] = "apply_style", ["count"] = DesignStyles.All.Count, ["ids"] = Strings(DesignStyles.All.Select(s => s.Id)),
+            ["folder"] = "pass-through group of editable layers (folderName in query_styles); adjustments inside it change the layers below it",
+            ["reapply"] = "apply_style with groupId keeps the folder ID, position, visibility and opacity", ["remove"] = "delete_layer on the folder's groupId; layers the style hid are shown again",
+            ["undoSteps"] = 1, ["batch"] = false, ["projectSaved"] = true
+        },
         ["unsupportedViaMcp"] = Strings(["image_generation", "3d_uv_mapping", "automatic_room_detection", "physical_cad_scale", "vector_path_editing", "group_creation", "cmyk_export"]),
         ["workflow"] = Strings(["discover", "inspect", "query", "validate", "commit", "preview"])
     };

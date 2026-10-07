@@ -288,5 +288,7 @@ public static class Theme
         // A cut-out figure standing in front of a large letter T (피사체를 글자 앞으로).
         public const string SubjectFront = "M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z | ~M3 4.5H17 M8.5 4.5V20.5 | *M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
+        // 디자인 스타일: a picture split on its diagonal, one half restyled (tint) and the other screened (strokes).
+        public const string Style = "M6 4.5H18A1.5 1.5 0 0 1 19.5 6V18A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z | M5 19L19 5 | ~M11.5 19.5L19.5 11.5 M15.5 19.5L19.5 15.5 | *M6 4.5H18.5L4.5 18.5V6A1.5 1.5 0 0 1 6 4.5Z";
     }
 }

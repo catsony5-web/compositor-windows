@@ -34,7 +34,7 @@ internal static class PdfLayerExport
         layer.Opacity == 1 && layer.Blend == BlendMode.Normal && layer.Mask == null && !layer.Clipped && layer.Warp == null;
     static bool CleanGroup(Layer layer, Dictionary<Guid, Layer[]> children) => layer.Kind == LayerKind.Group &&
         layer.Opacity == 1 && layer.Blend == BlendMode.Normal && layer.Mask == null && !layer.Clipped && layer.Warp == null &&
-        !LayerExportRender.ChildrenOf(layer, children).Any(child => child.Kind == LayerKind.Adjustment);
+        !LayerExportRender.ChildrenOf(layer, children).Any(child => child.Kind == LayerKind.Adjustment || DesignRenderer.IsPassThrough(child));
     static bool Expandable(Layer root, Dictionary<Guid, Layer[]> children) => DrawingLayers.IsContainer(root) && root.Visible &&
         root.Opacity == 1 && root.Blend == BlendMode.Normal && !root.Clipped && CleanGroup(root, children) && LayerExportRender.ChildrenOf(root, children).Length > 0;
 
@@ -47,7 +47,8 @@ internal static class PdfLayerExport
             var units = new List<Unit>();
             void Add(Layer[] stack, int i, Layer[] ancestors)
             {
-                var layer = stack[i]; var role = layer.Kind == LayerKind.Adjustment ? Role.Adjusted : Role.Content; Layer? basis = null;
+                // A pass-through folder (a design style) changes what is below it, like an adjustment layer.
+                var layer = stack[i]; var role = layer.Kind == LayerKind.Adjustment || DesignRenderer.IsPassThrough(layer) ? Role.Adjusted : Role.Content; Layer? basis = null;
                 if (layer.Clipped)
                 {
                     int b = i - 1; while (b >= 0 && stack[b].Clipped) b--;

@@ -25,7 +25,8 @@ public static partial class AutomationCatalog
 
         public JsonObject Schema()
         {
-            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
+            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : ArrayShape == "ids" ? IdArraySchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
+            if (Type == "object") { var shape = StyleParametersSchema(); shape["description"] = Description; return shape; }
             var schema = new JsonObject { ["type"] = Type, ["description"] = Description };
             if (Minimum is { } min) schema["minimum"] = min;
             if (Maximum is { } max) schema["maximum"] = max;
@@ -225,6 +226,13 @@ public static partial class AutomationCatalog
                 ("holes", new Field("array", "Optional inner contours for points; at most 2048 points across all contours.", ArrayShape: "holes")),
                 ("boundaryLayerId", Id with { Description = "Closed shape or closed CAD path layer used as the boundary instead of regionId, like define_region source=closed_layer." }),
                 ("regionName", Name with { Description = "Name of the region template created from points or boundaryLayerId." }) }).ToArray()), WriteRequired());
+        Add("query_styles", "List the design styles: styleId, Korean name and description, what each suits (drawing, photo or any) and its 1–3 parameters with type, range, default and choices. Also lists the style folders of a document (documentId, default the active document) with their groupId, styleId and parameters. No document is needed for the registry.", true,
+            Fields(("documentId", Id)));
+        Add("apply_style", "Apply a design style as one undo step. It adds an editable pass-through folder (named like folderName in query_styles) of adjustment, pattern fill, texture and text layers above what it reads; the original layers stay unchanged (the screentone plan hides the drawing's own hatch fills while it is on and shows them again when its folder is deleted). parameters maps a parameter key to a number (sliders 0–100), a boolean (toggles) or a choice key (or index) from query_styles; omitted keys use defaults. targetLayerIds limits what the style reads (default: the whole document, placed on top). groupId re-applies that style folder in place, keeping its ID, position, visibility and opacity, with new parameters or another styleId. Returns groupId. Remove a style with delete_layer on its groupId. The poster style cuts out the subject with the bundled local AI model.", false,
+            Mutation(("styleId", Choice(DesignStyles.All.Select(style => style.Id).ToArray())),
+                ("parameters", new("object", "Parameter key → value for the chosen style (see query_styles).")),
+                ("targetLayerIds", new("array", "Layers the style reads (with their descendants); the folder goes right above the topmost of them. Omit for the whole document.", ArrayShape: "ids")),
+                ("groupId", Id with { Description = "A style folder to re-apply in place (from query_styles or a previous apply_style)." })), WriteRequired("styleId"));
         Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, gradient (gradientAngle, gradientStart, gradientEnd, gradientSeed of dot-gradient and stipple-gradient), opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         return commands;
@@ -251,6 +259,7 @@ public static partial class AutomationCatalog
                 "string" => kind == JsonValueKind.String,
                 "boolean" => kind is JsonValueKind.True or JsonValueKind.False,
                 "array" => kind == JsonValueKind.Array,
+                "object" => kind == JsonValueKind.Object,
                 _ => kind == JsonValueKind.Number
             };
             if (!validType)
@@ -258,9 +267,10 @@ public static partial class AutomationCatalog
             if (field.Type == "array")
             {
                 if (field.ArrayShape == null) ValidateBatchSteps(value!.AsArray(), arguments);
+                else if (field.ArrayShape == "ids") ValidateIdArray(value!.AsArray());
                 else ValidateMaterialArray(value!.AsArray(), field.ArrayShape);
             }
-            else if (field.Type == "boolean")
+            else if (field.Type is "boolean" or "object")
             {
                 // Type validation above already guarantees a JSON boolean.
             }
@@ -313,6 +323,7 @@ public static partial class AutomationCatalog
         if (command is "apply_material" or "update_material") ValidateMaterialFields(command, arguments);
         if (command == "clean_sketch" && arguments.ContainsKey("corners") && arguments["flatten"]?.GetValue<bool>() == false)
             throw new ArgumentException("corners need flatten=true (the default); flatten=false keeps the whole photo.");
+        if (command == "apply_style") ValidateStyleArguments(arguments);
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
             throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))

@@ -289,6 +289,7 @@ public sealed partial class MainWindow
         if (command == "query_patterns") return AutomationPatternQuery(args);
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
+        if (command == "query_styles") return AutomationStyleQuery(args);
         RequireAutomationIdle(token);
         if (command is "query_materials" or "query_regions") return AutomationMaterialQuery(command, args);
         if (command is "register_material" or "define_region") return await AutomationRegisterMaterialAsync(command, args, token);
@@ -457,11 +458,13 @@ public sealed partial class MainWindow
             finally { if (File.Exists(staging)) File.Delete(staging); }
         }
 
+        automationStyleOutcome = null;
         var affected = await ApplyAutomationEditAsync(candidate, command, args, token);
         var details = automationStepDetails;
         candidate.Validate(); Recheck();
         CommitAutomationCandidate("AI · " + command, before, candidate, affected);
         var edited = AutomationResult(affected);
+        if (command == "apply_style" && automationStyleOutcome is { } styled) AutomationStyleResult(edited, styled, doc);
         if (command == "apply_material" && affected is { } mappedId && doc.Layers.FirstOrDefault(l => l.Id == mappedId)?.Material is { } mappedFill)
             edited["regionId"] = mappedFill.SourceRegionId.ToString();
         if (details != null) foreach (var (key, value) in details) edited[key] = value?.DeepClone();
@@ -715,6 +718,8 @@ public sealed partial class MainWindow
                 break;
             case "add_adjustment":
                 Add(await CompatibilityImport.OnSta(() => DocumentFeatures.CreateAdjustment(candidate, AutomationAdjustment(args)), token)); break;
+            case "apply_style":
+                affected = await AutomationApplyStyleAsync(candidate, args, token); break;
             case "remove_background":
                 var masked = Target();
                 if (masked.Kind is LayerKind.Group or LayerKind.Adjustment) throw new AutomationFault("wrong_layer_kind", "이미지·텍스트·도형 레이어를 선택하세요.");

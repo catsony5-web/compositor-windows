@@ -315,6 +315,8 @@ public static class DocumentFeatures
     {
         var ids = new HashSet<Guid> { layerId }; bool changed;
         do { changed = false; foreach (var l in doc.Layers) if (l.ParentId is { } p && ids.Contains(p)) changed |= ids.Add(l.Id); } while (changed);
+        // A design style folder gives back what it changed on the layers that stay (DesignStyles.Revert).
+        foreach (var folder in doc.Layers.Where(l => l.Style != null && ids.Contains(l.Id)).ToArray()) DesignStyles.Revert(doc, folder.Style!, ids);
         doc.Layers.RemoveAll(l => ids.Contains(l.Id)); if (ids.Contains(doc.ActiveId)) doc.ActiveId = doc.Layers.LastOrDefault()?.Id ?? Guid.Empty;
     }
     public static Point ToDocumentSpace(Document doc, Layer layer, Point local)

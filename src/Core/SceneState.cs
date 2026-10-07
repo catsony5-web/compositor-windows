@@ -62,7 +62,7 @@ public sealed class SceneState
     public bool Holds(Document doc) => ReferenceEquals(document, doc);
 
     static int Flags(Layer l) => (int)l.Kind | (int)l.Blend << 4 | (l.Visible ? 1 << 9 : 0) | (l.Locked ? 1 << 10 : 0) |
-        (l.Clipped ? 1 << 11 : 0) | (l.FlipX ? 1 << 12 : 0) | (l.FlipY ? 1 << 13 : 0);
+        (l.Clipped ? 1 << 11 : 0) | (l.FlipX ? 1 << 12 : 0) | (l.FlipY ? 1 << 13 : 0) | (l.PassThrough ? 1 << 14 : 0);
     // Value records can be replaced by equal copies; hash their values, as the
     // previous per-frame state hash did. Few layers carry any of them.
     static int SpecHash(Layer l) => l.Text == null && l.Shape == null && l.Adjustment == null && l.Warp == null ? 0 : HashCode.Combine(l.Text, l.Shape, l.Adjustment, l.Warp);

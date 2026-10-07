@@ -176,7 +176,7 @@ public sealed partial class MainWindow
             {
                 w.SetWorkspaceMode(design);
                 var order = w.studioContents[0].Children.OfType<SectionHeader>().Select(h => h.Key).ToList();
-                Check(order.IndexOf(UserProfiles.SketchPhoto) == 3 && Descendants(w.studioContents[0]).OfType<Button>().Any(b => AutomationProperties.GetName(b) == "스케치 사진 정리"),
+                Check(order.IndexOf(UserProfiles.SketchPhoto) == order.IndexOf(UserProfiles.DesignStyle) + 1 && order.IndexOf(UserProfiles.DesignStyle) == 3 && Descendants(w.studioContents[0]).OfType<Button>().Any(b => AutomationProperties.GetName(b) == "스케치 사진 정리"),
                     $"건축학과 does not show 스케치 사진 after the drawing sections ({(design ? "design" : "photo")}): " + string.Join(", ", order));
             }
             var photo = w.doc.Layers[0];
