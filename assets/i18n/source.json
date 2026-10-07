@@ -224,7 +224,7 @@
   "file": "Core/DesignStyles.cs"
  },
  {
-  "ko": "복사기 토너 입자의 양",
+  "ko": "복사기 토너 입자와 줄무늬의 양",
   "file": "Core/DesignStyles.cs"
  },
  {
@@ -264,7 +264,7 @@
   "file": "Core/DesignStyles.cs"
  },
  {
-  "ko": "사진은 밝은 종이 색, 도면은 파란 바탕의 밝기",
+  "ko": "사진은 밝은 종이 색, 도면은 파란 바탕의 밝기. 종이 섬유와 붓 자국 가장자리도 함께 늘어납니다.",
   "file": "Core/DesignStyles.cs"
  },
  {
@@ -300,15 +300,39 @@
   "file": "Core/DesignStyles.cs"
  },
  {
-  "ko": "대비",
+  "ko": "사진 표현",
   "file": "Core/DesignStyles.cs"
  },
  {
-  "ko": "사진의 명암 대비",
+  "ko": "사진을 두 색으로 찍는 방식: 인쇄 망점, 흑백 비트맵 또는 부드러운 듀오톤",
   "file": "Core/DesignStyles.cs"
  },
  {
-  "ko": "인쇄 입자의 양",
+  "ko": "망점",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "비트맵",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "듀오톤",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "제목",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "큰 제목을 채운 글자로 둘지 외곽선만 그릴지",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "채움",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "외곽선",
   "file": "Core/DesignStyles.cs"
  },
  {
@@ -349,6 +373,14 @@
  },
  {
   "ko": "아래",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "빛 번짐",
+  "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "밝은 곳의 빛이 주변으로 번지는 정도. 0이면 빛 번짐 레이어를 만들지 않습니다.",
   "file": "Core/DesignStyles.cs"
  },
  {
@@ -452,15 +484,7 @@
   "file": "Core/DocumentFeatures.cs"
  },
  {
-  "ko": "망점",
-  "file": "Core/DocumentFeatures.cs"
- },
- {
   "ko": "종이·인쇄 질감",
-  "file": "Core/DocumentFeatures.cs"
- },
- {
-  "ko": "빛 번짐",
   "file": "Core/DocumentFeatures.cs"
  },
  {
@@ -1524,15 +1548,11 @@
   "file": "Engine/StyleKit.cs"
  },
  {
-  "ko": "피사체 마스크 크기가 이미지와 다릅니다.",
-  "file": "Engine/StyleKit.cs"
- },
- {
   "ko": "사진에서 피사체를 찾지 못해 제목 앞 피사체 레이어는 만들지 않았습니다.",
   "file": "Engine/StyleKit.cs"
  },
  {
-  "ko": "포셰",
+  "ko": "피사체 마스크 크기가 이미지와 다릅니다.",
   "file": "Engine/StyleKit.cs"
  },
  {
@@ -1552,6 +1572,10 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
+  "ko": "포셰",
+  "file": "Engine/StyleRecipes.cs"
+ },
+ {
   "ko": "망점 · 밝게",
   "file": "Engine/StyleRecipes.cs"
  },
@@ -1564,15 +1588,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "점묘 그라데이션 {0}",
-  "file": "Engine/StyleRecipes.cs"
- },
- {
-  "ko": "복사 대비",
-  "file": "Engine/StyleRecipes.cs"
- },
- {
-  "ko": "복사기 토너",
+  "ko": "복사 질감",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1584,7 +1600,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "단면 질감",
+  "ko": "인쇄 질감",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1596,19 +1612,39 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
+  "ko": "대비",
+  "file": "Engine/StyleRecipes.cs"
+ },
+ {
   "ko": "사이아노타입 색",
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "종이 결",
+  "ko": "종이 · 붓 자국",
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "가장자리",
+  "ko": "피사체 · 비트맵",
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "듀오톤",
+  "ko": "피사체 · 두 색",
+  "file": "Engine/StyleRecipes.cs"
+ },
+ {
+  "ko": "두 색",
+  "file": "Engine/StyleRecipes.cs"
+ },
+ {
+  "ko": "피사체 · 듀오톤",
+  "file": "Engine/StyleRecipes.cs"
+ },
+ {
+  "ko": "피사체 · 대비",
+  "file": "Engine/StyleRecipes.cs"
+ },
+ {
+  "ko": "피사체 · 망점",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1616,15 +1652,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "제목",
-  "file": "Engine/StyleRecipes.cs"
- },
- {
-  "ko": "피사체 듀오톤",
-  "file": "Engine/StyleRecipes.cs"
- },
- {
-  "ko": "피사체 대비",
+  "ko": "라벨",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1648,7 +1676,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "작은 글을 여러 곳에 두면\n포스터에 밀도가 생깁니다.",
+  "ko": "작은 글을 여러 곳에 두면 포스터에 밀도가 생깁니다. 이 단락은 상자 폭에 맞춰 양쪽 정렬됩니다.",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1668,7 +1696,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "인쇄 입자",
+  "ko": "반투명 패널 · 흐림",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1677,10 +1705,6 @@
  },
  {
   "ko": "차분한 색",
-  "file": "Engine/StyleRecipes.cs"
- },
- {
-  "ko": "반투명 패널 · 흐림",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1696,7 +1720,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "본문을 입력하세요.\n짧은 설명이나 날짜, 장소를 적습니다.",
+  "ko": "본문을 입력하세요. 짧은 설명이나 날짜, 장소를 적으면 반투명 종이 위에 작은 단락으로 놓입니다.",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -1708,7 +1732,7 @@
   "file": "Engine/StyleRecipes.cs"
  },
  {
-  "ko": "부드러운 입자",
+  "ko": "종이 질감",
   "file": "Engine/StyleRecipes.cs"
  },
  {
@@ -3665,6 +3689,10 @@
  },
  {
   "ko": "복사할 때 생기는 세로 줄무늬를 더합니다.",
+  "file": "UI/Dialogs/AdjustmentDialog.StyleEffects.cs"
+ },
+ {
+  "ko": "가장자리",
   "file": "UI/Dialogs/AdjustmentDialog.StyleEffects.cs"
  },
  {

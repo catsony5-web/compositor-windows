@@ -43,8 +43,10 @@ public static class DesignStyleTests
                 Check(DesignStyles.Find(style.Id) == style && DesignStyles.GroupName(style) == "스타일 · " + style.Name, $"{style.Id}: lookup or folder name differs");
             }
             var poster = DesignStyles.Find(DesignStyles.NeoBrutalistPoster)!;
-            var values = poster.Values(new Dictionary<string, double> { ["contrast"] = 250, ["color"] = 7.6, ["unknown"] = 3 });
-            Check(values["contrast"] == 100 && values["color"] == 3 && values["texture"] == 50 && !values.ContainsKey("unknown"), "Values were not clamped to the parameters or kept an unknown key");
+            var values = poster.Values(new Dictionary<string, double> { ["photo"] = 7.6, ["color"] = -2, ["title"] = .7, ["unknown"] = 3 });
+            Check(values["photo"] == 2 && values["color"] == 0 && values["title"] == 1 && !values.ContainsKey("unknown"), "Values were not clamped to the parameters or kept an unknown key");
+            var editorial = DesignStyles.Find(DesignStyles.TranslucentEditorial)!.Values(new Dictionary<string, double> { ["glow"] = 250 });
+            Check(editorial["glow"] == 100 && editorial["blur"] == 60 && editorial["panel"] == 2, "Slider values were not clamped or defaults are missing");
             Check(DesignStyles.Find("missing") == null && !DesignStyles.IsValidKey("Bad Key"), "Unknown or malformed style ids were accepted");
         });
 
@@ -102,27 +104,37 @@ public static class DesignStyleTests
                     Check(!after.Data.SequenceEqual(before.Data), "The style did not change how the document looks");
                     var again = sample.Snapshot(); DesignStyleEngine.Apply(again, new StyleRequest(style.Id), Services);
                     Check(Imaging.Render(again).Data.SequenceEqual(after.Data), "The style is not deterministic");
+                    bool Effect(AdjustmentKind kind, Func<AdjustmentSpec, bool>? also = null, bool clipped = false) =>
+                        members.Any(l => l.Kind == LayerKind.Adjustment && l.Adjustment!.Kind == kind && l.Clipped == clipped && (also == null || also(l.Adjustment)));
                     switch (style.Id)
                     {
                         case DesignStyles.ScreentonePlan:
-                            Check(members.Count(l => l.Kind == LayerKind.Material) >= 3 && members.All(l => l.Kind != LayerKind.Material || l.Blend == BlendMode.Multiply && LinePatterns.IsPattern(l.Material!.Asset)),
-                                "Tone classes are not pattern layers");
-                            Check(members.Any(l => l.Kind == LayerKind.Raster && l.Blend == BlendMode.Multiply), "The photocopy texture layer is missing"); break;
+                            Check(members.Count(l => l.Kind == LayerKind.Material) >= 3 && members.All(l => l.Kind != LayerKind.Material ||
+                                l.Blend == BlendMode.Multiply && HatchPatterns.TryGet(l.Material!.Asset, out var screen) && HatchPatterns.IsScreentone(screen)), "Tone classes are not screentone layers");
+                            Check(Effect(AdjustmentKind.Threshold) && Effect(AdjustmentKind.PaperTexture, s => s.Paper.Toner > 0 && s.Paper.Streaks > 0), "The line threshold or the photocopy texture is missing");
+                            Check(Array.FindIndex(members, l => l.Adjustment?.Kind == AdjustmentKind.Threshold) < Array.FindIndex(members, l => l.Kind == LayerKind.Material), "The threshold would snap the screens instead of the line work"); break;
                         case DesignStyles.DarkSection:
                             int i = (40 * doc.Width + 40) * 4; Check(after.Data[i] < 80 && after.Data[i + 1] < 80, "The paper did not turn dark");
-                            Check(members.Any(l => l.Kind == LayerKind.Material && HatchPatterns.TryGet(l.Material!.Asset, out var grid) && grid == HatchPattern.Grid && l.Blend == BlendMode.Screen), "The grid layer is missing"); break;
+                            Check(members.Any(l => l.Kind == LayerKind.Material && HatchPatterns.TryGet(l.Material!.Asset, out var grid) && grid == HatchPattern.Grid && l.Blend == BlendMode.Screen), "The grid layer is missing");
+                            Check(Effect(AdjustmentKind.PaperTexture, s => s.Paper.Grain > 0), "The print texture is missing"); break;
                         case DesignStyles.Cyanotype:
-                            Check(members.Any(l => l.Kind == LayerKind.Adjustment && l.Adjustment!.Kind == AdjustmentKind.Exposure && l.Mask != null), "The edge darkening is missing");
-                            int c = ((int)(doc.Height * .3) * doc.Width + (int)(doc.Width * .2)) * 4; Check(after.Data[c] > after.Data[c + 2] + 20, "The result is not Prussian blue"); break;
+                            Check(Effect(AdjustmentKind.PaperTexture, s => s.Paper.Edges > 0 && s.Paper.Fibers > 0 && s.Paper.Tint > 0), "The paper with brushed edges is missing");
+                            int c = ((int)(doc.Height * .3) * doc.Width + (int)(doc.Width * .2)) * 4; Check(after.Data[c] > after.Data[c + 2] + 20, "The result is not Prussian blue");
+                            int corner = (2 * doc.Width + 2) * 4; Check(after.Data[corner + 2] > 200 && after.Data[corner + 1] > 200, "The brushed margin is not the paper color"); break;
                         case DesignStyles.NeoBrutalistPoster:
                             var texts = members.Where(l => l.Kind == LayerKind.Text).ToArray(); var subject = members.Single(l => l.Kind == LayerKind.Raster && l.Mask != null);
                             int title = Array.FindIndex(members, l => l.Name == "제목"), cut = Array.IndexOf(members, subject);
                             Check(texts.Length >= 5 && texts[0].Text!.Content.StartsWith(doc.Name.ToUpperInvariant().Split(' ')[0], StringComparison.Ordinal), "The title or the small text blocks are missing");
-                            Check(title >= 0 && title < cut && members[cut + 1].Clipped && members[cut + 1].Kind == LayerKind.Adjustment, "The subject is not in front of the title with its own duotone");
+                            Check(title >= 0 && title + 1 == cut && members[cut + 1].Clipped && members[cut + 1].Kind == LayerKind.Adjustment, "The subject is not right in front of the title with its own print");
+                            // One photo layer: the cut-out is its copy (피사체를 글자 앞으로), sharing the photo's pixels.
+                            Check(ReferenceEquals(subject.Pixels, doc.Layers[0].Pixels) && subject.X == doc.Layers[0].X && subject.Y == doc.Layers[0].Y, "The cut-out is not a copy of the photo layer");
+                            Check(Effect(AdjustmentKind.Halftone) && Effect(AdjustmentKind.Halftone, clipped: true) && Effect(AdjustmentKind.PaperTexture, s => s.Paper.Grain > 0), "The halftone print or its grain is missing");
+                            Check(texts.Any(t => t.Text!.BoxWidth > 0 && t.Text.Alignment == TextAlignment.Justify), "No small text block is a justified paragraph box");
                             Check(texts.Any(t => t.Text!.Content.Contains("2026")), "The year placeholder is missing"); break;
                         case DesignStyles.TranslucentEditorial:
                             Check(members.Any(l => l.Kind == LayerKind.Raster && l.Mask != null) && members.Count(l => l.Kind == LayerKind.Shape) == 2 && members.Count(l => l.Kind == LayerKind.Text) >= 3,
-                                "The frosted panel, its veil, edge or text is missing"); break;
+                                "The frosted panel, its veil, edge or text is missing");
+                            Check(Effect(AdjustmentKind.Glow) && members.Any(l => l.Kind == LayerKind.Text && l.Text!.BoxWidth > 0), "The glow or the paragraph box is missing"); break;
                     }
                 });
             }
@@ -212,11 +224,27 @@ public static class DesignStyleTests
             int expected = tones.Values.Where(t => t != ScreenTone.Gradient).Distinct().Count() + tones.Values.Count(t => t == ScreenTone.Gradient);
             Check(fills.Length == expected, $"Expected {expected} tone layers, found {fills.Length}");
             Check(fills.Select(f => f.Name).Distinct().Count() == fills.Length && fills.Any(f => f.Name == "포셰") && fills.Any(f => f.Name.StartsWith("망점", StringComparison.Ordinal)), "Tone layers are not named by class");
+            HatchPattern Pattern(Layer fill) => HatchPatterns.TryGet(fill.Material!.Asset, out var pattern) ? pattern : throw new InvalidOperationException(fill.Name + " is not a library pattern");
             var poche = fills.Single(f => f.Name == "포셰");
-            Check(poche.Material!.Boundary.Data.Count(ch => ch == 'M') > 3 && ReferenceEquals(poche.Material.Asset, StyleKit.Poche), "Poché is not one multi-contour region");
-            Check(fills.Where(f => f.Name.StartsWith("망점", StringComparison.Ordinal)).All(f => ReferenceEquals(f.Material!.Asset, StyleKit.DotScreen) && f.Material.Angle == 45), "Dot screens do not share the screen pattern");
-            var gradient = fills.Where(f => f.Name.StartsWith("점묘", StringComparison.Ordinal)).ToArray();
-            Check(gradient.Length >= 1 && gradient.All(f => f.Mask != null && f.Mask.Any(v => v == 0) && f.Mask.Any(v => v == 255)), "The stipple gradient has no dithered mask");
+            Check(poche.Material!.Boundary.Data.Count(ch => ch == 'M') > 3 && Pattern(poche) == HatchPattern.SolidBlack, "Poché is not one multi-contour black fill");
+            // Light, medium and dark rooms get dot screens of rising ink, and they print that way.
+            var screens = new[] { "망점 · 밝게", "망점 · 중간", "망점 · 어둡게" }.Select(name => fills.SingleOrDefault(f => f.Name == name)).OfType<Layer>().ToArray();
+            Check(screens.Length >= 2 && screens.Select(f => HatchPatterns.Coverage(Pattern(f)) ?? 0).Zip(screens.Skip(1).Select(f => HatchPatterns.Coverage(Pattern(f)) ?? 0)).All(p => p.First < p.Second),
+                "The dot screens do not rise in density from light to dark rooms");
+            var look = Imaging.Render(doc);
+            double Printed(ScreenTone tone)
+            {
+                // Mean darkness around the middle of the largest room of this tone (inside its inscribed circle).
+                var room = map.Regions.Where(r => tones.TryGetValue(r.Label, out var t) && t == tone).OrderByDescending(r => r.Area).First();
+                double cx = room.Center.X / map.Scale, cy = room.Center.Y / map.Scale, half = room.Radius * .45 / map.Scale, sum = 0; int count = 0;
+                for (int y = (int)(cy - half); y < cy + half; y++) for (int x = (int)(cx - half); x < cx + half; x++) { int k = (y * look.Width + x) * 4; sum += 1 - look.Data[k + 1] / 255d; count++; }
+                return sum / Math.Max(1, count);
+            }
+            var printed = new[] { ScreenTone.Light, ScreenTone.Medium, ScreenTone.Dark }.Where(tones.ContainsValue).Select(Printed).ToArray();
+            Check(printed.Zip(printed.Skip(1)).All(p => p.First + .04 < p.Second), "Printed room tones do not follow the screens: " + string.Join(" / ", printed.Select(v => v.ToString("0.00"))));
+            var gradient = fills.Where(f => f.Name.StartsWith("점묘 그라데이션", StringComparison.Ordinal) || f.Name.StartsWith("점 그라데이션", StringComparison.Ordinal)).ToArray();
+            Check(gradient.Length >= 1 && gradient.All(f => HatchPatterns.IsGradient(Pattern(f)) && f.Material!.Gradient is { } g && g.Start > g.End + .5) && Pattern(gradient[0]) == HatchPattern.StippleGradient,
+                "The largest room is not a photocopied stipple gradient from dense to light");
             // The material panel can swap a tone class to another pattern like any material layer.
             var swapped = MaterialEditing.Swap(fills[0].Material!, HatchPatternRenderer.Create(HatchPattern.Dots));
             MaterialEditing.ValidateFill(swapped, fills[0].Pixels);

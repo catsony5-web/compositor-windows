@@ -27,6 +27,8 @@ public sealed record StyleParameter(string Key, string Name, StyleParameterKind 
 
 public sealed record DesignStyle(string Id, string Name, string Description, StyleTarget Target, int Version, StyleParameter[] Parameters)
 {
+    /// <summary>The recipe reads the document's layers (line work, hatch fills), not only how it looks; gallery previews keep them.</summary>
+    public bool ReadsLayers { get; init; }
     public StyleParameter? Parameter(string key) => Parameters.FirstOrDefault(p => p.Key == key);
     /// <summary>Every parameter with its default, overridden by the given values (clamped); unknown keys are ignored.</summary>
     public IReadOnlyDictionary<string, double> Values(IReadOnlyDictionary<string, double>? given = null) =>
@@ -66,37 +68,44 @@ public static class DesignStyles
 
     public static readonly IReadOnlyList<DesignStyle> All =
     [
-        new(ScreentonePlan, "흑백 스크린톤 평면", "닫힌 방을 망점·포셰·점묘로 채운 복사본 느낌의 평면", StyleTarget.Drawing, 1,
+        new(ScreentonePlan, "흑백 스크린톤 평면", "닫힌 방을 망점·포셰·점묘로 채운 복사본 느낌의 평면", StyleTarget.Drawing, 2,
         [
             Slider("strength", "강도", 55, "망점 농도와 흑백 대비. 높을수록 어두운 망점과 포셰가 많아집니다."),
-            Slider("texture", "질감", 45, "복사기 토너 입자의 양")
-        ]),
-        new(DarkSection, "어두운 단면", "검은 바탕에 흰 선, 뒤로 은은한 격자", StyleTarget.Drawing, 1,
+            Slider("texture", "질감", 45, "복사기 토너 입자와 줄무늬의 양")
+        ]) { ReadsLayers = true },
+        new(DarkSection, "어두운 단면", "검은 바탕에 흰 선, 뒤로 은은한 격자", StyleTarget.Drawing, 2,
         [
             new("grid", "격자", StyleParameterKind.Toggle, 1, "선 뒤에 옅은 사각 격자를 깝니다.", 0, 1),
             Slider("strength", "강도", 70, "선의 밝기와 바탕 대비")
         ]),
-        new(Cyanotype, "청사진 (사이아노타입)", "프러시안 블루 단색 인화와 종이 결", StyleTarget.Any, 1,
+        new(Cyanotype, "청사진 (사이아노타입)", "프러시안 블루 단색 인화와 종이 결", StyleTarget.Any, 2,
         [
             Slider("strength", "강도", 70, "파랑의 깊이와 대비"),
-            Slider("paper", "바탕 밝기", 60, "사진은 밝은 종이 색, 도면은 파란 바탕의 밝기")
+            Slider("paper", "바탕 밝기", 60, "사진은 밝은 종이 색, 도면은 파란 바탕의 밝기. 종이 섬유와 붓 자국 가장자리도 함께 늘어납니다.")
         ]),
-        new(NeoBrutalistPoster, "네오 브루탈리즘 포스터", "큰 제목 앞에 피사체, 강한 대비와 거친 인쇄 질감", StyleTarget.Photo, 1,
+        new(NeoBrutalistPoster, "네오 브루탈리즘 포스터", "큰 제목 앞에 피사체, 강한 대비와 거친 인쇄 질감", StyleTarget.Photo, 2,
         [
             new("color", "색", StyleParameterKind.Choice, 0, "사진의 두 가지 색", 0, 3)
             {
                 Choices = [new("mono", "흑백"), new("red", "빨강"), new("blue", "파랑"), new("orange", "주황")]
             },
-            Slider("contrast", "대비", 65, "사진의 명암 대비"),
-            Slider("texture", "질감", 50, "인쇄 입자의 양")
+            new("photo", "사진 표현", StyleParameterKind.Choice, 0, "사진을 두 색으로 찍는 방식: 인쇄 망점, 흑백 비트맵 또는 부드러운 듀오톤", 0, 2)
+            {
+                Choices = [new("halftone", "망점"), new("bitmap", "비트맵"), new("duotone", "듀오톤")]
+            },
+            new("title", "제목", StyleParameterKind.Choice, 0, "큰 제목을 채운 글자로 둘지 외곽선만 그릴지", 0, 1)
+            {
+                Choices = [new("fill", "채움"), new("outline", "외곽선")]
+            }
         ]),
-        new(TranslucentEditorial, "반투명 에디토리얼", "반투명 종이 패널 너머로 보이는 사진과 작은 글", StyleTarget.Photo, 1,
+        new(TranslucentEditorial, "반투명 에디토리얼", "반투명 종이 패널 너머로 보이는 사진과 작은 글", StyleTarget.Photo, 2,
         [
             Slider("blur", "흐림", 60, "패널 아래 사진이 흐려지는 정도"),
             new("panel", "패널 위치", StyleParameterKind.Choice, 2, "반투명 패널을 둘 자리", 0, 3)
             {
                 Choices = [new("left", "왼쪽"), new("center", "가운데"), new("right", "오른쪽"), new("bottom", "아래")]
-            }
+            },
+            Slider("glow", "빛 번짐", 35, "밝은 곳의 빛이 주변으로 번지는 정도. 0이면 빛 번짐 레이어를 만들지 않습니다.")
         ])
     ];
 

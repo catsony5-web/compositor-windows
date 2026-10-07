@@ -41,7 +41,7 @@ public static class DesignStyleEngine
         var targets = ResolveTargets(doc, request.Targets ?? previousTargets);
         token.ThrowIfCancellationRequested();
         var analysis = AnalysisDocument(doc, targets);
-        bool drawing = IsDrawing(doc, targets);
+        bool drawing = services.Drawing ?? IsDrawing(doc, targets);
         var context = new StyleContext(analysis, drawing, values, services, token);
         var group = new Layer
         {

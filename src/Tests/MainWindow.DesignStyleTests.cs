@@ -139,8 +139,12 @@ public sealed partial class MainWindow
             var again = Success(Call("apply_style", Write(("styleId", DesignStyles.Cyanotype), ("groupId", group.ToString()), ("parameters", new JsonObject { ["strength"] = 90 }))));
             Check(again["groupId"]!.GetValue<string>() == group.ToString() && again["parameters"]!["strength"]!.GetValue<double>() == 90 && again["parameters"]!["paper"]!.GetValue<double>() == 80
                 && w.doc.Layers.Count(DesignStyles.IsStyleGroup) == 1, "Re-apply did not keep the folder and its other settings");
-            var switched = Success(Call("apply_style", Write(("styleId", DesignStyles.NeoBrutalistPoster), ("groupId", group.ToString()), ("parameters", new JsonObject { ["color"] = "blue", ["contrast"] = 30 }))));
-            Check(switched["styleId"]!.GetValue<string>() == DesignStyles.NeoBrutalistPoster && switched["parameters"]!["color"]!.GetValue<string>() == "blue", "Switching the folder's style failed");
+            var switched = Success(Call("apply_style", Write(("styleId", DesignStyles.NeoBrutalistPoster), ("groupId", group.ToString()), ("parameters", new JsonObject { ["color"] = "blue", ["photo"] = "bitmap", ["title"] = "outline" }))));
+            Check(switched["styleId"]!.GetValue<string>() == DesignStyles.NeoBrutalistPoster && switched["parameters"]!["color"]!.GetValue<string>() == "blue" && switched["parameters"]!["photo"]!.GetValue<string>() == "bitmap",
+                "Switching the folder's style failed");
+            var switchedMembers = w.doc.Layers.Where(l => l.ParentId == group).ToArray();
+            Check(switchedMembers.Any(l => l.Adjustment?.Kind == AdjustmentKind.Threshold) && switchedMembers.Single(l => l.Name == "제목").Text is { Outline: true, OutlineOnly: true },
+                "The bitmap print or the outlined title was not made");
             var before = w.doc.Snapshot(); bool undo = w.history.CanUndo;
             void Rejected(string code, params (string Key, JsonNode? Value)[] values)
             {
