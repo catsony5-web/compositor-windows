@@ -203,7 +203,7 @@ async function main() {
   const sketchLayer = state.documents.find(d => d.documentId === documentId).layers[0].layerId;
   await edit('clean_sketch', { layerId: sketchLayer });
   assert.equal(state.flattened, true); assert.equal(state.detected, true); assert.equal(state.canvasResized, true); assert.equal(state.corners.length, 4);
-  assert(state.lineLayerId && state.backgroundLayerId && state.width === state.height);
+  assert(state.lineLayerId && state.backgroundLayerId && Math.abs(state.width - 520) <= 3 && Math.abs(state.height - 520) <= 3);
   const sketchPreview = await call('preview', { documentId, maxSide: 520 });
   fs.writeFileSync(path.join(output, 'sketch-preview.png'), Buffer.from(sketchPreview.content.find(c => c.type === 'image').data, 'base64'));
   await edit('undo'); assert.equal(state.documents.find(d => d.documentId === documentId).layers.length, 1);

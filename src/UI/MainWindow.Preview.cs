@@ -174,11 +174,11 @@ public sealed partial class MainWindow
         doc.Add(shape); SetWorkspaceMode(true); Refresh(false); composite = Imaging.Render(doc); canvas.Composite = composite.Bitmap();
         Capture(this, "design", 1480, 920); Capture(this, "design-1280x720", 1280, 720); CapturePane(studioPanes[1], "shape-properties", 360, 880);
         ShowStudioPage(0); CapturePane(studioPanes[0], "design-actions", 360, 560);
+        RenderSketchPreviews(Capture);
         RenderSelectionMaterialPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderHatchPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
         RenderShadowPreviews(Capture, CapturePane);
-        RenderSketchPreviews(Capture);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
         string plan = Path.Combine(directory, "평면 예시.dxf");
         var drawing = CompatibilityImport.ReadAsync(plan, new ImportSettings { CadLongEdge = 900 }.Options(plan)).GetAwaiter().GetResult().Document;

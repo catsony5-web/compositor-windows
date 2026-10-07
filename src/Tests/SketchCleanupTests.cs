@@ -210,6 +210,15 @@ public static class SketchCleanupTests
                 Check(edge == 0, $"Corners {grow} px outside left {edge} dark pixels along the sides");
                 Check(Strongest(lines, SyntheticSketch.BlackSample).A >= 230, "The drawing was lost with the strips");
             }
+            // The dialog previews from a reduced copy: its softer sheet border meets the faint ruled lines
+            // in short dashes, which the outer ring keeps out of the lines.
+            var reduced = PreviewScaling.Fit(sketch.Photo, 1050); double scale = reduced.Width / (double)sketch.Photo.Width;
+            var (w, h) = SketchCleanup.FlatSize(sketch.Corners, sketch.Photo.Width, sketch.Photo.Height);
+            var preview = SketchCleanup.Extract(SketchCleanup.Prepare(SketchCleanup.Flatten(reduced, sketch.Corners.Select(p => new Point(p.X * scale, p.Y * scale)).ToArray(), w, h)), new SketchOptions());
+            int border = 0;
+            for (int y = 0; y < preview.Height; y++) for (int x = 0; x < preview.Width; x++)
+                if ((x < 2 || y < 2 || x >= preview.Width - 2 || y >= preview.Height - 2) && Alpha(preview, x, y) > 0) border++;
+            Check(border == 0, $"The preview's sheet border left {border} marks");
         });
 
         test("results use the photo's full resolution within 16.7 megapixels, beyond the line pattern size", () =>
