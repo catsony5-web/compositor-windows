@@ -1,21 +1,8 @@
 namespace Compositor.Windows;
 
-public enum TextureKind
-{
-    /// <summary>Photocopy toner: sparse black specks and a faint uneven haze (Multiply).</summary>
-    Toner,
-    /// <summary>Cyanotype paper: light mottled fibres (Multiply).</summary>
-    Paper,
-    /// <summary>Rough print grain around mid grey (Overlay).</summary>
-    Print,
-    /// <summary>Charcoal grain on black: dark grey speckle (Screen).</summary>
-    Section,
-    /// <summary>Very soft grain around mid grey (Overlay or Soft light).</summary>
-    Soft
-}
-
-// Seeded, document-anchored texture pixels for design styles. Every value comes from a
-// coordinate hash, so a texture is the same on every run and on every tile of the image.
+// Small pixel helpers of the design styles: a coordinate hash (the same value on every run and every
+// tile of an image) and the blur behind the translucent panel. Paper, print and photocopy textures
+// are the 종이·인쇄 질감 adjustment (StyleEffects).
 public static class StyleTextures
 {
     /// <summary>A stable value in [0, 1) for a pixel and seed (SplitMix-style mixing).</summary>
@@ -24,80 +11,6 @@ public static class StyleTextures
         ulong v = unchecked((ulong)(uint)x * 0x9E3779B97F4A7C15UL ^ (ulong)(uint)y * 0xC2B2AE3D27D4EB4FUL ^ seed * 0x165667B19E3779F9UL);
         v = unchecked((v ^ (v >> 30)) * 0xBF58476D1CE4E5B9UL); v = unchecked((v ^ (v >> 27)) * 0x94D049BB133111EBUL); v ^= v >> 31;
         return (v >> 11) * (1.0 / 9007199254740992.0);
-    }
-
-    /// <summary>Smooth value noise in [0, 1) with unit lattice cells.</summary>
-    public static double Smooth(double x, double y, uint seed)
-    {
-        int ix = (int)Math.Floor(x), iy = (int)Math.Floor(y); double tx = x - ix, ty = y - iy;
-        tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
-        double a = Hash(ix, iy, seed), b = Hash(ix + 1, iy, seed), c = Hash(ix, iy + 1, seed), d = Hash(ix + 1, iy + 1, seed);
-        return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty;
-    }
-
-    /// <summary>
-    /// A texture of width × height layer pixels, each covering <paramref name="factor"/> document
-    /// pixels (sizes are in document pixels). <paramref name="amount"/> is 0–1.
-    /// </summary>
-    public static Raster Render(TextureKind kind, int width, int height, int factor, double amount, uint seed, CancellationToken token = default)
-    {
-        var output = new Raster(width, height); var data = output.Data; amount = Math.Clamp(amount, 0, 1);
-        double scale = Math.Max(width, height) * factor / 1600d;
-        Parallel.For(0, height, new ParallelOptions { CancellationToken = token }, y =>
-        {
-            for (int x = 0; x < width; x++)
-            {
-                int i = (y * width + x) * 4; double dx = x * factor, dy = y * factor;
-                byte gray; double alpha;
-                switch (kind)
-                {
-                    case TextureKind.Toner:
-                    {
-                        // Specks in clumps, more where the copy was uneven; a light grey haze in large blotches.
-                        double blotch = Smooth(dx / (90 * scale), dy / (90 * scale), seed ^ 11);
-                        double density = (.0015 + .012 * amount) * (.4 + 1.2 * blotch);
-                        double speck = Hash((int)(dx / 2), (int)(dy / 2), seed) * .55 + Hash(x, y, seed ^ 5) * .45;
-                        double haze = Math.Max(0, Smooth(dx / (260 * scale), dy / (260 * scale), seed ^ 23) - .62) * 26 * amount;
-                        if (speck > 1 - density) { gray = (byte)(18 + Hash(x, y, seed ^ 9) * 40); alpha = 255; }
-                        else { gray = 120; alpha = haze; }
-                        break;
-                    }
-                    case TextureKind.Paper:
-                    {
-                        double fibre = Smooth(dx / (2.2 * scale), dy / (11 * scale), seed) * .5 + Smooth(dx / (14 * scale), dy / (3 * scale), seed ^ 3) * .5;
-                        double mottle = Smooth(dx / (120 * scale), dy / (120 * scale), seed ^ 7);
-                        double fine = Hash(x, y, seed ^ 13);
-                        gray = Imaging.Byte(255 - amount * (14 * fibre + 18 * mottle + 10 * fine));
-                        alpha = 255;
-                        break;
-                    }
-                    case TextureKind.Print:
-                    {
-                        double fine = Hash(x, y, seed) - .5, clump = Smooth(dx / (2.5 * scale), dy / (2.5 * scale), seed ^ 5) - .5;
-                        double wash = Smooth(dx / (180 * scale), dy / (180 * scale), seed ^ 17) - .5;
-                        gray = Imaging.Byte(128 + amount * (150 * fine + 110 * clump + 50 * wash));
-                        alpha = 255;
-                        break;
-                    }
-                    case TextureKind.Section:
-                    {
-                        double fine = Hash(x, y, seed), cloud = Smooth(dx / (70 * scale), dy / (70 * scale), seed ^ 3);
-                        gray = Imaging.Byte(amount * (fine * fine * 46 + cloud * 8));
-                        alpha = 255;
-                        break;
-                    }
-                    default:
-                    {
-                        double fine = Hash(x, y, seed) - .5, soft = Smooth(dx / (3 * scale), dy / (3 * scale), seed ^ 5) - .5;
-                        gray = Imaging.Byte(128 + amount * (60 * fine + 40 * soft));
-                        alpha = 255;
-                        break;
-                    }
-                }
-                data[i] = data[i + 1] = data[i + 2] = gray; data[i + 3] = Imaging.Byte(alpha);
-            }
-        });
-        return output;
     }
 
     /// <summary>Three box blurs (close to a Gaussian of the same radius) in premultiplied colour.</summary>

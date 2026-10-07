@@ -61,18 +61,30 @@ public static class SubjectFront
     {
         var photo = document.Layers.SingleOrDefault(l => l.Id == photoId) ?? throw new InvalidOperationException("사진 레이어가 없습니다.");
         var title = document.Layers.SingleOrDefault(l => l.Id == titleId) ?? throw new InvalidOperationException("텍스트 레이어가 없습니다.");
-        if (!IsPhoto(photo) || !IsTitle(title)) throw new InvalidOperationException(Usage);
-        if (subject.Length != photo.Pixels.Width * photo.Pixels.Height) throw new InvalidDataException("피사체 마스크의 크기가 사진과 다릅니다.");
-        var copy = photo.Snapshot();
-        copy.Id = Guid.NewGuid(); copy.Name = name; copy.ParentId = title.ParentId;
-        copy.Clipped = false; copy.Locked = false; copy.Shadow = null; copy.SourceLayerName = null;
-        copy.Mask = BackgroundRemoval.CombineMasks(subject, photo.Mask);
+        if (!IsTitle(title)) throw new InvalidOperationException(Usage);
+        var copy = CutOut(photo, subject, name, title.ParentId);
         var siblings = document.Layers.Where(l => l.ParentId == title.ParentId).ToList();
         int top = siblings.IndexOf(title); while (top + 1 < siblings.Count && siblings[top + 1].Clipped) top++;
         var anchor = siblings[top];
         document.Add(copy); document.Layers.Remove(copy);
         document.Layers.Insert(document.Layers.IndexOf(anchor) + 1, copy);
         document.ActiveId = copy.Id;
+        return copy;
+    }
+
+    /// <summary>
+    /// The cut-out copy on its own (not added to a document): the photo layer, sharing its pixels, with the
+    /// subject mask (an existing photo mask kept inside it) in folder <paramref name="parentId"/>. Design
+    /// styles place it above their own title.
+    /// </summary>
+    public static Layer CutOut(Layer photo, byte[] subject, string name, Guid? parentId)
+    {
+        if (!IsPhoto(photo)) throw new InvalidOperationException(Usage);
+        if (subject.Length != photo.Pixels.Width * photo.Pixels.Height) throw new InvalidDataException("피사체 마스크의 크기가 사진과 다릅니다.");
+        var copy = photo.Snapshot();
+        copy.Id = Guid.NewGuid(); copy.Name = name; copy.ParentId = parentId;
+        copy.Clipped = false; copy.Locked = false; copy.Shadow = null; copy.SourceLayerName = null;
+        copy.Mask = BackgroundRemoval.CombineMasks(subject, photo.Mask);
         return copy;
     }
 }

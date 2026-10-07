@@ -18,6 +18,34 @@ public sealed class StyleServices
     public int Year { get; init; } = DateTime.Now.Year;
     /// <summary>How many times larger the real document is than the one being styled: above 1 for a gallery miniature, so sizes with a minimum keep their proportion.</summary>
     public double Reduction { get; init; } = 1;
+    /// <summary>Whether the document counts as a drawing, when the styled document cannot tell (a gallery's flattened miniature); null: decided from its layers.</summary>
+    public bool? Drawing { get; init; }
+
+    bool memoized;
+    /// <summary>
+    /// The same services, with each subject cut-out remembered for the image it was found in (a photo layer or a
+    /// composite, recognised by its size and sampled pixels): gallery previews render the same image again for
+    /// every style and setting. The model runs to completion once started, so a closed gallery never caches half a mask.
+    /// </summary>
+    public StyleServices Memoized()
+    {
+        if (memoized) return this;
+        var masks = new System.Collections.Concurrent.ConcurrentDictionary<(int, int, ulong), Lazy<byte[]>>(); var find = SubjectMask;
+        return new StyleServices
+        {
+            SubjectMask = (image, _) => masks.GetOrAdd(Fingerprint(image), _ => new Lazy<byte[]>(() => find(image, CancellationToken.None), LazyThreadSafetyMode.ExecutionAndPublication)).Value,
+            LineRegions = LineRegions, Year = Year, Reduction = Reduction, Drawing = Drawing, memoized = true
+        };
+    }
+
+    // Size and an FNV-1a hash of about 4,000 pixels spread over the image.
+    static (int, int, ulong) Fingerprint(Raster image)
+    {
+        ulong hash = 14695981039346656037UL; int pixels = image.Width * image.Height, step = Math.Max(1, pixels / 4096);
+        for (int p = 0; p < pixels; p += step)
+            for (int c = 0; c < 4; c++) { hash ^= image.Data[p * 4 + c]; hash *= 1099511628211UL; }
+        return (image.Width, image.Height, hash);
+    }
 }
 
 /// <summary>What a recipe works from: the document as it looks without style folders (only the targets shown), its kind and the parameter values.</summary>
@@ -45,10 +73,10 @@ public sealed class StyleContext(Document source, bool drawing, IReadOnlyDiction
     public Raster Composite => composite ??= DesignRenderer.RenderOutput(Source, Token);
 }
 
-// Every primitive a design style recipe uses goes through this kit: adjustment layers, pattern and
-// material fills of detected regions, texture layers, text, shapes and the subject cut-out. The
-// recipes (StyleRecipes) only describe a look in these terms. New effects being built on other
-// branches replace the bodies here; each such place carries an "upgrade:" note naming the primitive.
+// Every primitive a design style recipe uses goes through this kit: adjustment layers (also the
+// threshold, halftone, paper texture and glow effects), screentone fills of detected regions, text,
+// shapes, blurred copies and the subject in front of a title. The recipes (StyleRecipes) only
+// describe a look in these terms, and every layer they make stays editable in the usual dialogs.
 public sealed class StyleKit
 {
     readonly Raster blank;
@@ -79,7 +107,8 @@ public sealed class StyleKit
 
     // ---- Adjustment layers --------------------------------------------------------------------
 
-    // Adjustments share the folder's empty surface: it is never drawn into, only its size is used as coverage.
+    // Adjustments share the folder's empty surface: it is never drawn into, only its size is used as coverage
+    // (and as the page whose edges the paper texture wears).
     Layer Adjustment(string name, AdjustmentSpec spec, double opacity, BlendMode blend, bool clipped, byte[]? mask)
     {
         spec.Validate();
@@ -102,9 +131,6 @@ public sealed class StyleKit
     public Layer AddHueSaturation(string name, double hue, double saturation, double lightness = 0, double opacity = 1) =>
         Adjustment(name, new AdjustmentSpec { Kind = AdjustmentKind.HueSaturation, Hue = hue, Saturation = Math.Clamp(saturation, -100, 100), Lightness = Math.Clamp(lightness, -100, 100) }, opacity, BlendMode.Normal, false, null);
 
-    public Layer AddExposure(string name, double ev, byte[]? mask = null, double opacity = 1) =>
-        Adjustment(name, new AdjustmentSpec { Kind = AdjustmentKind.Exposure, Exposure = Math.Clamp(ev, -20, 20) }, opacity, BlendMode.Normal, false, mask);
-
     /// <summary>A soft S-curve: 0 keeps the image, 1 is strong contrast.</summary>
     public static CurvePoint[] Contrast(double amount)
     {
@@ -112,31 +138,40 @@ public sealed class StyleKit
         return [new(0, 0), new(.25, Math.Max(.01, .25 - a)), new(.5, .5), new(.75, Math.Min(.99, .75 + a)), new(1, 1)];
     }
 
-    // ---- Black and white --------------------------------------------------------------------
+    // ---- Style effects (한계값 · 망점 · 종이·인쇄 질감 · 빛 번짐) ---------------------------------------
 
-    /// <summary>Line work and screens snapped toward pure black and white.</summary>
-    // upgrade: 한계값 (threshold) adjustment layer from codex/style-effects, with the level as its parameter.
-    // A miniature has averaged its screens into greys, so its threshold softens in proportion and keeps those tones.
-    public Layer AddThreshold(string name, double level, double softness = 24)
-    {
-        softness *= Context.Reduction;
-        return AddLevels(name, Math.Clamp(level - softness, 0, 250), Math.Clamp(level + softness, 4, 255));
-    }
+    /// <summary>한계값: luminance from <paramref name="level"/> up becomes white, below it black, with a soft ramp of <paramref name="smoothness"/> levels.</summary>
+    // A gallery miniature has averaged hairlines and screens into greys; its ramp widens with the reduction so they keep their tone.
+    public Layer AddThreshold(string name, double level, double smoothness = 0, bool clipped = false) =>
+        Adjustment(name, new AdjustmentSpec
+        {
+            Kind = AdjustmentKind.Threshold,
+            Threshold = new ThresholdSpec { Level = Math.Clamp(level, 0, 255), Smoothness = Math.Clamp(smoothness * Context.Reduction, 0, 64) }
+        }, 1, BlendMode.Normal, clipped, null);
 
-    // ---- Texture layers -------------------------------------------------------------------------
+    /// <summary>망점: the darkness below printed as dots of <paramref name="ink"/> on <paramref name="paper"/>, <paramref name="cell"/> document pixels apart.</summary>
+    // Cells smaller than a couple of device pixels (a miniature, a zoomed-out view) show their mean tone.
+    public Layer AddHalftone(string name, double cell, double angle, uint ink, uint paper, HalftoneShape shape = HalftoneShape.Round, bool clipped = false) =>
+        Adjustment(name, new AdjustmentSpec
+        {
+            Kind = AdjustmentKind.Halftone,
+            Halftone = new HalftoneSpec { CellSize = Math.Clamp(cell, 2, 256), Angle = angle, Shape = shape, InkArgb = ink, PaperArgb = paper }
+        }, 1, BlendMode.Normal, clipped, null);
 
-    /// <summary>A seeded texture layer at document resolution (half resolution for very large canvases).</summary>
-    public Layer AddTexture(string name, TextureKind kind, double amount, BlendMode blend, double opacity = 1)
-    {
-        int factor = (long)Width * Height > 24_000_000 ? 2 : 1;
-        int w = (Width + factor - 1) / factor, h = (Height + factor - 1) / factor;
-        var pixels = StyleTextures.Render(kind, w, h, factor, amount, Seed(name), Token);
-        var layer = new Layer { Kind = LayerKind.Raster, Pixels = pixels, Scale = factor };
-        return Add(layer, name, blend, opacity);
-    }
+    /// <summary>종이·인쇄 질감 with its own seed; <see cref="PaperTextureSpec.Scale"/> should come from <see cref="Grain"/>.</summary>
+    public Layer AddPaper(string name, PaperTextureSpec spec, double opacity = 1) =>
+        Adjustment(name, new AdjustmentSpec { Kind = AdjustmentKind.PaperTexture, Paper = spec with { Seed = (int)(Seed(name) % 999_983) + 1 } }, opacity, BlendMode.Normal, false, null);
 
-    // upgrade: 종이·인쇄 질감 adjustment (paper fibres, photocopy toner, rough edges) from codex/style-effects.
-    public Layer AddGrain(string name, TextureKind kind, double amount, BlendMode blend, double opacity = 1) => AddTexture(name, kind, amount, blend, opacity);
+    /// <summary>The finest paper grain for this document: <paramref name="fraction"/> of the long side, in the texture's 0.5–32 px range.</summary>
+    public double Grain(double fraction = 1 / 1100d) => Math.Clamp(Context.Measure(fraction, .5, 32), .5, 32);
+
+    /// <summary>빛 번짐: highlights above <paramref name="threshold"/> (0–1) spread over <paramref name="radius"/> document pixels.</summary>
+    public Layer AddGlow(string name, double threshold, double radius, double intensity, uint tint = 0x00FFFFFF) =>
+        Adjustment(name, new AdjustmentSpec
+        {
+            Kind = AdjustmentKind.Glow,
+            Glow = new GlowSpec { Threshold = Math.Clamp(threshold, 0, 1), Radius = Math.Clamp(radius, 1, 1000), Intensity = Math.Clamp(intensity, 0, 4), TintArgb = tint }
+        }, 1, BlendMode.Normal, false, null);
 
     // ---- Copies of the image ------------------------------------------------------------------
 
@@ -152,27 +187,85 @@ public sealed class StyleKit
         return Add(layer, name);
     }
 
-    /// <summary>The subject cut out with the local AI background removal: the layer (cropped to it) and its confident core in document pixels.</summary>
+    /// <summary>The subject layer in front of a title and its confident core in document pixels.</summary>
     public sealed record Subject(Layer Layer, Int32Rect Core);
 
-    /// <summary>The main subject of the image cut out with the local AI background removal, cropped to it.</summary>
-    // upgrade: "피사체를 글자 앞으로" from codex/text-poster (cut-out placed above a text layer).
+    /// <summary>
+    /// 피사체를 글자 앞으로: the image's main subject found with the local AI model, as a layer to stand in front
+    /// of a title (<see cref="MoveBelow"/> the title under it). When the image is one photo layer, the cut-out is a
+    /// copy of that layer sharing its pixels with the subject as its mask (<see cref="SubjectFront.CutOut"/>);
+    /// otherwise it is a copy of what the folder sees below it, cropped to the subject. Null (with a note) when
+    /// no subject is found.
+    /// </summary>
     public Subject? CutOutSubject(string name)
     {
-        var image = Context.Composite; int width = image.Width, height = image.Height;
-        var raw = Context.Services.SubjectMask(image, Token);
+        Layer layer; Int32Rect core;
+        if (SolePhoto() is { } photo)
+        {
+            var mask = Tighten(Context.Services.SubjectMask(photo.Pixels, Token), photo.Pixels, out var photoCore, out _);
+            if (mask == null) return NoSubject();
+            layer = SubjectFront.CutOut(photo, mask, Loc.T(name), groupId);
+            var bounds = new Rect(photoCore.X, photoCore.Y, photoCore.Width, photoCore.Height); bounds.Transform(photo.Matrix);
+            bounds.Intersect(new Rect(0, 0, Width, Height));
+            core = bounds.IsEmpty ? default : new Int32Rect((int)bounds.X, (int)bounds.Y, Math.Max(1, (int)bounds.Width), Math.Max(1, (int)bounds.Height));
+        }
+        else
+        {
+            var image = Context.Composite;
+            var mask = Tighten(Context.Services.SubjectMask(image, Token), image, out core, out var kept);
+            if (mask == null) return NoSubject();
+            var pixels = new Raster(kept.Width, kept.Height); var cropped = new byte[kept.Width * kept.Height];
+            for (int y = 0; y < kept.Height; y++)
+            {
+                Buffer.BlockCopy(image.Data, ((kept.Y + y) * image.Width + kept.X) * 4, pixels.Data, y * kept.Width * 4, kept.Width * 4);
+                Buffer.BlockCopy(mask, (kept.Y + y) * image.Width + kept.X, cropped, y * kept.Width, kept.Width);
+            }
+            layer = new Layer { Kind = LayerKind.Raster, Pixels = pixels, Mask = cropped, X = kept.X, Y = kept.Y };
+        }
+        Add(layer, name);
+        return new Subject(layer, core);
+    }
+
+    /// <summary>Moves a layer made by this kit directly below another one.</summary>
+    public void MoveBelow(Layer layer, Layer anchor)
+    {
+        if (!Layers.Remove(layer)) return;
+        Layers.Insert(Math.Max(0, Layers.IndexOf(anchor)), layer);
+    }
+
+    Subject? NoSubject() { Context.Notes.Add("사진에서 피사체를 찾지 못해 제목 앞 피사체 레이어는 만들지 않았습니다."); return null; }
+
+    // The single visible leaf of what is read, when it is a plain photo layer at the top level of the document
+    // (its copy then stands exactly where it is). Several layers, adjustments or a perspective need the composite.
+    Layer? SolePhoto()
+    {
+        var source = Context.Source; var index = source.Layers.ToDictionary(l => l.Id);
+        bool Shown(Layer layer)
+        {
+            for (Layer? current = layer; current != null; current = current.ParentId is { } p && index.TryGetValue(p, out var next) ? next : null)
+                if (!current.Visible || current.Opacity <= 0) return false;
+            return true;
+        }
+        var leaves = source.Layers.Where(l => l.Kind != LayerKind.Group && Shown(l)).Take(2).ToArray();
+        return leaves is [{ Kind: LayerKind.Raster, Warp: null, Clipped: false, ParentId: null, Blend: BlendMode.Normal } leaf] && leaf.Opacity >= 1 && Original(leaf.Id) is { Kind: LayerKind.Raster } photo ? photo : null;
+    }
+
+    // The model's soft matte cut into a printed edge (a one-pixel ramp around the half-way level), keeping the main
+    // subject: the largest confident area and those at least a sixth of its size. Core: the confident kept area;
+    // kept: everything kept (image pixels).
+    static byte[]? Tighten(byte[] raw, Raster image, out Int32Rect core, out Int32Rect kept)
+    {
+        int width = image.Width, height = image.Height; core = kept = default;
         if (raw.Length != width * height) throw new InvalidOperationException("피사체 마스크 크기가 이미지와 다릅니다.");
-        // Tighten the model's soft matte so the cut-out has a printed edge.
         var mask = new byte[raw.Length];
         Parallel.For(0, height, y =>
         {
             for (int x = 0, i = y * width; x < width; x++, i++)
             {
-                double t = Math.Clamp((raw[i] / 255d - .42) / .2, 0, 1); t = t * t * (3 - 2 * t);
+                double t = Math.Clamp((raw[i] / 255d - .46) / .08, 0, 1); t = t * t * (3 - 2 * t);
                 mask[i] = Imaging.Byte(t * image.Data[i * 4 + 3]);
             }
         });
-        // Keep the main subject: the largest confident area and those at least a sixth of its size.
         var label = new int[raw.Length]; var areas = new List<int> { 0 }; var stack = new Stack<int>();
         for (int start = 0; start < mask.Length; start++)
         {
@@ -187,85 +280,44 @@ public sealed class StyleKit
             areas.Add(area);
         }
         int largest = areas.Max();
-        if (largest < (long)width * height / 300) { Context.Notes.Add("사진에서 피사체를 찾지 못해 제목 앞 피사체 레이어는 만들지 않았습니다."); return null; }
-        var kept = areas.Select(a => a >= largest / 6).ToArray();
+        if (largest < (long)width * height / 300) return null;
+        var main = areas.Select(a => a >= largest / 6).ToArray();
         int left = int.MaxValue, top = int.MaxValue, right = -1, bottom = -1;
         int coreLeft = int.MaxValue, coreTop = int.MaxValue, coreRight = -1, coreBottom = -1;
-        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
-        {
-            int i = y * width + x;
-            // Soft edges stay with the kept areas; everything else is dropped.
-            if (mask[i] == 0) continue;
-            bool core = label[i] != 0 && kept[label[i]];
-            if (!core && !NearKept(x, y)) { mask[i] = 0; continue; }
-            if (x < left) left = x; if (x > right) right = x; if (y < top) top = y; if (y > bottom) bottom = y;
-            if (core) { if (x < coreLeft) coreLeft = x; if (x > coreRight) coreRight = x; if (y < coreTop) coreTop = y; if (y > coreBottom) coreBottom = y; }
-        }
         bool NearKept(int x, int y)
         {
-            for (int dy = -3; dy <= 3; dy++) for (int dx = -3; dx <= 3; dx++)
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
             {
                 int xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= width || yy >= height) continue;
-                int l = label[yy * width + xx]; if (l != 0 && kept[l]) return true;
+                int l = label[yy * width + xx]; if (l != 0 && main[l]) return true;
             }
             return false;
         }
-        int w = right - left + 1, h = bottom - top + 1; var pixels = new Raster(w, h); var cropped = new byte[w * h];
-        for (int y = 0; y < h; y++)
+        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
         {
-            Buffer.BlockCopy(image.Data, ((top + y) * width + left) * 4, pixels.Data, y * w * 4, w * 4);
-            Buffer.BlockCopy(mask, (top + y) * width + left, cropped, y * w, w);
+            int i = y * width + x;
+            // The edge ramp stays with the kept areas; everything else is dropped.
+            if (mask[i] == 0) continue;
+            bool inside = label[i] != 0 && main[label[i]];
+            if (!inside && !NearKept(x, y)) { mask[i] = 0; continue; }
+            if (x < left) left = x; if (x > right) right = x; if (y < top) top = y; if (y > bottom) bottom = y;
+            if (inside) { if (x < coreLeft) coreLeft = x; if (x > coreRight) coreRight = x; if (y < coreTop) coreTop = y; if (y > coreBottom) coreBottom = y; }
         }
-        var layer = new Layer { Kind = LayerKind.Raster, Pixels = pixels, Mask = cropped, X = left, Y = top };
-        Add(layer, name);
-        return new Subject(layer, new Int32Rect(coreLeft, coreTop, coreRight - coreLeft + 1, coreBottom - coreTop + 1));
+        core = new Int32Rect(coreLeft, coreTop, coreRight - coreLeft + 1, coreBottom - coreTop + 1);
+        kept = new Int32Rect(left, top, right - left + 1, bottom - top + 1);
+        return mask;
     }
 
-    /// <summary>Moves a layer made by this kit directly below another one.</summary>
-    public void MoveBelow(Layer layer, Layer anchor)
-    {
-        if (!Layers.Remove(layer)) return;
-        Layers.Insert(Math.Max(0, Layers.IndexOf(anchor)), layer);
-    }
-
-    // ---- Pattern fills of regions ---------------------------------------------------------------
-
-    /// <summary>Solid ink coverage tile: black poché.</summary>
-    // upgrade: solid black poché screentone pattern from codex/screentone-patterns.
-    public static MaterialAsset Poche => poche.Value;
-    static readonly Lazy<MaterialAsset> poche = new(() => LinePatterns.Create("포셰", Raster.Solid(16, 16, Colors.Black), StableId("poche")));
-
-    /// <summary>One round dot per tile; its size follows the fill's line weight (see <see cref="DotWeight"/>).</summary>
-    // upgrade: regular dot screens by density from codex/screentone-patterns.
-    public static MaterialAsset DotScreen => dots.Value;
-    static readonly Lazy<MaterialAsset> dots = new(() =>
-    {
-        var tile = Imaging.Draw(DotTile, DotTile, dc => dc.DrawEllipse(Brushes.Black, null, new Point(DotTile / 2d, DotTile / 2d), DotRadius, DotRadius));
-        return LinePatterns.Create("망점", tile, StableId("dots"));
-    });
-    const int DotTile = 48; const double DotRadius = 12;
-
-    /// <summary>Line weight that gives the dot screen about <paramref name="coverage"/> (0–1) ink.</summary>
-    public static double DotWeight(double coverage)
-    {
-        double radius = DotTile * Math.Sqrt(Math.Clamp(coverage, .01, .7) / Math.PI);
-        double stroke = LinePatternRenderer.Stroke(DotScreen);
-        return Math.Clamp(1 + 2 * (radius - DotRadius) / stroke, .1, 8);
-    }
-
-    static Guid StableId(string key)
-    {
-        var hash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes("morupixel:style-asset/" + key + "@1"));
-        return new Guid(hash.AsSpan(0, 16));
-    }
+    // ---- Screentone fills of regions ------------------------------------------------------------
 
     /// <summary>
-    /// A material layer filling the outlines (document pixels, even-odd) with a pattern. Returns
-    /// null when nothing is left to fill. Outline detail is reduced until the region fits the
-    /// material region limits; very large canvases are filled at a reduced scale.
+    /// A material layer filling the outlines (document pixels, even-odd) with a pattern of the library — a dot,
+    /// line or grid screen, black poché or a dot/stipple gradient running as <paramref name="gradient"/> says.
+    /// Returns null when nothing is left to fill. Outline detail is reduced until the region fits the material
+    /// region limits; very large canvases are filled at a reduced scale.
     /// </summary>
-    public Layer? FillRegions(string name, IReadOnlyList<Point[]> outlines, MaterialAsset asset, double tile, double angle = 0, double lineWeight = 1, uint ink = 0xFF000000,
-        MaskSource? mask = null, BlendMode blend = BlendMode.Multiply, double opacity = 1)
+    public Layer? FillRegions(string name, IReadOnlyList<Point[]> outlines, MaterialAsset asset, double tile, double angle = 0, uint ink = 0xFF000000,
+        ToneGradient? gradient = null, double lineWeight = 1, BlendMode blend = BlendMode.Multiply, double opacity = 1)
     {
         if (outlines.Count == 0) return null;
         double left = outlines.Min(o => o.Min(p => p.X)), top = outlines.Min(o => o.Min(p => p.Y));
@@ -294,11 +346,11 @@ public sealed class StyleKit
         }
         var boundary = new RegionPath(data);
         try { _ = boundary.Geometry; } catch (System.IO.InvalidDataException) { return null; }
-        var fill = new MaterialFill(asset, StableRegionId(name), Loc.T(name), boundary, width, height, tile / factor, tile / factor * MaterialEditing.Aspect(asset), angle, 0, 0, ink, lineWeight, 0);
+        var fill = new MaterialFill(asset, StableRegionId(name), Loc.T(name), boundary, width, height, tile / factor, tile / factor * MaterialEditing.Aspect(asset), angle, 0, 0, ink,
+            Math.Clamp(lineWeight, .1, 8), 0, gradient);
         MaterialEditing.ValidateFill(fill, new Raster(1, 1), false);
         Token.ThrowIfCancellationRequested();
         var layer = new Layer { Kind = LayerKind.Material, Material = fill, X = left, Y = top, Scale = factor, Pixels = MaterialRenderer.Render(fill) };
-        if (mask != null) layer.Mask = mask(width, height, factor);
         return Add(layer, name, blend, opacity);
     }
 
@@ -330,51 +382,7 @@ public sealed class StyleKit
 
     /// <summary>A pattern over the whole canvas (a full rectangle region).</summary>
     public Layer? FillCanvas(string name, MaterialAsset asset, double tile, uint ink, double lineWeight, BlendMode blend, double opacity) =>
-        FillRegions(name, [[new Point(0, 0), new Point(Width, 0), new Point(Width, Height), new Point(0, Height)]], asset, tile, 0, lineWeight, ink, null, blend, opacity);
-
-    // ---- Masks ----------------------------------------------------------------------------------
-
-    /// <summary>A coverage that fades along the region's longer side, dithered into dots: a stipple gradient.</summary>
-    // upgrade: dot/stipple gradient fill for regions from codex/screentone-patterns.
-    public MaskSource StippleGradient(double density, bool reverse)
-    {
-        uint seed = Seed("stipple");
-        return (w, h, _) =>
-        {
-            var mask = new byte[w * h]; bool vertical = h >= w * .8;
-            Parallel.For(0, h, y =>
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    double t = vertical ? (y + .5) / h : (x + .5) / w; if (reverse) t = 1 - t;
-                    double d = Math.Clamp(Math.Pow(1 - t, 1.35) * density + .015, 0, 1);
-                    // Clumps of two pixels mixed with single ones, like toner on a photocopy.
-                    double n = StyleTextures.Hash(x >> 1, y >> 1, seed) * .6 + StyleTextures.Hash(x, y, seed ^ 0x9E37u) * .4;
-                    mask[y * w + x] = n < d ? (byte)255 : (byte)0;
-                }
-            });
-            return mask;
-        };
-    }
-
-    /// <summary>Document-size coverage that is 1 at the edges and 0 inside, with an irregular, brushed inner border.</summary>
-    // upgrade: rough / burned edges of the paper texture adjustment from codex/style-effects.
-    public byte[] EdgeMask(double inset, double softness)
-    {
-        uint seed = Seed("edges"); var mask = new byte[Width * Height]; double scale = Math.Max(Width, Height);
-        Parallel.For(0, Height, y =>
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                double edge = Math.Min(Math.Min(x + .5, Width - x - .5), Math.Min(y + .5, Height - y - .5)) / scale;
-                double wobble = (StyleTextures.Smooth(x / (scale * .05), y / (scale * .05), seed) - .5) * .7 * inset + (StyleTextures.Smooth(x / (scale * .008), y / (scale * .008), seed ^ 77) - .5) * .35 * inset
-                    + (StyleTextures.Smooth(x / (scale * .0016), y / (scale * .0016), seed ^ 91) - .5) * .12 * inset;
-                double t = Math.Clamp((inset + wobble - edge) / Math.Max(1e-6, softness), 0, 1);
-                mask[y * Width + x] = Imaging.Byte(t * t * (3 - 2 * t) * 255);
-            }
-        });
-        return mask;
-    }
+        FillRegions(name, [[new Point(0, 0), new Point(Width, 0), new Point(Width, Height), new Point(0, Height)]], asset, tile, 0, ink, null, lineWeight, blend, opacity);
 
     /// <summary>A rectangle in document pixels as the coverage of a layer drawn from (0, 0) at the given scale.</summary>
     public static MaskSource RectangleMask(Rect area) => (w, h, scale) =>
@@ -397,15 +405,19 @@ public sealed class StyleKit
     public static bool HasHangul(string text) => text.Any(c => c is >= '가' and <= '힣' or >= 'ㄱ' and <= 'ㅣ');
 
     // Sizes derived from tiny or very narrow canvases stay within what a text layer accepts.
-    static TextSpec Safe(TextSpec spec) => spec with { FontSize = Math.Clamp(spec.FontSize, 1, 1024), LineHeight = Math.Clamp(spec.LineHeight, 0, 8192) };
+    static TextSpec Safe(TextSpec spec) => spec with
+    {
+        FontSize = Math.Clamp(spec.FontSize, 1, 1024), LineHeight = Math.Clamp(spec.LineHeight, 0, 8192),
+        OutlineWidth = Math.Clamp(spec.OutlineWidth, .5, TextSpec.MaxOutlineWidth), BoxWidth = spec.BoxWidth <= 0 ? 0 : Math.Clamp(spec.BoxWidth, 1, TextSpec.MaxBoxWidth)
+    };
 
+    /// <summary>Size of the text's surface without its 4 px margins (a paragraph box wraps the lines, an outline adds its reach).</summary>
     public static (double Width, double Height) Measure(TextSpec spec)
     {
         var layout = DocumentFeatures.TextDrawing(Safe(spec)); return (layout.Width - 8, layout.Height - 8);
     }
 
-    /// <summary>An editable text layer; the layer scale takes over beyond the largest font size.</summary>
-    // upgrade: text outline (stroke / outline-only) and paragraph box width from codex/text-poster.
+    /// <summary>An editable text layer (with its outline and paragraph box); the layer scale takes over beyond the largest font size.</summary>
     public Layer AddText(string name, TextSpec spec, double x, double y, double scale = 1)
     {
         spec = Safe(spec); spec.Validate();
@@ -416,7 +428,7 @@ public sealed class StyleKit
     /// <summary>Font size (with a layer scale beyond 1024 px) that makes the text <paramref name="width"/> pixels wide.</summary>
     public static (double Size, double Scale) FitWidth(TextSpec spec, double width, double maxHeight)
     {
-        var probe = spec with { FontSize = 200, LineHeight = spec.LineHeight > 0 ? spec.LineHeight / Math.Max(1, spec.FontSize) * 200 : 0 };
+        var probe = spec with { FontSize = 200, LineHeight = spec.LineHeight > 0 ? spec.LineHeight / Math.Max(1, spec.FontSize) * 200 : 0, OutlineWidth = spec.OutlineWidth / Math.Max(1, spec.FontSize) * 200 };
         var (w, h) = Measure(probe);
         double size = 200 * Math.Min(width / Math.Max(1, w), maxHeight / Math.Max(1, h));
         return size <= 1024 ? (Math.Max(4, size), 1) : (1024, Math.Min(20, size / 1024));

@@ -61,7 +61,7 @@ public sealed class DesignStyleDialog : Window
 
     public DesignStyleDialog(Window? owner, Document document, string? styleId = null, IReadOnlyDictionary<string, double>? initial = null, bool editing = false, StyleServices? services = null)
     {
-        this.document = document.Snapshot(); this.editing = editing; this.services = services ?? StyleServices.Default;
+        this.document = document.Snapshot(); this.editing = editing; this.services = (services ?? StyleServices.Default).Memoized();
         foreach (var style in DesignStyles.All) values[style.Id] = new(style.Values(style.Id == styleId ? initial : null), StringComparer.Ordinal);
         bool drawing = DesignStyleEngine.IsDrawing(document, null);
         SelectedStyle = DesignStyles.Find(styleId) ?? DesignStyles.All.First(s => s.Target == (drawing ? StyleTarget.Drawing : StyleTarget.Photo));
@@ -225,7 +225,7 @@ public sealed class DesignStyleDialog : Window
         try
         {
             var snapshot = document;
-            // Both miniatures share one cached subject cut-out per size.
+            // Both miniatures share the memoized subject cut-out of each image.
             (small, large) = await CompatibilityImport.OnSta(() => (StylePreview.Create(snapshot, 300, services, token), StylePreview.Create(snapshot, 820, services, token)), token);
             if (closed) return;
             ScheduleLarge(0);
