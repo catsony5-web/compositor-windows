@@ -80,7 +80,7 @@ public sealed partial class AdjustmentDialog
                 break;
             case AdjustmentKind.Halftone:
                 controls.Children.Add(DialogShell.FieldLabel("망점 모양"));
-                var shapes = new SegmentedChoice<HalftoneShape>([(HalftoneShape.Round, "원형"), (HalftoneShape.Line, "선"), (HalftoneShape.Square, "사각형")], Spec.Halftone.Shape) { Margin = new Thickness(2, 0, 2, 10) };
+                var shapes = new SegmentedChoice<HalftoneShape>([(HalftoneShape.Round, "원형"), (HalftoneShape.Line, "선"), (HalftoneShape.Square, "정사각형")], Spec.Halftone.Shape) { Margin = new Thickness(2, 0, 2, 10) };
                 AutomationProperties.SetName(shapes, "망점 모양");
                 shapes.Changed += shape => { if (synchronizing) return; Spec = Spec with { Halftone = Spec.Halftone with { Shape = shape } }; Schedule(); };
                 synchronizeControls.Add(() => shapes.Select(Spec.Halftone.Shape));
