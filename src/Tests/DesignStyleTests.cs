@@ -21,8 +21,9 @@ public static class DesignStyleTests
             if (x.Kind != y.Kind || x.Name != y.Name) parts.Add($"kind/name {x.Kind} {x.Name} vs {y.Kind} {y.Name}");
             if (x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.Opacity != y.Opacity || x.Visible != y.Visible || x.Blend != y.Blend || x.Clipped != y.Clipped)
                 parts.Add($"placement ({x.X},{x.Y},{x.Scale},{x.Opacity}) vs ({y.X},{y.Y},{y.Scale},{y.Opacity})");
-            if (!Equals(x.Adjustment, y.Adjustment)) parts.Add("adjustment settings");
-            if (!Equals(x.Text, y.Text)) parts.Add("text settings");
+            // Settings by value (their records hold arrays, which compare by reference).
+            if (System.Text.Json.JsonSerializer.Serialize(x.Adjustment) != System.Text.Json.JsonSerializer.Serialize(y.Adjustment)) parts.Add("adjustment settings");
+            if (System.Text.Json.JsonSerializer.Serialize(x.Text) != System.Text.Json.JsonSerializer.Serialize(y.Text)) parts.Add("text settings");
             if (x.Pixels.Width != y.Pixels.Width || x.Pixels.Height != y.Pixels.Height) parts.Add($"size {x.Pixels.Width}x{x.Pixels.Height} vs {y.Pixels.Width}x{y.Pixels.Height}");
             else if (!x.Pixels.Data.AsSpan().SequenceEqual(y.Pixels.Data))
             {
@@ -128,8 +129,12 @@ public static class DesignStyleTests
                     doc.Validate();
                     var after = Imaging.Render(doc);
                     Check(!after.Data.SequenceEqual(before.Data), "The style did not change how the document looks");
+                    // Re-applying gives the same pixels. The first apply above also realizes every font face the style
+                    // uses: on a fresh machine (the CI runner) WPF rasterized a face's first glyphs slightly differently
+                    // from later ones (Georgia Italic in the editorial title), so the two later applies are compared.
                     var again = sample.Snapshot(); DesignStyleEngine.Apply(again, new StyleRequest(style.Id), Services);
-                    Check(Imaging.Render(again).Data.SequenceEqual(after.Data), "The style is not deterministic: " + Differences(doc, again));
+                    var third = sample.Snapshot(); DesignStyleEngine.Apply(third, new StyleRequest(style.Id), Services);
+                    Check(Imaging.Render(again).Data.SequenceEqual(Imaging.Render(third).Data), "The style is not deterministic: " + Differences(again, third));
                     bool Effect(AdjustmentKind kind, Func<AdjustmentSpec, bool>? also = null, bool clipped = false) =>
                         members.Any(l => l.Kind == LayerKind.Adjustment && l.Adjustment!.Kind == kind && l.Clipped == clipped && (also == null || also(l.Adjustment)));
                     switch (style.Id)
