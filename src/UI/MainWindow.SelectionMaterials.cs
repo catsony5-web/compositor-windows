@@ -165,7 +165,8 @@ public sealed partial class MainWindow
             swatch = new Border { Height = 46, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = current ? Theme.Accent : Theme.Stroke, Background = texture };
         }
         content.Children.Add(swatch);
-        var label = new TextBlock
+        // Two-line names (점 그라데이션) wrap between words.
+        var label = new KeepWordsTextBlock
         {
             Text = choice.Name, FontSize = Theme.CaptionSize, Foreground = current ? Theme.Text : Theme.Muted, TextWrapping = TextWrapping.Wrap,
             TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 5, 0, 0), FontWeight = current ? FontWeights.SemiBold : FontWeights.Normal
@@ -179,17 +180,26 @@ public sealed partial class MainWindow
         return button;
     }
 
-    static BitmapSource MaterialThumbnail(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern) ? HatchPatternRenderer.Swatch(pattern, 96)
+    static BitmapSource MaterialThumbnail(MaterialAsset asset) => HatchPatterns.TryGet(asset, out var pattern)
+            ? HatchPatterns.IsGradient(pattern) ? ToneGradientRenderer.Swatch(pattern, 96, 96) : HatchPatternRenderer.Swatch(pattern, 96)
         : LinePatterns.IsCustom(asset) ? LinePatternRenderer.Swatch(asset, 96) : materialThumbnails.GetValue(asset.Pixels, pixels => pixels.Thumbnail(96));
 
     // A pattern swatch brush on 48 DIP repeats drawn at 96 px: on white paper for the palette, or with
     // `ink` as a clear tile to lay over a fill's background. A user's pattern whose lines are thin for
     // its size repeats larger (RepeatScale), as it does on the canvas, and keeps its own proportions.
-    internal static ImageBrush PatternSwatchBrush(MaterialAsset asset, uint? ink = null)
+    // A gradient screentone does not repeat: one preview of its ramp fills the swatch (light to dark in
+    // the palette; a fill's own `gradient` and ink in its properties).
+    internal static ImageBrush PatternSwatchBrush(MaterialAsset asset, uint? ink = null, ToneGradient? gradient = null)
     {
         ImageBrush brush;
-        if (HatchPatterns.TryGet(asset, out var pattern))
-            brush = new ImageBrush(ink is { } color ? HatchPatternRenderer.Tile(pattern, 96, 96, 1.6, color) : HatchPatternRenderer.Swatch(pattern, 96)) { Viewport = new Rect(0, 0, 48, 48) };
+        if (HatchPatterns.TryGet(asset, out var pattern) && HatchPatterns.IsGradient(pattern))
+        {
+            var ramp = gradient == null ? ToneGradientRenderer.Swatch(pattern, 192, 96, ink ?? 0) : ToneGradientRenderer.Swatch(pattern, 96, 96, ink ?? 0, gradient);
+            brush = new ImageBrush(ramp) { TileMode = TileMode.Tile, ViewportUnits = BrushMappingMode.RelativeToBoundingBox, Viewport = new Rect(0, 0, 1, 1), Stretch = Stretch.UniformToFill };
+            brush.Freeze(); return brush;
+        }
+        if (HatchPatterns.TryGet(asset, out pattern))
+            brush = new ImageBrush(ink is { } color ? HatchPatternRenderer.Tile(pattern, 96, 96, HatchPatternRenderer.SwatchPen(pattern, 1.6), color) : HatchPatternRenderer.Swatch(pattern, 96)) { Viewport = new Rect(0, 0, 48, 48) };
         else
         {
             int px = (int)Math.Clamp(Math.Round(96 * LinePatternRenderer.RepeatScale(asset)), 96, 256);

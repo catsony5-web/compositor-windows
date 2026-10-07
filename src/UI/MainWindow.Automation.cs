@@ -561,6 +561,17 @@ public sealed partial class MainWindow
         return (width, Math.Max(1, width * MaterialEditing.Aspect(asset) * ratio));
     }
 
+    /// <summary>The gradient of a dot-gradient or stipple-gradient fill with the request's gradient fields applied over `current`.</summary>
+    static ToneGradient AutomationGradient(JsonObject args, ToneGradient? current)
+    {
+        var gradient = current ?? ToneGradient.Default;
+        return gradient with
+        {
+            Angle = ANumber(args, "gradientAngle", gradient.Angle), Start = ANumber(args, "gradientStart", gradient.Start),
+            End = ANumber(args, "gradientEnd", gradient.End), Seed = (int)ANumber(args, "gradientSeed", gradient.Seed)
+        };
+    }
+
     async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
     {
         Guid? affected = null; automationStepDetails = null;
@@ -584,6 +595,7 @@ public sealed partial class MainWindow
                 RegisterAutomationPattern(candidate, materialId);
                 var asset = MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == materialId)
                     ?? throw new AutomationFault("material_not_found", "등록된 재료 ID가 없습니다.");
+                if (AutomationMaterials.HasGradient(args) && !HatchPatterns.IsGradient(asset)) throw new AutomationFault("invalid_arguments", AutomationMaterials.GradientOnly);
                 Guid? boundaryLayer = args.ContainsKey("boundaryLayerId") ? Guid.Parse(AString(args, "boundaryLayerId")) : null;
                 if (args.ContainsKey("regionId"))
                 {
@@ -617,10 +629,11 @@ public sealed partial class MainWindow
                     }
                     var (tileWidth, tileHeight) = AutomationTileSize(args, candidate, asset, null);
                     var created = MaterialEditing.Apply(candidate, materialId, regionId, tileWidth, tileHeight, ANumber(args, "angle"), ANumber(args, "offsetX"), ANumber(args, "offsetY"));
-                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight") || args.ContainsKey("background"))
+                    if (args.ContainsKey("ink") || args.ContainsKey("lineWeight") || args.ContainsKey("background") || AutomationMaterials.HasGradient(args))
                     {
                         var tuned = created.Material! with { Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : 0, LineWeight = ANumber(args, "lineWeight", 1),
-                            Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : 0 };
+                            Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : 0,
+                            Gradient = AutomationMaterials.HasGradient(args) ? AutomationGradient(args, null) : null };
                         MaterialEditing.ValidateFill(tuned, created.Pixels); created.Material = tuned; created.Pixels = MaterialRenderer.Render(tuned);
                     }
                     return created;
@@ -635,11 +648,13 @@ public sealed partial class MainWindow
                 if (swapId.HasValue) RegisterAutomationPattern(candidate, swapId.Value);
                 var material = swapId.HasValue ? MaterialEditing.Assets(candidate).SingleOrDefault(a => a.Id == swapId.Value)
                     ?? throw new AutomationFault("material_not_found", "등록된 재료가 없습니다.") : original.Asset;
+                if (AutomationMaterials.HasGradient(args) && !HatchPatterns.IsGradient(material)) throw new AutomationFault("invalid_arguments", AutomationMaterials.GradientOnly);
                 var (width, height) = AutomationTileSize(args, candidate, material, original);
                 var replacement = original with { Asset = material, TileWidth = width, TileHeight = height,
                     Angle = ANumber(args, "angle", original.Angle), OffsetX = ANumber(args, "offsetX", original.OffsetX), OffsetY = ANumber(args, "offsetY", original.OffsetY),
                     Ink = args.ContainsKey("ink") ? AutomationMaterials.ParseInk(AString(args, "ink")) : original.Ink, LineWeight = ANumber(args, "lineWeight", original.LineWeight),
-                    Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : original.Background };
+                    Background = args.ContainsKey("background") ? AutomationMaterials.ParseBackground(AString(args, "background")) : original.Background,
+                    Gradient = AutomationMaterials.HasGradient(args) ? AutomationGradient(args, original.Gradient) : original.Gradient };
                 if (replacement != original)
                 {
                     MaterialEditing.ValidateFill(replacement, materialLayer.Pixels);

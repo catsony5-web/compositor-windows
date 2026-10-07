@@ -10,7 +10,11 @@ namespace Compositor.Windows;
 // A dot is a single filled point whose diameter comes from its pen class.
 internal readonly record struct HatchMark(Point Anchor, Vector[] Points, byte Pen, bool Closed, bool Filled, bool StretchLocal);
 // Marks of one pattern, pen widths per class in document pixels, and an alpha multiplier (0–255) for the ink.
-internal sealed record HatchGeometry(HatchMark[] Marks, double[] PenDoc, uint InkAlphaScale);
+// TileUnits (screentones): pen widths and dot diameters are fractions of the tile width, so a screen keeps
+// its ink coverage at any repeat size, and the pen scale a tile is drawn with is the line weight alone.
+// Inverted: ink covers the tile except round holes at the dots; line weight shrinks the holes (more ink)
+// and a hole never grows past MaxPen (a fraction of the tile width), so holes stay apart.
+internal sealed record HatchGeometry(HatchMark[] Marks, double[] PenDoc, uint InkAlphaScale, bool TileUnits = false, bool Inverted = false, double MaxPen = 0);
 
 // Built-in hatch patterns drawn from vector marks at the resolution they are shown. A pattern tile is
 // seamless: a mark that crosses an edge is drawn again on the opposite side. Tiles are cached (LRU)
@@ -40,7 +44,16 @@ public static class HatchPatternRenderer
     static int Index(HatchPattern p) => (int)p >= 0 && (int)p < HatchPatterns.All.Count ? (int)p : throw new ArgumentOutOfRangeException(nameof(p));
 
     // The frozen fallback tile stored in documents. Once released, a generator version's output must not change.
-    internal static Raster Canonical(HatchPattern p) => Raster.FromBitmap(Draw(p, CanonicalSize, CanonicalSize, CanonicalPenScale, HatchPatterns.DefaultInk, default, true));
+    internal static Raster Canonical(HatchPattern p) => Raster.FromBitmap(Draw(p, CanonicalSize, CanonicalSize, SwatchPen(p, CanonicalPenScale), HatchPatterns.DefaultInk, default, true));
+
+    // The pen scale for a tile of `tilePixels` across a repeat `tileWidth` document px wide: document px → tile
+    // px times the line weight for line hatches; the line weight alone for screentones (marks sized to the tile).
+    public static double PenScale(HatchPattern p, double tilePixels, double tileWidth, double lineWeight) =>
+        Geometry(p).TileUnits ? lineWeight : tilePixels / tileWidth * lineWeight;
+
+    // The pen scale of a fixed-size preview tile (swatches, thumbnails): `linePen` for line hatches, which keeps
+    // their lines legible at that size, and line weight 100% for screentones, which keeps their coverage.
+    public static double SwatchPen(HatchPattern p, double linePen, double lineWeight = 1) => Geometry(p).TileUnits ? lineWeight : linePen * lineWeight;
 
     // Tile pixel size for a repeat of tileWidth×tileHeight document px shown at deviceScale: the nearest
     // whole device pixels, so the brush maps the tile (almost) 1:1 and thin lines are not resampled.
@@ -148,7 +161,7 @@ public static class HatchPatternRenderer
     {
         devicePx = Math.Clamp(devicePx, MinTileSide, 512);
         lock (swatches) if (swatches.TryGetValue((p, devicePx), out var known)) return known;
-        var tile = Draw(p, devicePx, devicePx, CanonicalPenScale * devicePx / 96d, HatchPatterns.DefaultInk, default, false);
+        var tile = Draw(p, devicePx, devicePx, SwatchPen(p, CanonicalPenScale * devicePx / 96d), HatchPatterns.DefaultInk, default, false);
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen()) { dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, devicePx, devicePx)); dc.DrawImage(tile, new Rect(0, 0, devicePx, devicePx)); }
         var bitmap = new RenderTargetBitmap(devicePx, devicePx, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual); bitmap.Freeze();
@@ -186,7 +199,8 @@ public static class HatchPatternRenderer
     {
         var geometry = Geometry(p);
         double alpha = (ink >> 24 & 0xFF) * geometry.InkAlphaScale / 255d;
-        var widths = geometry.PenDoc.Select(d => d * penScale).ToArray();
+        var widths = Widths(geometry, width, penScale);
+        if (geometry.Inverted) return DrawHoles(geometry, width, height, widths, ink, alpha, token, reference);
         var strokes = new StreamGeometry?[4]; var strokeContexts = new StreamGeometryContext?[4];
         var fills = new StreamGeometry?[8]; var fillContexts = new StreamGeometryContext?[8];
         var points = new List<Point>(64);
@@ -221,7 +235,7 @@ public static class HatchPatternRenderer
                 for (int ix = 0; ix < nx; ix++) for (int iy = 0; iy < ny; iy++)
                 {
                     var shift = new Vector(xs[ix], ys[iy]);
-                    if (dot) { Circle(context, points[0] + shift, radius); continue; }
+                    if (dot) { if (geometry.TileUnits) Disc(context, points[0] + shift, radius); else Circle(context, points[0] + shift, radius); continue; }
                     context.BeginFigure(points[0] + shift, mark.Filled, mark.Closed);
                     for (int k = 1; k < points.Count; k++) context.LineTo(points[k] + shift, !mark.Filled, true);
                 }
@@ -251,6 +265,53 @@ public static class HatchPatternRenderer
         return bitmap;
     }
 
+    // Pen widths and dot diameters in tile px: document px times the pen scale for line hatches; for
+    // screentones a fraction of the tile width times the line weight (holes: divided by it, kept apart).
+    static double[] Widths(HatchGeometry geometry, double tileWidth, double penScale) => geometry.PenDoc.Select(d =>
+        !geometry.TileUnits ? d * penScale
+        : geometry.Inverted ? Math.Min(d / Math.Max(penScale, .01), geometry.MaxPen) * tileWidth
+        : d * penScale * tileWidth).ToArray();
+
+    // An inverted screen: ink over the whole tile with round holes cut out (even-odd), each hole that
+    // crosses an edge cut again on the opposite side. Holes too small to draw are averaged into a flat
+    // tone of the same coverage, which is what a zoomed-out view of them shows.
+    static BitmapSource DrawHoles(HatchGeometry geometry, int width, int height, double[] widths, uint ink, double alpha, CancellationToken token, bool reference)
+    {
+        var tile = new Rect(0, 0, width, height);
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            double holes = geometry.Marks.Sum(mark => Math.PI * widths[mark.Pen] * widths[mark.Pen] / 4);
+            if (geometry.Marks.Any(mark => widths[mark.Pen] < MinDot))
+                dc.DrawRectangle(Ink(ink, alpha * Math.Clamp(1 - holes / (width * (double)height), 0, 1)), null, tile);
+            else
+            {
+                var cut = new StreamGeometry { FillRule = FillRule.EvenOdd };
+                using (var context = cut.Open())
+                {
+                    context.BeginFigure(tile.TopLeft, true, true); context.PolyLineTo([tile.TopRight, tile.BottomRight, tile.BottomLeft], false, false);
+                    for (int index = 0; index < geometry.Marks.Length; index++)
+                    {
+                        if ((index & 255) == 0) token.ThrowIfCancellationRequested();
+                        var mark = geometry.Marks[index];
+                        var center = new Point(mark.Anchor.X * width, mark.Anchor.Y * height); double radius = widths[mark.Pen] / 2;
+                        foreach (double dx in new double[] { 0, width, -width })
+                            foreach (double dy in new double[] { 0, height, -height })
+                            {
+                                bool crossesX = dx == 0 || dx > 0 && center.X - radius < 0 || dx < 0 && center.X + radius > width;
+                                bool crossesY = dy == 0 || dy > 0 && center.Y - radius < 0 || dy < 0 && center.Y + radius > height;
+                                if (reference || crossesX && crossesY) Disc(context, center + new Vector(dx, dy), radius);
+                            }
+                    }
+                }
+                cut.Freeze(); dc.DrawGeometry(Ink(ink, alpha), null, cut);
+            }
+        }
+        token.ThrowIfCancellationRequested();
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual); bitmap.Freeze();
+        return bitmap;
+    }
+
     static StreamGeometryContext Open(StreamGeometry?[] set, StreamGeometryContext?[] contexts, int slot)
     {
         if (contexts[slot] is { } open) return open;
@@ -263,6 +324,19 @@ public static class HatchPatternRenderer
         context.BeginFigure(new Point(center.X + radius, center.Y), true, true);
         context.ArcTo(new Point(center.X - radius, center.Y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, false, false);
         context.ArcTo(new Point(center.X + radius, center.Y), new Size(radius, radius), 0, false, SweepDirection.Clockwise, false, false);
+    }
+
+    // A round dot of exactly the circle's area. WPF flattens a small arc into a few chords inside the circle
+    // (a 2 px dot loses about a tenth of its ink), so screentones draw their dots as polygons whose radius
+    // makes up for the chords, fine enough that the facets stay under 1/20 px.
+    static void Disc(StreamGeometryContext context, Point center, double radius)
+    {
+        int sides = Math.Clamp((int)Math.Ceiling(Math.PI / Math.Acos(Math.Max(-1, 1 - .05 / Math.Max(radius, .05)))), 12, 256);
+        double scaled = radius * Math.Sqrt(Math.PI / (sides / 2d * Math.Sin(2 * Math.PI / sides)));
+        context.BeginFigure(new Point(center.X + scaled, center.Y), true, true);
+        var points = new Point[sides - 1];
+        for (int i = 1; i < sides; i++) points[i - 1] = new Point(center.X + scaled * Math.Cos(2 * Math.PI * i / sides), center.Y + scaled * Math.Sin(2 * Math.PI * i / sides));
+        context.PolyLineTo(points, false, false);
     }
 
     public const int MaxVectorTiles = 256;
@@ -280,8 +354,18 @@ public static class HatchPatternRenderer
         long i0 = (long)fi0, i1 = (long)fi1, j0 = (long)fj0, j1 = (long)fj1;
         if (ink == 0) ink = HatchPatterns.DefaultInk;
         double alpha = (ink >> 24 & 0xFF) * geometry.InkAlphaScale / 255d;
+        // Pen widths in layer px (screentones: a fraction of the repeat width).
+        var widths = Widths(geometry, tile.Width, lineWeight);
         var strokes = new StreamGeometry?[4]; var strokeContexts = new StreamGeometryContext?[4];
         var fills = new StreamGeometry?[8]; var fillContexts = new StreamGeometryContext?[8];
+        // An inverted screen is one even-odd figure set: ink over every repeat in range, holes cut out.
+        StreamGeometry? cut = null; StreamGeometryContext? cutContext = null;
+        if (geometry.Inverted)
+        {
+            cut = new StreamGeometry { FillRule = FillRule.EvenOdd }; cutContext = cut.Open();
+            var area = new Rect(tile.X + i0 * tile.Width, tile.Y + j0 * tile.Height, (i1 - i0 + 1) * tile.Width, (j1 - j0 + 1) * tile.Height);
+            cutContext.BeginFigure(area.TopLeft, true, true); cutContext.PolyLineTo([area.TopRight, area.BottomRight, area.BottomLeft], false, false);
+        }
         try
         {
             for (long j = j0; j <= j1; j++) for (long i = i0; i <= i1; i++)
@@ -291,20 +375,26 @@ public static class HatchPatternRenderer
                 foreach (var mark in geometry.Marks)
                 {
                     Point At(Vector offset) => new(ox + (mark.Anchor.X + offset.X) * tile.Width, oy + mark.Anchor.Y * tile.Height + offset.Y * (mark.StretchLocal ? tile.Height : tile.Width));
-                    if (mark.Filled && mark.Points.Length == 1 && IsDot(mark.Pen)) { Circle(Open(fills, fillContexts, mark.Pen), At(mark.Points[0]), geometry.PenDoc[mark.Pen] * lineWeight / 2); continue; }
+                    if (mark.Filled && mark.Points.Length == 1 && IsDot(mark.Pen))
+                    {
+                        var dots = cutContext ?? Open(fills, fillContexts, mark.Pen);
+                        if (geometry.TileUnits) Disc(dots, At(mark.Points[0]), widths[mark.Pen] / 2); else Circle(dots, At(mark.Points[0]), widths[mark.Pen] / 2);
+                        continue;
+                    }
                     var context = mark.Filled ? Open(fills, fillContexts, BlobSlot) : Open(strokes, strokeContexts, mark.Pen);
                     context.BeginFigure(At(mark.Points[0]), mark.Filled, mark.Closed);
                     for (int k = 1; k < mark.Points.Length; k++) context.LineTo(At(mark.Points[k]), !mark.Filled, true);
                 }
             }
         }
-        finally { Close(fillContexts); Close(strokeContexts); }
+        finally { Close(fillContexts); Close(strokeContexts); cutContext?.Close(); }
         var brush = Ink(ink, alpha); var group = new DrawingGroup();
+        if (cut != null) { cut.Freeze(); group.Children.Add(new GeometryDrawing(brush, null, cut)); }
         for (int pen = 0; pen < strokes.Length; pen++)
         {
             if (strokes[pen] is not { } stroke) continue;
             stroke.Freeze();
-            var line = new Pen(brush, geometry.PenDoc[pen] * lineWeight) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }; line.Freeze();
+            var line = new Pen(brush, widths[pen]) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }; line.Freeze();
             group.Children.Add(new GeometryDrawing(null, line, stroke));
         }
         foreach (var filled in fills) if (filled != null) { filled.Freeze(); group.Children.Add(new GeometryDrawing(brush, null, filled)); }
@@ -351,6 +441,7 @@ public static class HatchPatternRenderer
         public void Blob(Point at, params Vector[] points) => List.Add(new(Wrapped(at), points, 0, true, true, false));
         // Tile-spanning geometry in unit coordinates.
         public void Line(Point from, byte pen, params Vector[] points) => List.Add(new(Wrapped(from), points, pen, false, false, true));
+        public void Area(Point from, params Vector[] points) => List.Add(new(Wrapped(from), points, 0, true, true, true));
         static Point Wrapped(Point p) => new(Wrap(p.X), Wrap(p.Y));
         // Jittered kx×ky grid: one candidate position per cell, wrapped into the tile.
         public void Scatter(int kx, int ky, double jitter, int layer, Action<Point, int, int> place)
@@ -365,8 +456,66 @@ public static class HatchPatternRenderer
 
     static Vector Polar(double length, double degrees) => new(length * Math.Cos(degrees * Math.PI / 180), -length * Math.Sin(degrees * Math.PI / 180));
 
+    // Screentone layout: dot screens have ScreenCells × ScreenCells cells per repeat with two dots each on a
+    // 45° lattice (A sites at ¼,¼ and ¾,¾ of a cell, the hole sites of inverted screens at ¾,¼ and ¼,¾), line
+    // screens LineScreenLines horizontal lines, grid screens GridScreenLines lines each way, the stipple
+    // StippleCells grain cells. The gradient screentones use the same lattice (ToneGradientRenderer).
+    internal const int ScreenCells = 8, LineScreenLines = 16, GridScreenLines = 12, StippleCells = 40;
+
+    // Dot diameter (tile-width units) for a coverage on the dot lattice: one dot per half cell.
+    internal static double ScreenDot(double coverage) => Math.Sqrt(2 * coverage / Math.PI) / ScreenCells;
+
+    // Tone screens, sized to the tile so the ink coverage holds at any repeat size: round black dots up to
+    // 45%, round holes in ink from 60% (as a round-dot screen inverts), horizontal lines, a line grid, a
+    // full-tile area for black poché, and uniform stand-ins for the gradients (their fallback tile).
+    static HatchGeometry Screen(HatchPattern p)
+    {
+        var m = new Marks(0x5A17 + (int)p);
+        var pens = new double[standardPens.Length];
+        const int k = ScreenCells;
+        void Lattice(bool holes)
+        {
+            for (int j = 0; j < k; j++) for (int i = 0; i < k; i++)
+            {
+                m.Dot(new Point((i + (holes ? .75 : .25)) / k, (j + .25) / k), DotFine);
+                m.Dot(new Point((i + (holes ? .25 : .75)) / k, (j + .75) / k), DotFine);
+            }
+        }
+        double coverage = HatchPatterns.Coverage(p) ?? 0;
+        switch (p)
+        {
+            case HatchPattern.DotScreen60 or HatchPattern.DotScreen75:
+                Lattice(true); pens[DotFine] = ScreenDot(1 - coverage);
+                // Neighbouring hole sites are √½ cell apart.
+                return new HatchGeometry(m.List.ToArray(), pens, 255, TileUnits: true, Inverted: true, MaxPen: .999 * Math.Sqrt(.5) / k);
+            case HatchPattern.DotScreen10 or HatchPattern.DotScreen20 or HatchPattern.DotScreen30 or HatchPattern.DotScreen45:
+                Lattice(false); pens[DotFine] = ScreenDot(coverage); break;
+            case HatchPattern.LineScreen20 or HatchPattern.LineScreen35 or HatchPattern.LineScreen50:
+                for (int i = 0; i < LineScreenLines; i++) m.Line(new Point(0, (i + .5) / LineScreenLines), Thin, new Vector(0, 0), new Vector(1, 0));
+                pens[Thin] = coverage / LineScreenLines; break;
+            case HatchPattern.GridScreen30:
+                // Two crossing families of coverage c together cover 1 − (1 − c)², so each has c = 1 − √(1 − coverage).
+                for (int i = 0; i < GridScreenLines; i++)
+                {
+                    m.Line(new Point(0, (i + .5) / GridScreenLines), Thin, new Vector(0, 0), new Vector(1, 0));
+                    m.Line(new Point((i + .5) / GridScreenLines, 0), Thin, new Vector(0, 0), new Vector(0, 1));
+                }
+                pens[Thin] = (1 - Math.Sqrt(1 - coverage)) / GridScreenLines; break;
+            case HatchPattern.SolidBlack:
+                m.Area(new Point(0, 0), new Vector(0, 0), new Vector(1, 0), new Vector(1, 1), new Vector(0, 1)); break;
+            case HatchPattern.DotGradient:
+                Lattice(false); pens[DotFine] = ScreenDot(.4); break;
+            case HatchPattern.StippleGradient:
+                m.Scatter(StippleCells, StippleCells, .95, 0, (at, i, j) => { if (U(m.Seed, i, j, 10) < .5) m.Dot(at, DotFine); });
+                pens[DotFine] = .8 / StippleCells; break;
+            default: throw new ArgumentOutOfRangeException(nameof(p));
+        }
+        return new HatchGeometry(m.List.ToArray(), pens, 255, TileUnits: true);
+    }
+
     internal static HatchGeometry Build(HatchPattern p)
     {
+        if (HatchPatterns.IsScreentone(p)) return Screen(p);
         var m = new Marks(0x5A17 + (int)p);
         double R(int i, int j, int k) => U(m.Seed, i, j, k);
         switch (p)

@@ -199,9 +199,10 @@ public static partial class DesignRenderer
         }
         token.ThrowIfCancellationRequested();
         // A hatch pattern is redrawn for the device scale; chunked output reuses the cached tile, and a
-        // repeat too large for a tile is drawn as vector marks over the visible part only.
+        // repeat too large for a tile is drawn as vector marks over the visible part only. Gradient
+        // screentones are evaluated on exactly these device pixels (map).
         var material = layer.Material is { } fill && pdf == null
-            ? MaterialRenderer.Drawing(fill, Math.Max(Math.Sqrt(map.M11 * map.M11 + map.M12 * map.M12), Math.Sqrt(map.M21 * map.M21 + map.M22 * map.M22)), token, visible) : null;
+            ? MaterialRenderer.Drawing(fill, Math.Max(Math.Sqrt(map.M11 * map.M11 + map.M12 * map.M12), Math.Sqrt(map.M21 * map.M21 + map.M22 * map.M22)), token, visible, map) : null;
         return Imaging.Draw(width, height, dc =>
         {
             dc.PushTransform(new MatrixTransform(map)); dc.PushClip(new RectangleGeometry(new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height)));

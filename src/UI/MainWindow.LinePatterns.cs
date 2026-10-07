@@ -8,8 +8,8 @@ using Microsoft.Win32;
 
 namespace Compositor.Windows;
 
-// Hatch pattern library in the material palette: starred patterns first (즐겨찾기), the built-in
-// patterns, then the user's own line patterns (내 패턴) made from an image. The library lives in
+// Hatch pattern library in the material palette: starred patterns first (즐겨찾기), the built-in line
+// patterns, the tone screens (스크린톤), then the user's own line patterns (내 패턴) made from an image. The library lives in
 // %LOCALAPPDATA%\Morupixel\Patterns (LinePatternStore); favorites are saved with the workspace
 // layout. Headless checks and offscreen previews keep both in memory unless a test path is given.
 public sealed partial class MainWindow
@@ -123,6 +123,7 @@ public sealed partial class MainWindow
 
     // ---- Palette ------------------------------------------------------------------------------
 
+    // Groups: 즐겨찾기, 기본 패턴 (line hatches), 스크린톤 (tone screens, black poché, gradients), 내 패턴.
     void AddPatternTab(StackPanel body, IReadOnlyList<HatchPattern> order, Guid? currentAssetId, bool swapping, Action<MaterialAsset, string> apply, Action refresh)
     {
         var builtIn = order.Select(PatternChoice).ToList();
@@ -130,7 +131,8 @@ public sealed partial class MainWindow
         var all = builtIn.Concat(custom).ToList();
         var favorites = patternFavorites.Select(key => all.FirstOrDefault(c => LinePatterns.FavoriteKey(c.Asset) == key)).OfType<SelectionMaterialChoice>().ToList();
         var starred = favorites.Select(c => c.Asset.Id).ToHashSet();
-        bool grouped = favorites.Count > 0 || custom.Count > 0;
+        bool Screentone(SelectionMaterialChoice choice) => HatchPatterns.TryGet(choice.Asset, out var p) && HatchPatterns.IsScreentone(p);
+        bool grouped = favorites.Count > 0 || custom.Count > 0 || builtIn.Any(Screentone);
         void Group(string title, string glyph, IEnumerable<SelectionMaterialChoice> choices)
         {
             var shown = choices.ToList();
@@ -143,7 +145,8 @@ public sealed partial class MainWindow
             body.Children.Add(grid);
         }
         Group("즐겨찾기", Theme.Glyphs.StarFilled, favorites);
-        Group("기본 패턴", Theme.Glyphs.Hatch, builtIn.Where(c => !starred.Contains(c.Asset.Id)));
+        Group("기본 패턴", Theme.Glyphs.Hatch, builtIn.Where(c => !starred.Contains(c.Asset.Id) && !Screentone(c)));
+        Group("스크린톤", Theme.Glyphs.Screentone, builtIn.Where(c => !starred.Contains(c.Asset.Id) && Screentone(c)));
         Group("내 패턴", Theme.Glyphs.Image, custom.Where(c => !starred.Contains(c.Asset.Id)));
         var note = Theme.Label("도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.", Theme.CaptionSize, Theme.Subtle); note.Margin = new Thickness(2, 0, 2, 4);
         body.Children.Add(note);

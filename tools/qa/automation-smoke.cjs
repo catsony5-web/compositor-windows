@@ -51,7 +51,7 @@ async function main() {
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
   assert.equal(capabilities.contractVersion, 9); assert.equal(capabilities.commands.length, 36);
-  assert.equal(capabilities.materials.patterns.count, 19); assert.equal(capabilities.materials.patterns.autoRegister, true);
+  assert.equal(capabilities.materials.patterns.count, 32); assert.equal(capabilities.materials.patterns.screentones.count, 13); assert.equal(capabilities.materials.patterns.autoRegister, true);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
   let state = data(await call('get_state')); assert.equal(state.documents.length, 0);
@@ -161,7 +161,7 @@ async function main() {
   await edit('export_image', { path: path.join(output, 'material-study.png') });
   checks.push('Material register/query, polygon holes, closed-object region, paged regions, batch mapping, pattern update and preview');
   const patterns = data(await call('query_patterns', { surface: 'ground' }));
-  assert.equal(patterns.count, 19); assert.equal(patterns.patterns[0].patternId, 'grass-sparse');
+  assert.equal(patterns.count, 32); assert.equal(patterns.patterns[0].patternId, 'grass-sparse'); assert.equal(patterns.patterns.filter(p => p.group === 'screentone').length, 13);
   await edit('apply_material', { materialId: patterns.patterns[0].materialId, regionId: leftRegion, tileWidth: 64, tileHeight: 96, lineWeight: 1.2, ink: '#FF3D4A3F', name: 'Lawn' });
   const lawn = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: state.layerId }));
   assert.equal(lawn.layer.material.rendering, 'pattern_redrawn'); assert.equal(lawn.layer.material.patternId, 'grass-sparse'); assert.equal(lawn.layer.material.ink, '#FF3D4A3F');

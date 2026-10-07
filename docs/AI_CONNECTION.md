@@ -83,7 +83,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 적용 영역 등록·조회 | `morupixel_define_region`, `morupixel_query_regions` |
 | 재료 적용·패턴 변경 | `morupixel_apply_material`, `morupixel_update_material` |
 
-기본 해치 패턴 19종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, 알파 01~FF의 `#AARRGGBB`, `default`; 완전히 투명한 잉크는 `invalid_arguments`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그리며, `export_image`의 `scale`이 1이 아니면 출력 크기로 다시 그려 내보냅니다. 없는 패턴 ID는 `material_not_found`이며 `query_patterns`로 올바른 ID를 찾습니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
+기본 해치 패턴 19종과 스크린톤 13종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, 알파 01~FF의 `#AARRGGBB`, `default`; 완전히 투명한 잉크는 `invalid_arguments`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그리며, `export_image`의 `scale`이 1이 아니면 출력 크기로 다시 그려 내보냅니다. 없는 패턴 ID는 `material_not_found`이며 `query_patterns`로 올바른 ID를 찾습니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
 
 ### 해치 패턴 넣기
 
@@ -101,7 +101,15 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
   "regionName": "외벽", "scale": 0.6, "verticalRatio": 1.5, "angle": 15, "lineWeight": 1.2, "ink": "#FF5A3A2A", "opacity": 0.9 } }
 ```
 
-`update_material`은 같은 인자(`patternId`·`materialId`, `scale`·`verticalRatio`·`tileWidth`·`tileHeight`, `angle`, `offsetX`·`offsetY`, `ink`, `lineWeight`, `background`, `opacity`, `blend`, `name`)로 기존 해치 레이어를 고칩니다. 지정하지 않은 값은 유지합니다(`verticalRatio`만 바꾸면 반복 너비 유지, `scale`만 바꾸면 세로 비율 유지). 경계와 레이어 변형은 그대로입니다. `get_layer`의 `material`에는 `patternId`, `patternKind`(`builtin`·`custom`), `scale`, `verticalRatio`, `angle`, `ink`, `lineWeight`, `background`가 들어가 바꾼 값을 그대로 확인할 수 있습니다. 두 명령 모두 `apply_batch` 단계로 쓸 수 있어, 도형을 만들고(`"ref": "room"`) 그 도형을 경계로(`"boundaryLayerId": "@room"`) 패턴을 채운 다음(`"ref": "lawn"`) `update_material`·`set_layer`의 `"layerId": "@lawn"`으로 조정하는 작업을 실행 취소 한 번으로 되돌릴 수 있습니다.
+`update_material`은 같은 인자(`patternId`·`materialId`, `scale`·`verticalRatio`·`tileWidth`·`tileHeight`, `angle`, `offsetX`·`offsetY`, `ink`, `lineWeight`, `background`, 그라데이션 `gradientAngle`·`gradientStart`·`gradientEnd`·`gradientSeed`, `opacity`, `blend`, `name`)로 기존 해치 레이어를 고칩니다. 지정하지 않은 값은 유지합니다(`verticalRatio`만 바꾸면 반복 너비 유지, `scale`만 바꾸면 세로 비율 유지). 경계와 레이어 변형은 그대로입니다. `get_layer`의 `material`에는 `patternId`, `patternKind`(`builtin`·`custom`), `scale`, `verticalRatio`, `angle`, `ink`, `lineWeight`, `background`가 들어가 바꾼 값을 그대로 확인할 수 있습니다. 두 명령 모두 `apply_batch` 단계로 쓸 수 있어, 도형을 만들고(`"ref": "room"`) 그 도형을 경계로(`"boundaryLayerId": "@room"`) 패턴을 채운 다음(`"ref": "lawn"`) `update_material`·`set_layer`의 `"layerId": "@lawn"`으로 조정하는 작업을 실행 취소 한 번으로 되돌릴 수 있습니다.
+
+**스크린톤.** `query_patterns`는 선 해치 패턴(`group: "basic"`) 뒤에 스크린톤(`group: "screentone"`)을 돌려줍니다. 점 스크린 `dot-screen-10`·`-20`·`-30`·`-45`(검은 원점)과 `dot-screen-60`·`-75`(잉크 속 둥근 구멍), 가로 선 스크린 `line-screen-20`·`-35`·`-50`, 격자 스크린 `grid-screen-30`, 잉크로 영역을 꽉 채우는 `solid-black`(검정 채움, 포셰), 그리고 그라데이션 `dot-gradient`·`stipple-gradient`입니다. 균일한 스크린의 `coverage`(0~1)는 `lineWeight` 1에서의 잉크 농도이며 점과 선이 반복 크기에 맞춰 커지므로 `scale`을 바꿔도 농도가 유지됩니다. `lineWeight`는 점·선을 굵게(구멍은 작게) 해 농도를 바꿉니다. 그라데이션은 반복 타일이 아니라 영역 안에서 농도가 바뀌는 채움으로, `gradientAngle`(도, 0 = 왼쪽→오른쪽, 90 = 위→아래, 기본 90), `gradientStart`·`gradientEnd`(영역의 시작·끝 가장자리 잉크 농도 0~1, 기본 0.1·0.9), `gradientSeed`(0~999999, 점묘의 무작위 배치, 기본 0)를 받습니다. 이 네 인자는 두 그라데이션에만 쓸 수 있고 다른 재료에 주면 `invalid_arguments`입니다. `update_material`은 지정한 그라데이션 값만 바꾸고, 다른 재료로 바꿨다가 되돌려도 그라데이션 값은 유지됩니다. `get_layer`의 `material`에는 `patternGroup`과 그라데이션 채움의 `gradient`(`angle`·`start`·`end`·`seed`)가 들어갑니다.
+
+```json
+{ "command": "apply_material", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "patternId": "dot-gradient", "boundaryLayerId": "<로비 경계 레이어 ID>",
+  "gradientAngle": 90, "gradientStart": 0.08, "gradientEnd": 0.85 } }
+```
 
 **바탕색.** `background`(`#RRGGBB`, `#AARRGGBB`, `none`)는 패턴 선 아래 경계 안을 칠합니다(앱의 **바탕색** 행과 같음). 기본값은 `none`(투명)이고 알파 `00`도 `none`입니다. 아래 레이어와는 선처럼 곱하기로 섞입니다. 이미지 재료에는 값만 보관되고 칠하지 않습니다(잉크와 같음).
 
