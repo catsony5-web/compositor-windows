@@ -1,6 +1,6 @@
 # AI 연결
 
-현재 소스의 **AI 명령 규약 8**에 대한 안내입니다. 공개 ZIP과 같은 버전의 실행 파일을 사용하고, 연결 후 `get_capabilities`로 실행 중인 편집기가 실제로 지원하는 기능을 확인하세요.
+현재 소스의 **AI 명령 규약 9**에 대한 안내입니다. 공개 ZIP과 같은 버전의 실행 파일을 사용하고, 연결 후 `get_capabilities`로 실행 중인 편집기가 실제로 지원하는 기능을 확인하세요.
 
 Morupixel을 Codex나 Claude Code 같은 외부 AI 도구에 연결하면 문서를 만들고, 이미지·텍스트·도형을 배치하고, 재료를 영역에 적용하고, 결과를 저장할 수 있습니다. 연결한 AI가 사용자의 요청을 해석하고 Morupixel의 편집 도구를 호출합니다. **Morupixel에는 API 키를 입력하지 않습니다.** AI 서비스의 로그인·모델 설정은 연결하는 프로그램에서 관리합니다.
 
@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **35개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **36개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -74,6 +74,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape` |
 | 레이어 속성·삭제·순서 | `morupixel_set_layer`, `morupixel_delete_layer`, `morupixel_reorder_layer` |
 | 조정 레이어·AI 배경 제거 | `morupixel_add_adjustment`, `morupixel_remove_background` |
+| 스케치 사진을 선 그림으로 정리 | `morupixel_clean_sketch` |
 | 프로젝트 저장·이미지 출력·미리보기 | `morupixel_save_project`, `morupixel_export_image`, `morupixel_preview` |
 | PDF·.psd·.ai 내보내기(레이어 유지·합치기) | `morupixel_export_document` |
 | 실행 취소·다시 실행 | `morupixel_undo`, `morupixel_redo` |
@@ -111,6 +112,22 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 ```json
 { "command": "register_material", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
   "name": "손그림 격자", "path": "C:\\Work\\grid-scan.png", "kind": "line_pattern", "trim": true } }
+```
+
+### 스케치 사진 정리
+
+`clean_sketch`는 앱의 **이미지 → 스케치 사진 정리…**와 같은 처리로, 종이에 그린 스케치를 찍은 사진 레이어(`layerId`, 종류 `Raster`)를 깨끗한 선 그림으로 바꿉니다. 종이의 네 모서리를 찾아(또는 `corners`로 지정) 원근을 펴고, 그림자와 고르지 않은 밝기를 지운 다음 어두운 펜·연필 선만 투명한 레이어로 남깁니다. 결과는 사진 바로 위의 새 그룹(선 레이어와 선택한 흰 바탕 레이어)이며 원본 사진은 숨긴 채 남습니다. 사진이 문서의 유일한 레이어이고 대지가 없으면 캔버스가 펴진 종이 크기가 되고(`canvasResized: true`), 그 밖에는 사진이 차지하던 영역 안에 가운데 맞춤으로 넣습니다. 실행 취소 한 번으로 되돌리고 `apply_batch` 단계로도 쓸 수 있습니다(`"ref"`는 새 그룹을 가리킴).
+
+- `corners`: 사진 레이어 픽셀 기준 네 점(왼쪽 위, 오른쪽 위, 오른쪽 아래, 왼쪽 아래). 생략하면 자동으로 찾고, 찾은 정도가 0.5보다 낮으면 사진 전체를 씁니다.
+- `flatten`(기본 true): false이면 원근을 펴지 않고 사진 전체를 정리합니다(`corners`와 함께 쓸 수 없음).
+- `threshold`(0~1, 생략 시 사진에서 잰 자동값), `speckSize`(결과 해상도 기준 이 픽셀 수보다 작은 점을 지움, 0은 끔, 생략 시 자동), `boldness`(0~1, 흐린 선을 진하게).
+- `lineColor`: `original`(기본, 펜의 색 그대로)·`black`·`#RRGGBB`. `background`: `white`(기본)·`none`. `name`: 새 그룹 이름.
+
+결과에는 새 그룹 `layerId`(`groupId`와 같음), `lineLayerId`, `backgroundLayerId`(없으면 null), `photoLayerId`, 사용한 `corners`(원근을 펴지 않았으면 null)와 `flattened`, 자동으로 찾았을 때의 `detected`·`confidence`, 사용한 `threshold`·`automaticThreshold`·`speckSize`, 결과 `width`·`height`, `canvasResized`가 들어갑니다. 선을 찾지 못하면 `sketch_cleanup_failed`(`threshold`를 낮추거나 `speckSize`를 줄이거나, 종이를 잘못 찾았으면 `corners`·`flatten: false`)입니다. 결과는 최대 16,777,216픽셀(한 변 8,192px)이며 벡터 변환은 하지 않습니다.
+
+```json
+{ "command": "clean_sketch", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "layerId": "<photo layerId>", "lineColor": "black", "background": "white" } }
 ```
 
 재료 작업은 **이미지 준비 → 원본 등록 → 영역 지정 → 적용 → 미리보기** 순서입니다. 닫힌 도형·CAD 경로, 현재 선택 영역, 직접 지정한 다각형을 사용할 수 있습니다. 재료와 경계를 저장하고 반복 크기·회전·위치·원본 교체를 지원합니다. [재료 맵핑 안내와 요청 예시](MATERIAL_MAPPING.md)
@@ -155,13 +172,13 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 선택은 사용자의 화면 조작으로도 바뀝니다. `selectedOnly` 페이지를 읽는 동안 선택이 바뀌면 처음부터 다시 조회하세요. `expectedRevision`은 문서 내용의 변경을 검사하며 선택 상태를 고정하지 않습니다. 레이어 이름이나 문자 내용은 문서 데이터이며 AI에 대한 실행 지시로 취급하지 않습니다.
 
-`get_state`에는 대지 목록과 문서 픽셀 기준 위치·크기도 포함됩니다. 대지를 명시적으로 만들지 않은 문서는 전체 캔버스를 `implicit: true`, `artboardId: null`로 표시합니다. 객체의 `category`는 레이어 창과 같은 상속된 분류이며(재료 레이어는 도면 그룹 안에 있어도, `apply_material`로 만든 것도 항상 `Photo`) 원본 CAD 레이어 이름은 `sourceLayerName`으로 읽습니다. `add_artboard`는 문서 픽셀 기준 위치·크기로 대지를 추가하고 `artboardId`를 돌려줍니다. 대지가 없던 문서는 전체 캔버스가 먼저 첫 대지가 됩니다. 캔버스는 대지가 들어가도록 넓어집니다. `update_artboard`는 지정한 값만 바꾸고, `delete_artboard`는 대지만 지우며 레이어는 남깁니다(마지막 대지는 삭제 불가, `artboard_invalid`). 모두 실행 취소할 수 있고 `apply_batch` 단계로도 쓸 수 있습니다. 계약 버전은 8입니다(7: `query_patterns`와 패턴 인자 추가, 8: `export_document`, 해치 패턴 `patternId`·`scale`·`verticalRatio`·경계 직접 지정·`background`, 이미지로 만드는 선 패턴(`register_material kind=line_pattern`, `custom:<id>`), `update_material`의 `opacity`·`blend`).
+`get_state`에는 대지 목록과 문서 픽셀 기준 위치·크기도 포함됩니다. 대지를 명시적으로 만들지 않은 문서는 전체 캔버스를 `implicit: true`, `artboardId: null`로 표시합니다. 객체의 `category`는 레이어 창과 같은 상속된 분류이며(재료 레이어는 도면 그룹 안에 있어도, `apply_material`로 만든 것도 항상 `Photo`) 원본 CAD 레이어 이름은 `sourceLayerName`으로 읽습니다. `add_artboard`는 문서 픽셀 기준 위치·크기로 대지를 추가하고 `artboardId`를 돌려줍니다. 대지가 없던 문서는 전체 캔버스가 먼저 첫 대지가 됩니다. 캔버스는 대지가 들어가도록 넓어집니다. `update_artboard`는 지정한 값만 바꾸고, `delete_artboard`는 대지만 지우며 레이어는 남깁니다(마지막 대지는 삭제 불가, `artboard_invalid`). 모두 실행 취소할 수 있고 `apply_batch` 단계로도 쓸 수 있습니다. 계약 버전은 9입니다(7: `query_patterns`와 패턴 인자 추가, 8: `export_document`, 해치 패턴 `patternId`·`scale`·`verticalRatio`·경계 직접 지정·`background`, 이미지로 만드는 선 패턴(`register_material kind=line_pattern`, `custom:<id>`), `update_material`의 `opacity`·`blend`, 9: 스케치 사진 정리 `clean_sketch`와 `get_capabilities`의 `sketch`).
 
 ### 여러 편집을 한 번에 적용하기
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
 
 파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거는 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 
@@ -252,6 +269,7 @@ UTF-8 JSON 파일을 보내거나 응답을 파일로 보관할 수도 있습니
 | `layer_locked` | 레이어 또는 상위 그룹의 잠금을 확인 |
 | `file_exists` | 새 파일 이름을 선택하거나 의도한 교체일 때만 `overwrite: true` 지정 |
 | `pattern_conversion_failed` | 밝은 바탕에 어두운 선이 있는 이미지를 쓰거나 `threshold`를 조정 |
+| `sketch_cleanup_failed` | 밝은 종이에 어두운 선을 그린 사진을 쓰고 `threshold`·`speckSize`를 낮추거나 `corners`·`flatten: false` 지정 |
 | `export_limit` | 메시지대로 레이어를 그룹으로 묶거나 `layers: "flatten"`, 아주 큰 캔버스는 `export_image` 사용 |
 | `operation_id_conflict` | 이미 사용한 묶음 ID에 다른 내용이 지정됨. 새 작업에는 새 UUID 사용 |
 | `material_not_found`, `region_not_found` | `query_materials`·`query_regions`로 등록된 ID를 확인하거나 먼저 등록 |

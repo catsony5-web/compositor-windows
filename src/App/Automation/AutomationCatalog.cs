@@ -139,6 +139,16 @@ public static partial class AutomationCatalog
             false, adjustments, WriteRequired("kind"));
         Add("remove_background", "Create a layer mask using the bundled local AI model. Existing edits remain undoable.", false,
             Mutation(("layerId", Id)), WriteRequired("layerId"));
+        Add("clean_sketch", "Turn a photographed hand sketch (a raster photo layer) into clean line art, like the app's sketch photo cleanup: find the sheet (or use corners), flatten its perspective, even out shadows and uneven light, and keep the dark pen and pencil lines as a transparent layer (lineColor=original keeps each pen's color) above an optional white layer, in a new group directly above the photo, which stays in the document hidden. If the photo is the document's only layer the canvas becomes the flattened sheet; otherwise the result is fitted into the photo's bounds. One undo step; can be included in apply_batch. Returns layerId (the new group), lineLayerId, backgroundLayerId, the corners used and the detection confidence.", false,
+            Mutation(("layerId", Id with { Description = "The photo layer (kind Raster) holding the sketch photo." }),
+                ("corners", new("array", "Sheet corners in the photo layer's own pixels, in the order top-left, top-right, bottom-right, bottom-left. Omit to find the sheet automatically.", ArrayShape: "corners")),
+                ("flatten", Bool("Flatten the sheet's perspective (default true). false cleans the whole photo as it is and cannot be combined with corners.")),
+                ("threshold", Number(0, 1, "Line threshold in paper-normalized darkness, 0 paper … 1 ink; lower keeps fainter lines. Omit for the automatic value measured from the photo.")),
+                ("speckSize", Integer(0, 1_000_000, "Marks smaller than this many pixels (at the result's resolution) are removed; 0 keeps every mark. Omit for the automatic size that removes dust.")),
+                ("boldness", Number(0, 1, "0..1: makes faint lines and soft edges more solid. Defaults to 0.")),
+                ("lineColor", new("string", "original (default: each pen's own color), black, or #RRGGBB for one color.", MaxLength: 8, TextPattern: "^(original|black|#[0-9a-fA-F]{6})$")),
+                ("background", new("string", "white (default) adds a white layer under the lines; none leaves the lines on transparency.", Choices: ["white", "none"])),
+                ("name", Name with { Description = "Name of the new group; defaults to the app's own name for it." })), WriteRequired("layerId"));
         Add("save_project", "Save the active document to an absolute .moruproj path. Existing files require overwrite=true.", false,
             Mutation(("path", Path), ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path"));
         Add("export_image", "Export the active document, one artboard or one selected layer to PNG, JPEG or TIFF, optionally scaled. Existing files require overwrite=true.", false,
@@ -287,6 +297,8 @@ public static partial class AutomationCatalog
             if (count > 2048) throw new ArgumentException("A region supports at most 2048 points across all contours.");
         }
         if (command is "apply_material" or "update_material") ValidateMaterialFields(command, arguments);
+        if (command == "clean_sketch" && arguments.ContainsKey("corners") && arguments["flatten"]?.GetValue<bool>() == false)
+            throw new ArgumentException("corners need flatten=true (the default); flatten=false keeps the whole photo.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
             throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))

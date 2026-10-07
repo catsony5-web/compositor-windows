@@ -145,7 +145,7 @@ public sealed partial class MainWindow
             }
             finally { host.Child = null; ShowStudioPage(studioPage, false); }
         }
-        ShowStudioPage(0); CapturePane(studioPanes[0], "photo-actions", 360, 720);
+        ShowStudioPage(0); CapturePane(studioPanes[0], "photo-actions", 360, 800);
         ShowStudioPage(1); CapturePane(studioPanes[1], "image-properties", 360, 840);
         // A folded section keeps its title; its rows return when it is opened again.
         SectionHeader.SetCollapsedKeys(["위치와 변형"]); CapturePane(studioPanes[1], "image-properties-folded", 360, 640); SectionHeader.SetCollapsedKeys([]);
@@ -178,6 +178,7 @@ public sealed partial class MainWindow
         RenderHatchPreviews(directory, CapturePane, (name, width, height) => Capture(this, name, width, height));
         RenderProfilePreviews(directory);
         RenderShadowPreviews(Capture, CapturePane);
+        RenderSketchPreviews(Capture);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
         string plan = Path.Combine(directory, "평면 예시.dxf");
         var drawing = CompatibilityImport.ReadAsync(plan, new ImportSettings { CadLongEdge = 900 }.Options(plan)).GetAwaiter().GetResult().Document;

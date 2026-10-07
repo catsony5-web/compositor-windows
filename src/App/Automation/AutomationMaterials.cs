@@ -143,6 +143,7 @@ public static partial class AutomationCatalog
             ["type"] = "object", ["required"] = Strings(["x", "y"]), ["additionalProperties"] = false,
             ["properties"] = new JsonObject { ["x"] = coordinate.DeepClone(), ["y"] = coordinate.DeepClone() }
         };
+        if (type == "corners") return new JsonObject { ["type"] = "array", ["minItems"] = 4, ["maxItems"] = 4, ["items"] = point };
         var contour = new JsonObject { ["type"] = "array", ["minItems"] = 3, ["maxItems"] = 2048, ["items"] = point };
         return type == "points" ? contour : new JsonObject { ["type"] = "array", ["maxItems"] = 16, ["items"] = contour };
     }
@@ -178,7 +179,12 @@ public static partial class AutomationCatalog
             }
             return;
         }
-        if (type == "points")
+        if (type == "corners")
+        {
+            if (array.Count != 4) throw new ArgumentException("corners needs exactly four points: top-left, top-right, bottom-right, bottom-left.");
+            _ = MaterialPoints(array);
+        }
+        else if (type == "points")
         {
             if (array.Count is < 3 or > 2048) throw new ArgumentException("A contour needs 3..2048 points.");
             _ = MaterialPoints(array);

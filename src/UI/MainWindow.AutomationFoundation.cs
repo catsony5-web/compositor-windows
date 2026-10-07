@@ -87,6 +87,9 @@ public sealed partial class MainWindow
             }
             // IDs allocated during a dry run are not live document IDs and must not escape as editable targets.
             var stepResult = new JsonObject { ["stepIndex"] = i, ["command"] = command, ["ref"] = reference, ["layerId"] = dryRun ? null : affected?.ToString() };
+            // clean_sketch also reports its layers, corners and detection; a dry run keeps the measurements only.
+            if (automationStepDetails is { } details)
+                foreach (var (key, value) in details) stepResult[key] = dryRun && key.EndsWith("Id", StringComparison.Ordinal) ? null : value?.DeepClone();
             // apply_material with an inline boundary stores a new region template; report it like define_region would.
             if (command == "apply_material" && !dryRun && affected is { } mappedId && candidate.Layers.FirstOrDefault(l => l.Id == mappedId)?.Material is { } mappedFill)
                 stepResult["regionId"] = mappedFill.SourceRegionId.ToString();

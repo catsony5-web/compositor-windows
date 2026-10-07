@@ -50,6 +50,9 @@ public sealed partial class MainWindow
             (ToolIcons.PathData(Tool.CloneStamp), "복제 도장", () => SetTool(Tool.CloneStamp), "Alt+클릭으로 참조 위치 지정 후 복제", null),
             (Theme.Glyphs.FillSelection, "주변으로 채우기", FillFromSurroundings, "제거할 부분을 선택한 뒤 주변 픽셀로 채우기", null),
             (ToolIcons.PathData(Tool.Brush), "브러시 설정", () => ShowStudioPage(3), "크기와 경도, 브러시 프리셋", null));
+        WorkspaceSection(panel, UserProfiles.SketchPhoto, "종이에 그린 스케치를 휴대폰으로 찍은 사진을 깨끗한 선 그림으로 바꿉니다.");
+        panel.Children.Add(Theme.ActionRow("스케치 사진 정리", Run(CleanSketchPhoto),
+            "선택한 사진에서 종이를 반듯하게 펴고 그림자와 종이 결을 지워 선만 남깁니다 · 원본 사진은 숨겨 두고 한 번에 실행 취소할 수 있습니다", Theme.Glyphs.Sketch));
     }
 
     void BuildDesignActions(StackPanel panel)

@@ -39,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 35); checks.push('MCP initialization and 35 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 36); checks.push('MCP initialization and 36 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -50,7 +50,7 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 8); assert.equal(capabilities.commands.length, 35);
+  assert.equal(capabilities.contractVersion, 9); assert.equal(capabilities.commands.length, 36);
   assert.equal(capabilities.materials.patterns.count, 19); assert.equal(capabilities.materials.patterns.autoRegister, true);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
@@ -193,6 +193,21 @@ async function main() {
   const restored = data(await call('get_layer', { documentId, expectedRevision: state.revision, layerId: fillId }));
   assert.equal(restored.layer.material.angle, 90);
   checks.push('Native material project reopens with embedded original, editable pattern and undo');
+  // A photographed sketch made through the API: a sheet on a darker table with a blue and a black pen line.
+  state = data(await call('new_document', { name: 'Sketch photo', width: 900, height: 700, background: '#6E4E36' })); documentId = state.documentId;
+  await edit('add_shape', { shape: 'rectangle', x: 180, y: 90, width: 520, height: 520, fill: '#F2ECDE', name: 'Sheet' });
+  await edit('add_shape', { shape: 'rectangle', x: 260, y: 300, width: 360, height: 6, fill: '#1C3496' });
+  await edit('add_shape', { shape: 'rectangle', x: 300, y: 180, width: 6, height: 300, fill: '#18181C' });
+  const sketchPhoto = path.join(output, 'sketch-photo.png'); await edit('export_image', { path: sketchPhoto });
+  state = data(await call('open_document', { path: sketchPhoto })); documentId = state.documentId;
+  const sketchLayer = state.documents.find(d => d.documentId === documentId).layers[0].layerId;
+  await edit('clean_sketch', { layerId: sketchLayer });
+  assert.equal(state.flattened, true); assert.equal(state.detected, true); assert.equal(state.canvasResized, true); assert.equal(state.corners.length, 4);
+  assert(state.lineLayerId && state.backgroundLayerId && state.width === state.height);
+  const sketchPreview = await call('preview', { documentId, maxSide: 520 });
+  fs.writeFileSync(path.join(output, 'sketch-preview.png'), Buffer.from(sketchPreview.content.find(c => c.type === 'image').data, 'base64'));
+  await edit('undo'); assert.equal(state.documents.find(d => d.documentId === documentId).layers.length, 1);
+  checks.push('Sketch photo cleanup finds the sheet, flattens it into the canvas and undoes in one step');
   fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ ok: true, checks, preview: path.join(output, 'ai-edit-preview.png') }, null, 2));
   console.log(JSON.stringify({ ok: true, checks: checks.length, output }));
 }

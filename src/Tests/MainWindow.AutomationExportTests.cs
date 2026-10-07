@@ -196,7 +196,7 @@ public sealed partial class MainWindow
                 Check(!File.Exists(Path.Combine(files, name)), name + " was written by a refused request");
             Check(!Directory.EnumerateFiles(files, ".morupixel-*").Any(), "A staging file was left behind");
             var capabilities = Success(Call(window, "get_capabilities", new JsonObject()));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 8 && capabilities["documentExport"]!["layers"]!["ai"]!.AsArray().Count == 1 &&
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["documentExport"]!["layers"]!["ai"]!.AsArray().Count == 1 &&
                 capabilities["formats"]!["exportDocument"]!.AsArray().Count == 3 && !capabilities["unsupportedViaMcp"]!.AsArray().Any(v => v!.GetValue<string>().Contains("pdf")),
                 "Capabilities do not describe export_document: " + capabilities["documentExport"]?.ToJsonString());
         });

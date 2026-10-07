@@ -145,6 +145,8 @@ public static class SelfTests
         MainWindow.RunMaterialPropertiesTests(Test);
         LinePatternTests.Run(Test, directory);
         MainWindow.RunLinePatternTests(Test, directory);
+        SketchCleanupTests.Run(Test);
+        MainWindow.RunSketchCleanupTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
         LayeredCompatibilityTests.Run(Test, directory);

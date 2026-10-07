@@ -17,7 +17,7 @@ public sealed class ParameterSlider : StackPanel
     // distances are equal ratios, so the middle of 10–1000 is 100.
     readonly bool logarithmic;
     bool syncing, editingNumber, dragging;
-    double value, selectedStep, dragValue;
+    double value, selectedStep, dragValue, reset;
     public double Value => value;
     public bool IsInputValid => TryReadNumber(out _);
     internal bool HasPendingInput => editingNumber;
@@ -29,7 +29,7 @@ public sealed class ParameterSlider : StackPanel
         if (!double.IsFinite(min) || !double.IsFinite(max) || min >= max) throw new ArgumentOutOfRangeException(nameof(max));
         if (!double.IsFinite(minimumStep) || minimumStep < 0) throw new ArgumentOutOfRangeException(nameof(minimumStep));
         if (logarithmic && (min <= 0 || showStepControls || minimumStep > 0)) throw new ArgumentOutOfRangeException(nameof(logarithmic));
-        this.minimumStep = minimumStep; this.min = min; this.max = max; this.logarithmic = logarithmic;
+        this.minimumStep = minimumStep; this.min = min; this.max = max; this.logarithmic = logarithmic; this.reset = reset;
         Margin = new Thickness(0, 4, 0, 8);
         var row = new DockPanel();
         number = new TextBox { Width = 64, Padding = new Thickness(6, 3, 6, 3), MinHeight = 26, VerticalContentAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right, Margin = new Thickness(0) };
@@ -48,7 +48,7 @@ public sealed class ParameterSlider : StackPanel
             steps.SelectedIndex = 0;
             DockPanel.SetDock(steps, Dock.Right); row.Children.Add(steps);
         }
-        var restore = Theme.IconButton(Theme.Glyphs.Revert, () => SetValue(Math.Clamp(reset, min, max), true), label + " 초기화", 22, 13);
+        var restore = Theme.IconButton(Theme.Glyphs.Revert, () => SetValue(Math.Clamp(this.reset, min, max), true), label + " 초기화", 22, 13);
         restore.Margin = new Thickness(0);
         DockPanel.SetDock(restore, Dock.Right); row.Children.Add(restore);
         var caption = Theme.Label(label, Theme.BodySize, Theme.Muted); caption.Margin = new Thickness(1, 2, 2, 2); row.Children.Add(caption); Children.Add(row);
@@ -109,6 +109,9 @@ public sealed class ParameterSlider : StackPanel
         }
         SetValue(parsed, true); return true;
     }
+
+    // The value the reset button restores, for a default measured after the control was built.
+    internal double ResetValue { get => reset; set => reset = double.IsFinite(value) ? value : reset; }
 
     public void SetValue(double value, bool notify = false)
     {

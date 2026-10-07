@@ -368,6 +368,7 @@ public sealed partial class MainWindow
         row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;
         row.Eye.PreviewMouseLeftButtonDown += (_, _) => PressLayerEye(entry, Keyboard.Modifiers);
         EnableLayerDrag(row, id);
+        if (SketchLayers.IsPhoto(entry.Layer)) row.ContextMenu = PhotoLayerMenu(id);
         return row;
     }
 }

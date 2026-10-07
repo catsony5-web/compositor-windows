@@ -261,6 +261,8 @@ public static class Theme
         // Drawing work (사용 목적 · 건축학과): a floor plan with a door swing, and three line weights.
         public const string Plan = "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z M12 4V10.5 M4 13H8.5 | ~M12 13.5V20 M12 13.5A6.5 6.5 0 0 1 18.5 20 | *M12 13.5A6.5 6.5 0 0 1 18.5 20H12Z";
         public const string LineWeight = "M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z M4 13H20 | ~M4 18.5H20 | *M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z";
+        // 스케치 사진 정리: a sheet seen in perspective with a hand-drawn stroke on it.
+        public const string Sketch = "M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z | M8 15.5C9.4 12.2 11 14.6 12.4 11.6C13.6 9.2 15.2 9.6 16.6 7.6 | *M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z";
         // An object and the shadow it casts toward the lower right.
         public const string Shadow = "M6 4.5H12.5A1.5 1.5 0 0 1 14 6V12.5A1.5 1.5 0 0 1 12.5 14H6A1.5 1.5 0 0 1 4.5 12.5V6A1.5 1.5 0 0 1 6 4.5Z | ~M13.6 5L19.5 10.9V18A1.5 1.5 0 0 1 18 19.5H10.9L5 13.6 | *M13.6 5L19.5 10.9V18A1.5 1.5 0 0 1 18 19.5H10.9L5 13.6L6 14H12.5A1.5 1.5 0 0 0 14 12.5V6Z";
         // Canvas alignment: a guide line and two bars.

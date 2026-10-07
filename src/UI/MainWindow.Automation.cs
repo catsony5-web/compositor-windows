@@ -458,11 +458,13 @@ public sealed partial class MainWindow
         }
 
         var affected = await ApplyAutomationEditAsync(candidate, command, args, token);
+        var details = automationStepDetails;
         candidate.Validate(); Recheck();
         CommitAutomationCandidate("AI · " + command, before, candidate, affected);
         var edited = AutomationResult(affected);
         if (command == "apply_material" && affected is { } mappedId && doc.Layers.FirstOrDefault(l => l.Id == mappedId)?.Material is { } mappedFill)
             edited["regionId"] = mappedFill.SourceRegionId.ToString();
+        if (details != null) foreach (var (key, value) in details) edited[key] = value?.DeepClone();
         return edited;
     }
 
@@ -561,7 +563,7 @@ public sealed partial class MainWindow
 
     async Task<Guid?> ApplyAutomationEditAsync(Document candidate, string command, JsonObject args, CancellationToken token)
     {
-        Guid? affected = null;
+        Guid? affected = null; automationStepDetails = null;
         Layer Target(bool allowUnlock = false)
         {
             var id = Guid.Parse(AString(args, "layerId"));
@@ -702,6 +704,10 @@ public sealed partial class MainWindow
                 var masked = Target();
                 if (masked.Kind is LayerKind.Group or LayerKind.Adjustment) throw new AutomationFault("wrong_layer_kind", "이미지·텍스트·도형 레이어를 선택하세요.");
                 masked.Mask = await Task.Run(() => BackgroundRemoval.CreateMask(masked.Pixels, cancellationToken: token), token); break;
+            case "clean_sketch":
+                var photo = Target();
+                automationStepDetails = await AutomationCleanSketchAsync(candidate, photo, args, token);
+                affected = Guid.Parse(automationStepDetails["groupId"]!.GetValue<string>()); break;
             default: throw new ArgumentException("Unknown command: " + command);
         }
         return affected;
