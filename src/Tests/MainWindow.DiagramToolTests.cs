@@ -249,7 +249,7 @@ public sealed partial class MainWindow
                 static JsonArray Points(params (double X, double Y)[] points) => new(points.Select(p => (JsonNode?)new JsonObject { ["x"] = p.X, ["y"] = p.Y }).ToArray());
                 Ok(Call("new_document", new JsonObject { ["name"] = "다이어그램", ["width"] = 400, ["height"] = 300, ["background"] = "#FFFFFF" }));
                 var capabilities = Ok(Call("get_capabilities"));
-                Check(capabilities["commands"]!.AsArray().Count == 40 && capabilities["batch"]!["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "add_callout")
+                Check(capabilities["commands"]!.AsArray().Count == 41 && capabilities["batch"]!["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "add_callout")
                     && capabilities["batch"]!["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "update_shape"), "Capabilities do not list the diagram commands");
 
                 var lineId = Guid.Parse(Ok(Call("add_shape", Write(("shape", "curve"), ("points", Points((40, 200), (140, 60), (260, 150))), ("stroke", "#C0392B"), ("strokeWidth", 3),
