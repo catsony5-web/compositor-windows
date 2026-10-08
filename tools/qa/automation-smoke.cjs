@@ -39,7 +39,7 @@ async function main() {
   const init = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'morupixel-smoke', version: '1' } });
   assert.equal(init.result.protocolVersion, '2025-11-25');
   mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 38); checks.push('MCP initialization and 38 tools');
+  const catalog = await rpc('tools/list', {}); assert.equal(catalog.result.tools.length, 43); checks.push('MCP initialization and 43 tools');
   async function call(command, args = {}, success = true) {
     const reply = await rpc('tools/call', { name: 'morupixel_' + command, arguments: { ...(command === 'list_sessions' ? {} : { sessionId }), ...args } });
     assert(!reply.error, JSON.stringify(reply.error));
@@ -50,7 +50,7 @@ async function main() {
   function data(result) { return result.structuredContent || JSON.parse(result.content.find(c => c.type === 'text').text); }
   const sessions = data(await call('list_sessions')); assert(JSON.stringify(sessions).includes(sessionId));
   const capabilities = data(await call('get_capabilities'));
-  assert.equal(capabilities.contractVersion, 9); assert.equal(capabilities.commands.length, 38);
+  assert.equal(capabilities.contractVersion, 10); assert.equal(capabilities.commands.length, 43);
   assert.equal(capabilities.materials.patterns.count, 32); assert.equal(capabilities.materials.patterns.screentones.count, 13); assert.equal(capabilities.materials.patterns.autoRegister, true);
   assert(capabilities.unsupportedViaMcp.includes('3d_uv_mapping')); assert.equal(capabilities.materials.embeddedOriginals, true);
   checks.push('Live capabilities identify supported and future operations');
@@ -69,6 +69,9 @@ async function main() {
   const sample = path.resolve(__dirname, '../../assets/samples/sea-window.png');
   await edit('add_image', { path: sample, x: 524, y: 170, name: '사진' });
   const imageId = state.layerId;
+  const entourage = data(await call('query_entourage', { category: 'people', view: 'elevation' })); assert(entourage.items.length >= 6 && entourage.items.every(i => i.category === 'people'));
+  await edit('place_entourage', { itemId: 'person.walking', x: 480, y: 560, height: 1.7, fill: 'solid', lineColor: '#FFFFFF', count: 3, spread: 300, seed: 2 }); assert.equal(state.layerIds.length, 3);
+  await edit('undo'); checks.push('Entourage is listed, scattered as one undo step and undone');
   await edit('set_layer', { layerId: imageId, scaleX: .24, scaleY: .24 });
   await edit('reorder_layer', { layerId: imageId, direction: 'down' });
   await edit('add_adjustment', { kind: 'exposure', exposure: .1, name: '밝기' });

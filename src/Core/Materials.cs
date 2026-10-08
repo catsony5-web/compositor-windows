@@ -184,7 +184,9 @@ public static class MaterialEditing
     {
         var layer = doc.Layers.SingleOrDefault(l => l.Id == id) ?? throw new InvalidDataException("영역으로 사용할 객체가 없습니다.");
         Geometry geometry;
-        if (layer.Shape is { } shape)
+        if (layer.Shape is { HasPoints: true } line)
+            geometry = ShapeGeometry.ClosedOutline(line) ?? throw new InvalidDataException("열린 선은 면으로 추측하지 않습니다. 닫힌 선이나 선택 영역을 사용하세요.");
+        else if (layer.Shape is { } shape)
             geometry = shape.Kind == ShapeKind.Ellipse ? new EllipseGeometry(new Rect(0, 0, shape.Width, shape.Height))
                 : new RectangleGeometry(new Rect(0, 0, shape.Width, shape.Height), shape.CornerRadius, shape.CornerRadius);
         else if (layer.Vector is { Format: VectorFormat.Paths } vector)

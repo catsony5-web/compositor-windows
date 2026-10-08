@@ -83,6 +83,12 @@ public static class Program
             try { new MainWindow(null).RenderCompactPreviews(args[1]); app.Shutdown(); return 0; }
             catch (Exception e) { Directory.CreateDirectory(args[1]); File.WriteAllText(Path.Combine(args[1], "error.txt"), e.ToString()); app.Shutdown(); return 1; }
         }
+        if (args.Length == 2 && args[0] == "--render-entourage-previews")
+        {
+            // Only the 점경 captures of --render-studio-previews, for quick review.
+            try { new MainWindow(null).RenderEntouragePreviews(args[1]); app.Shutdown(); return 0; }
+            catch (Exception e) { Directory.CreateDirectory(args[1]); File.WriteAllText(Path.Combine(args[1], "error.txt"), e.ToString()); app.Shutdown(); return 1; }
+        }
         if (args.Length > 0 && args[0] == "--render-preview")
         {
             if (args.Length != 2) return 2;

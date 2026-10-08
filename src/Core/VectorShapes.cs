@@ -1,12 +1,17 @@
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Media;
 
 namespace Compositor.Windows;
 
-public enum ShapeKind { Rectangle, Ellipse }
+// Stored by number in projects: append new kinds at the end. Line: an open or closed polyline or
+// smooth curve through Points. Callout: a leader from Points[0] (anchor) over Points[1] (elbow) to
+// Points[2] (label end) with Label beside it. Their Width/Height is the fitted layer surface.
+public enum ShapeKind { Rectangle, Ellipse, Line, Callout }
 public sealed record ShapeSpec
 {
+    public const double MaxMarkSize = 2048, MinDashScale = .1, MaxDashScale = 20;
     public ShapeKind Kind { get; init; }
     public int Width { get; init; } = 160;
     public int Height { get; init; } = 120;
@@ -16,11 +21,36 @@ public sealed record ShapeSpec
     public bool StrokeEnabled { get; init; }
     public double StrokeWidth { get; init; } = 2;
     public double CornerRadius { get; init; }
+    // Line and callout geometry in layer pixels. Projects without these values read as before.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public ShapePoints? Points { get; init; }
+    // Line: a smooth curve through every point instead of straight segments.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public bool Smooth { get; init; }
+    // Line: the last point joins the first; the fill paints inside.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public bool Closed { get; init; }
+    // Stroke style for every kind: dash pattern (lengths follow the stroke width × DashScale) and line ends.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public StrokeDash Dash { get; init; }
+    public double DashScale { get; init; } = 1;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public StrokeCap Cap { get; init; }
+    // Line: marks at the first and last point. Callout: StartMark at the anchor, EndMark at the label end.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public LineMark StartMark { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public LineMark EndMark { get; init; }
+    public double MarkSize { get; init; } = 12;
+    // Callout: the label text (the text engine with outline and paragraph box) and the leader's bend.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public TextSpec? Label { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public CalloutLeader Leader { get; init; }
+    [JsonIgnore] public bool HasPoints => Kind is ShapeKind.Line or ShapeKind.Callout;
     public void Validate()
     {
         Raster.ValidateSize(Width, Height);
         if (!Enum.IsDefined(Kind) || !double.IsFinite(StrokeWidth) || StrokeWidth < 0 || StrokeWidth > 512 || !double.IsFinite(CornerRadius) || CornerRadius < 0 || CornerRadius > 4096)
             throw new InvalidDataException("도형의 크기·선·모서리 값을 확인하세요.");
+        if (!Enum.IsDefined(Dash) || !Enum.IsDefined(Cap) || !Enum.IsDefined(StartMark) || !Enum.IsDefined(EndMark) || !Enum.IsDefined(Leader) ||
+            !double.IsFinite(DashScale) || DashScale < MinDashScale || DashScale > MaxDashScale || !double.IsFinite(MarkSize) || MarkSize < 1 || MarkSize > MaxMarkSize)
+            throw new InvalidDataException("선 모양과 끝 모양 값을 확인하세요.");
+        if (HasPoints) (Points ?? throw new InvalidDataException("선의 점 정보가 없습니다.")).Validate(Kind == ShapeKind.Callout ? 3 : Closed ? 3 : 2, Kind == ShapeKind.Callout ? 3 : ShapePoints.MaxCount);
+        else if (Points != null) throw new InvalidDataException("사각형과 타원에는 점 정보가 없습니다.");
+        if (Kind == ShapeKind.Callout) (Label ?? throw new InvalidDataException("지시선 라벨 정보가 없습니다.")).Validate();
+        else if (Label != null) throw new InvalidDataException("라벨은 지시선에만 있습니다.");
     }
 }
 
@@ -28,21 +58,56 @@ public static class VectorShapes
 {
     public static uint Argb(Color color) => (uint)(color.A << 24 | color.R << 16 | color.G << 8 | color.B);
     public static Color Color(uint value) => System.Windows.Media.Color.FromArgb((byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value);
+    // Lines and callouts: points are given relative to (x, y); the layer is fitted around what they draw.
     public static Layer Create(ShapeSpec spec, double x = 0, double y = 0)
     {
-        spec.Validate(); return new Layer { Kind = LayerKind.Shape, Shape = spec, Pixels = Render(spec), X = x, Y = y, Name = spec.Kind == ShapeKind.Ellipse ? "타원" : "사각형" };
+        if (spec.HasPoints) { (spec, var shift) = ShapeGeometry.Fit(spec); x -= shift.X; y -= shift.Y; }
+        spec.Validate(); return new Layer { Kind = LayerKind.Shape, Shape = spec, Pixels = Render(spec), X = x, Y = y, Name = DefaultName(spec) };
     }
+    /// <summary>Korean name of a new shape layer (translated by the UI).</summary>
+    public static string DefaultName(ShapeSpec spec) => spec.Kind switch
+    {
+        ShapeKind.Ellipse => "타원", ShapeKind.Line when spec.Closed => "닫힌 선", ShapeKind.Line => spec.Smooth ? "매끄러운 곡선" : spec.Points?.Count > 2 ? "꺾은선" : "선",
+        ShapeKind.Callout => "지시선", _ => "사각형"
+    };
     public static Raster Render(ShapeSpec spec)
     {
-        spec.Validate(); var output = new Raster(spec.Width, spec.Height);
+        spec.Validate();
+        // Lines, callouts and dashed outlines are drawn from their retained drawing (WPF, on the calling STA thread).
+        if (ShapeGeometry.UsesDrawing(spec)) { var drawing = ShapeGeometry.Drawing(spec); return Imaging.Draw(spec.Width, spec.Height, dc => dc.DrawDrawing(drawing)); }
+        var output = new Raster(spec.Width, spec.Height);
         var layer = new Layer { Kind = LayerKind.Shape, Shape = spec, Pixels = output };
         Composite(output, layer, default); return output;
     }
     public static void Update(Layer layer, ShapeSpec spec)
     {
+        // Lines and callouts are fitted again: the surface follows the points, marks and label while
+        // every point keeps its place on the canvas (the layer moves by the fitting shift).
+        Vector shift = default;
+        if (spec.HasPoints) (spec, shift) = ShapeGeometry.Fit(spec);
         spec.Validate(); if (layer.Shape == spec) return;
         var pixels = Render(spec); int oldWidth = layer.Pixels.Width, oldHeight = layer.Pixels.Height;
         byte[]? mask = layer.Mask;
+        if (spec.HasPoints && layer.Shape?.HasPoints == true)
+        {
+            var before = layer.Matrix; var probe = new Point();
+            if (mask != null)
+            {
+                // The mask stays on the same canvas pixels; uncovered new area shows.
+                var moved = new byte[pixels.Width * pixels.Height];
+                int dx = (int)Math.Round(shift.X), dy = (int)Math.Round(shift.Y);
+                for (int y = 0; y < pixels.Height; y++) for (int x = 0; x < pixels.Width; x++)
+                {
+                    int sx = x - dx, sy = y - dy;
+                    moved[y * pixels.Width + x] = sx >= 0 && sy >= 0 && sx < oldWidth && sy < oldHeight ? mask[sy * oldWidth + sx] : (byte)255;
+                }
+                mask = moved;
+            }
+            layer.Shape = spec; layer.Pixels = pixels; layer.Mask = mask;
+            var after = layer.Matrix.Transform(probe + shift); var target = before.Transform(probe);
+            layer.X += target.X - after.X; layer.Y += target.Y - after.Y;
+            return;
+        }
         if (mask != null && (oldWidth != pixels.Width || oldHeight != pixels.Height))
         {
             var resized = new byte[pixels.Width * pixels.Height];

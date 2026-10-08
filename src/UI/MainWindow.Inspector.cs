@@ -139,6 +139,7 @@ public sealed partial class MainWindow
         name.TextWrapping = TextWrapping.Wrap; name.ToolTip = layer.Name;
         var (kindGlyph, kindName) = layer.Kind switch
         {
+            _ when layer.Entourage != null => (Theme.Glyphs.Entourage, "점경"),
             LayerKind.Shape => (Theme.Glyphs.Shape, "벡터 도형"),
             LayerKind.Text => (Theme.Glyphs.Text, "텍스트 레이어"),
             LayerKind.Adjustment => (Theme.Glyphs.Adjustment, "조정 레이어"),
@@ -157,8 +158,10 @@ public sealed partial class MainWindow
         AddSelectionMaterials();
         AddTextProperties(layer);
         AddShapeProperties(layer);
+        AddEntourageProperties(layer);
         AddMaterialProperties(layer);
         AddStyleProperties(layer);
+        AddMapProperties(layer);
 
         properties.Children.Add(Theme.Section("외형"));
 

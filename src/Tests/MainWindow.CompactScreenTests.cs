@@ -142,9 +142,12 @@ public sealed partial class MainWindow
                 Check(menu.Contains("그룹 접기") && menu.Contains("패널 배치 초기화"), "The group menu lacks fold or reset: " + string.Join(", ", menu));
                 w.SetDockGroupCollapsed(navigator, true); Layout(w);
                 var strip = w.dockStrip!.Children.OfType<Button>().Select(AutomationProperties.GetName).ToArray();
-                Check(!w.dockStack!.Children.Contains(navigator) && w.dockStripHost!.Visibility == Visibility.Visible && strip.Contains("내비게이터 패널 펼치기") && strip.Contains("정보 패널 펼치기"), "The folded group is not in the icon strip");
-                w.dockStrip.Children.OfType<Button>().First(b => AutomationProperties.GetName(b) == "정보 패널 펼치기").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                Check(!navigator.Collapsed && w.DockTabVisible("info") && w.dockStack.Children.Contains(navigator), "The strip icon did not open its tab");
+                Check(!w.dockStack!.Children.Contains(navigator) && w.dockStripHost!.Visibility == Visibility.Visible && strip.Contains("내비게이터 패널 열기") && strip.Contains("정보 패널 열기"), "The folded group is not in the icon strip");
+                // The strip icon opens its tab (as a flyout beside the strip since Preview 45); 📌 도킹 unfolds the group.
+                w.dockStrip.Children.OfType<Button>().First(b => AutomationProperties.GetName(b) == "정보 패널 열기").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Check(w.DockTabVisible("info") && w.dockFlyoutGroup == navigator && navigator.Collapsed && !w.dockStack.Children.Contains(navigator), "The strip icon did not open its tab");
+                navigator.DockButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Check(!navigator.Collapsed && w.DockTabVisible("info") && w.dockStack.Children.Contains(navigator) && w.dockFlyoutGroup == null, "도킹 did not put the group back into the stack");
                 w.ShowStudioPage(3);
                 Check(w.DockTabVisible("brush") && w.dockGroups.Single(g => g.Key == "tools").Body.Child == w.studioPanes[3], "Opening the brush page did not unfold its dock group");
                 w.ResetDockLayout(); Layout(w);

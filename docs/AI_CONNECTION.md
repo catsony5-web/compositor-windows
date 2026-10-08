@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **38개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **43개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -71,10 +71,12 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 객체 검색·상세 조회 | `morupixel_query_layers`, `morupixel_get_layer` |
 | 문서 만들기·열기·전환 | `morupixel_new_document`, `morupixel_inspect_file`, `morupixel_open_document`, `morupixel_activate_document` |
 | 대지 만들기·수정·삭제 | `morupixel_add_artboard`, `morupixel_update_artboard`, `morupixel_delete_artboard` |
-| 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape` |
+| 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape`, `morupixel_update_shape` |
+| 라벨·지시선 | `morupixel_add_callout` |
 | 레이어 속성·삭제·순서 | `morupixel_set_layer`, `morupixel_delete_layer`, `morupixel_reorder_layer` |
 | 조정 레이어·AI 배경 제거 | `morupixel_add_adjustment`, `morupixel_remove_background` |
 | 스케치 사진을 선 그림으로 정리 | `morupixel_clean_sketch` |
+| OpenStreetMap 데이터로 지도 포스터·대지 위치도 만들기 | `morupixel_create_map` |
 | 프로젝트 저장·이미지 출력·미리보기 | `morupixel_save_project`, `morupixel_export_image`, `morupixel_preview` |
 | PDF·.psd·.ai 내보내기(레이어 유지·합치기) | `morupixel_export_document` |
 | 실행 취소·다시 실행 | `morupixel_undo`, `morupixel_redo` |
@@ -83,6 +85,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 적용 영역 등록·조회 | `morupixel_define_region`, `morupixel_query_regions` |
 | 재료 적용·패턴 변경 | `morupixel_apply_material`, `morupixel_update_material` |
 | 디자인 스타일 조회·적용 | `morupixel_query_styles`, `morupixel_apply_style` |
+| 점경(사람·나무·탈것·소품) 조회·놓기·고치기 | `morupixel_query_entourage`, `morupixel_place_entourage` |
 
 기본 해치 패턴 19종과 스크린톤 13종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, 알파 01~FF의 `#AARRGGBB`, `default`; 완전히 투명한 잉크는 `invalid_arguments`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그리며, `export_image`의 `scale`이 1이 아니면 출력 크기로 다시 그려 내보냅니다. 없는 패턴 ID는 `material_not_found`이며 `query_patterns`로 올바른 ID를 찾습니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
 
@@ -141,7 +144,45 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 재료 작업은 **이미지 준비 → 원본 등록 → 영역 지정 → 적용 → 미리보기** 순서입니다. 닫힌 도형·CAD 경로, 현재 선택 영역, 직접 지정한 다각형을 사용할 수 있습니다. 재료와 경계를 저장하고 반복 크기·회전·위치·원본 교체를 지원합니다. [재료 맵핑 안내와 요청 예시](MATERIAL_MAPPING.md)
 
-문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형과 타원을 지원합니다. `add_text`·`update_text`는 글자 외곽선도 받습니다: `outline`(켜기·끄기), `outlineWidth`(0.5~512px, 기본 4), `outlineColor`(기본 검정), `outlinePosition`(`outside` 글자 밖으로·기본, `center` 가장자리 중심), `outlineOnly`(채우기 없이 외곽선만 그린 속이 빈 글자). `outline`을 생략하고 다른 외곽선 인자를 주면 외곽선이 켜집니다. `boxWidth`(px, 0은 줄바꿈 없음)를 주면 그 폭 안에서 낱말 사이로 줄을 바꾸고(한국어는 어절 단위), `alignment: "Justify"`는 줄바꿈된 줄을 양쪽 끝에 맞춥니다(단락의 마지막 줄은 왼쪽). 외곽선은 화면·PNG·.psd·PDF(벡터)에 같은 모양으로 그려지고, `get_layer`의 `text`에 `Outline`·`OutlineWidth`·`OutlineArgb`·`OutlinePosition`(0 바깥, 1 가운데)·`OutlineOnly`·`BoxWidth`로 나옵니다. 외곽선을 켜고 끄면 레이어 표면이 외곽선 두께만큼 넓어지거나 줄어들고 `x`·`y`가 그만큼 바뀌지만 글자는 제자리에 있습니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상과 디자인 스타일 효과(한계값·망점·종이·인쇄 질감·빛 번짐)를 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
+문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형·타원과 선·꺾은선·곡선, 라벨·지시선을 지원합니다([다이어그램 선과 지시선](#다이어그램-선과-지시선)). `add_text`·`update_text`는 글자 외곽선도 받습니다: `outline`(켜기·끄기), `outlineWidth`(0.5~512px, 기본 4), `outlineColor`(기본 검정), `outlinePosition`(`outside` 글자 밖으로·기본, `center` 가장자리 중심), `outlineOnly`(채우기 없이 외곽선만 그린 속이 빈 글자). `outline`을 생략하고 다른 외곽선 인자를 주면 외곽선이 켜집니다. `boxWidth`(px, 0은 줄바꿈 없음)를 주면 그 폭 안에서 낱말 사이로 줄을 바꾸고(한국어는 어절 단위), `alignment: "Justify"`는 줄바꿈된 줄을 양쪽 끝에 맞춥니다(단락의 마지막 줄은 왼쪽). 외곽선은 화면·PNG·.psd·PDF(벡터)에 같은 모양으로 그려지고, `get_layer`의 `text`에 `Outline`·`OutlineWidth`·`OutlineArgb`·`OutlinePosition`(0 바깥, 1 가운데)·`OutlineOnly`·`BoxWidth`로 나옵니다. 외곽선을 켜고 끄면 레이어 표면이 외곽선 두께만큼 넓어지거나 줄어들고 `x`·`y`가 그만큼 바뀌지만 글자는 제자리에 있습니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상과 디자인 스타일 효과(한계값·망점·종이·인쇄 질감·빛 번짐)를 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
+
+### 다이어그램 선과 지시선
+
+발표 보드의 동선 화살표·점선 경계·설명 라벨을 편집 가능한 벡터 도형으로 만듭니다. 화면에서는 확대해도 선명하고, PDF·.ai에서는 벡터(점선·선 끝·곡선 그대로), PNG·.psd에서는 다른 도형처럼 픽셀로 나갑니다. 좌표는 루트 레이어 기준 문서 픽셀입니다.
+
+- `add_shape`에 `shape: "line"`(점을 곧게 잇는 선, 점이 셋 이상이면 꺾은선) 또는 `"curve"`(모든 점을 지나는 매끄러운 곡선)와 `points`(2~1024개 `{x, y}`)를 줍니다. `x`·`y`를 주면 모든 점에 더합니다. 선은 점에 맞춰 스스로 크기를 정하므로 `width`·`height`·`cornerRadius`는 받지 않습니다. `closed: true`(점 3개 이상)는 마지막 점을 첫 점과 잇고 `fill`을 주면 안쪽을 칠합니다. 닫힌 선은 `apply_material`의 `boundaryLayerId`로도 씁니다.
+- 선 모양은 모든 도형에 쓸 수 있습니다: `dash`(`solid`·`dotted`·`dashed`·`dash_dot`), `dashScale`(0.1~20, 간격 배율), `cap`(`round` 기본·`square`·`flat`). 점선 길이는 선 두께를 따릅니다(두께 2px의 `dashed`는 10px 선·6px 간격).
+- 선과 곡선의 끝 모양: `startMark`·`endMark`(`none`·`arrow`·`open_arrow`·`dot`·`ring`·`bar`), `markSize`(px, 기본은 두께의 5배와 10 중 큰 값). 화살표는 끝점에서 선 방향을 가리키고 선은 화살촉 안에서 끝납니다.
+- `add_callout`은 대상 점(`anchorX`·`anchorY`)에서 라벨 점(`labelX`·`labelY`)까지 지시선을 긋고 그 옆에 `text`를 둡니다. 글자는 지시선이 들어오는 쪽 반대편에 놓이고 세로 가운데가 라벨 점에 맞습니다. `leader: "elbow"`(기본)는 대상에서 위아래로 올라가 라벨과 같은 높이에서 꺾이고(`elbowX`·`elbowY`로 지정 가능), `"straight"`는 곧게 잇습니다. 끝 모양은 `anchorMark`(기본 `dot`)·`labelMark`(기본 `none`), 지시선은 `stroke`·`strokeWidth`·`dash`, 라벨 바탕은 `fill`·`cornerRadius`, 글자는 `add_text`와 같은 인자(`fontFamily`·`fontSize`·`color`·`outline`·`boxWidth` 등)를 받습니다.
+- `update_shape`는 모든 도형 레이어(`add_shape`·`add_callout`·앱에서 그린 것)의 선·채우기·선 모양·끝 모양을 바꾸고, 선은 `points`·`curve`·`closed`, 지시선은 대상·꺾임·라벨 점, `leader`, 라벨 글자를 바꿉니다. 생략한 값은 그대로이며, 꺾인 지시선은 라벨 점을 옮기면 꺾임이 같은 높이로 따라갑니다. 다른 종류의 인자(사각형의 `points`, 선의 `labelX` 등)는 `invalid_arguments`입니다.
+- `get_layer`의 `shape`에 `Points`(레이어 픽셀 `[x, y]`)·`Dash`·`StartMark` 등이, `documentPoints`에 캔버스 위 점 좌표가 들어갑니다. 세 명령 모두 `apply_batch` 단계로 쓸 수 있습니다.
+
+```json
+{ "command": "add_shape", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "shape": "curve", "points": [ { "x": 120, "y": 640 }, { "x": 420, "y": 380 }, { "x": 760, "y": 520 } ],
+  "stroke": "#202020", "strokeWidth": 2, "dash": "dashed", "startMark": "dot", "endMark": "arrow" } }
+```
+
+```json
+{ "command": "add_callout", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "anchorX": 520, "anchorY": 610, "labelX": 700, "labelY": 420, "text": "주출입구", "fontSize": 28, "dash": "dotted" } }
+```
+
+### 지도 만들기
+
+`create_map`은 앱의 **파일 › 지도 만들기 (OSM 파일)…**와 같은 처리로 OpenStreetMap 데이터에서 **지도 포스터**(`template: "poster"`) 또는 **대지 위치도**(`template: "site"`)를 새 문서로 만듭니다. 길(등급별)·철도·바다·강·호수·물줄기·공원·숲·잔디·건물은 종류별로 묶인 벡터 레이어가 되고, 문자·대지 표시·방위표·축척 막대도 편집할 수 있는 레이어입니다. 지도 그룹 맨 위에는 사용권(ODbL)이 요구하는 잠긴 문자 `© OpenStreetMap contributors`가 들어가니 지우지 마세요. [지도 안내](MAPS.md)
+
+- 데이터: `path`(`.osm` OpenStreetMap XML 내보내기 또는 `.geojson`, 절대 경로). 파일 지도는 인터넷을 쓰지 않습니다.
+- 인터넷 데이터: `source: "online"`과 `centerLatitude`·`centerLongitude`(또는 `place` 검색어, 첫 결과 사용), `radius`(100~2,500m, 기본 1,000; 건물은 1,500m 이하에서만 받음). 사용자가 앱의 동의 창에서 **AI 연결이 보내는 지도 요청도 이번 실행 동안 묻지 않고 허용**을 켠 경우에만 받으며, 아니면 `online_map_not_allowed`입니다. 이때는 사용자에게 `.osm` 파일을 받아 달라고 하거나 앱에서 허용해 달라고 안내하세요. 받기 실패는 `map_download_failed`, 장소를 못 찾으면 `place_not_found`, 읽을 수 없는 파일은 `map_data_invalid`입니다.
+- 모양: `theme`(`light`·`dark`·`green`·`mono`·`navy`·`warm`), `title`·`subtitle`, `width`·`height`(200~8,192px, 합계 16,777,216픽셀 이하)·`dpi`, `buildings`·`paths`·`rail`·`green`·`water`(그릴 항목, 기본 true), `coordinates`, `fade`(포스터 기본 true), `frame`(포스터 여백·테두리), `lineWeight`(0.25~4).
+- 대지 위치도: `siteLatitude`·`siteLongitude`(생략 시 받은 중심 또는 데이터 가운데), `marker`(`circle`·`pin`), `siteLabel`, `rings`(미터, 쉼표로 최대 6개, 예 `"500,1000"`, 빈 문자열은 없음), `northArrow`·`scaleBar`(위치도 기본 true), `scale`(문서 DPI로 인쇄했을 때 1:N; 생략하면 데이터에 맞춤).
+
+결과에는 새 문서 정보와 지도 그룹 `layerId`, `map`(`template`, `theme`, `source`, `metersPerPixel`—문서 1px의 실제 거리, `scaleDenominator`, `centerLatitude`·`centerLongitude`, 대지 좌표, 지도 틀 `frame`, 보이는 범위 `bounds`, 종류별 `features` 개수, `attribution`)와 `warnings`가 들어갑니다. 새 문서를 만드는 명령이라 실행 취소 대상이 아니며 `apply_batch` 단계로 쓸 수 없습니다. 만든 뒤에는 `set_layer`·`update_text` 등 일반 명령으로 고칩니다.
+
+```json
+{ "command": "create_map", "arguments": { "path": "C:\\Maps\\seoul.osm", "template": "site", "theme": "mono",
+  "siteLatitude": 37.5665, "siteLongitude": 126.978, "rings": "500,1000", "scale": 5000, "subtitle": "서울시청 일대" } }
+```
 
 ### 디자인 스타일 효과 넣기
 
@@ -210,6 +251,24 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 흑백 스크린톤 평면은 도면 선(치수·문자·가구·해치 역할 레이어 제외)으로 닫힌 영역을 찾아 바깥은 비우고, 얇거나 작은 영역(벽 속, 기둥)은 포셰, 방은 이웃끼리 다른 망점과 점묘 그라데이션으로 채웁니다. 단계마다 패턴 레이어가 하나씩 생기므로 앱의 재질 속성에서 패턴을 바꿀 수 있습니다. 네오 브루탈리즘 포스터는 내장 로컬 AI 모델로 피사체를 오려 제목 앞에 둡니다. 결과는 `preview`로 확인하세요.
 
+### 점경 놓기
+
+`query_entourage`는 앱의 **점경** 라이브러리를 돌려줍니다. 내장 점경은 Morupixel이 코드로 직접 그린 선 그림이며(사람 · 나무 · 식물 · 탈것 · 소품, 입면·단면과 평면), 각 항목에 `itemId`(예: `person.walking`, `tree.round`, `car.plan`), 한국어 이름과 표시 이름, `category`(`people`·`plants`·`vehicles`·`props`), `view`(`elevation`·`plan`), 기본 크기 `defaultHeight`(미터), 기본 채우기 `defaultFill`, 모양 변형 수 `variants`, 검색어 `keywords`가 들어갑니다. 이어서 사용자의 **내 점경**(이 PC의 목록과 문서가 가진 항목, `itemId: "custom:<32자리 16진수>"`, `lineDrawing`, `inLibrary`, `inDocument`)이 `custom`에 들어갑니다. `category`·`view`·`nameContains`로 거를 수 있고 문서가 없어도 됩니다. `documentId`(생략 시 현재 문서)가 있으면 그 문서의 점경 축척 `scale`(`pixelsPerMeter`, 1.7 m 사람의 px `personPixels`, 근거 `basis`: `user` 사용자가 정한 값, `document_entourage` 이미 놓인 점경, `default_1_to_100_at_dpi` 문서 DPI의 1:100)과 놓인 점경 목록 `placed`(`layerId`, `itemId`, `height`, `pixelsPerMeter`, `fill`, `lineColor`, `lineWeight`, `variant`, `flip`, 문서 픽셀 기준 `anchor`)도 돌려줍니다.
+
+`place_entourage`는 점경 하나를 `x`, `y`(문서 픽셀)에 놓습니다. 이 점은 입면·단면 점경에서는 **바닥점**(발끝·밑동·바퀴가 닿는 곳, 바닥선)이고 평면 점경에서는 **가운데**입니다. 실행 취소 한 번으로 되돌리고 `apply_batch` 단계로 쓸 수 있습니다.
+
+- `height`: 실제 크기(미터). 입면은 바닥에서 꼭대기까지 높이, 평면은 긴 쪽 길이(나무는 수관 지름). 생략하면 항목의 기본 크기(사람 1.7 m, 둥근 활엽수 8 m 등).
+- `pixelsPerMeter`: 축척(1 m가 몇 px인지). 생략하면 `query_entourage`의 `scale`과 같습니다. 크기 × 축척이 긴 변 4,096px를 넘으면 `invalid_arguments`입니다.
+- `fill`: `none`(선만), `white`·`gray`(실루엣을 흰색·회색으로 채움), `solid`(선 색 실루엣). 내 점경 사진은 원본 색·흐리게·회색조·실루엣입니다. `lineColor`: `#RRGGBB`·`#AARRGGBB`. `lineWeight`: 0.25~4(1은 축척에 맞춘 굵기로, 같은 축척의 점경은 같은 굵기). `flip`: 좌우 뒤집기. `variant`: 같은 항목의 다른 모양.
+- `count`(2~24): 크기·뒤집기·모양을 조금씩 달리해 자연스럽게 흩어 놓고 새 그룹으로 묶습니다. 입면은 `x`를 가운데로 너비 `spread` px의 바닥선 위에, 평면은 반지름 `spread` px 안에 놓고(평면 점경은 방향도 돌림), `seed`가 같으면 같은 배치입니다. 결과의 `layerId`는 그룹이고 `layerIds`에 점경들이 들어갑니다.
+- `layerId`(`itemId`·`x`·`y` 대신): 이미 놓인 점경의 크기·축척·채우기·색·굵기·뒤집기·모양을 바꿉니다. 지정하지 않은 값은 유지하고 바닥점은 그대로입니다. `height`나 `pixelsPerMeter`를 주면 손잡이로 바꾼 크기는 지웁니다.
+
+내장 점경은 경로를 보관하는 벡터 레이어라 확대해도 선명하고 PDF·.ai 내보내기에서도 벡터로 남습니다. 내 점경은 원본 이미지를 함께 저장한 이미지 레이어입니다. `get_layer`의 `entourage`에 같은 정보가 들어갑니다. 없는 항목은 `entourage_not_found`, 점경이 아닌 레이어는 `wrong_layer_kind`입니다.
+
+```json
+{ "command": "place_entourage", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "itemId": "tree.round", "x": 820, "y": 1080, "height": 9, "count": 5, "spread": 900, "seed": 3, "fill": "white" } }
+```
 ### AI가 큰 도면을 다루는 순서
 
 1. `get_capabilities`로 현재 편집기의 명령·좌표계·제한을 읽습니다. 새 MCP 실행 파일을 등록해도 이미 열린 이전 버전의 편집기가 업그레이드되지는 않습니다.
@@ -233,7 +292,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `update_shape`, `add_callout`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`, `place_entourage`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
 
 파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거, 디자인 스타일 적용은 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 
@@ -312,7 +371,7 @@ UTF-8 JSON 파일을 보내거나 응답을 파일로 보관할 수도 있습니
 
 ## 데스크톱 작업과 함께 사용하기
 
-연결은 기본적으로 꺼져 있으며, 켠 창에 한해 같은 Windows 사용자 계정의 로컬 프로그램이 접근합니다. 브리지는 로컬 named pipe를 사용하고 네트워크 포트를 열지 않습니다. AI에 전달되는 문서 정보와 미리보기의 처리는 연결한 AI 프로그램의 설정을 따릅니다.
+연결은 기본적으로 꺼져 있으며, 켠 창에 한해 같은 Windows 사용자 계정의 로컬 프로그램이 접근합니다. 브리지는 로컬 named pipe를 사용하고 네트워크 포트를 열지 않습니다. AI 연결 명령은 인터넷에 접속하지 않으며, 예외는 사용자가 앱의 동의 창에서 이번 실행 동안 허용한 경우의 `create_map`(`source: "online"`)뿐입니다. AI에 전달되는 문서 정보와 미리보기의 처리는 연결한 AI 프로그램의 설정을 따릅니다.
 
 명령 실행에 마우스·키보드 조작이나 창 포커스 이동은 필요하지 않습니다. 열린 문서의 변경은 실제 편집 기록에 남습니다. 사용자가 문서를 바꾸거나 직접 수정하면 AI가 이전 상태에 덮어쓰지 않도록 다음 오류를 반환합니다.
 

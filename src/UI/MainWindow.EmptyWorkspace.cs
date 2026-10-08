@@ -174,7 +174,13 @@ public sealed partial class MainWindow
             if (element != null) element.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
         // 간결한 화면 shows its panel dock in place of the friendly right cards.
         if (rightPanelHost != null && screenCompact) rightPanelHost.Visibility = Visibility.Collapsed;
-        if (compactDock != null) compactDock.Visibility = empty || !screenCompact ? Visibility.Collapsed : Visibility.Visible;
+        if (compactDock != null)
+        {
+            compactDock.Visibility = empty || !screenCompact ? Visibility.Collapsed : Visibility.Visible;
+            // Flyouts close and floating panel groups hide with the dock on the start screen.
+            if (empty) { CancelDockDrag(); CloseDockFlyout(focusAnchor: false); }
+            SyncDockWindows();
+        }
         if (optionRow != null) optionRow.Height = new GridLength(empty ? (screenCompact ? 0 : 8) : screenCompact ? CompactBarHeight : OptionRowHeight);
         if (viewControls != null) viewControls.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
     }

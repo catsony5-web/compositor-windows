@@ -179,7 +179,9 @@ public static class Imaging
             shape.Validate();
             if (shape.Width != layer.Pixels.Width || shape.Height != layer.Pixels.Height)
                 throw new System.IO.InvalidDataException("도형의 크기와 레이어 이미지 크기가 다릅니다.");
-            VectorShapes.Composite(output, layer, cancellationToken, transform); return;
+            // Lines, callouts and dashed outlines are WPF drawings: like text, this pixel path (also used
+            // off the UI thread) samples their cache; the design view and exports draw them crisply.
+            if (!ShapeGeometry.UsesDrawing(shape)) { VectorShapes.Composite(output, layer, cancellationToken, transform); return; }
         }
         var src = layer.Pixels; var mask = layer.Mask; var map = transform ?? layer.Matrix;
         var forward = map;

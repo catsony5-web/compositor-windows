@@ -64,7 +64,7 @@ public static class VectorPdfExport
             case GeometryDrawing geometry:
                 var path = Path(geometry.Geometry);
                 XBrush? brush = geometry.Brush is SolidColorBrush fill ? new XSolidBrush(Color(fill.Color)) : null;
-                XPen? pen = geometry.Pen?.Brush is SolidColorBrush stroke ? new XPen(Color(stroke.Color), geometry.Pen.Thickness) : null;
+                XPen? pen = geometry.Pen?.Brush is SolidColorBrush stroke ? PdfPen(geometry.Pen, Color(stroke.Color)) : null;
                 if (brush != null && pen != null) graphics.DrawPath(pen, brush, path);
                 else if (brush != null) graphics.DrawPath(brush, path);
                 else if (pen != null) graphics.DrawPath(pen, path);
@@ -113,8 +113,25 @@ public static class VectorPdfExport
         }
         return path;
     }
+    // Line ends, joins and dash patterns stay stroke properties in the PDF (both count dashes in pen widths).
+    static XPen PdfPen(Pen source, XColor color)
+    {
+        var pen = new XPen(color, source.Thickness);
+        if (source.StartLineCap == source.EndLineCap && source.StartLineCap != PenLineCap.Flat)
+            pen.LineCap = source.StartLineCap == PenLineCap.Round ? XLineCap.Round : XLineCap.Square;
+        // Default pens (drawings, solid shape outlines) keep the writer's defaults: flat ends, miter joins.
+        if (source.LineJoin != PenLineJoin.Miter) pen.LineJoin = source.LineJoin == PenLineJoin.Round ? XLineJoin.Round : XLineJoin.Bevel;
+        else if (source.MiterLimit != 10) pen.MiterLimit = source.MiterLimit;
+        if (source.DashStyle is { Dashes.Count: > 0 } dash && !ReferenceEquals(source.DashStyle, DashStyles.Solid))
+        {
+            // A zero-length dash with round or square ends draws a dot, as on the canvas.
+            pen.DashStyle = XDashStyle.Custom; pen.DashPattern = dash.Dashes.ToArray(); pen.DashOffset = dash.Offset;
+        }
+        return pen;
+    }
     internal static DrawingGroup ShapeDrawing(ShapeSpec shape)
     {
+        if (ShapeGeometry.UsesDrawing(shape)) return ShapeGeometry.Drawing(shape);
         Geometry Outline(double inset)
         {
             var rect = new Rect(inset, inset, Math.Max(.001, shape.Width - inset * 2), Math.Max(.001, shape.Height - inset * 2));

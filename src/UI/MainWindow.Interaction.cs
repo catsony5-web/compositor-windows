@@ -18,6 +18,7 @@ public sealed partial class MainWindow
         polygonInProgress = false; lassoPoints.Clear(); canvas.GesturePoints = null;
         canvas.GestureBounds = null; cloneSnapshot = null; moveStarted = false;
         objectMarquee = false; canvas.ObjectMarquee = null; artboardStart = null; canvas.ArtboardDraft = null;
+        ResetDiagramTransient();
     }
 
     void ChangeInteractionTool(Tool next)
@@ -32,6 +33,7 @@ public sealed partial class MainWindow
         canvas.ArtboardMode = tool == Tool.Artboard;
         if (tool == Tool.Artboard) { selectedArtboard = CurrentArtboard.Id; ShowStudioPage(1); }
         canvas.Cursor = tool == Tool.Hand ? Cursors.Hand : tool == Tool.Move ? Cursors.Arrow : tool == Tool.Text ? Cursors.IBeam : Cursors.Cross;
+        if (!DiagramTool(tool) && tool != Tool.Move) selectedShapePoint = null;
         canvas.BrushPoint = null; canvas.BrushRadius = brushSize / 2;
         UpdateBrushTipCursor();
         autoSelectToggle.IsEnabled = tool == Tool.Move; UpdateToolOptions(); Refresh(false); ShowInteractionHint();
@@ -51,6 +53,7 @@ public sealed partial class MainWindow
             Tool.BlurBrush => "드래그: 선택 영역 안에서 국소 흐림 · Alt+좌우 드래그 / [ ]: 크기",
             Tool.Text => "텍스트 클릭: 내용·서식 편집 · 빈 곳 클릭: 새 텍스트 · Alt+클릭: 항상 새 텍스트",
             Tool.Bucket => $"버킷: 클릭한 영역을 전경색으로 채우기 · 오차 {bucketTolerance:0} · G 버킷 / Shift+G 그라데이션",
+            Tool.Line or Tool.Callout => DiagramHint(),
             _ => null
         };
         if (hint != null) status.ToolTip = hint + "\nSpace+드래그: 화면 이동";
@@ -59,6 +62,8 @@ public sealed partial class MainWindow
     void EditTextAt(Point point)
     {
         var picked = Keyboard.Modifiers.HasFlag(ModifierKeys.Alt) ? null : LayerPicking.Pick(doc, point);
+        // A callout's label is edited in its own text rows.
+        if (picked?.Shape is { Kind: ShapeKind.Callout } && !IsLockedWithParents(picked)) { SelectLayer(picked.Id); FocusCalloutLabel(); return; }
         if (picked?.Kind == LayerKind.Text)
         {
             if (IsLockedWithParents(picked)) { status.Text = "잠긴 텍스트 레이어입니다."; return; }
@@ -90,11 +95,14 @@ public sealed partial class MainWindow
             { panning = true; screenStart = screen; initialPan = canvas.Pan; canvas.CaptureMouse(); e.Handled = true; return; }
             if (e.ChangedButton == MouseButton.Right && tool == Tool.PolygonLasso && polygonInProgress)
             { FinishPolygon(); e.Handled = true; return; }
+            if (e.ChangedButton == MouseButton.Right && tool == Tool.Line && lineDrawing)
+            { FinishLine(false); e.Handled = true; return; }
             if (e.ChangedButton != MouseButton.Left) return;
             e.Handled = true;
             if (tool == Tool.MagicWand && e.ClickCount > 1) { ConfigureWand(); return; }
             if (jobCts != null) { status.Text = "처리 중입니다. Esc로 취소한 뒤 편집하세요."; return; }
             if (tool == Tool.Artboard) { BeginArtboard(point, screen, Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)); return; }
+            if (DiagramDown(point, screen, e)) return;
             if (tool == Tool.Move && TryBeginTransformHandle(point, screen)) return;
             bool inside = point.X >= 0 && point.Y >= 0 && point.X < doc.Width && point.Y < doc.Height;
             if (!inside)
@@ -164,6 +172,7 @@ public sealed partial class MainWindow
             canvas.BrushPoint = tool is Tool.Brush or Tool.Eraser || IsRetouch(tool) ? point : null;
             canvas.BrushRadius = brushSize / 2;
             if (panning) { canvas.Pan = initialPan + (screen - screenStart); canvas.InvalidateVisual(); return; }
+            if (DiagramMove(point, screen)) return;
             if (polygonInProgress && tool == Tool.PolygonLasso)
             { canvas.GesturePoints = lassoPoints.Append(ClampToCanvas(point)).ToArray(); canvas.InvalidateVisual(); return; }
             if (!dragging)
@@ -204,6 +213,7 @@ public sealed partial class MainWindow
                 e.Handled = true; return;
             }
             if (panning) { panning = false; canvas.ReleaseMouseCapture(); UpdatePointerModifiers(); e.Handled = true; return; }
+            if (e.ChangedButton == MouseButton.Left && DiagramUp(canvas.ToDocument(e.GetPosition(canvas)), e.GetPosition(canvas))) { e.Handled = true; return; }
             if (e.ChangedButton != MouseButton.Left || !dragging) return;
             e.Handled = true;
             if (objectMarquee) { EndObjectMarquee(canvas.ToDocument(e.GetPosition(canvas))); return; }
