@@ -21,13 +21,15 @@ public sealed partial class MainWindow
     readonly Dictionary<string, UIElement> dockContent = new(StringComparer.Ordinal);
     DockGroupLayout[]? savedDockGroups;
     double compactDockWidth = DefaultDockWidth, friendlyPanelWidth = 396;
-    internal const double DefaultDockWidth = 300, MinDockWidth = 240, MaxDockWidth = 520, DockGroupMinHeight = 84, DockGap = 3, DockStripWidth = 34;
+    internal const double DefaultDockWidth = 320, MinDockWidth = 240, MaxDockWidth = 520, DockGroupMinHeight = 84, DockGap = 3, DockStripWidth = 34;
 
     // The friendly pages map onto dock tabs (ShowStudioPage in 간결한 화면).
     static string DockTabForPage(int page) => page switch { 1 => "properties", 2 => "color", 3 => "brush", _ => "work" };
     static int? PageForDockTab(string key) => key switch { "work" => 0, "properties" => 1, "color" => 2, "brush" => 3, _ => null };
 
     string WorkTabTitle => userProfile.TabCaption ?? (designWorkspace ? "디자인" : "보정");
+    // The 작업 tab's icon follows its content: the purpose's own mark, or the work mode's.
+    string WorkTabGlyph => userProfile.TabCaption != null ? userProfile.Glyph : designWorkspace ? Theme.Glyphs.Style : Theme.Glyphs.Camera;
 
     DockGroup[] CreateDockGroups()
     {
@@ -220,7 +222,7 @@ public sealed partial class MainWindow
             for (int i = 0; i < group.Tabs.Count; i++)
             {
                 var tab = group.Tabs[i]; string title = group.Title(i);
-                var button = Theme.IconButton(tab.Glyph, () => Guard(() => ShowDockTab(tab.Key)), $"{title} 패널 펼치기", 28, 16);
+                var button = Theme.IconButton(tab.Key == "work" ? WorkTabGlyph : tab.Glyph, () => Guard(() => ShowDockTab(tab.Key)), $"{title} 패널 펼치기", 28, 16);
                 button.Margin = new Thickness(3, 1, 3, 1); Density.Mark(button, DensityRole.Keep);
                 var menu = new ContextMenu();
                 var expand = new MenuItem { Header = "그룹 펼치기" }; expand.Click += (_, _) => SetDockGroupCollapsed(group, false); menu.Items.Add(expand);

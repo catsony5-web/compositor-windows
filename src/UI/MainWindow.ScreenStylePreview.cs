@@ -55,7 +55,16 @@ public sealed partial class MainWindow
             RenderCompactCapture(directory, "compact-drawing-1480x920", 1480, 920);
             RenderCompactCapture(directory, "compact-drawing-1280x720", 1280, 720);
             ShowDockTab("layers");
+            // The ribbon over the compact chrome.
+            SetRibbonMode(true); SelectRibbonTab("레이어");
+            PrepareCompactCapture();
+            RenderCompactCapture(directory, "compact-ribbon-1480x920", 1480, 920);
+            SetRibbonMode(false);
             SetWorkspaceMode(false);
+            // Back on the friendly screen, which must look as it did before the switch.
+            SetScreenStyle(false);
+            PrepareCompactCapture();
+            RenderCompactCapture(directory, "friendly-after-compact-1480x920", 1480, 920);
             TrimPreviewTabs();
         }
         finally { SetScreenStyle(false); }

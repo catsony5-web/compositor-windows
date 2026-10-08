@@ -19,8 +19,8 @@ public static class Theme
 
     // Two palettes share the token names: 친절한 화면 (the default, below) and 간결한 화면, a flat
     // neutral gray set whose accent marks only focus and selection. The tokens read the active
-    // palette, so controls built later follow a switch; ScreenStyle.Repaint swaps the brushes
-    // that existing controls already hold.
+    // palette, so controls built later follow a switch; MainWindow.ScreenStyleRepaint swaps the
+    // brushes that existing controls already hold.
     internal sealed record Palette(string Canvas, string Stage, string Header, string Panel, string Surface, string Hover, string Pressed, string Input,
         string Paper, string Line, string Stroke, string Text, string Muted, string Subtle, string Accent, string Primary, string PrimaryHover,
         string Selected, string RowHover, string Danger, string Success, string Warning, string Popup);
@@ -65,7 +65,7 @@ public static class Theme
 
     // Switches the token palette and the Theme.xaml resources (colors, type sizes, control
     // heights and corner radii) for 친절한 화면 or 간결한 화면. Returns old → new brushes so the
-    // caller can repaint controls that already hold a token (ScreenStyle.Repaint).
+    // caller can repaint controls that already hold a token (MainWindow.ScreenStyleRepaint).
     internal static IReadOnlyDictionary<Brush, Brush> UseScreenStyle(bool compact)
     {
         var next = compact ? compactBrushes : friendlyBrushes;

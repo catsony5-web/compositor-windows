@@ -148,7 +148,7 @@ public sealed partial class MainWindow
         Group("기본 패턴", Theme.Glyphs.Hatch, builtIn.Where(c => !starred.Contains(c.Asset.Id) && !Screentone(c)));
         Group("스크린톤", Theme.Glyphs.Screentone, builtIn.Where(c => !starred.Contains(c.Asset.Id) && Screentone(c)));
         Group("내 패턴", Theme.Glyphs.Image, custom.Where(c => !starred.Contains(c.Asset.Id)));
-        var note = Theme.Label("도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.", Theme.CaptionSize, Theme.Subtle); note.Margin = new Thickness(2, 0, 2, 4);
+        var note = Density.Mark(Theme.Label("도면용 선 패턴입니다. 바탕이 투명해 아래 색과 선이 그대로 보입니다.", Theme.CaptionSize, Theme.Subtle), DensityRole.Description); note.Margin = new Thickness(2, 0, 2, 4);
         body.Children.Add(note);
         body.Children.Add(Theme.ActionRow("이미지로 패턴 추가…", () => Guard(() => { CommitFocusedInspectorField(); ChooseLinePatternImage(apply); }),
             "스캔하거나 그린 해치 이미지의 어두운 선을 잉크로 바꿔 내 패턴에 등록하고 바로 채웁니다.", Theme.Glyphs.Plus));

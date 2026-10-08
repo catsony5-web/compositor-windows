@@ -105,6 +105,6 @@ public sealed partial class MainWindow
         buttons.Children.Add(Theme.Button("새 대지", AddArtboard));
         var remove = Theme.Button("대지 삭제", RemoveArtboard); remove.IsEnabled = ArtboardEditing.Visible(doc).Count > 1; buttons.Children.Add(remove); properties.Children.Add(buttons);
         properties.Children.Add(Theme.Button("이 대지 내보내기…", () => ExportDialog.Show(this, ArtboardEditing.ExportDocument(doc, CurrentArtboard.Id))));
-        var hint = Theme.Label("대지의 위치와 크기를 바꿉니다.\n안의 객체 위치는 유지됩니다.", Theme.CaptionSize, Theme.Muted); hint.TextWrapping = TextWrapping.Wrap; hint.Margin = new Thickness(2, 10, 2, 4); properties.Children.Add(hint);
+        var hint = Density.Mark(Theme.Label("대지의 위치와 크기를 바꿉니다.\n안의 객체 위치는 유지됩니다.", Theme.CaptionSize, Theme.Muted), DensityRole.Description); hint.TextWrapping = TextWrapping.Wrap; hint.Margin = new Thickness(2, 10, 2, 4); properties.Children.Add(hint);
     }
 }

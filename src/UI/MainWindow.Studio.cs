@@ -131,6 +131,8 @@ public sealed partial class MainWindow
 
     internal void SetHistogramVisible(bool visible)
     {
+        // 간결한 화면 has a histogram tab in its dock; the friendly card setting is kept for later.
+        if (screenCompact && visible && HasDocument) ShowDockTab("histogram");
         showHistogram = visible;
         if (histogramToggle != null) histogramToggle.IsChecked = visible;
         UpdateHistogramVisibility();

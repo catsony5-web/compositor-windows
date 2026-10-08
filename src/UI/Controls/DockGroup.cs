@@ -53,7 +53,7 @@ internal sealed class DockGroup : Border
             int index = i; var tab = tabs[i];
             var button = new Button { Content = new TextBlock { Text = tab.Title, FontSize = 12, TextWrapping = TextWrapping.NoWrap, VerticalAlignment = VerticalAlignment.Center }, ToolTip = tab.Tip, Focusable = true };
             button.Template = TabTemplate();
-            button.MinHeight = HeaderHeight; button.Padding = new Thickness(10, 0, 10, 0); button.Cursor = Cursors.Hand;
+            button.MinHeight = HeaderHeight; button.Padding = new Thickness(8, 0, 8, 0); button.Cursor = Cursors.Hand;
             button.Click += (_, _) => Select(index);
             button.MouseDoubleClick += (_, e) => { toggle(this); e.Handled = true; };
             AutomationProperties.SetName(button, $"{tab.Title} 패널");
@@ -67,7 +67,7 @@ internal sealed class DockGroup : Border
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         root.Children.Add(body);
         Child = root;
-        AutomationProperties.SetName(this, string.Join(" · ", titles) + " 패널 그룹");
+        AutomationProperties.SetName(this, $"{string.Join(" · ", titles)} 패널 그룹");
     }
 
     static ControlTemplate TabTemplate()
@@ -127,7 +127,7 @@ internal sealed class DockGroup : Border
             button.Background = on ? Theme.Panel : Brushes.Transparent;
             button.Foreground = on ? Theme.Text : Theme.Muted;
             button.BorderBrush = Brushes.Transparent; button.BorderThickness = new Thickness(0);
-            if (button.Content is TextBlock text) { text.Foreground = on ? Theme.Text : Theme.Muted; text.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal; }
+            if (button.Content is TextBlock text) text.Foreground = on ? Theme.Text : Theme.Muted;
             AutomationProperties.SetItemStatus(button, on ? "열림" : "");
         }
         Background = Theme.Panel;
