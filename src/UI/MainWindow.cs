@@ -8,7 +8,7 @@ using Microsoft.Win32;
 
 namespace Compositor.Windows;
 
-public enum Tool { Move, Brush, Eraser, RectangleSelect, EllipseSelect, Crop, Rectangle, Ellipse, Gradient, Text, Eyedropper, Hand, Lasso, PolygonLasso, MagicWand, CloneStamp, Heal, Smudge, Liquify, BlurBrush, Bucket, Artboard }
+public enum Tool { Move, Brush, Eraser, RectangleSelect, EllipseSelect, Crop, Rectangle, Ellipse, Gradient, Text, Eyedropper, Hand, Lasso, PolygonLasso, MagicWand, CloneStamp, Heal, Smudge, Liquify, BlurBrush, Bucket, Artboard, Line, Callout }
 
 public sealed partial class MainWindow : Window
 {
@@ -66,6 +66,7 @@ public sealed partial class MainWindow : Window
         BuildBucketOptions(); options.Children.Add(bucketOptions);
         BuildWandOptions(); options.Children.Add(wandOptions);
         BuildArtboardOptions(); options.Children.Add(artboardOptions);
+        BuildDiagramOptions(); options.Children.Add(diagramOptions);
         brushOptions.Children.Add(OptionLabel("크기", "브러시 지름 · Alt + 좌우 드래그로도 조절"));
         sizeSlider = Slider(1, MaxBrushSize, brushSize, 115, v => { brushSize = v; UpdateBrushLabel(); }); brushOptions.Children.Add(sizeSlider);
         brushLabel.Width = 50; brushOptions.Children.Add(brushLabel); brushOptions.Children.Add(OptionLabel("경도", "가장자리 선명도 · 낮을수록 부드럽게"));
@@ -83,7 +84,7 @@ public sealed partial class MainWindow : Window
         var body = bodyGrid = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 3); root.Children.Add(body);
         body.ColumnDefinitions.Add(toolRailColumn); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
         var tools = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(4, 8, 4, 8) };
-        var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
+        var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Line, "╱", "선 · 곡선", "P"), (Tool.Callout, "↘", "지시선", "N"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
         foreach (var def in toolDefs)
         {
             var b = Theme.Button(def.Icon, () => SetTool(def.Tool), $"{def.Name} ({def.Key})"); b.Content = ToolIcons.Create(def.Tool); System.Windows.Automation.AutomationProperties.SetName(b, def.Name); StyleToolButton(b); toolButtons[def.Tool] = b; toolShortcuts[def.Tool] = (def.Name, def.Key); tools.Children.Add(b);
@@ -208,6 +209,7 @@ public sealed partial class MainWindow : Window
         if (render && HasDocument) QueueRender();
         else if (!dragging) ClearTextMovePreview();
         MaintainMovePlanes();
+        UpdateDiagramOverlay();
         canvas.InvalidateVisual();
         documentTitle.Text = HasDocument ? $"{(history.Dirty(doc) ? "●  " : "")}{doc.Name}   ·   {doc.Width} × {doc.Height} px" : "";
         Title = HasDocument ? $"{(history.Dirty(doc) ? "* " : "")}{doc.Name} — Morupixel" : "Morupixel · 모루픽셀";
@@ -222,7 +224,7 @@ public sealed partial class MainWindow : Window
     {
         UpdateDocumentInfo();
         if (!HasDocument) { status.Text = ""; status.ToolTip = null; objectCount.Text = ""; UpdateZoomBox(); return; }
-        var hint = tool switch { Tool.Move => "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · Alt+좌우 드래그 / [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기 · Alt+좌우 드래그: 크기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Bucket => "클릭: 전경색으로 영역 채우기 · 허용 오차·연결 영역 조절 · Esc 취소", Tool.Gradient => gradientToBackground ? "전경색 → 배경색 그라데이션 · 드래그" : "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
+        var hint = tool switch { Tool.Move => "클릭: 레이어 선택 · 드래그: 이동 · 자동 선택을 끄면 선택한 레이어 유지 · Ctrl+T 변형", Tool.Brush => "드래그하여 그리기 · Alt+좌우 드래그 / [ ] 크기 조절", Tool.Eraser => "드래그하여 지우기 · Alt+좌우 드래그: 크기", Tool.Crop => "드래그한 영역으로 캔버스 자르기", Tool.Text => "캔버스를 클릭하여 텍스트 추가", Tool.Line or Tool.Callout => DiagramHint()!, Tool.Bucket => "클릭: 전경색으로 영역 채우기 · 허용 오차·연결 영역 조절 · Esc 취소", Tool.Gradient => gradientToBackground ? "전경색 → 배경색 그라데이션 · 드래그" : "전경색 → 투명 그라데이션 · 드래그", Tool.Hand => "드래그하여 화면 이동", _ => "캔버스에서 드래그 · Esc 취소" };
         status.Text = ToolDisplayName(tool) + (maskEditing ? " · 마스크" : "");
         status.ToolTip = hint + (tool == Tool.Move ? "\n자석 정렬 · Alt: 스냅 잠시 해제 · Shift: 가로/세로 고정" : "") + "\n휠: 확대/축소 · Space+드래그: 화면 이동";
         objectCount.Text = selectedLayers.Count > 1 ? $"{selectedLayers.Count:N0}개 선택" : $"{doc.Layers.Count(l => l.Kind != LayerKind.Group):N0}개 객체";

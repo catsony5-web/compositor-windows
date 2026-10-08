@@ -111,6 +111,7 @@ public static class ObjectSelection
     static Geometry LocalInk(Layer layer, bool alpha, CancellationToken token)
     {
         if (layer.Vector is { Format: VectorFormat.Paths } vector) return vectorInk.GetValue(vector, source => { var ink = DrawingInk(source.Drawing); ink.Freeze(); return ink; });
+        if (layer.Shape is { HasPoints: true } diagram) return ShapeGeometry.Ink(diagram);
         if (layer.Shape is { } shape)
         {
             Geometry Outline(double inset)

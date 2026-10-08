@@ -78,11 +78,13 @@ public sealed partial class MainWindow
     {
         AddDesignStyleFeature(panel);
         WorkspaceSection(panel, "만들기", "도형·텍스트를 이미지와 함께 배치합니다.");
-        WorkspaceTiles(panel, 4,
+        WorkspaceTiles(panel, 3,
             (Theme.Glyphs.Text, "새 텍스트", () => OpenTextProperties(null), "편집 가능한 텍스트 추가 후 문자·단락 속성 열기"),
             (ToolIcons.PathData(Tool.Rectangle), "사각형", () => SetTool(Tool.Rectangle), "캔버스에서 드래그하여 편집 가능한 사각형 만들기"),
             (ToolIcons.PathData(Tool.Ellipse), "타원", () => SetTool(Tool.Ellipse), "캔버스에서 드래그하여 편집 가능한 타원 만들기"),
-            (Theme.Glyphs.FillStroke, "채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께 조절"));
+            (ToolIcons.PathData(Tool.Line), "선 · 곡선", () => SelectLineTool(false), "클릭한 점을 잇는 선·꺾은선·곡선과 화살표 · P / 곡선 Shift+P"),
+            (ToolIcons.PathData(Tool.Callout), "지시선", () => SetTool(Tool.Callout), "대상에서 라벨까지 끌어 점·지시선·글자를 한 번에 · N"),
+            (Theme.Glyphs.FillStroke, "채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께, 점선과 끝 모양 조절"));
         panel.Children.Add(Theme.ActionRow("피사체를 글자 앞으로", Run(PlaceSubjectInFront), SubjectFrontTip, Theme.Glyphs.SubjectFront));
         WorkspaceSection(panel, "캔버스에 정렬", "선택한 이미지·도형·텍스트 각각을 캔버스 기준으로 정렬합니다.");
         panel.Children.Add(QuickActions.IconStrip(CanvasAlignments.Select(a => (a.Glyph, a.Name, Run(() => AlignWorkspaceLayers(a.Direction)))), out _));

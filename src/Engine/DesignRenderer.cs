@@ -120,7 +120,7 @@ public static partial class DesignRenderer
                 subtree.Layers = doc.Layers.Where(l => l.Id != layer.Id && ids.Contains(l.Id)).Select(l => { var c = l.Snapshot(); if (c.ParentId == layer.Id) c.ParentId = null; return c; }).ToList();
                 copy.Pixels = Imaging.Render(subtree, token); copy.Kind = LayerKind.Raster;
             }
-            if (layer.Warp == null && layer.Kind is LayerKind.Vector or LayerKind.Text or LayerKind.Material)
+            if (layer.Warp == null && (layer.Kind is LayerKind.Vector or LayerKind.Text or LayerKind.Material || layer.Shape is { } drawn && ShapeGeometry.UsesDrawing(drawn)))
             {
                 var rendered = RenderRetained(copy, world, width, height, token); ApplyMask(rendered, layer, world, false, token); return rendered;
             }
@@ -252,6 +252,7 @@ public static partial class DesignRenderer
             if (pdf != null) dc.DrawImage(pdf.Bitmap(), visible);
             else if (material != null) dc.DrawDrawing(material);
             else if (layer.Vector != null) dc.DrawDrawing(layer.Vector.Drawing);
+            else if (layer.Shape != null) dc.DrawDrawing(ShapeGeometry.Drawing(layer.Shape));
             else dc.DrawDrawing(TextDrawing(layer.Text!));
             dc.Pop(); dc.Pop();
         });

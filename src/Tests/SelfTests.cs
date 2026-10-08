@@ -144,6 +144,8 @@ public static class SelfTests
         MainWindow.RunShadowCommandTests(Test);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
+        DiagramShapeTests.Run(Test, directory);
+        MainWindow.RunDiagramToolTests(Test);
         VectorContentTests.Run(Test, directory);
         MaterialMappingTests.Run(Test, directory);
         HatchPatternTests.Run(Test, directory);

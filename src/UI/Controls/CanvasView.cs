@@ -202,7 +202,7 @@ public sealed partial class CanvasView : FrameworkElement
                 dc.DrawLine(pen, points[4], points[8]); dc.DrawEllipse(Theme.Panel, pen, points[8], 4 / Zoom, 4 / Zoom);
             }
         }
-        DrawArtboards(dc); DrawObjectSelection(dc);
+        DrawArtboards(dc); DrawObjectSelection(dc); DrawDiagram(dc);
         dc.Pop(); dc.Pop();
         if (BrushHud != null && BrushPoint is { } anchor)
         {

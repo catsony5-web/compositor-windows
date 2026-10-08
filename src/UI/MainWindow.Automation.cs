@@ -683,12 +683,21 @@ public sealed partial class MainWindow
                 if (args.ContainsKey("y")) textLayer.Y = ANumber(args, "y");
                 if (args.ContainsKey("name")) textLayer.Name = AString(args, "name"); break;
             case "add_shape":
-                var shape = new ShapeSpec { Kind = AString(args, "shape") == "ellipse" ? ShapeKind.Ellipse : ShapeKind.Rectangle,
+                var shape = AString(args, "shape") is "line" or "curve" ? AutomationLine(args) : AutomationStrokeStyle(args, new ShapeSpec { Kind = AString(args, "shape") == "ellipse" ? ShapeKind.Ellipse : ShapeKind.Rectangle,
                     Width = (int)ANumber(args, "width"), Height = (int)ANumber(args, "height"),
                     FillArgb = VectorShapes.Argb(AColor(args, "fill", Color.FromRgb(188, 217, 250))),
                     StrokeArgb = VectorShapes.Argb(AColor(args, "stroke", Colors.Transparent)), StrokeEnabled = args.ContainsKey("stroke"),
-                    StrokeWidth = ANumber(args, "strokeWidth", 2), CornerRadius = ANumber(args, "cornerRadius") };
+                    StrokeWidth = ANumber(args, "strokeWidth", 2), CornerRadius = ANumber(args, "cornerRadius") });
                 Add(await CompatibilityImport.OnSta(() => VectorShapes.Create(shape, ANumber(args, "x"), ANumber(args, "y")), token)); break;
+            case "update_shape":
+                var shaped = Target();
+                if (shaped.Shape is not { } currentShape) throw new AutomationFault("wrong_layer_kind", "도형 레이어가 아닙니다.");
+                var nextShape = AutomationShapeUpdate(shaped, currentShape, args);
+                if (nextShape != currentShape) await CompatibilityImport.OnSta(() => { VectorShapes.Update(shaped, nextShape); return true; }, token);
+                if (args.ContainsKey("name")) shaped.Name = AString(args, "name"); break;
+            case "add_callout":
+                var callout = AutomationCallout(args, candidate);
+                Add(await CompatibilityImport.OnSta(() => VectorShapes.Create(callout), token)); break;
             case "set_layer":
                 bool unlockOnly = args.Count == 4 && args.ContainsKey("locked") && !ABool(args, "locked");
                 var layer = Target(unlockOnly);

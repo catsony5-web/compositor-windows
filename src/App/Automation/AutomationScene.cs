@@ -95,6 +95,13 @@ public sealed class AutomationScene
         if (layer.Text != null) result["text"] = JsonSerializer.SerializeToNode(layer.Text);
         if (layer.Material != null) result["material"] = AutomationMaterials.Fill(layer.Material, document);
         if (layer.Shape != null) result["shape"] = JsonSerializer.SerializeToNode(layer.Shape);
+        // Line and callout points where they are on the canvas (update_shape takes these for root layers).
+        if (layer.Shape?.Points is { } shapePoints)
+            result["documentPoints"] = new JsonArray(shapePoints.Select(p =>
+            {
+                var at = layer.Document(p); foreach (var ancestor in ancestors) at = ancestor.Document(at);
+                return (JsonNode?)new JsonObject { ["x"] = at.X, ["y"] = at.Y };
+            }).ToArray());
         if (layer.Adjustment != null) result["adjustment"] = JsonSerializer.SerializeToNode(layer.Adjustment);
         if (layer.Vector != null) result["vector"] = new JsonObject
         {
@@ -108,7 +115,7 @@ public sealed class AutomationScene
             ["text"] = layer.Kind == LayerKind.Text && !layer.Locked && !ancestorLocked,
             ["material"] = layer.Kind == LayerKind.Material && !layer.Locked && !ancestorLocked,
             ["vectorGeometryViaMcp"] = false,
-            ["shapeDefinitionViaMcp"] = false,
+            ["shapeDefinitionViaMcp"] = layer.Kind == LayerKind.Shape && !layer.Locked && !ancestorLocked,
             ["positionNote"] = "Set x/y in parent coordinates. Use the parent chain and documentCorners to reason about placement."
         };
         return result;

@@ -10,7 +10,7 @@ public sealed partial class MainWindow
     void InteractionKey(object sender, KeyEventArgs e)
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
-        if (key == Key.Escape && (jobCts != null || dragging || panning || polygonInProgress || resizingBrush))
+        if (key == Key.Escape && (jobCts != null || dragging || panning || polygonInProgress || resizingBrush || lineDrawing || calloutAnchor != null))
         { jobCts?.Cancel(); CancelGesture(); ResetInteractionTransient(); Refresh(false); e.Handled = true; return; }
         // Resize grips and workspace/color switches own their arrow keys before
         // the window can turn them into layer movement. OriginalSource also covers
@@ -28,6 +28,7 @@ public sealed partial class MainWindow
             else if (lassoPoints.Count > 0) { lassoPoints.RemoveAt(lassoPoints.Count - 1); canvas.GesturePoints = lassoPoints.ToArray(); canvas.InvalidateVisual(); }
             e.Handled = true; return;
         }
+        if (Keyboard.Modifiers is ModifierKeys.None or ModifierKeys.Shift && DiagramKey(key)) { e.Handled = true; return; }
         if (ExecuteEditorShortcut(key, Keyboard.Modifiers)) e.Handled = true;
     }
 
@@ -83,6 +84,7 @@ public sealed partial class MainWindow
             Key.M => () => SetTool(shift ? Tool.EllipseSelect : Tool.RectangleSelect), Key.C => () => SetTool(Tool.Crop),
             Key.U => () => SetTool(shift ? Tool.Ellipse : Tool.Rectangle), Key.G => () => SetTool(shift ? Tool.Gradient : Tool.Bucket),
             Key.T => () => SetTool(Tool.Text), Key.I => () => SetTool(Tool.Eyedropper), Key.H => () => SetTool(Tool.Hand),
+            Key.P => () => SelectLineTool(shift), Key.N => () => SetTool(Tool.Callout),
             Key.L => () => SetTool(shift ? Tool.PolygonLasso : Tool.Lasso), Key.W => () => SetTool(Tool.MagicWand),
             Key.S => () => SetTool(Tool.CloneStamp), Key.J => () => SetTool(Tool.Heal), Key.R => () => SetTool(shift ? Tool.Liquify : Tool.Smudge), Key.K => () => SetTool(Tool.BlurBrush),
             Key.F5 when shift => FillFromSurroundings, Key.Delete when designWorkspace && tool == Tool.Move => DeleteSelectedObjects, Key.Delete => ClearPixels,

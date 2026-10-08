@@ -48,9 +48,9 @@ public static class UserProfiles
         [
             ("선택", [Tool.Move, Tool.MagicWand, Tool.PolygonLasso, Tool.RectangleSelect, Tool.Lasso, Tool.EllipseSelect]),
             ("리터치", [Tool.Heal, Tool.CloneStamp, Tool.BlurBrush, Tool.Eraser, Tool.Brush, Tool.Smudge, Tool.Liquify]),
-            ("보드", [Tool.Text, Tool.Rectangle, Tool.Ellipse, Tool.Artboard, Tool.Crop]),
+            ("보드", [Tool.Text, Tool.Callout, Tool.Line, Tool.Rectangle, Tool.Ellipse, Tool.Crop]),
             ("색상", [Tool.Bucket, Tool.Eyedropper, Tool.Gradient]),
-            ("보기", [Tool.Hand])
+            ("보기", [Tool.Artboard, Tool.Hand])
         ],
         DesignWorkspace = true,
         QuickSizes =

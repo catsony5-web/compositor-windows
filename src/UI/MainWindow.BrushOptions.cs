@@ -49,6 +49,7 @@ public sealed partial class MainWindow
         bucketOptions.Visibility = tool == Tool.Bucket ? Visibility.Visible : Visibility.Collapsed;
         wandOptions.Visibility = tool == Tool.MagicWand ? Visibility.Visible : Visibility.Collapsed;
         artboardOptions.Visibility = tool == Tool.Artboard ? Visibility.Visible : Visibility.Collapsed;
+        SyncDiagramOptions();
         gradientOptions.Visibility = tool == Tool.Gradient ? Visibility.Visible : Visibility.Collapsed;
         autoSelectToggle.Visibility = tool == Tool.Move ? Visibility.Visible : Visibility.Collapsed;
         if (moveSelectionHint != null) moveSelectionHint.Visibility = tool == Tool.Move ? Visibility.Visible : Visibility.Collapsed;
