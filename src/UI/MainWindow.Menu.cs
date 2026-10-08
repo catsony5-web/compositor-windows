@@ -47,6 +47,7 @@ public sealed partial class MainWindow
         var layerMenu = Find("레이어");
         Find("파일").Items.Add(BuildCompatibilityExportMenu());
         AddImportSettingsMenu(Find("파일"));
+        AddMapMenu(Find("파일"));
         foreach (var target in new[] { Find("파일"), layerMenu })
         {
             var selectedExport = DocumentControl(new MenuItem { Header = "선택 레이어 이미지로 내보내기…" });

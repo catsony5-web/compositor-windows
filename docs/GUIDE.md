@@ -18,7 +18,7 @@
 
 모루픽셀은 [Robbie Tilton / Wonder Assembly LLC의 Compositor](https://github.com/robbietilton/Compositor) 일부 코드와 알고리즘을 바탕으로 만든 Windows 이미지 편집기입니다. 독자적인 이름과 C#·WPF 구현을 사용하며 원작의 공식 Windows 제품이 아닙니다.
 
-ZIP의 **모든 파일을 압축 해제한 뒤 `Morupixel.exe`를 실행**하세요. .NET 런타임과 로컬 AI 배경 제거 모델을 포함합니다. 사진 편집이나 AI 추론에 네트워크 연결이 필요하지 않습니다.
+ZIP의 **모든 파일을 압축 해제한 뒤 `Morupixel.exe`를 실행**하세요. .NET 런타임과 로컬 AI 배경 제거 모델을 포함합니다. 사진 편집이나 AI 추론에 네트워크 연결이 필요하지 않습니다. 모루픽셀이 인터넷에 접속하는 경우는 **파일 › 인터넷에서 지도 데이터 받기…**에서 사용자가 보내는 내용(영역 좌표나 검색어)과 받는 서버를 확인하고 동의했을 때뿐입니다. 앱을 열 때나 다른 작업에서는 접속하지 않습니다. [지도 포스터 · 대지 위치도](MAPS.md)
 
 AI 배경 제거에는 [Microsoft Visual C++ x64 재배포 런타임](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)이 필요합니다. 이미 설치되어 있으면 그대로 사용하고, AI 엔진을 불러오지 못한다는 안내가 나오면 공식 최신 x64 패키지를 설치하세요. 이 ZIP에는 해당 시스템 런타임 설치 프로그램이 포함되지 않습니다.
 

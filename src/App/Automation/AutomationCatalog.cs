@@ -187,6 +187,25 @@ public static partial class AutomationCatalog
                 ("lineColor", new("string", "original (default: each pen's own color), black, or #RRGGBB for one color.", MaxLength: 8, TextPattern: "^(original|black|#[0-9a-fA-F]{6})$")),
                 ("background", new("string", "white (default) adds a white layer under the lines; none leaves the lines on transparency.", Choices: ["white", "none"])),
                 ("name", Name with { Description = "Name of the new group; defaults to the app's own name for it." })), WriteRequired("layerId"));
+        Add("create_map", "Create a map poster (template=poster) or a site location map (template=site) as a new document from OpenStreetMap data: roads by class, rail, water, green and buildings as editable vector layers grouped by class, in Web Mercator at a known ground scale (metersPerPixel, scaleDenominator at the document DPI), with the title, subtitle and coordinates of the poster or the site marker, radius rings, north arrow and scale bar of the site map, and the required attribution \"© OpenStreetMap contributors\" (locked, always on top). source=file (default with path) reads a local .osm export or GeoJSON and never uses the network. source=online downloads a small area (radius ≤ 2500 m around centerLatitude/centerLongitude, or the first result of place) from the public OpenStreetMap servers and is refused with online_map_not_allowed unless the user allowed it for this run in the app's consent window. Not part of apply_batch.", false,
+            Fields(("path", Path with { Description = "Absolute path of an .osm (OpenStreetMap XML export) or .geojson file." }), ("source", Choice("file", "online")),
+                ("place", new("string", "source=online: place name or address to look up (first result is used).", MaxLength: 200)),
+                ("centerLatitude", Number(-85, 85, "source=online: center of the downloaded area; otherwise an optional map center.")), ("centerLongitude", Number(-180, 180, "Longitude paired with centerLatitude.")),
+                ("radius", Number(100, MapDownload.MaxRadius, "source=online: metres around the center (default 1000). Buildings are downloaded only up to 1500 m.")),
+                ("template", Choice("poster", "site")), ("theme", Choice(MapThemes.All.Select(t => t.Key).ToArray())),
+                ("title", new("string", "Title text; defaults to the file or place name (poster) or the app's site-map title (site).", MaxLength: 200, EmptyAllowed: true)),
+                ("subtitle", new("string", "Subtitle text.", MaxLength: 400, EmptyAllowed: true)),
+                ("width", Integer(200, 8192, "Document width in pixels.")), ("height", Integer(200, 8192, "Document height in pixels.")), ("dpi", Number(36, 1200, "Print resolution; scale 1:N refers to it.")),
+                ("buildings", Bool("Draw buildings (default true).")), ("paths", Bool("Draw footways and paths (default true).")), ("rail", Bool("Draw railways (default true).")),
+                ("green", Bool("Draw parks, forests and grass (default true).")), ("water", Bool("Draw sea, lakes, rivers and streams (default true).")),
+                ("coordinates", Bool("Write the center (site) coordinates (default true).")), ("fade", Bool("Fade the map toward the page colour at the edges and behind a poster title (poster default true).")),
+                ("frame", Bool("Poster: margins and a border line with the title below the map.")), ("lineWeight", Number(.25, 4, "Line weight multiplier (default 1).")),
+                ("siteLatitude", Number(-85, 85, "Site marker position; site maps default to the downloaded center or the data center.")), ("siteLongitude", Number(-180, 180, "Longitude paired with siteLatitude.")),
+                ("marker", Choice("circle", "pin")), ("siteLabel", new("string", "Label beside the site marker; defaults to the app's word for the site.", MaxLength: 100, EmptyAllowed: true)),
+                ("rings", new("string", "Radius rings around the site in metres, comma separated, up to 6 (e.g. 500,1000). Empty string for none.", MaxLength: 80, EmptyAllowed: true, TextPattern: @"^$|^[0-9]{1,7}(\.[0-9]+)?( *, *[0-9]{1,7}(\.[0-9]+)?){0,5}$")),
+                ("northArrow", Bool("North arrow (site default true).")), ("scaleBar", Bool("Scale bar in metres from the projection (site default true).")),
+                ("scale", Integer(100, 1_000_000, "Paper scale denominator 1:N at dpi; omit to fit the data to the map frame.")),
+                ("includeLayers", IncludeLayers)));
         Add("save_project", "Save the active document to an absolute .moruproj path. Existing files require overwrite=true.", false,
             Mutation(("path", Path), ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path"));
         Add("export_image", "Export the active document, one artboard or one selected layer to PNG, JPEG or TIFF, optionally scaled. Existing files require overwrite=true.", false,
@@ -356,6 +375,7 @@ public static partial class AutomationCatalog
         if (command == "clean_sketch" && arguments.ContainsKey("corners") && arguments["flatten"]?.GetValue<bool>() == false)
             throw new ArgumentException("corners need flatten=true (the default); flatten=false keeps the whole photo.");
         if (command == "apply_style") ValidateStyleArguments(arguments);
+        if (command == "create_map") ValidateMapArguments(arguments);
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
             throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))

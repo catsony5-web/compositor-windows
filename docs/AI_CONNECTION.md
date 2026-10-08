@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **40개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **41개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -76,6 +76,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 레이어 속성·삭제·순서 | `morupixel_set_layer`, `morupixel_delete_layer`, `morupixel_reorder_layer` |
 | 조정 레이어·AI 배경 제거 | `morupixel_add_adjustment`, `morupixel_remove_background` |
 | 스케치 사진을 선 그림으로 정리 | `morupixel_clean_sketch` |
+| OpenStreetMap 데이터로 지도 포스터·대지 위치도 만들기 | `morupixel_create_map` |
 | 프로젝트 저장·이미지 출력·미리보기 | `morupixel_save_project`, `morupixel_export_image`, `morupixel_preview` |
 | PDF·.psd·.ai 내보내기(레이어 유지·합치기) | `morupixel_export_document` |
 | 실행 취소·다시 실행 | `morupixel_undo`, `morupixel_redo` |
@@ -164,6 +165,22 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 ```json
 { "command": "add_callout", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
   "anchorX": 520, "anchorY": 610, "labelX": 700, "labelY": 420, "text": "주출입구", "fontSize": 28, "dash": "dotted" } }
+```
+
+### 지도 만들기
+
+`create_map`은 앱의 **파일 › 지도 만들기 (OSM 파일)…**와 같은 처리로 OpenStreetMap 데이터에서 **지도 포스터**(`template: "poster"`) 또는 **대지 위치도**(`template: "site"`)를 새 문서로 만듭니다. 길(등급별)·철도·바다·강·호수·물줄기·공원·숲·잔디·건물은 종류별로 묶인 벡터 레이어가 되고, 문자·대지 표시·방위표·축척 막대도 편집할 수 있는 레이어입니다. 지도 그룹 맨 위에는 사용권(ODbL)이 요구하는 잠긴 문자 `© OpenStreetMap contributors`가 들어가니 지우지 마세요. [지도 안내](MAPS.md)
+
+- 데이터: `path`(`.osm` OpenStreetMap XML 내보내기 또는 `.geojson`, 절대 경로). 파일 지도는 인터넷을 쓰지 않습니다.
+- 인터넷 데이터: `source: "online"`과 `centerLatitude`·`centerLongitude`(또는 `place` 검색어, 첫 결과 사용), `radius`(100~2,500m, 기본 1,000; 건물은 1,500m 이하에서만 받음). 사용자가 앱의 동의 창에서 **AI 연결이 보내는 지도 요청도 이번 실행 동안 묻지 않고 허용**을 켠 경우에만 받으며, 아니면 `online_map_not_allowed`입니다. 이때는 사용자에게 `.osm` 파일을 받아 달라고 하거나 앱에서 허용해 달라고 안내하세요. 받기 실패는 `map_download_failed`, 장소를 못 찾으면 `place_not_found`, 읽을 수 없는 파일은 `map_data_invalid`입니다.
+- 모양: `theme`(`light`·`dark`·`green`·`mono`·`navy`·`warm`), `title`·`subtitle`, `width`·`height`(200~8,192px, 합계 16,777,216픽셀 이하)·`dpi`, `buildings`·`paths`·`rail`·`green`·`water`(그릴 항목, 기본 true), `coordinates`, `fade`(포스터 기본 true), `frame`(포스터 여백·테두리), `lineWeight`(0.25~4).
+- 대지 위치도: `siteLatitude`·`siteLongitude`(생략 시 받은 중심 또는 데이터 가운데), `marker`(`circle`·`pin`), `siteLabel`, `rings`(미터, 쉼표로 최대 6개, 예 `"500,1000"`, 빈 문자열은 없음), `northArrow`·`scaleBar`(위치도 기본 true), `scale`(문서 DPI로 인쇄했을 때 1:N; 생략하면 데이터에 맞춤).
+
+결과에는 새 문서 정보와 지도 그룹 `layerId`, `map`(`template`, `theme`, `source`, `metersPerPixel`—문서 1px의 실제 거리, `scaleDenominator`, `centerLatitude`·`centerLongitude`, 대지 좌표, 지도 틀 `frame`, 보이는 범위 `bounds`, 종류별 `features` 개수, `attribution`)와 `warnings`가 들어갑니다. 새 문서를 만드는 명령이라 실행 취소 대상이 아니며 `apply_batch` 단계로 쓸 수 없습니다. 만든 뒤에는 `set_layer`·`update_text` 등 일반 명령으로 고칩니다.
+
+```json
+{ "command": "create_map", "arguments": { "path": "C:\\Maps\\seoul.osm", "template": "site", "theme": "mono",
+  "siteLatitude": 37.5665, "siteLongitude": 126.978, "rings": "500,1000", "scale": 5000, "subtitle": "서울시청 일대" } }
 ```
 
 ### 디자인 스타일 효과 넣기
@@ -335,7 +352,7 @@ UTF-8 JSON 파일을 보내거나 응답을 파일로 보관할 수도 있습니
 
 ## 데스크톱 작업과 함께 사용하기
 
-연결은 기본적으로 꺼져 있으며, 켠 창에 한해 같은 Windows 사용자 계정의 로컬 프로그램이 접근합니다. 브리지는 로컬 named pipe를 사용하고 네트워크 포트를 열지 않습니다. AI에 전달되는 문서 정보와 미리보기의 처리는 연결한 AI 프로그램의 설정을 따릅니다.
+연결은 기본적으로 꺼져 있으며, 켠 창에 한해 같은 Windows 사용자 계정의 로컬 프로그램이 접근합니다. 브리지는 로컬 named pipe를 사용하고 네트워크 포트를 열지 않습니다. AI 연결 명령은 인터넷에 접속하지 않으며, 예외는 사용자가 앱의 동의 창에서 이번 실행 동안 허용한 경우의 `create_map`(`source: "online"`)뿐입니다. AI에 전달되는 문서 정보와 미리보기의 처리는 연결한 AI 프로그램의 설정을 따릅니다.
 
 명령 실행에 마우스·키보드 조작이나 창 포커스 이동은 필요하지 않습니다. 열린 문서의 변경은 실제 편집 기록에 남습니다. 사용자가 문서를 바꾸거나 직접 수정하면 AI가 이전 상태에 덮어쓰지 않도록 다음 오류를 반환합니다.
 

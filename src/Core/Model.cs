@@ -134,6 +134,8 @@ public sealed class Layer
     // Design style folders use it (Core/DesignStyles.cs); other folders stay isolated.
     public bool PassThrough { get; set; }
     public StyleTag? Style { get; set; }
+    // Map layers (Core/MapSpec.cs): the root folder keeps the map's place and scale, other layers their class.
+    public MapTag? Map { get; set; }
     public Layer Snapshot()
     {
         var copy = (Layer)MemberwiseClone();
@@ -283,6 +285,8 @@ public sealed class Document
         ShadowSpec.ValidateLayer(layer);
         if ((layer.PassThrough || layer.Style != null) && layer.Kind != LayerKind.Group) throw new InvalidDataException("디자인 스타일 정보는 그룹에만 둘 수 있습니다.");
         layer.Style?.Validate();
+        layer.Map?.Validate();
+        if (layer.Map is { IsRoot: true } && layer.Kind != LayerKind.Group) throw new InvalidDataException("지도 정보는 그룹에만 둘 수 있습니다.");
         layer.Warp?.Validate();
     }
 }
@@ -351,7 +355,7 @@ public sealed class History
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
                 x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Material != y.Material || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
-            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style) return false;
+            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Map != y.Map) return false;
         }
         return true;
     }

@@ -164,6 +164,8 @@ public static class SelfTests
         MainWindow.RunLinePatternTests(Test, directory);
         SketchCleanupTests.Run(Test);
         MainWindow.RunSketchCleanupTests(Test, directory);
+        MapTests.Run(Test, directory);
+        MainWindow.RunMapTests(Test, directory);
         MainWindow.RunScreentoneTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);
