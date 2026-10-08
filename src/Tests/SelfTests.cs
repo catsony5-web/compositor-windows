@@ -106,6 +106,7 @@ public static class SelfTests
         MainWindow.RunRibbonTests(Test, directory);
         MainWindow.RunWindowFitTests(Test);
         MainWindow.RunCompactScreenTests(Test, directory);
+        MainWindow.RunDockArrangeTests(Test, directory);
         LocalizationTests.Run(Test);
         MainWindow.RunKeepWordsTests(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);

@@ -494,6 +494,8 @@ public sealed partial class MainWindow : Window
     {
         // Esc during a drag across the layer eyes puts every swept row back.
         if (e.Key == Key.Escape && EyeSweepActive) { ReleaseLayerEye(true); e.Handled = true; return; }
+        // Esc cancels a panel drag or closes a flyout panel (간결한 화면) before anything else.
+        if (e.Key == Key.Escape && DockEscape()) { e.Handled = true; return; }
         InteractionKey(sender, e);
     }
     void Help() => MessageDialog.Show(this,
