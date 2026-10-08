@@ -15,7 +15,7 @@ public static class CompatibilityTests
         void Assert(bool condition, string message = "Compatibility assertion failed") { if (!condition) throw new Exception(message); }
         CompatibilityResult Read(string path, CompatibilityOptions? options = null) => Task.Run(() => CompatibilityImport.ReadAsync(path, options ?? new CompatibilityOptions())).GetAwaiter().GetResult();
         Document Single() { var d = new Document { Width = 64, Height = 40, Dpi = 150, Name = "한글 문서" }; d.Add(new Layer { Name = "배경", Pixels = Raster.Solid(64, 40, Colors.Red) }); return d; }
-        string Fixture(string name) { string path = PathFor(name); using var source = typeof(CompatibilityTests).Assembly.GetManifestResourceStream("Morupixel.Compatibility." + name) ?? throw new Exception("Missing fixture " + name); using var output = File.Create(path); source.CopyTo(output); return path; }
+        string Fixture(string name) => TestFixtures.CopyTo(name, PathFor(name));
         void Throws(Action action) { bool threw = false; try { action(); } catch (Exception e) when (e is InvalidDataException or NotSupportedException or ArgumentException or EndOfStreamException) { threw = true; } Assert(threw, "Expected a bounded import error"); }
 
         test("PDF export preserves physical page size and native renderer reads pixels", () =>

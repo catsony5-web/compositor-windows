@@ -46,7 +46,7 @@
 | `HeadingSize` | 14 | 속성 패널의 대상 이름 |
 | `TitleSize` | 18 | 다이얼로그·시작 화면 제목 |
 
-- 글꼴: `Segoe UI, Malgun Gothic`. 번들된 Pretendard는 문서 텍스트용 리소스로 유지하되 작은 UI 글자에는 쓰지 않는다. 2026-09-24 오프스크린 A/B에서 12–13px Pretendard(CFF)가 맑은 고딕보다 획이 두껍고 흐리게 그려졌다. Preview 7에서 UI 글꼴을 바꾼 이유와 같다.
+- 글꼴: `Segoe UI, Malgun Gothic`. Pretendard는 쓰는 코드가 없어 실행 파일에 넣지 않고 `assets/fonts`에 원본과 라이선스만 보관한다. 작은 UI 글자에는 쓰지 않는다. 2026-09-24 오프스크린 A/B에서 12–13px Pretendard(CFF)가 맑은 고딕보다 획이 두껍고 흐리게 그려졌다. Preview 7에서 UI 글꼴을 바꾼 이유와 같다.
 - 크기는 정수를 쓴다. 소수 크기는 힌팅 격자에서 벗어난다.
 
 ## 치수
