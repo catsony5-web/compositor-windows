@@ -2,8 +2,6 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Windows.Data.Pdf;
-using Windows.Storage.Streams;
 
 namespace Compositor.Windows;
 
@@ -22,10 +20,10 @@ public static class PdfCompatibility
     {
         using var operation = NativePdf.BeginOperation();
         CheckHeader(path);
-        using var input = File.OpenRead(path); using var random = input.AsRandomAccessStream();
-        var pdf = await NativePdf.LoadAsync(random, token).ConfigureAwait(false);
+        using var input = File.OpenRead(path);
+        using var pdf = await NativePdf.LoadAsync(input, token).ConfigureAwait(false);
         if (pdf.PageCount == 0) throw new InvalidDataException("PDF 페이지가 없습니다.");
-        using var page = pdf.GetPage(0); return new(pdf.PageCount, page.Size.Width, page.Size.Height, PdfLayerImport.Count(path));
+        using var page = pdf.GetPage(0); return new(pdf.PageCount, page.Width, page.Height, PdfLayerImport.Count(path));
     }
     public static async Task<CompatibilityResult> ReadAsync(string path, CompatibilityOptions options, CancellationToken token)
     {
@@ -33,12 +31,12 @@ public static class PdfCompatibility
         CheckHeader(path);
         if (!double.IsFinite(options.Dpi) || options.Dpi < 36 || options.Dpi > 600) throw new ArgumentOutOfRangeException(nameof(options), "PDF 해상도는 36~600 DPI입니다.");
         if (options.PreservePdfLayers && await PdfLayerImport.ReadAsync(path, options, token).ConfigureAwait(false) is { } layered) return layered;
-        using var input = File.OpenRead(path); using var random = input.AsRandomAccessStream();
-        var pdf = await NativePdf.LoadAsync(random, token).ConfigureAwait(false);
+        using var input = File.OpenRead(path);
+        using var pdf = await NativePdf.LoadAsync(input, token).ConfigureAwait(false);
         if (options.Page < 1 || options.Page > pdf.PageCount) throw new ArgumentOutOfRangeException(nameof(options), $"페이지는 1~{pdf.PageCount} 범위입니다.");
         using var page = pdf.GetPage((uint)options.Page - 1);
-        int width = checked((int)Math.Ceiling(page.Size.Width * options.Dpi / 96));
-        int height = checked((int)Math.Ceiling(page.Size.Height * options.Dpi / 96));
+        int width = checked((int)Math.Ceiling(page.Width * options.Dpi / 96));
+        int height = checked((int)Math.Ceiling(page.Height * options.Dpi / 96));
         try { Raster.ValidateSize(width, height); }
         catch (InvalidDataException e) { throw new InvalidDataException($"선택한 해상도는 {width:N0} × {height:N0}px입니다. DPI를 낮춰 주세요. " + e.Message); }
         var raster = await RenderPageAsync(input, options.Page, width, height, false, token).ConfigureAwait(false);
@@ -49,38 +47,29 @@ public static class PdfCompatibility
     internal static async Task<(int Width, int Height)> InspectPageAsync(string path, int number, double dpi, CancellationToken token)
     {
         using var operation = NativePdf.BeginOperation();
-        using var input = File.OpenRead(path); using var random = input.AsRandomAccessStream();
-        var pdf = await NativePdf.LoadAsync(random, token).ConfigureAwait(false);
+        using var input = File.OpenRead(path);
+        using var pdf = await NativePdf.LoadAsync(input, token).ConfigureAwait(false);
         using var page = pdf.GetPage((uint)number - 1);
-        int width = checked((int)Math.Ceiling(page.Size.Width * dpi / 96)), height = checked((int)Math.Ceiling(page.Size.Height * dpi / 96));
+        int width = checked((int)Math.Ceiling(page.Width * dpi / 96)), height = checked((int)Math.Ceiling(page.Height * dpi / 96));
         Raster.ValidateSize(width, height); return (width, height);
     }
     internal static async Task<Raster> RenderPageAsync(Stream input, int number, int width, int height, bool transparent, CancellationToken token)
     {
         using var operation = NativePdf.BeginOperation();
-        input.Position = 0; using var random = input.AsRandomAccessStream();
-        var pdf = await NativePdf.LoadAsync(random, token).ConfigureAwait(false);
-        using var page = pdf.GetPage((uint)number - 1); using var rendered = new InMemoryRandomAccessStream();
-        var renderOptions = NativePdf.CreateRenderOptions();
-        renderOptions.DestinationWidth = (uint)width; renderOptions.DestinationHeight = (uint)height;
-        renderOptions.BackgroundColor = global::Windows.UI.Color.FromArgb(transparent ? (byte)0 : (byte)255, 255, 255, 255);
-        await NativePdf.RenderAsync(page, rendered, renderOptions, token).ConfigureAwait(false);
-        token.ThrowIfCancellationRequested(); rendered.Seek(0);
-        using var decoded = rendered.AsStreamForRead(); var raster = Raster.Load(decoded);
-        return raster;
+        input.Position = 0;
+        using var pdf = await NativePdf.LoadAsync(input, token).ConfigureAwait(false);
+        using var page = pdf.GetPage((uint)number - 1);
+        return await page.RenderAsync(width, height, transparent ? (byte)0 : (byte)255, null, token).ConfigureAwait(false);
     }
     internal static async Task<Raster> RenderRegionAsync(VectorContent source, System.Windows.Rect area, int width, int height, CancellationToken token)
     {
         using var operation = NativePdf.BeginOperation();
-        using var input = source.Open(); using var random = input.AsRandomAccessStream();
-        var pdf = await NativePdf.LoadAsync(random, token).ConfigureAwait(false);
-        using var page = pdf.GetPage((uint)source.Page - 1); using var rendered = new InMemoryRandomAccessStream();
-        var options = NativePdf.CreateRenderOptions(); options.DestinationWidth = (uint)width; options.DestinationHeight = (uint)height;
-        options.SourceRect = new global::Windows.Foundation.Rect(area.X * page.Size.Width / source.Width, area.Y * page.Size.Height / source.Height,
-            area.Width * page.Size.Width / source.Width, area.Height * page.Size.Height / source.Height);
-        options.BackgroundColor = global::Windows.UI.Color.FromArgb(0, 255, 255, 255);
-        await NativePdf.RenderAsync(page, rendered, options, token).ConfigureAwait(false); rendered.Seek(0);
-        using var decoded = rendered.AsStreamForRead(); return Raster.Load(decoded);
+        using var input = source.Open();
+        using var pdf = await NativePdf.LoadAsync(input, token).ConfigureAwait(false);
+        using var page = pdf.GetPage((uint)source.Page - 1);
+        var region = new System.Windows.Rect(area.X * page.Width / source.Width, area.Y * page.Height / source.Height,
+            area.Width * page.Width / source.Width, area.Height * page.Height / source.Height);
+        return await page.RenderAsync(width, height, 0, region, token).ConfigureAwait(false);
     }
 
     // A standard single-page PDF with an RGB image and an optional lossless alpha soft mask.
