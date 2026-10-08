@@ -50,7 +50,7 @@ public sealed partial class MainWindow
         static void Choose(MenuItem item) => item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, item));
         static Button Strip(MainWindow w, string name) => w.dockStrip!.Children.OfType<Button>().Single(b => AutomationProperties.GetName(b) == name);
         static void Press(Button button) => button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-        const string Defaults = "color,swatches,gradients,patterns | properties,adjustments | navigator,histogram,info | layers,artboards,history";
+        const string Defaults = "color,swatches,gradients,patterns,entourage | properties,adjustments | navigator,histogram,info | layers,artboards,history";
 
         test("compact dock: a tab dragged onto another group's tab row joins it at the marker and drags back", () =>
         {
@@ -68,7 +68,7 @@ public sealed partial class MainWindow
                     $"The insertion marker does not stand before the tab ({Canvas.GetLeft(marker):0.#} vs {before.X:0.#})");
                 Check(w.EndDockDrag(at), "The drop did not change the dock");
                 Layout(w);
-                Check(Keys(layers) == "layers,swatches,artboards,history" && Keys(color) == "color,gradients,patterns" && layers.ActiveTab == swatches && w.DockTabVisible("swatches"), "The tab did not move into the group: " + Stack(w));
+                Check(Keys(layers) == "layers,swatches,artboards,history" && Keys(color) == "color,gradients,patterns,entourage" && layers.ActiveTab == swatches && w.DockTabVisible("swatches"), "The tab did not move into the group: " + Stack(w));
                 Check(ReferenceEquals(layers.Body.Child, w.dockContent["swatches"]) && ReferenceEquals(color.Body.Child, w.dockContent["color"]), "The groups do not show their open tabs");
                 Check(marker.Visibility == Visibility.Collapsed && w.dockDropOutline!.Visibility == Visibility.Collapsed && w.dockDragGhost!.Visibility == Visibility.Collapsed, "The drag feedback stayed after the drop");
                 w.BeginDockDrag(layers, swatches);
@@ -78,9 +78,9 @@ public sealed partial class MainWindow
                 // Inside one group, then Esc and a drop on the tab's own place.
                 var patterns = color.Tabs.Single(t => t.Key == "patterns");
                 w.BeginDockDrag(color, patterns); w.EndDockDrag(OnTab(w, color, 0)); Layout(w);
-                Check(Keys(color) == "patterns,color,swatches,gradients" && color.ActiveTab == patterns, "Reordering inside the group failed: " + Keys(color));
+                Check(Keys(color) == "patterns,color,swatches,gradients,entourage" && color.ActiveTab == patterns, "Reordering inside the group failed: " + Keys(color));
                 w.BeginDockDrag(color, patterns); w.DockDragOver(OnTab(w, layers, 0));
-                Check(w.DockEscape() && Keys(color) == "patterns,color,swatches,gradients" && marker.Visibility == Visibility.Collapsed && !w.EndDockDrag(OnTab(w, layers, 0)), "Esc did not cancel the drag");
+                Check(w.DockEscape() && Keys(color) == "patterns,color,swatches,gradients,entourage" && marker.Visibility == Visibility.Collapsed && !w.EndDockDrag(OnTab(w, layers, 0)), "Esc did not cancel the drag");
                 w.BeginDockDrag(color, patterns);
                 Check(w.DockDragOver(OnTab(w, color, 1, .3)).Kind == DockDropKind.None && marker.Visibility == Visibility.Collapsed && !w.EndDockDrag(OnTab(w, color, 1, .3)), "Dropping a tab on its own place was not a no-op");
                 // The body of a group adds the tab at its end.
@@ -109,7 +109,7 @@ public sealed partial class MainWindow
                 Check(w.DockDragOver(navigator.TranslatePoint(new Point(navigator.ActualWidth / 2, -1), w.dockStack!)) is { Kind: DockDropKind.Between, Index: 2 }, "The gap between groups is not a new-group target");
                 w.EndDockDrag(at); Layout(w);
                 var split = G(w, "histogram");
-                Check(Stack(w) == "color,swatches,gradients,patterns | properties,adjustments | histogram | navigator,info | layers,artboards,history" && split.Key == "group1" && w.dockGroups.Length == 6 && w.DockTabVisible("histogram") && w.DockTabVisible("navigator"),
+                Check(Stack(w) == "color,swatches,gradients,patterns,entourage | properties,adjustments | histogram | navigator,info | layers,artboards,history" && split.Key == "group1" && w.dockGroups.Length == 6 && w.DockTabVisible("histogram") && w.DockTabVisible("navigator"),
                     "The tab did not become a new group: " + Stack(w));
                 Check(AutomationProperties.GetName(split) == "히스토그램 패널 그룹" && split.TabButtons.All(b => AutomationProperties.GetName(b) == "히스토그램 패널"), "The new group lacks accessible names");
                 // The lone tab back onto its own edges changes nothing; onto another row it leaves and the group goes.
@@ -121,7 +121,7 @@ public sealed partial class MainWindow
                 navigator.Select(1);
                 Choose(Menu(w, navigator, "새 그룹으로 분리")); Layout(w);
                 split = G(w, "histogram");
-                Check(Stack(w) == "color,swatches,gradients,patterns | properties,adjustments | navigator,info | histogram | layers,artboards,history", "새 그룹으로 분리 did not split below the group: " + Stack(w));
+                Check(Stack(w) == "color,swatches,gradients,patterns,entourage | properties,adjustments | navigator,info | histogram | layers,artboards,history", "새 그룹으로 분리 did not split below the group: " + Stack(w));
                 Check(!Menu(w, split, "새 그룹으로 분리").IsEnabled && Menu(w, navigator, "새 그룹으로 분리").IsEnabled, "Splitting a one-tab group was offered");
                 var move = Menu(w, split, "다른 그룹으로 옮기기");
                 Check(move.Items.OfType<MenuItem>().Count() == w.dockGroups.Length - 1, "다른 그룹으로 옮기기 does not list the other groups");
@@ -142,7 +142,7 @@ public sealed partial class MainWindow
                 Check(drop.Kind == DockDropKind.Between && drop.Index == 0 && w.dockDropMarker!.Visibility == Visibility.Visible && w.dockDragGhost!.Child is TextBlock { Text: var ghost } && ghost == layers.TitleList, "The group drag has no target at the top");
                 Check(w.EndDockDrag(Top(w, color)), "The group did not move");
                 Layout(w);
-                Check(Stack(w) == "layers,artboards,history | color,swatches,gradients,patterns | properties,adjustments | navigator,histogram,info", "The group is not at the top: " + Stack(w));
+                Check(Stack(w) == "layers,artboards,history | color,swatches,gradients,patterns,entourage | properties,adjustments | navigator,histogram,info", "The group is not at the top: " + Stack(w));
                 w.BeginDockDrag(layers, null);
                 Check(w.DockDragOver(Top(w, layers)).Kind == DockDropKind.None && w.DockDragOver(Bottom(w, layers)).Kind == DockDropKind.None && w.DockDragOver(OnTab(w, G(w, "properties"), 0)).Kind == DockDropKind.Between, "A group's own place was offered, or a tab row joined a group drag");
                 w.DockEscape();
@@ -151,9 +151,9 @@ public sealed partial class MainWindow
                 Layout(w);
                 Check(Stack(w) == Defaults && !Menu(w, layers, "아래로 옮기기").IsEnabled && Menu(w, layers, "위로 옮기기").IsEnabled, "아래로 옮기기 did not walk the group down: " + Stack(w));
                 Choose(Menu(w, layers, "위로 옮기기")); Layout(w);
-                Check(Stack(w) == "color,swatches,gradients,patterns | properties,adjustments | layers,artboards,history | navigator,histogram,info", "위로 옮기기 did not move the group up: " + Stack(w));
+                Check(Stack(w) == "color,swatches,gradients,patterns,entourage | properties,adjustments | layers,artboards,history | navigator,histogram,info", "위로 옮기기 did not move the group up: " + Stack(w));
                 w.BeginDockDrag(color, null); w.EndDockDrag(Bottom(w, G(w, "navigator"))); Layout(w);
-                Check(Stack(w) == "properties,adjustments | layers,artboards,history | navigator,histogram,info | color,swatches,gradients,patterns", "Dragging a group to the bottom edge failed: " + Stack(w));
+                Check(Stack(w) == "properties,adjustments | layers,artboards,history | navigator,histogram,info | color,swatches,gradients,patterns,entourage", "Dragging a group to the bottom edge failed: " + Stack(w));
             }
             finally { Close(w); }
         });
@@ -205,7 +205,7 @@ public sealed partial class MainWindow
                 Choose(Menu(w, color, "떠 있는 패널로 열기")); Layout(w);
                 var window = color.FloatingWindow;
                 Check(color.Floating && window != null && window.Content is Border host && host.Child == color && Density.GetCompact(host) && window.WindowStyle == WindowStyle.ToolWindow && !window.ShowInTaskbar
-                    && AutomationProperties.GetName(window) == "색상 · 견본 · 그라데이션 · 패턴 떠 있는 패널", "The group did not open in a tool window");
+                    && AutomationProperties.GetName(window) == "색상 · 견본 · 그라데이션 · 패턴 · 점경 떠 있는 패널", "The group did not open in a tool window");
                 Check(!w.dockStack!.Children.Contains(color) && Stack(w) == "properties,adjustments | navigator,histogram,info | layers,artboards,history" && w.DockTabVisible("color")
                     && ReferenceEquals(color.Body.Child, w.dockContent["color"]) && color.DockButton.Visibility == Visibility.Visible, "The floating group still docks or hides its content");
                 Check(Menu(w, color, "도킹").IsEnabled && !w.DockGroupMenu(color).Items.OfType<MenuItem>().Any(i => i.Header?.ToString() is "떠 있는 패널로 열기" or "그룹 접기"), "The floating group's menu does not offer 도킹");
@@ -248,7 +248,7 @@ public sealed partial class MainWindow
                 G(source, "navigator").Select(1);
                 G(source, "histogram").Weight = 2.25;
                 string arrangement = Describe(source);
-                Check(arrangement == "layers:layers,artboards:layers:open / color:color,swatches,gradients,patterns:color:floating / properties:properties,adjustments:properties:folded / navigator:navigator,history,info:history:open / group1:histogram:histogram:open / tools:work,brush:work:folded"
+                Check(arrangement == "layers:layers,artboards:layers:open / color:color,swatches,gradients,patterns,entourage:color:floating / properties:properties,adjustments:properties:folded / navigator:navigator,history,info:history:open / group1:histogram:histogram:open / tools:work,brush:work:folded"
                     && Stack(source) == "layers,artboards | navigator,history,info | histogram", "Unexpected arrangement: " + arrangement);
                 var saved = source.CaptureLayout();
                 Check(saved.DockVersion == WorkspaceLayoutStore.DockLayoutVersion && saved.DockGroups!.Length == 6, "The dock version or groups were not captured");
@@ -270,7 +270,7 @@ public sealed partial class MainWindow
                 Check(p44.DockVersion == 2 && p44.DockGroups!.Select(g => g.Key + ":" + string.Join(",", g.Tabs!)).SequenceEqual(WorkspaceLayoutStore.DockGroupKeys.Select(k => k.Key + ":" + string.Join(",", k.Tabs))), "A Preview 44 layout did not migrate to the default groups");
                 migrated = new MainWindow(null) { headlessTesting = true }; migrated.AddTab(Photo(), null);
                 migrated.ApplyPaneLayout(p44); Layout(migrated);
-                Check(Describe(migrated) == "color:color,swatches,gradients,patterns:swatches:open / properties:properties,adjustments:adjustments:open / navigator:navigator,histogram,info:info:folded / layers:layers,artboards,history:history:open / tools:work,brush:brush:folded"
+                Check(Describe(migrated) == "color:color,swatches,gradients,patterns,entourage:swatches:open / properties:properties,adjustments:adjustments:open / navigator:navigator,histogram,info:info:folded / layers:layers,artboards,history:history:open / tools:work,brush:brush:folded"
                     && G(migrated, "adjustments").Weight == 2.5 && migrated.rightPanelColumn.Width.Value == 330, "The migrated layout was not applied: " + Describe(migrated));
                 // Damaged arrangements: unknown keys and tabs go, a tab counts once, emptied groups go, missing tabs come home.
                 var odd = WorkspaceLayoutStore.Sanitize(new WorkspaceLayout
@@ -282,7 +282,7 @@ public sealed partial class MainWindow
                     && odd.DockGroups![0].Tab == "history" && odd.DockGroups[2] is { Floating: true, Collapsed: false, FloatBounds: null }, "A damaged arrangement was not sanitized: " + string.Join(" ", odd.DockGroups!.Select(g => g.Key)));
                 var complete = WorkspaceLayoutStore.CompleteDockGroups(odd.DockGroups);
                 Check(complete.SelectMany(g => g.Tabs!).OrderBy(t => t, StringComparer.Ordinal).SequenceEqual(WorkspaceLayoutStore.DockTabKeys.OrderBy(t => t, StringComparer.Ordinal))
-                    && complete.Single(g => g.Key == "color").Tabs!.SequenceEqual(["color", "swatches", "gradients", "patterns"]) && complete.Single(g => g.Key == "tools").Collapsed, "Missing tabs did not return to their groups");
+                    && complete.Single(g => g.Key == "color").Tabs!.SequenceEqual(["color", "swatches", "gradients", "patterns", "entourage"]) && complete.Single(g => g.Key == "tools").Collapsed, "Missing tabs did not return to their groups");
                 Check(!WorkspaceLayoutStore.IsDockGroupKey("group0") && !WorkspaceLayoutStore.IsDockGroupKey("group") && !WorkspaceLayoutStore.IsDockGroupKey("groupx") && WorkspaceLayoutStore.IsDockGroupKey("group12"), "Group keys are not validated");
             }
             finally

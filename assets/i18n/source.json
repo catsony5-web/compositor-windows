@@ -52,6 +52,10 @@
   "file": "App/UserProfiles.cs"
  },
  {
+  "ko": "점경",
+  "file": "App/UserProfiles.cs"
+ },
+ {
   "ko": "기본",
   "file": "App/UserProfiles.cs"
  },
@@ -814,6 +818,38 @@
  {
   "ko": "사선",
   "file": "Core/DrawingCleanup.cs"
+ },
+ {
+  "ko": "점경 항목 ID가 올바르지 않습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "점경 크기·축척·선 설정이 올바르지 않습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "점경은 긴 변 {0}px까지 놓을 수 있습니다. 높이나 축척을 줄이세요.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "내장 점경에는 원본 이미지가 없습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "선 그림 표시는 내 점경에만 쓸 수 있습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "점경 정보와 레이어 종류가 맞지 않습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "내 점경의 원본 이미지가 없습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "내 점경 원본 이미지가 너무 큽니다.",
+  "file": "Core/Entourage.cs"
  },
  {
   "ko": "패턴 · ",
@@ -1616,6 +1652,326 @@
   "file": "Engine/DrawingLineCleanup.cs"
  },
  {
+  "ko": "이미지 파일을 찾을 수 없습니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "점경 이미지는 96MiB 이하로 사용하세요.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "배경 마스크 크기가 이미지와 다릅니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "이미지에서 선을 찾지 못했습니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "이미지에 보이는 부분이 없습니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "사람",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "나무 · 식물",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "탈것",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "소품",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "평면",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "입면·단면",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "서 있는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "정면",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "옆으로 선 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "옆모습",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "휴대폰",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "걷는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "보행",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "산책",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "가방을 든 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "가방",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "쇼핑",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "앉은 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "의자",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "벤치",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "휴식",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "유모차를 미는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "유모차",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "아기",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "아이",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "어린이",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "자전거 타는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "자전거",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "사람 · 평면",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "걷는 사람 · 평면",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "나무",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "둥근 활엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "활엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "가로수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "키 큰 활엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "가지가 보이는 나무",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "가지",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "단풍",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "침엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "소나무",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "상록수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "야자수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "야자",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "관목",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "생울타리",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "식물",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "풀",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "억새",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목 · 잎 뭉치",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목 · 가지",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목 · 손그림",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "손그림",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "침엽수 · 평면",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "관목 무리 · 평면",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "승용차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "자동차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "세단",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "소형차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "해치백",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "승용차 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "주차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "자전거 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "벤치 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "가로등",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "조명",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "파라솔 테이블",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "파라솔",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "테이블",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "카페",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "테라스",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "테이블과 의자 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "알 수 없는 점경 항목입니다: {0}",
+  "file": "Engine/EntourageRenderer.cs"
+ },
+ {
+  "ko": "점경 레이어가 아닙니다.",
+  "file": "Engine/EntourageRenderer.cs"
+ },
+ {
+  "ko": "내장 점경과 내 점경은 서로 바꿀 수 없습니다.",
+  "file": "Engine/EntourageRenderer.cs"
+ },
+ {
   "ko": "레이어가 없습니다.",
   "file": "Engine/FillTools.cs"
  },
@@ -1649,10 +2005,6 @@
  },
  {
   "ko": "선 패턴이 아닙니다.",
-  "file": "Engine/LinePatternRenderer.cs"
- },
- {
-  "ko": "이미지 파일을 찾을 수 없습니다.",
   "file": "Engine/LinePatternRenderer.cs"
  },
  {
@@ -2742,6 +3094,18 @@
  {
   "ko": "'{0}'의 {1} 기능은 .comp 상호 변환에서 지원하지 않습니다. 원본 파일은 변경하지 않았습니다. 해당 기능을 원본에서 래스터화하거나 PNG로 내보내세요.",
   "file": "Formats/CompositorPackage.cs"
+ },
+ {
+  "ko": "내 점경",
+  "file": "Formats/EntourageStore.cs"
+ },
+ {
+  "ko": "내 점경 이미지는 한 변 {0}px 이하로 저장합니다.",
+  "file": "Formats/EntourageStore.cs"
+ },
+ {
+  "ko": "내 점경 원본 이미지가 없습니다.",
+  "file": "Formats/EntourageStore.cs"
  },
  {
   "ko": "HEIC/HEIF 이미지를 읽을 수 없습니다. Windows HEIF 이미지 확장과 해당 HEVC 코덱이 필요합니다. 설치되어 있다면 파일 손상 여부를 확인하거나 PNG/JPEG로 변환해 주세요.",
@@ -5320,6 +5684,86 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
+  "ko": "내 점경 추가",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "내 점경 만들기",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "사람·나무·탈것 이미지를 점경으로 등록합니다. 놓은 뒤에도 높이와 색을 바꿀 수 있습니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "투명 PNG 그대로",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "사진 배경 지우기",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "선 그림으로",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "이 컴퓨터의 AI 모델로 사람이나 물체만 남깁니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "종이에 그린 그림의 어두운 선만 남겨 선 색을 입힐 수 있게 합니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "변환 방법",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "점경 이름",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "점경 종류",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "실제 크기",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "입면은 바닥에서 꼭대기까지 높이, 평면은 긴 쪽 길이(미터)",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "종류",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "실제 크기 · m",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "입면 점경은 아래쪽 끝이 바닥에 닿도록, 평면 점경은 가운데를 기준으로 놓입니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "내 점경에 추가",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "배경을 지우는 중…",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "{0} × {1} px · 투명한 여백은 잘라 냅니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "실제 크기는 {0}~{1} m로 입력하세요.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
   "ko": "가장자리 빈 여백 자르기",
   "file": "UI/Dialogs/LinePatternDialog.cs"
  },
@@ -7048,6 +7492,18 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": "점경 레이어가 아닙니다. query_entourage의 placed 목록에서 layerId를 고르세요.",
+  "file": "UI/MainWindow.AutomationEntourage.cs"
+ },
+ {
+  "ko": "이 버전에 없는 점경이라 다시 그릴 수 없습니다.",
+  "file": "UI/MainWindow.AutomationEntourage.cs"
+ },
+ {
+  "ko": "점경 항목을 찾을 수 없습니다. query_entourage의 itemId를 사용하세요.",
+  "file": "UI/MainWindow.AutomationEntourage.cs"
+ },
+ {
   "ko": ".ai 내보내기는 레이어를 유지합니다. 한 장으로 합치려면 format=pdf, layers=flatten을 사용하세요.",
   "file": "UI/MainWindow.AutomationExport.cs"
  },
@@ -8204,6 +8660,10 @@
   "file": "UI/MainWindow.Dock.cs"
  },
  {
+  "ko": "사람·나무·탈것·소품을 도면에 놓기 · 내 점경",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
   "ko": "속성",
   "file": "UI/MainWindow.Dock.cs"
  },
@@ -8646,6 +9106,374 @@
  {
   "ko": "파일을 찾을 수 없어 최근 문서 목록에서 뺐습니다.\n",
   "file": "UI/MainWindow.EmptyWorkspace.cs"
+ },
+ {
+  "ko": "문서를 열면 축척을 정할 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "직접 정한 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 문서의 점경과 같은 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "문서 해상도 {0} DPI에서 1:100",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "사람(1.7 m) {0} px · {1}",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경은 {0}개까지 보관합니다. 쓰지 않는 항목을 삭제하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경 이름을 바꿨습니다: {0}",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에서 삭제했습니다: {0} · 이 점경을 놓은 문서는 그대로 남습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경으로 쓸 이미지",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에 추가했습니다: {0}",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "사람·나무·탈것·소품을 도면에 놓습니다. 눌러서 화면 가운데에, 끌어서 원하는 자리에 놓고, 놓은 뒤에도 높이·색·채우기를 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 라이브러리",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 검색",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 검색 (예: 나무, 자전거, 앉은)",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "찾는 점경이 없습니다. 다른 낱말로 찾아 보세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 보기의 내 점경이 없습니다. 투명 PNG, 사진, 선 그림으로 내 점경을 만들 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 보기의 점경이 없습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이미지로 점경 추가…",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "투명 PNG는 그대로, 사진은 AI로 배경을 지우고, 종이에 그린 그림은 선만 남겨 내 점경에 등록하고 바로 놓습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "자연스럽게 흩어 놓기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "여러 개를 크기·방향·모양을 조금씩 달리해 흩어 놓습니다. 선택 영역이 있으면 그 안(입면은 아래쪽 바닥선)에 놓고, 한 그룹으로 묶습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "흩어 놓을 개수",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "한 번에 놓을 개수 (2~24)",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "1 m당 px",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "새로 놓는 점경의 축척입니다. 도면에서 1 m가 몇 px인지 입력하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "1 m당 px는 {0}~{1} 사이로 입력하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "축척 · 1 m당 px",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다. 입면은 발끝·밑동이 놓은 곳(바닥선)에 닿습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "{0} · {1} · {2} · {3} m\n누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 이름 바꾸기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에서 삭제",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에 저장",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "먼저 문서를 열거나 새 캔버스를 만드세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 넣기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 흩어 놓기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경을 놓았습니다: {0} · 속성에서 높이·색·채우기를 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 {0}개를 흩어 놓았습니다: {1} · 그룹을 고르면 한꺼번에 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 레이어를 선택하세요. 잠긴 레이어는 먼저 잠금을 해제하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 {0}개",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 버전에 없는 점경입니다. 모양은 그대로 두고 위치·크기만 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 길이",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 높이",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "평면에서 긴 쪽 길이(수관은 지름), 미터",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "바닥에서 꼭대기까지 높이, 미터",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "도면에서 1 m가 몇 px인지입니다. 바꾸면 같은 높이로 다시 그립니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "길이 · m",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "높이 · m",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "다른 모양으로 바꾸기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 모양",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "같은 종류의 다른 모양 {0}가지를 차례로 보여 줍니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "채우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "흐리게",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "회색조",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "실루엣",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "회색 바탕",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 채우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "원본 색, 흐리게, 회색조, 선 색 실루엣",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선만 · 흰 바탕 · 회색 바탕 · 선 색으로 채운 실루엣",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 선 색",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선 색 기본값",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 선 색 변경",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 선 굵기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "100%는 축척에 맞춘 기본 굵기입니다. 같은 축척의 점경은 같은 굵기로 그려집니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선 굵기 · %",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "좌우 뒤집기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선택한 점경을 좌우로 뒤집습니다. 놓인 자리는 그대로입니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 좌우 뒤집기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "그림자 드리우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "바닥에 그림자",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "실제 높이에 맞춘 평면 그림자를 새 레이어로 만듭니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "발끝·밑동에서 바닥으로 눕는 그림자를 새 레이어로 만듭니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 그림자 드리우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "축척 기준으로",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 점경의 지금 크기를 새로 놓을 점경의 축척으로 씁니다. 손잡이로 크기를 맞춘 뒤 누르세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 크기를 점경 축척 기준으로",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "모두 같은 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "문서의 모든 점경을 이 점경의 축척으로 다시 그립니다. 실제 높이는 그대로입니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "문서의 모든 점경을 같은 축척으로",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 레이어를 선택하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 축척: 1 m = {0} px · 새로 놓는 점경에 씁니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 축척 맞추기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 {0}개를 같은 축척(1 m = {1} px)으로 맞췄습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 라이브러리…",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경 추가…",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "손그림 나무",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "점경 예시 · 단면",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "단면선",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "그림자 · 점경",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "점경 예시 · 배치도",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "배치도",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "그림자 · 수목",
+  "file": "UI/MainWindow.EntouragePreview.cs"
  },
  {
   "ko": "이미지 편집으로 전환한 뒤 채우기 도구를 사용하세요.",
@@ -9876,10 +10704,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "실제 크기",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "확대",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -10664,23 +11488,11 @@
   "file": "UI/MainWindow.Shadow.cs"
  },
  {
-  "ko": "수목",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
   "ko": "그림자 예시 · 보드",
   "file": "UI/MainWindow.Shadow.cs"
  },
  {
   "ko": "바닥선",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
-  "ko": "사람",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
-  "ko": "나무",
   "file": "UI/MainWindow.Shadow.cs"
  },
  {
@@ -10701,10 +11513,6 @@
  },
  {
   "ko": " 색상 변경",
-  "file": "UI/MainWindow.ShapeProperties.cs"
- },
- {
-  "ko": "채우기",
   "file": "UI/MainWindow.ShapeProperties.cs"
  },
  {
