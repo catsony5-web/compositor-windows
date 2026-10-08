@@ -283,6 +283,7 @@ public static partial class AutomationCatalog
                 ("groupId", Id with { Description = "A style folder to re-apply in place (from query_styles or a previous apply_style)." })), WriteRequired("styleId"));
         Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, gradient (gradientAngle, gradientStart, gradientEnd, gradientSeed of dot-gradient and stipple-gradient), opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
+        AddEntourageCommands(Add, Mutation, WriteRequired);
         return commands;
     }
 
@@ -376,6 +377,7 @@ public static partial class AutomationCatalog
             throw new ArgumentException("corners need flatten=true (the default); flatten=false keeps the whole photo.");
         if (command == "apply_style") ValidateStyleArguments(arguments);
         if (command == "create_map") ValidateMapArguments(arguments);
+        if (command == "place_entourage") ValidateEntourageArguments(arguments);
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
             throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))

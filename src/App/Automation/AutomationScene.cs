@@ -103,6 +103,7 @@ public sealed class AutomationScene
                 return (JsonNode?)new JsonObject { ["x"] = at.X, ["y"] = at.Y };
             }).ToArray());
         if (layer.Adjustment != null) result["adjustment"] = JsonSerializer.SerializeToNode(layer.Adjustment);
+        if (layer.Entourage != null) result["entourage"] = AutomationCatalog.EntouragePlacedJson(layer, document);
         if (layer.Vector != null) result["vector"] = new JsonObject
         {
             ["format"] = layer.Vector.Format.ToString(), ["width"] = layer.Vector.Width,

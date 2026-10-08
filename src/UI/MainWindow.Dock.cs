@@ -43,6 +43,7 @@ public sealed partial class MainWindow
         Tab("swatches", "견본", Theme.Glyphs.Swatches, "최근 사용 색 · 색상 견본 · 톤 · 추천 색상", () => Cached("swatches", BuildDockSwatches));
         Tab("gradients", "그라데이션", ToolIcons.PathData(Tool.Gradient), "그라데이션 도구가 칠할 색 흐름", () => Cached("gradients", BuildDockGradients));
         Tab("patterns", "패턴", Theme.Glyphs.Hatch, "해치 패턴과 스크린톤으로 선택 영역이나 재질 레이어 채우기", () => Cached("patterns", BuildDockPatterns));
+        Tab("entourage", "점경", Theme.Glyphs.Entourage, "사람·나무·탈것·소품을 도면에 놓기 · 내 점경", () => Cached("entourage", BuildDockEntourage));
         Tab("properties", "속성", Theme.Glyphs.Sliders, "선택한 레이어의 속성", () => DockPane(studioPanes[1]));
         Tab("adjustments", "조정", Theme.Glyphs.Adjustment, "조정 레이어 · 사진 현상 · 디자인 스타일", () => Cached("adjustments", BuildDockAdjustments));
         Tab("navigator", "내비게이터", Theme.Glyphs.Navigator, "문서 전체와 지금 보이는 영역 · 누르거나 끌어서 화면 이동", () => Cached("navigator", BuildDockNavigator));

@@ -205,7 +205,7 @@ public sealed partial class MainWindow
             http.Failure = new MapDownloadException("인터넷에 연결할 수 없습니다.");
             Check(Code(Call(w, "create_map", new JsonObject { ["source"] = "online", ["centerLatitude"] = 10, ["centerLongitude"] = 10 })) == "map_download_failed", "An offline download was not reported");
             var capabilities = Ok(Call(w, "get_capabilities", new JsonObject()));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "create_map") && capabilities["maps"]!["attributionRequired"]!.GetValue<bool>()
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 10 && capabilities["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "create_map") && capabilities["maps"]!["attributionRequired"]!.GetValue<bool>()
                 && capabilities["maps"]!["online"]!["endpoints"]!.AsArray().Count == 2, "Capabilities do not describe create_map");
         });
     }

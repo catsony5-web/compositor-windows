@@ -87,6 +87,7 @@ public sealed partial class MainWindow
             (Theme.Glyphs.FillStroke, "채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께, 점선과 끝 모양 조절"));
         panel.Children.Add(Theme.ActionRow("피사체를 글자 앞으로", Run(PlaceSubjectInFront), SubjectFrontTip, Theme.Glyphs.SubjectFront));
         AddMapActions(panel);
+        AddEntourageSection(panel);
         WorkspaceSection(panel, "캔버스에 정렬", "선택한 이미지·도형·텍스트 각각을 캔버스 기준으로 정렬합니다.");
         panel.Children.Add(QuickActions.IconStrip(CanvasAlignments.Select(a => (a.Glyph, a.Name, Run(() => AlignWorkspaceLayers(a.Direction)))), out _));
         WorkspaceSection(panel, "배치와 그룹");

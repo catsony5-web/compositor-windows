@@ -72,7 +72,11 @@ public static partial class ProjectStore
         // Optional and written only for map layers (지도 포스터 · 대지 위치도): older readers ignore it and keep the layers.
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public MapTag? Map { get; set; }
-        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()), PassThrough = PassThrough, Style = Style, Map = Map };
+        // Optional and written only for placed entourage (점경): older readers ignore it and keep the
+        // layer's vector or image content. A 내 점경 original is stored as entourage/<index>.png.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public EntourageSpec? Entourage { get; set; }
+        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()), PassThrough = PassThrough, Style = Style, Map = Map, Entourage = Entourage };
     }
     public sealed record VectorInfo(VectorFormat Format, int Width, int Height, int Page);
     public static void AtomicWrite(string path, Action<Stream> write)
@@ -108,6 +112,7 @@ public static partial class ProjectStore
                 Vector = l.Vector is { } vector ? new(vector.Format, vector.Width, vector.Height, vector.Page) : null, SharedGroupPixelsIndex = sharedGroupIndex });
             manifest.Layers[^1]!.Shadow = l.Shadow;
             manifest.Layers[^1]!.PassThrough = l.PassThrough; manifest.Layers[^1]!.Style = l.Style; manifest.Layers[^1]!.Map = l.Map;
+            manifest.Layers[^1]!.Entourage = l.Entourage;
         }
         if (doc.Artboards.Count > 0 || doc.Layers.Any(l => l.Category != LayerCategory.Automatic || l.SourceLayerName != null)) manifest.Version = 5;
         if (materials.Count > 0 || doc.MaterialRegions.Count > 0) manifest.Version = 6;
@@ -131,6 +136,9 @@ public static partial class ProjectStore
                     using var source = zip.CreateEntry($"vectors/{index}.source", CompressionLevel.Optimal).Open(); vector.Write(source);
                 }
                 if (l.Mask != null) using (var s = zip.CreateEntry($"layers/{index}.mask", CompressionLevel.Optimal).Open()) s.Write(l.Mask);
+                // A 내 점경 shown in its own colours is its original; only a restyled one stores the original separately.
+                if (l.Entourage?.Source is { } original && !ReferenceEquals(original.Data, l.Pixels.Data))
+                    using (var s = zip.CreateEntry($"entourage/{index}.png", CompressionLevel.NoCompression).Open()) original.WritePng(s);
             }
             using var meta = zip.CreateEntry("document.json").Open();
             metadata.CopyTo(meta);
@@ -192,6 +200,7 @@ public static partial class ProjectStore
             }
             var layer = l.ToLayer(pixels, mask, materials);
             layer.Shadow = l.Shadow;
+            if (layer.Entourage is { IsCustom: true } placed) layer.Entourage = placed with { Source = ReadEntourageSource(zip, index, pixels) };
             pixelBytes +=Document.StorageBytes(layer, groupPixels);
             if (pixelBytes > Document.MaxLayerBytes) throw new InvalidDataException("레이어 메모리 한도를 초과합니다.");
             if (l.Vector is { } info)

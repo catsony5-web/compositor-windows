@@ -299,7 +299,7 @@ public sealed partial class MainWindow
         Case("foundation capabilities describe the running editor without creating a document", window =>
         {
             var capabilities = Success(Call(window, "get_capabilities"));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["commands"]!.AsArray().Count == 41,
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 10 && capabilities["commands"]!.AsArray().Count == 43,
                 "Running editor did not advertise its command contract");
             Check(capabilities["unsupportedViaMcp"]!.AsArray().Any(n => n!.GetValue<string>() == "3d_uv_mapping") && capabilities["materials"]!["embeddedOriginals"]!.GetValue<bool>(),
                 "Supported 2D mapping must remain distinct from unsupported 3D operations");

@@ -57,7 +57,7 @@ public static class WorkspaceLayoutStore
     /// start folded (MainWindow.Dock.cs builds them in this order; 패널 배치 초기화 returns to it).</summary>
     public static readonly (string Key, string[] Tabs, double Weight, bool Collapsed)[] DockGroupKeys =
     [
-        ("color", ["color", "swatches", "gradients", "patterns"], 1.2, false), ("properties", ["properties", "adjustments"], 1.25, false),
+        ("color", ["color", "swatches", "gradients", "patterns", "entourage"], 1.2, false), ("properties", ["properties", "adjustments"], 1.25, false),
         ("navigator", ["navigator", "histogram", "info"], .85, false), ("layers", ["layers", "artboards", "history"], 1.4, false), ("tools", ["work", "brush"], 1.2, true)
     ];
     public static readonly string[] DockTabKeys = DockGroupKeys.SelectMany(k => k.Tabs).ToArray();

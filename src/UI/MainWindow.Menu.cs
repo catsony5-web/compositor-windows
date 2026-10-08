@@ -59,6 +59,7 @@ public sealed partial class MainWindow
         var adjustments = Find("조정 레이어"); menu.Items.Remove(adjustments); adjustments.Header = "새 조정 레이어";
         layerMenu.Items.Add(new Separator()); layerMenu.Items.Add(adjustments);
         AddShadowMenuItems(layerMenu);
+        AddEntourageMenuItems(layerMenu);
         var print = Find("인쇄"); menu.Items.Remove(print);
         var printItem = (MenuItem)print.Items[0]; print.Items.RemoveAt(0); printItem.Header = "인쇄용 CMYK 내보내기…";
         // Beside the export preview, wherever other File items put it.

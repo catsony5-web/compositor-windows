@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **41개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **43개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -85,6 +85,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 적용 영역 등록·조회 | `morupixel_define_region`, `morupixel_query_regions` |
 | 재료 적용·패턴 변경 | `morupixel_apply_material`, `morupixel_update_material` |
 | 디자인 스타일 조회·적용 | `morupixel_query_styles`, `morupixel_apply_style` |
+| 점경(사람·나무·탈것·소품) 조회·놓기·고치기 | `morupixel_query_entourage`, `morupixel_place_entourage` |
 
 기본 해치 패턴 19종과 스크린톤 13종은 `query_patterns`로 조회합니다(문서 없이 사용, `surface`: general·wall·floor·ground 순서, `nameContains`). 응답의 `materialId`를 `apply_material`·`update_material`에 넘기면 문서 재료 라이브러리에 자동 등록되며(가득 차면 `capacity_exceeded`), 패턴은 `ink`(`#RRGGBB`, 알파 01~FF의 `#AARRGGBB`, `default`; 완전히 투명한 잉크는 `invalid_arguments`)와 `lineWeight`(0.1~8, 이미지 재료는 무시)로 조절합니다. `update_material`은 생략한 값을 유지하고 `ink: "default"`는 기본 잉크로 되돌립니다. 재료 조회 결과에는 `kind`(`pattern`·`image`)·`patternId`, 맵핑에는 `ink`·`lineWeight`·`patternId`·`rendering`(`pattern_redrawn`·`image_tile`)이 들어갑니다. 패턴은 화면·출력 해상도에 맞춰 선을 다시 그리며, `export_image`의 `scale`이 1이 아니면 출력 크기로 다시 그려 내보냅니다. 없는 패턴 ID는 `material_not_found`이며 `query_patterns`로 올바른 ID를 찾습니다. [해치 패턴 안내](MATERIAL_MAPPING.md#해치-패턴)
 
@@ -250,6 +251,24 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 흑백 스크린톤 평면은 도면 선(치수·문자·가구·해치 역할 레이어 제외)으로 닫힌 영역을 찾아 바깥은 비우고, 얇거나 작은 영역(벽 속, 기둥)은 포셰, 방은 이웃끼리 다른 망점과 점묘 그라데이션으로 채웁니다. 단계마다 패턴 레이어가 하나씩 생기므로 앱의 재질 속성에서 패턴을 바꿀 수 있습니다. 네오 브루탈리즘 포스터는 내장 로컬 AI 모델로 피사체를 오려 제목 앞에 둡니다. 결과는 `preview`로 확인하세요.
 
+### 점경 놓기
+
+`query_entourage`는 앱의 **점경** 라이브러리를 돌려줍니다. 내장 점경은 Morupixel이 코드로 직접 그린 선 그림이며(사람 · 나무 · 식물 · 탈것 · 소품, 입면·단면과 평면), 각 항목에 `itemId`(예: `person.walking`, `tree.round`, `car.plan`), 한국어 이름과 표시 이름, `category`(`people`·`plants`·`vehicles`·`props`), `view`(`elevation`·`plan`), 기본 크기 `defaultHeight`(미터), 기본 채우기 `defaultFill`, 모양 변형 수 `variants`, 검색어 `keywords`가 들어갑니다. 이어서 사용자의 **내 점경**(이 PC의 목록과 문서가 가진 항목, `itemId: "custom:<32자리 16진수>"`, `lineDrawing`, `inLibrary`, `inDocument`)이 `custom`에 들어갑니다. `category`·`view`·`nameContains`로 거를 수 있고 문서가 없어도 됩니다. `documentId`(생략 시 현재 문서)가 있으면 그 문서의 점경 축척 `scale`(`pixelsPerMeter`, 1.7 m 사람의 px `personPixels`, 근거 `basis`: `user` 사용자가 정한 값, `document_entourage` 이미 놓인 점경, `default_1_to_100_at_dpi` 문서 DPI의 1:100)과 놓인 점경 목록 `placed`(`layerId`, `itemId`, `height`, `pixelsPerMeter`, `fill`, `lineColor`, `lineWeight`, `variant`, `flip`, 문서 픽셀 기준 `anchor`)도 돌려줍니다.
+
+`place_entourage`는 점경 하나를 `x`, `y`(문서 픽셀)에 놓습니다. 이 점은 입면·단면 점경에서는 **바닥점**(발끝·밑동·바퀴가 닿는 곳, 바닥선)이고 평면 점경에서는 **가운데**입니다. 실행 취소 한 번으로 되돌리고 `apply_batch` 단계로 쓸 수 있습니다.
+
+- `height`: 실제 크기(미터). 입면은 바닥에서 꼭대기까지 높이, 평면은 긴 쪽 길이(나무는 수관 지름). 생략하면 항목의 기본 크기(사람 1.7 m, 둥근 활엽수 8 m 등).
+- `pixelsPerMeter`: 축척(1 m가 몇 px인지). 생략하면 `query_entourage`의 `scale`과 같습니다. 크기 × 축척이 긴 변 4,096px를 넘으면 `invalid_arguments`입니다.
+- `fill`: `none`(선만), `white`·`gray`(실루엣을 흰색·회색으로 채움), `solid`(선 색 실루엣). 내 점경 사진은 원본 색·흐리게·회색조·실루엣입니다. `lineColor`: `#RRGGBB`·`#AARRGGBB`. `lineWeight`: 0.25~4(1은 축척에 맞춘 굵기로, 같은 축척의 점경은 같은 굵기). `flip`: 좌우 뒤집기. `variant`: 같은 항목의 다른 모양.
+- `count`(2~24): 크기·뒤집기·모양을 조금씩 달리해 자연스럽게 흩어 놓고 새 그룹으로 묶습니다. 입면은 `x`를 가운데로 너비 `spread` px의 바닥선 위에, 평면은 반지름 `spread` px 안에 놓고(평면 점경은 방향도 돌림), `seed`가 같으면 같은 배치입니다. 결과의 `layerId`는 그룹이고 `layerIds`에 점경들이 들어갑니다.
+- `layerId`(`itemId`·`x`·`y` 대신): 이미 놓인 점경의 크기·축척·채우기·색·굵기·뒤집기·모양을 바꿉니다. 지정하지 않은 값은 유지하고 바닥점은 그대로입니다. `height`나 `pixelsPerMeter`를 주면 손잡이로 바꾼 크기는 지웁니다.
+
+내장 점경은 경로를 보관하는 벡터 레이어라 확대해도 선명하고 PDF·.ai 내보내기에서도 벡터로 남습니다. 내 점경은 원본 이미지를 함께 저장한 이미지 레이어입니다. `get_layer`의 `entourage`에 같은 정보가 들어갑니다. 없는 항목은 `entourage_not_found`, 점경이 아닌 레이어는 `wrong_layer_kind`입니다.
+
+```json
+{ "command": "place_entourage", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "itemId": "tree.round", "x": 820, "y": 1080, "height": 9, "count": 5, "spread": 900, "seed": 3, "fill": "white" } }
+```
 ### AI가 큰 도면을 다루는 순서
 
 1. `get_capabilities`로 현재 편집기의 명령·좌표계·제한을 읽습니다. 새 MCP 실행 파일을 등록해도 이미 열린 이전 버전의 편집기가 업그레이드되지는 않습니다.
@@ -273,7 +292,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `update_shape`, `add_callout`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `update_shape`, `add_callout`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`, `place_entourage`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
 
 파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거, 디자인 스타일 적용은 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 
