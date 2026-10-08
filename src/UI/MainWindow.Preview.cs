@@ -201,6 +201,8 @@ public sealed partial class MainWindow
         TrimPreviewTabs();
         RenderDesignStylePreviews(directory);
         TrimPreviewTabs();
+        RenderEntouragePreviews(directory);
+        TrimPreviewTabs();
         RenderCompactPreviews(directory);
     }
     // Each review group opens its own sample documents; drop every tab but the active one between

@@ -290,6 +290,7 @@ public sealed partial class MainWindow
         StoreTab();
         if (command == "get_state") return AutomationState(args.ContainsKey("documentId") ? AutomationTab(args).Id : null, ABool(args, "includeLayers", true));
         if (command == "query_styles") return AutomationStyleQuery(args);
+        if (command == "query_entourage") return AutomationEntourageQuery(args);
         RequireAutomationIdle(token);
         if (command is "query_materials" or "query_regions") return AutomationMaterialQuery(command, args);
         if (command is "register_material" or "define_region") return await AutomationRegisterMaterialAsync(command, args, token);
@@ -720,6 +721,8 @@ public sealed partial class MainWindow
                 Add(await CompatibilityImport.OnSta(() => DocumentFeatures.CreateAdjustment(candidate, AutomationAdjustment(args)), token)); break;
             case "apply_style":
                 affected = await AutomationApplyStyleAsync(candidate, args, token); break;
+            case "place_entourage":
+                affected = AutomationPlaceEntourage(candidate, args); break;
             case "remove_background":
                 var masked = Target();
                 if (masked.Kind is LayerKind.Group or LayerKind.Adjustment) throw new AutomationFault("wrong_layer_kind", "이미지·텍스트·도형 레이어를 선택하세요.");

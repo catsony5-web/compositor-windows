@@ -134,6 +134,8 @@ public sealed class Layer
     // Design style folders use it (Core/DesignStyles.cs); other folders stay isolated.
     public bool PassThrough { get; set; }
     public StyleTag? Style { get; set; }
+    // 점경: a placed entourage item (Core/Entourage.cs); its vector or image content is regenerated from it.
+    public EntourageSpec? Entourage { get; set; }
     public Layer Snapshot()
     {
         var copy = (Layer)MemberwiseClone();
@@ -240,7 +242,8 @@ public sealed class Document
     // Empty CAD folders share a coordinate-space surface. Count that immutable
     // buffer once while retaining the conservative per-layer bitmap/mask budget.
     internal static long StorageBytes(Layer layer, HashSet<byte[]> groupPixels) =>
-        (layer.Kind != LayerKind.Group || groupPixels.Add(layer.Pixels.Data) ? layer.Pixels.Data.LongLength : 0) + (layer.Mask?.LongLength ?? 0);
+        (layer.Kind != LayerKind.Group || groupPixels.Add(layer.Pixels.Data) ? layer.Pixels.Data.LongLength : 0) + (layer.Mask?.LongLength ?? 0) +
+        (layer.Entourage?.Source is { } source && !ReferenceEquals(source.Data, layer.Pixels.Data) ? source.Data.LongLength : 0);
     static bool UsesBitmapSlot(Layer layer) => layer.Kind is LayerKind.Raster or LayerKind.Adjustment or LayerKind.Material;
     internal static void ValidateLayer(Layer layer, bool validateRasterDimensions = true)
     {
@@ -281,6 +284,7 @@ public sealed class Document
         if (layer.Kind == LayerKind.Adjustment) (layer.Adjustment ?? throw new InvalidDataException("조정 정보가 없습니다.")).Validate();
         else if (layer.Adjustment != null) throw new InvalidDataException("조정 레이어 종류가 일치하지 않습니다.");
         ShadowSpec.ValidateLayer(layer);
+        EntourageSpec.ValidateLayer(layer, validateRasterDimensions);
         if ((layer.PassThrough || layer.Style != null) && layer.Kind != LayerKind.Group) throw new InvalidDataException("디자인 스타일 정보는 그룹에만 둘 수 있습니다.");
         layer.Style?.Validate();
         layer.Warp?.Validate();
@@ -327,7 +331,7 @@ public sealed class History
     public long RetainedBytes(Document current)
     {
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); if (l.Vector != null) seen.Add(l.Vector); }
+        foreach (var l in current.Layers) { seen.Add(l.Pixels.Data); if (l.Mask != null) seen.Add(l.Mask); if (l.Vector != null) seen.Add(l.Vector); if (l.Entourage?.Source is { } source) seen.Add(source.Data); }
         foreach (var a in MaterialEditing.Assets(current)) seen.Add(a.Pixels.Data);
         long bytes = 0;
         foreach (var entry in past.Concat(future)) foreach (var a in MaterialEditing.Assets(entry.State))
@@ -337,6 +341,7 @@ public sealed class History
             if (seen.Add(l.Pixels.Data)) bytes += l.Pixels.Data.Length;
             if (l.Mask != null && seen.Add(l.Mask)) bytes += l.Mask.Length;
             if (l.Vector != null && seen.Add(l.Vector)) bytes += l.Vector.ByteLength;
+            if (l.Entourage?.Source is { } source && seen.Add(source.Data)) bytes += source.Data.Length;
         }
         return bytes;
     }
@@ -351,7 +356,7 @@ public sealed class History
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
                 x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Material != y.Material || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
-            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style) return false;
+            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Entourage != y.Entourage) return false;
         }
         return true;
     }

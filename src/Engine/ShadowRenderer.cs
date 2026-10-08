@@ -247,6 +247,8 @@ public static class ShadowRenderer
     static void Include(Document subtree, Layer layer, ILookup<Guid, Layer> children, int depth, bool root, bool keepClip = false)
     {
         var copy = layer.Snapshot();
+        // Entourage casts its whole silhouette, also when it is drawn as lines only (EntourageRenderer.ShadowSource).
+        if (copy.Entourage != null) EntourageRenderer.ShadowSource(copy);
         if (root) { copy.ParentId = null; copy.Visible = true; copy.Opacity = 1; copy.Blend = BlendMode.Normal; copy.Clipped = keepClip; }
         subtree.Layers.Add(copy);
         if (depth < 17) foreach (var child in Content(children[layer.Id])) Include(subtree, child, children, depth + 1, false);

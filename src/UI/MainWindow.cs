@@ -190,7 +190,7 @@ public sealed partial class MainWindow : Window
         {
             var x = a.Layers[i]; var y = b.Layers[i];
             if (x.Material != y.Material) return false;
-            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style) return false;
+            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Entourage != y.Entourage) return false;
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend || x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY || x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.Warp != y.Warp || x.Shape != y.Shape || x.Text != y.Text || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) || !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;

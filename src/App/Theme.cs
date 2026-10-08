@@ -338,6 +338,9 @@ public static class Theme
         // A cut-out figure standing in front of a large letter T (피사체를 글자 앞으로).
         public const string SubjectFront = "M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z | ~M3 4.5H17 M8.5 4.5V20.5 | *M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
+        // 점경 (entourage): a standing figure beside a tree on a ground line; scattering: three small trees at irregular spacing.
+        public const string Entourage = "M7.5 4.6A1.9 1.9 0 1 0 7.5 8.4A1.9 1.9 0 1 0 7.5 4.6Z M5.3 20V13.6C5.3 11.5 6.3 10.3 7.5 10.3C8.7 10.3 9.7 11.5 9.7 13.6V20 | M16.5 4A4.5 4.5 0 1 0 16.5 13A4.5 4.5 0 1 0 16.5 4Z M16.5 13V20 | ~M3 20.5H21 | *M16.5 4A4.5 4.5 0 1 0 16.5 13A4.5 4.5 0 1 0 16.5 4Z";
+        public const string Scatter = "M6 11.5A2.5 2.5 0 1 0 6 16.5A2.5 2.5 0 1 0 6 11.5Z M12.5 4A3 3 0 1 0 12.5 10A3 3 0 1 0 12.5 4Z M18 9.5A2.5 2.5 0 1 0 18 14.5A2.5 2.5 0 1 0 18 9.5Z | ~M6 16.5V20 M12.5 10V18 M18 14.5V19 | *M12.5 4A3 3 0 1 0 12.5 10A3 3 0 1 0 12.5 4Z";
         // 디자인 스타일: a picture split on its diagonal, one half restyled (tint) and the other screened (strokes).
         public const string Style = "M6 4.5H18A1.5 1.5 0 0 1 19.5 6V18A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z | M5 19L19 5 | ~M11.5 19.5L19.5 11.5 M15.5 19.5L19.5 15.5 | *M6 4.5H18.5L4.5 18.5V6A1.5 1.5 0 0 1 6 4.5Z";
         // 화면 스타일: 친절한 화면 (a window with large cards) and 간결한 화면 (a thin tool column and stacked tab panels).

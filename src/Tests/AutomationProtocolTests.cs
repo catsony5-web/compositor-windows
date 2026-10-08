@@ -18,7 +18,7 @@ public static class AutomationProtocolTests
         test("automation catalog advertises session revision and bounded typed arguments without sharing mutable schemas", () =>
         {
             var tools = AutomationCatalog.Tools();
-            Check(tools.Count == 38 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
+            Check(tools.Count == 40 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
             foreach (var tool in tools)
             {
                 var schema = tool!["inputSchema"]!.AsObject();
@@ -26,7 +26,7 @@ public static class AutomationProtocolTests
                 string name = tool["name"]!.GetValue<string>();
                 var required = schema["required"]!.AsArray().Select(n => n!.GetValue<string>()).ToArray();
                 Check(required.Contains("sessionId") == (name != "morupixel_list_sessions"), "Session targeting missing.");
-                if (name is not ("morupixel_list_sessions" or "morupixel_get_state" or "morupixel_get_capabilities" or "morupixel_query_layers" or "morupixel_get_layer" or "morupixel_query_materials" or "morupixel_query_regions" or "morupixel_preview" or "morupixel_new_document" or "morupixel_open_document" or "morupixel_activate_document" or "morupixel_inspect_file" or "morupixel_query_patterns" or "morupixel_query_styles"))
+                if (name is not ("morupixel_list_sessions" or "morupixel_get_state" or "morupixel_get_capabilities" or "morupixel_query_layers" or "morupixel_get_layer" or "morupixel_query_materials" or "morupixel_query_regions" or "morupixel_preview" or "morupixel_new_document" or "morupixel_open_document" or "morupixel_activate_document" or "morupixel_inspect_file" or "morupixel_query_patterns" or "morupixel_query_styles" or "morupixel_query_entourage"))
                     Check(required.Contains("documentId") && required.Contains("expectedRevision"), "Mutation must require an explicit document and revision.");
             }
             tools[0]!["name"] = "changed";
@@ -92,7 +92,7 @@ public static class AutomationProtocolTests
                 "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"]);
             Check(replies.Count == 3 && replies[0]["id"]!.GetValue<string>() == "initialize-id", "Notification reply or changed request ID.");
             Check(replies[0]["result"]!["protocolVersion"]!.GetValue<string>() == AutomationMcpServer.LegacyVersion, "Unsupported legacy version must negotiate the supported one.");
-            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 38 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
+            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 40 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
         });
 
         test("MCP modern discovery requires request metadata reports versions and includes complete cache metadata", () =>
@@ -132,7 +132,7 @@ public static class AutomationProtocolTests
         {
             var schema = AutomationCatalog.Tools().Single(t => t!["name"]!.GetValue<string>() == "morupixel_apply_batch")!["inputSchema"]!;
             var stepsSchema = schema["properties"]!["steps"]!;
-            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 13,
+            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 14,
                 "Atomic edits must advertise their supported typed steps");
             var args = Mutation(); args["sessionId"] = Session; args["operationId"] = "55555555-5555-4555-8555-555555555555";
             args["dryRun"] = true;

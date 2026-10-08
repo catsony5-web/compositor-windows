@@ -65,6 +65,9 @@ public static class VectorPdfExport
                 var path = Path(geometry.Geometry);
                 XBrush? brush = geometry.Brush is SolidColorBrush fill ? new XSolidBrush(Color(fill.Color)) : null;
                 XPen? pen = geometry.Pen?.Brush is SolidColorBrush stroke ? new XPen(Color(stroke.Color), geometry.Pen.Thickness) : null;
+                // Round caps and joins (drawn line art) stay round; other strokes keep the PDF defaults.
+                if (pen != null && geometry.Pen!.StartLineCap == PenLineCap.Round) pen.LineCap = XLineCap.Round;
+                if (pen != null && geometry.Pen!.LineJoin == PenLineJoin.Round) pen.LineJoin = XLineJoin.Round;
                 if (brush != null && pen != null) graphics.DrawPath(pen, brush, path);
                 else if (brush != null) graphics.DrawPath(brush, path);
                 else if (pen != null) graphics.DrawPath(pen, path);

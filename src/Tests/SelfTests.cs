@@ -142,6 +142,8 @@ public static class SelfTests
         SelectedLayerExportTests.Run(Test, directory);
         ShadowTests.Run(Test, directory);
         MainWindow.RunShadowCommandTests(Test);
+        EntourageTests.Run(Test, directory);
+        MainWindow.RunEntourageTests(Test, directory);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
         VectorContentTests.Run(Test, directory);

@@ -50,7 +50,7 @@ public static class WorkspaceLayoutStore
     /// <summary>The 간결한 화면 dock's groups and their tabs (MainWindow.Dock.cs builds them in this order).</summary>
     public static readonly (string Key, string[] Tabs)[] DockGroupKeys =
     [
-        ("color", ["color", "swatches", "gradients", "patterns"]), ("properties", ["properties", "adjustments"]),
+        ("color", ["color", "swatches", "gradients", "patterns", "entourage"]), ("properties", ["properties", "adjustments"]),
         ("navigator", ["navigator", "histogram", "info"]), ("layers", ["layers", "artboards", "history"]), ("tools", ["work", "brush"])
     ];
     public const double MinDockWeight = .05, MaxDockWeight = 20;

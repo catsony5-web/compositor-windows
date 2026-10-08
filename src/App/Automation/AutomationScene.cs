@@ -96,6 +96,7 @@ public sealed class AutomationScene
         if (layer.Material != null) result["material"] = AutomationMaterials.Fill(layer.Material, document);
         if (layer.Shape != null) result["shape"] = JsonSerializer.SerializeToNode(layer.Shape);
         if (layer.Adjustment != null) result["adjustment"] = JsonSerializer.SerializeToNode(layer.Adjustment);
+        if (layer.Entourage != null) result["entourage"] = AutomationCatalog.EntouragePlacedJson(layer, document);
         if (layer.Vector != null) result["vector"] = new JsonObject
         {
             ["format"] = layer.Vector.Format.ToString(), ["width"] = layer.Vector.Width,
