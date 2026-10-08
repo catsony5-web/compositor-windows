@@ -30,7 +30,7 @@ public sealed partial class MainWindow
     {
         toolCaption.Margin = new Thickness(0); toolCaption.MinWidth = 0;
         var row = new StackPanel { Orientation = Orientation.Horizontal }; row.Children.Add(toolCaptionIcon); row.Children.Add(toolCaption);
-        var chip = new Border { Child = row, Background = Theme.Surface, CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 4, 10, 4), Margin = new Thickness(2, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, MinWidth = 96 };
+        var chip = toolIdentityChip = new Border { Child = row, Background = Theme.Surface, CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 4, 10, 4), Margin = new Thickness(2, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, MinWidth = 96 };
         System.Windows.Automation.AutomationProperties.SetName(chip, "현재 도구");
         return chip;
     }

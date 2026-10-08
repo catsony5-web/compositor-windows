@@ -23,7 +23,7 @@ public static class PropertyRows
     // Caption above one full-width input.
     public static Grid Field(string caption, FrameworkElement input, Thickness? margin = null)
     {
-        var grid = new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) };
+        var grid = Density.Mark(new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) }, DensityRole.Row);
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.Children.Add(Caption(caption));
         input.Margin = new Thickness(0); Grid.SetRow(input, 1); grid.Children.Add(input);
@@ -33,7 +33,7 @@ public static class PropertyRows
     // Two captioned inputs side by side in equal columns.
     public static Grid Pair(string leftCaption, FrameworkElement left, string rightCaption, FrameworkElement right, Thickness? margin = null)
     {
-        var grid = new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) };
+        var grid = Density.Mark(new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) }, DensityRole.Row);
         grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         var leftLabel = Caption(leftCaption); leftLabel.Margin = new Thickness(0, 0, Gap, 3);
@@ -48,7 +48,7 @@ public static class PropertyRows
     // captions (12 Muted, no extra inset) so the labels of one section line up.
     public static Grid Inline(string caption, FrameworkElement value, double valueWidth = 78, Thickness? margin = null)
     {
-        var grid = new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) };
+        var grid = Density.Mark(new Grid { Margin = margin ?? new Thickness(2, 0, 2, 8) }, DensityRole.Row);
         grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(valueWidth) });
         var label = Caption(caption); label.Margin = new Thickness(0, 0, Gap, 0); label.VerticalAlignment = VerticalAlignment.Center;
         grid.Children.Add(label);

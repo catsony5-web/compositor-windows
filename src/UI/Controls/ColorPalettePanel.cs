@@ -8,6 +8,10 @@ using System.Windows.Media;
 
 namespace Compositor.Windows;
 
+/// <summary>Which parts a palette shows; 간결한 화면 splits them over its 색상 and 견본 tabs.</summary>
+[Flags]
+public enum ColorPaletteParts { Picker = 1, Recent = 2, Swatches = 4, Tones = 8, Harmony = 16, All = Picker | Recent | Swatches | Tones | Harmony }
+
 /// <summary>HSV picker with HEX entry on top, then recent colors, swatches, a folded tone grid and harmonies.</summary>
 public sealed class ColorPalettePanel : StackPanel
 {
@@ -37,10 +41,19 @@ public sealed class ColorPalettePanel : StackPanel
     public Color SelectedColor => selectedColor;
     internal Color ShadeBaseColor => shadeBaseColor;
 
-    public ColorPalettePanel()
+    public ColorPaletteParts Parts { get; }
+    /// <summary>Height of the saturation/value pad (150 by default).</summary>
+    public double PadHeight { get => pad.Height; set => pad.Height = value; }
+    /// <summary>Shows the H/S/V readout beside the HEX field (hidden in the narrow 간결한 화면 picker).</summary>
+    public bool ShowValues { get => values.Visibility == Visibility.Visible; set => values.Visibility = value ? Visibility.Visible : Visibility.Collapsed; }
+
+    public ColorPalettePanel() : this(ColorPaletteParts.All) { }
+
+    public ColorPalettePanel(ColorPaletteParts parts)
     {
+        Parts = parts;
         Margin = new Thickness(0, 4, 0, 2);
-        Children.Add(pad);
+        if (parts.HasFlag(ColorPaletteParts.Picker)) Children.Add(pad);
         hue = new Slider
         {
             Minimum = 0, Maximum = 359.99, SmallChange = 1, LargeChange = 15,
@@ -49,7 +62,7 @@ public sealed class ColorPalettePanel : StackPanel
         };
         if (TryFindResource("SpectrumSlider") is Style style) hue.Style = style;
         AutomationProperties.SetName(hue, "팔레트 색조");
-        Children.Add(hue);
+        if (parts.HasFlag(ColorPaletteParts.Picker)) Children.Add(hue);
         values.TextWrapping = TextWrapping.Wrap; values.VerticalAlignment = VerticalAlignment.Center; values.Margin = new Thickness(8, 0, 0, 0);
         AutomationProperties.SetName(hex, "HEX 색상값"); hex.ToolTip = "#RRGGBB 입력 후 Enter";
         hex.KeyDown += (_, e) => { if (e.Key == Key.Enter) { CommitHex(); e.Handled = true; } else if (e.Key == Key.Escape) { UpdateReadout(); e.Handled = true; } };
@@ -58,11 +71,10 @@ public sealed class ColorPalettePanel : StackPanel
         var hexLabel = Theme.Label("HEX", Theme.CaptionSize, Theme.Muted); hexLabel.VerticalAlignment = VerticalAlignment.Center; hexLabel.Margin = new Thickness(0, 0, 6, 0);
         DockPanel.SetDock(hexLabel, Dock.Left); DockPanel.SetDock(hex, Dock.Left);
         hexRow.Children.Add(hexLabel); hexRow.Children.Add(hex); hexRow.Children.Add(values);
-        Children.Add(hexRow);
-        Children.Add(Theme.Section("최근 사용 색"));
+        if (parts.HasFlag(ColorPaletteParts.Picker)) Children.Add(hexRow);
         AutomationProperties.SetName(recent, "최근 사용 색");
-        Children.Add(recent); Children.Add(recentEmpty); RebuildRecent();
-        Children.Add(Theme.Section("색상 견본"));
+        if (parts.HasFlag(ColorPaletteParts.Recent)) { Children.Add(Theme.Section("최근 사용 색", Children.Count > 0)); Children.Add(recent); Children.Add(recentEmpty); }
+        RebuildRecent();
         var swatches = new UniformGrid { Columns = 9 };
         AutomationProperties.SetName(swatches, "색상 견본");
         foreach (string code in SwatchHexes)
@@ -71,9 +83,8 @@ public sealed class ColorPalettePanel : StackPanel
             var b = Theme.Button("", () => Choose(color), code + " · 전경색 지정"); b.Background = new SolidColorBrush(color); b.BorderBrush = Theme.Line; b.Height = 24; b.MinHeight = 0; b.MinWidth = 0; b.Padding = new Thickness(0); b.Margin = new Thickness(2);
             AutomationProperties.SetName(b, $"견본 {code}"); swatches.Children.Add(b);
         }
-        Children.Add(swatches);
-        BuildShadePalette();
-        Children.Add(Theme.Section("추천 색상"));
+        if (parts.HasFlag(ColorPaletteParts.Swatches)) { Children.Add(Theme.Section("색상 견본", Children.Count > 0)); Children.Add(swatches); }
+        BuildShadePalette(parts.HasFlag(ColorPaletteParts.Tones));
         var modes = new UniformGrid { Columns = 3, Margin = new Thickness(0, 1, 0, 5) };
         foreach (var (label, kind, help) in new[]
         {
@@ -87,7 +98,7 @@ public sealed class ColorPalettePanel : StackPanel
             harmonyButtons.Add(button); modes.Children.Add(button);
         }
         recommendations.ToolTip = "추천색을 누르면 전경색으로 사용합니다";
-        Children.Add(modes); Children.Add(recommendations);
+        if (parts.HasFlag(ColorPaletteParts.Harmony)) { Children.Add(Theme.Section("추천 색상", Children.Count > 0)); Children.Add(modes); Children.Add(recommendations); }
         hue.ValueChanged += (_, _) =>
         {
             if (syncing) return;
@@ -132,11 +143,10 @@ public sealed class ColorPalettePanel : StackPanel
         if (changed) ColorChanged?.Invoke(next);
     }
 
-    void BuildShadePalette()
+    void BuildShadePalette(bool shown)
     {
-        var toneHeader = (SectionHeader)Theme.Section("선택 색상 톤", foldedByDefault: true);
-        Children.Add(toneHeader);
-        Children.Add(shadeBasis);
+        var toneHeader = (SectionHeader)Theme.Section("선택 색상 톤", Children.Count > 0, foldedByDefault: true);
+        if (shown) { Children.Add(toneHeader); Children.Add(shadeBasis); }
         AutomationProperties.SetName(shades, "선택 색상 톤 그리드");
         for (int i = 0; i < ColorShadePalette.Columns * ColorShadePalette.Rows; i++)
         {
@@ -151,10 +161,9 @@ public sealed class ColorPalettePanel : StackPanel
             // Ordinary button Tab/Enter/Space navigation also works without special input capture.
             shadeButtons.Add(button); shades.Children.Add(button);
         }
-        Children.Add(shades);
         var reset = Theme.Button("현재 색을 기준으로", () => SetShadeBase(selectedColor), "현재 전경색으로 톤 팔레트의 기준색을 다시 설정합니다");
         reset.MinHeight = 32; reset.Padding = new Thickness(5, 5, 5, 5);
-        Children.Add(reset);
+        if (shown) { Children.Add(shades); Children.Add(reset); }
         // Fold now rather than on the next dispatcher pass so the first frame is already compact.
         toneHeader.Apply();
         shades.SizeChanged += (_, e) =>

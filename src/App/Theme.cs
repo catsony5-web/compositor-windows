@@ -17,30 +17,80 @@ public static class Theme
         return brush;
     }
 
-    public static readonly Brush Canvas = Brush("#0C0D10");
+    // Two palettes share the token names: 친절한 화면 (the default, below) and 간결한 화면, a flat
+    // neutral gray set whose accent marks only focus and selection. The tokens read the active
+    // palette, so controls built later follow a switch; ScreenStyle.Repaint swaps the brushes
+    // that existing controls already hold.
+    internal sealed record Palette(string Canvas, string Stage, string Header, string Panel, string Surface, string Hover, string Pressed, string Input,
+        string Paper, string Line, string Stroke, string Text, string Muted, string Subtle, string Accent, string Primary, string PrimaryHover,
+        string Selected, string RowHover, string Danger, string Success, string Warning, string Popup);
+    internal static readonly Palette FriendlyPalette = new("#0C0D10", "#15181D", "#111317", "#1C1F24", "#2D323A", "#373D46", "#414853", "#101216",
+        "#F4F5F7", "#2A2F37", "#3B414B", "#E8EBF0", "#A3ABB7", "#6F7784", "#A8CAFF", "#3A6FDB", "#4A7FE9", "#243857", "#252930", "#F07178", "#6FD49A", "#E9C46A", "#22262C");
+    internal static readonly Palette CompactPalette = new("#161616", "#1F1F1F", "#323232", "#2B2B2B", "#3C3C3C", "#454545", "#4E4E4E", "#1E1E1E",
+        "#F4F5F7", "#1B1B1B", "#4A4A4A", "#E3E3E3", "#ABABAB", "#7C7C7C", "#5E9EFF", "#3A6FDB", "#4A7FE9", "#2F4664", "#363636", "#F07178", "#6FD49A", "#E9C46A", "#383838");
+    internal static readonly string[] TokenNames = ["Canvas", "Stage", "Header", "Panel", "Surface", "Hover", "Pressed", "Input", "Paper", "Line", "Stroke", "Text", "Muted", "Subtle", "Accent", "Primary", "PrimaryHover", "Selected", "RowHover", "Danger", "Success", "Warning", "Popup"];
+    static Brush[] CreateBrushes(Palette p) => [Brush(p.Canvas), Brush(p.Stage), Brush(p.Header), Brush(p.Panel), Brush(p.Surface), Brush(p.Hover), Brush(p.Pressed), Brush(p.Input),
+        Brush(p.Paper), Brush(p.Line), Brush(p.Stroke), Brush(p.Text), Brush(p.Muted), Brush(p.Subtle), Brush(p.Accent), Brush(p.Primary), Brush(p.PrimaryHover),
+        Brush(p.Selected), Brush(p.RowHover), Brush(p.Danger), Brush(p.Success), Brush(p.Warning), Brush(p.Popup)];
+    static readonly Brush[] friendlyBrushes = CreateBrushes(FriendlyPalette), compactBrushes = CreateBrushes(CompactPalette);
+    static Brush[] tokens = friendlyBrushes;
+    /// <summary>True while 간결한 화면 tokens are active (see <see cref="UseScreenStyle"/>).</summary>
+    public static bool Compact => ReferenceEquals(tokens, compactBrushes);
+
+    public static Brush Canvas => tokens[0];
     // Pasteboard behind the document; the active document tab uses the same color.
-    public static readonly Brush Stage = Brush("#15181D");
-    public static readonly Brush Header = Brush("#111317");
-    public static readonly Brush Panel = Brush("#1C1F24");
-    public static readonly Brush Surface = Brush("#2D323A");
-    public static readonly Brush Hover = Brush("#373D46");
-    public static readonly Brush Pressed = Brush("#414853");
-    public static readonly Brush Input = Brush("#101216");
+    public static Brush Stage => tokens[1];
+    public static Brush Header => tokens[2];
+    public static Brush Panel => tokens[3];
+    public static Brush Surface => tokens[4];
+    public static Brush Hover => tokens[5];
+    public static Brush Pressed => tokens[6];
+    public static Brush Input => tokens[7];
     // Light backing for drawing thumbnails, like the paper the canvas draws line work on.
-    public static readonly Brush Paper = Brush("#F4F5F7");
-    public static readonly Brush Line = Brush("#2A2F37");
-    public static readonly Brush Stroke = Brush("#3B414B");
-    public static readonly Brush Text = Brush("#E8EBF0");
-    public static readonly Brush Muted = Brush("#A3ABB7");
-    public static readonly Brush Subtle = Brush("#6F7784");
-    public static readonly Brush Accent = Brush("#A8CAFF");
-    public static readonly Brush Primary = Brush("#3A6FDB");
-    public static readonly Brush PrimaryHover = Brush("#4A7FE9");
-    public static readonly Brush Selected = Brush("#243857");
-    public static readonly Brush RowHover = Brush("#252930");
-    public static readonly Brush Danger = Brush("#F07178");
-    public static readonly Brush Success = Brush("#6FD49A");
-    public static readonly Brush Warning = Brush("#E9C46A");
+    public static Brush Paper => tokens[8];
+    public static Brush Line => tokens[9];
+    public static Brush Stroke => tokens[10];
+    public static Brush Text => tokens[11];
+    public static Brush Muted => tokens[12];
+    public static Brush Subtle => tokens[13];
+    public static Brush Accent => tokens[14];
+    public static Brush Primary => tokens[15];
+    public static Brush PrimaryHover => tokens[16];
+    public static Brush Selected => tokens[17];
+    public static Brush RowHover => tokens[18];
+    public static Brush Danger => tokens[19];
+    public static Brush Success => tokens[20];
+    public static Brush Warning => tokens[21];
+    public static Brush Popup => tokens[22];
+
+    // Switches the token palette and the Theme.xaml resources (colors, type sizes, control
+    // heights and corner radii) for 친절한 화면 or 간결한 화면. Returns old → new brushes so the
+    // caller can repaint controls that already hold a token (ScreenStyle.Repaint).
+    internal static IReadOnlyDictionary<Brush, Brush> UseScreenStyle(bool compact)
+    {
+        var next = compact ? compactBrushes : friendlyBrushes;
+        var map = new Dictionary<Brush, Brush>(ReferenceEqualityComparer.Instance);
+        for (int i = 0; i < next.Length; i++) map[tokens[i]] = next[i];
+        tokens = next;
+        if (Application.Current?.Resources is { } resources)
+        {
+            for (int i = 0; i < TokenNames.Length; i++)
+            {
+                string key = "Ui" + TokenNames[i];
+                if (compact) resources[key] = next[i]; else resources.Remove(key);
+            }
+            foreach (var (key, value) in CompactResources)
+                if (compact) resources[key] = value; else resources.Remove(key);
+        }
+        return map;
+    }
+
+    // Theme.xaml values replaced while 간결한 화면 is active (removed again for 친절한 화면).
+    static readonly (string Key, object Value)[] CompactResources =
+    [
+        ("UiBodySize", 12d), ("UiCaptionSize", 11d), ("UiControlHeight", 24d), ("UiButtonPadding", new Thickness(8, 2, 8, 2)), ("UiInputPadding", new Thickness(6, 2, 6, 2)),
+        ("UiControlRadius", new CornerRadius(3)), ("UiInnerRadius", new CornerRadius(2)), ("UiPopupRadius", new CornerRadius(3)), ("UiItemRadius", new CornerRadius(2)), ("UiFocusRadius", new CornerRadius(4))
+    ];
 
     // Segoe UI for Latin/numbers with Windows-hinted Malgun Gothic for Korean. Small UI text stays on
     // hinted system faces at integer sizes: an offscreen A/B showed the bundled Pretendard CFF faces
@@ -157,7 +207,7 @@ public static class Theme
         }
         var image = new DrawingImage(drawing);
         image.Freeze();
-        return new Image { Source = image, Width = size, Height = size, Stretch = Stretch.Uniform, SnapsToDevicePixels = true };
+        return Density.Mark(new Image { Source = image, Width = size, Height = size, Stretch = Stretch.Uniform, SnapsToDevicePixels = true }, DensityRole.Glyph);
     }
 
     public static Button IconButton(string data, Action action, string tooltip, double size = CompactHeight, double glyph = 16)
@@ -290,5 +340,14 @@ public static class Theme
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
         // 디자인 스타일: a picture split on its diagonal, one half restyled (tint) and the other screened (strokes).
         public const string Style = "M6 4.5H18A1.5 1.5 0 0 1 19.5 6V18A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z | M5 19L19 5 | ~M11.5 19.5L19.5 11.5 M15.5 19.5L19.5 15.5 | *M6 4.5H18.5L4.5 18.5V6A1.5 1.5 0 0 1 6 4.5Z";
+        // 화면 스타일: 친절한 화면 (a window with large cards) and 간결한 화면 (a thin tool column and stacked tab panels).
+        public const string ScreenFriendly = "M5 4H19A2 2 0 0 1 21 6V18A2 2 0 0 1 19 20H5A2 2 0 0 1 3 18V6A2 2 0 0 1 5 4Z | ~M6.5 7.5V16.5 M10 7.5H13 | *M13.5 7.5H17.5V11H13.5Z M13.5 12.5H17.5V16.5H13.5Z";
+        public const string ScreenCompact = "M5 4H19A2 2 0 0 1 21 6V18A2 2 0 0 1 19 20H5A2 2 0 0 1 3 18V6A2 2 0 0 1 5 4Z M6.5 4V20 M15.5 4V20 | ~M15.5 9.5H21 M15.5 14.5H21 | *M15.5 4H19A2 2 0 0 1 21 6V18A2 2 0 0 1 19 20H15.5Z";
+        // 간결한 화면 dock: the group menu (☰), and the 내비게이터 · 히스토그램 · 기록 · 견본 panels.
+        public const string Menu = "M5 7H19 M5 12H19 M5 17H19";
+        public const string Navigator = "M5 5H19A1.5 1.5 0 0 1 20.5 6.5V17.5A1.5 1.5 0 0 1 19 19H5A1.5 1.5 0 0 1 3.5 17.5V6.5A1.5 1.5 0 0 1 5 5Z | M9.5 9H15.5V14.5H9.5Z | *M9.5 9H15.5V14.5H9.5Z";
+        public const string Histogram = "M3.5 19.5H20.5 | M4 19.5L7.2 12.5L10.2 15L13.6 6L17 12.4L20 9.8V19.5 | *M4 19.5L7.2 12.5L10.2 15L13.6 6L17 12.4L20 9.8V19.5Z";
+        public const string History = "M4.5 12A7.5 7.5 0 1 0 7 6.4 M4.5 3.5V8H9 | ~M12 8V12L14.8 13.8";
+        public const string Swatches = "M5 4.5H10A.5 .5 0 0 1 10.5 5V10A.5 .5 0 0 1 10 10.5H5A.5 .5 0 0 1 4.5 10V5A.5 .5 0 0 1 5 4.5Z M14 4.5H19A.5 .5 0 0 1 19.5 5V10A.5 .5 0 0 1 19 10.5H14A.5 .5 0 0 1 13.5 10V5A.5 .5 0 0 1 14 4.5Z M5 13.5H10A.5 .5 0 0 1 10.5 14V19A.5 .5 0 0 1 10 19.5H5A.5 .5 0 0 1 4.5 19V14A.5 .5 0 0 1 5 13.5Z M14 13.5H19A.5 .5 0 0 1 19.5 14V19A.5 .5 0 0 1 19 19.5H14A.5 .5 0 0 1 13.5 19V14A.5 .5 0 0 1 14 13.5Z | *M5 4.5H10V10.5H4.5V5Z M13.5 13.5H19.5V19.5H13.5Z";
     }
 }

@@ -58,6 +58,8 @@ public sealed partial class MainWindow
     void ShowStudioPage(int page, bool activate = true)
     {
         CommitFocusedInspectorField(); studioPage = page;
+        // 간결한 화면: the same pages are tabs of the panel dock (MainWindow.Dock.cs).
+        if (screenCompact) { ShowDockPage(page, activate); return; }
         if (activate) studioScroll.Height = PreferredStudioHeight(ActualHeight);
         if (studioPanes.Length == 0) return;
         var pane = studioPanes[page];
@@ -120,6 +122,7 @@ public sealed partial class MainWindow
         }
         studioContents[0].Children.Clear();
         BuildFirstTab(studioContents[0]);
+        UpdateDockTitles();
     }
     void UpdateHistogramVisibility()
     {
@@ -164,12 +167,13 @@ public sealed partial class MainWindow
         studioContent.Children.Add(studioPalette);
         UpdateStudioColor();
     }
-    void RememberColor(Color color) { if (studioPalette != null) studioPalette.Remember(color); else ColorPalettePanel.RememberShared(color); }
+    void RememberColor(Color color) { if (studioPalette != null) studioPalette.Remember(color); else ColorPalettePanel.RememberShared(color); RefreshDockRecent(); }
     void UpdateStudioColor()
     {
         if (studioColorValue != null) studioColorValue.Text = $"전경 #{foreground.R:X2}{foreground.G:X2}{foreground.B:X2}\n배경 #{backgroundColor.R:X2}{backgroundColor.G:X2}{backgroundColor.B:X2}";
         studioColorSwatches?.SetColors(foreground, backgroundColor);
         studioPalette?.SetColor(foreground);
+        UpdateDockColor();
     }
     internal static readonly (string Label, double Size, double Hardness)[] BrushPresets = [("세밀하게", 12d, 1d), ("부드럽게", 100d, .15), ("넓게", 240d, .7)];
     void BuildStudioBrushes()

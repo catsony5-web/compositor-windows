@@ -103,6 +103,7 @@ public static class SelfTests
         MainWindow.RunStartFocusTests(Test, directory);
         MainWindow.RunRibbonTests(Test, directory);
         MainWindow.RunWindowFitTests(Test);
+        MainWindow.RunCompactScreenTests(Test, directory);
         LocalizationTests.Run(Test);
         MainWindow.RunKeepWordsTests(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);

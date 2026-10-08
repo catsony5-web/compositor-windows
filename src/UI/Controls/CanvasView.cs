@@ -60,6 +60,11 @@ public sealed partial class CanvasView : FrameworkElement
     double zoom = .65;
     // Raised whenever the scale changes (fit, wheel, typed value, tab switch) so readouts follow it.
     public event Action? ZoomChanged;
+    /// <summary>Raised after a render whose view (document, zoom, pan or size) differs from the last one, e.g. for the 내비게이터.</summary>
+    public event Action? ViewChanged;
+    (object? Document, double Zoom, Vector Pan, Size Size) lastView;
+    /// <summary>The part of the document shown, in document pixels.</summary>
+    public Rect VisibleDocumentRect => Document == null || Zoom <= 0 ? Rect.Empty : new Rect(ToDocument(new Point()), ToDocument(new Point(ActualWidth, ActualHeight)));
     public double Zoom { get => zoom; set { if (zoom == value) return; zoom = value; ZoomChanged?.Invoke(); } }
     public Vector Pan { get; set; }
     public Point Origin => new((ActualWidth - (Document?.Width ?? 0) * Zoom) / 2 + Pan.X, (ActualHeight - (Document?.Height ?? 0) * Zoom) / 2 + Pan.Y);
@@ -91,6 +96,8 @@ public sealed partial class CanvasView : FrameworkElement
     }
     protected override void OnRender(DrawingContext dc)
     {
+        var view = (Document as object, Zoom, Pan, RenderSize);
+        if (view != lastView) { lastView = view; ViewChanged?.Invoke(); }
         dc.DrawRectangle(Theme.Stage, null, new Rect(RenderSize));
         if (Document == null) return;
         var origin = Origin; var rect = new Rect(origin.X, origin.Y, Document.Width * Zoom, Document.Height * Zoom);

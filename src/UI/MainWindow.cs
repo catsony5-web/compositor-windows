@@ -49,14 +49,14 @@ public sealed partial class MainWindow : Window
         Title = "Morupixel · 모루픽셀"; Icon = Theme.BrandIcon; Width = 1480; Height = 980; MinWidth = 1000; MinHeight = 640; FitToWorkArea(this);
         WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Theme.Panel; Foreground = Theme.Text;
         FontFamily = Theme.UiFont; FontSize = Theme.BodySize; UseLayoutRounding = true;
-        var root = new Grid { Background = Theme.Header }; Content = root;
+        var root = rootGrid = new Grid { Background = Theme.Header }; Content = root;
         // Title bar with inline menu · contextual tool options · floating workspace cards · status.
         foreach (double h in new[] { 44.0, -2, OptionRowHeight, -1, 30 }) root.RowDefinitions.Add(new RowDefinition { Height = h == -1 ? new GridLength(1, GridUnitType.Star) : h == -2 ? GridLength.Auto : new GridLength(h) });
         optionRow = root.RowDefinitions[2];
         var ribbon = BuildRibbonBody(); Grid.SetRow(ribbon, 1); root.Children.Add(ribbon);
         root.Children.Add(BuildHeader());
 
-        var optionHost = new DockPanel { LastChildFill = true, Margin = new Thickness(12, 0, 6, 0) };
+        var optionHost = optionHostPanel = new DockPanel { LastChildFill = true, Margin = new Thickness(12, 0, 6, 0) };
         optionCard = new Border { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Margin = new Thickness(8, 0, 8, 4), Child = optionHost };
         Grid.SetRow(optionCard, 2); root.Children.Add(optionCard);
         var viewport = BuildViewportActions(); DockPanel.SetDock(viewport, Dock.Right); optionHost.Children.Add(viewport);
@@ -71,7 +71,7 @@ public sealed partial class MainWindow : Window
         brushLabel.Width = 50; brushOptions.Children.Add(brushLabel); brushOptions.Children.Add(OptionLabel("경도", "가장자리 선명도 · 낮을수록 부드럽게"));
         hardnessSlider = Slider(0, 1, hardness, 75, v => { hardness = v; studioHardness?.SetValue(v * 100); UpdateBrushStrokePreviews(); }); brushOptions.Children.Add(hardnessSlider); options.Children.Add(brushOptions);
         opacityOptions.Children.Add(OptionLabel("농도", "한 번 칠할 때의 불투명도")); opacitySlider = Slider(.01, 1, brushOpacity, 75, v => { brushOpacity = v; UpdateBrushPresetMarks(); }); opacityOptions.Children.Add(opacitySlider); options.Children.Add(opacityOptions);
-        var gradientMode = new ComboBox { ItemsSource = new[] { "전경색 → 투명", "전경색 → 배경색" }, SelectedIndex = 0, Width = 150, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(5) };
+        var gradientMode = gradientModeBox = new ComboBox { ItemsSource = new[] { "전경색 → 투명", "전경색 → 배경색" }, SelectedIndex = 0, Width = 150, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(5) };
         gradientMode.SelectionChanged += (_, _) => { gradientToBackground = gradientMode.SelectedIndex == 1; UpdateStatus(); }; gradientOptions.Children.Add(gradientMode); options.Children.Add(gradientOptions);
         autoSelectToggle = new OptionToggle(Theme.Glyphs.AutoSelect, "자동 선택", "이동 도구(V): 클릭한 대상의 레이어를 선택합니다. 끄면 목록에서 선택한 레이어만 이동합니다.", true) { Margin = new Thickness(4, 0, 4, 0) };
         System.Windows.Automation.AutomationProperties.SetName(autoSelectToggle, "캔버스 레이어 자동 선택");
@@ -80,7 +80,7 @@ public sealed partial class MainWindow : Window
         moveSelectionHint.Margin = new Thickness(14, 0, 2, 0); options.Children.Add(moveSelectionHint);
         autoSelectToggle.Unchecked += (_, _) => ClearPointerHover();
 
-        var body = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 3); root.Children.Add(body);
+        var body = bodyGrid = new Grid { Margin = new Thickness(8, 4, 8, 0) }; Grid.SetRow(body, 3); root.Children.Add(body);
         body.ColumnDefinitions.Add(toolRailColumn); body.ColumnDefinitions.Add(leftPanelColumn); body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(rightPanelColumn);
         var tools = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(4, 8, 4, 8) };
         var toolDefs = new (Tool Tool, string Icon, string Name, string Key)[] { (Tool.Move, "↖", "이동", "V"), (Tool.RectangleSelect, "▣", "사각 선택", "M"), (Tool.EllipseSelect, "◌", "타원 선택", "Shift+M"), (Tool.Crop, "⌗", "자르기", "C"), (Tool.Brush, "B", "브러시", "B"), (Tool.Eraser, "E", "지우개", "E"), (Tool.Rectangle, "□", "사각형", "U"), (Tool.Ellipse, "○", "타원", "Shift+U"), (Tool.Bucket, "▰", "버킷 채우기", "G"), (Tool.Gradient, "▧", "그라데이션", "Shift+G"), (Tool.Text, "T", "텍스트", "T"), (Tool.Eyedropper, "I", "색상 추출", "I"), (Tool.Hand, "✥", "손 도구", "H") };
@@ -101,7 +101,7 @@ public sealed partial class MainWindow : Window
         toolRail = new GlassPanel { Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Child = toolRailScroll };
         body.Children.Add(toolRail);
         // The document stage: tabs merge into the canvas, clipped to the card's rounded corners.
-        var workspace = new Grid { Background = Theme.Panel }; workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) }); workspace.RowDefinitions.Add(new RowDefinition());
+        var workspace = stageGrid = new Grid { Background = Theme.Panel }; workspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) }); workspace.RowDefinitions.Add(new RowDefinition());
         var stage = stageCard = new ClipBorder { Background = Theme.Panel, BorderBrush = Theme.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Margin = new Thickness(0, 0, 0, 8), Child = workspace };
         Grid.SetColumn(stage, 2); body.Children.Add(stage);
         workspace.Children.Add(BuildDocumentStrip());
@@ -109,7 +109,7 @@ public sealed partial class MainWindow : Window
         emptyWorkspace = BuildEmptyWorkspace(); Grid.SetRow(emptyWorkspace, 1); workspace.Children.Add(emptyWorkspace);
         var left = leftPanelHost = new ScrollViewer { Content = leftPanels, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }; Grid.SetColumn(left, 1); body.Children.Add(left);
         var right = rightPanelHost = BuildInspectorPanel(); Grid.SetColumn(right, 3); body.Children.Add(right);
-        var bottom = BuildStatusBar(); Grid.SetRow(bottom, 4); root.Children.Add(bottom);
+        var bottom = statusBar = BuildStatusBar(); Grid.SetRow(bottom, 4); root.Children.Add(bottom);
         RebuildRibbon();
 
         canvas.MouseDown += OnDown; canvas.MouseMove += OnMove; canvas.MouseUp += OnUp;
@@ -139,6 +139,8 @@ public sealed partial class MainWindow : Window
     {
         Theme.Styled(button, "IconButton");
         button.Height = 34; button.Margin = new Thickness(1.5); button.Padding = new Thickness(0);
+        // The rail lays its buttons out itself for both screens (ApplyToolRailLayout).
+        Density.Mark(button, DensityRole.Keep);
     }
     static Slider Slider(double min, double max, double value, double width, Action<double> changed)
     {
@@ -210,7 +212,7 @@ public sealed partial class MainWindow : Window
         documentTitle.Text = HasDocument ? $"{(history.Dirty(doc) ? "●  " : "")}{doc.Name}   ·   {doc.Width} × {doc.Height} px" : "";
         Title = HasDocument ? $"{(history.Dirty(doc) ? "* " : "")}{doc.Name} — Morupixel" : "Morupixel · 모루픽셀";
         if (rebuildProperties) BuildProperties();
-        BuildLayers(); UpdateStatus(); RebuildTabs();
+        BuildLayers(); UpdateStatus(); RebuildTabs(); UpdateDockPanels();
     }
     void RenderGesture()
     {

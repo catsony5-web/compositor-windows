@@ -297,6 +297,10 @@ public sealed class History
     public bool CanUndo => past.Count > 0;
     public bool CanRedo => future.Count > 0;
     public string UndoLabel => CanUndo ? past[^1].Label : "";
+    /// <summary>Labels of the steps that can be undone, oldest first (the last one is undone next).</summary>
+    public IReadOnlyList<string> UndoLabels => past.Select(entry => entry.Label).ToArray();
+    /// <summary>Labels of the steps that can be redone, next first.</summary>
+    public IReadOnlyList<string> RedoLabels => Enumerable.Range(1, future.Count).Select(i => future[^i].Label).ToArray();
     public History(int entryLimit = 50, long retainedByteLimit = 192L * 1024 * 1024)
     {
         this.entryLimit = Math.Max(0, entryLimit);

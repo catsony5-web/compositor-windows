@@ -29,7 +29,15 @@ public sealed class WorkspaceLayout
     public string? Profile { get; init; }
     /// <summary>Starred hatch patterns, in the order they were starred: built-in keys or "custom:" + ID (LinePatterns.FavoriteKey).</summary>
     public string[]? PatternFavorites { get; init; }
+    /// <summary>화면 스타일: "compact" for 간결한 화면; null (or anything else) is 친절한 화면.</summary>
+    public string? ScreenStyle { get; init; }
+    /// <summary>Width of the 간결한 화면 panel dock; null uses its default.</summary>
+    public double? CompactDockWidth { get; init; }
+    /// <summary>간결한 화면 panel groups: share of the dock height, folded into the icon strip, and the open tab.</summary>
+    public DockGroupLayout[]? DockGroups { get; init; }
 }
+
+public sealed record DockGroupLayout(string Key, double Weight, bool Collapsed, string? Tab = null);
 
 public sealed record WindowBounds(double Left, double Top, double Width, double Height, bool Maximized);
 
@@ -38,6 +46,14 @@ public sealed record PaneLayout(string Key, string Location, bool Pinned = false
 public static class WorkspaceLayoutStore
 {
     public static readonly string[] PaneKeys = ["page0", "page1", "page2", "page3", "layers"];
+    public const string CompactStyle = "compact";
+    /// <summary>The 간결한 화면 dock's groups and their tabs (MainWindow.Dock.cs builds them in this order).</summary>
+    public static readonly (string Key, string[] Tabs)[] DockGroupKeys =
+    [
+        ("color", ["color", "swatches", "gradients", "patterns"]), ("properties", ["properties", "adjustments"]),
+        ("navigator", ["navigator", "histogram", "info"]), ("layers", ["layers", "artboards", "history"]), ("tools", ["work", "brush"])
+    ];
+    public const double MinDockWeight = .05, MaxDockWeight = 20;
     const int MaxStoreBytes = 64 * 1024;
     public const int MaxPatternFavorites = 96;
     static readonly JsonSerializerOptions options = new() { WriteIndented = true };
@@ -96,7 +112,15 @@ public static class WorkspaceLayoutStore
                 .Select(c => c.ToUpperInvariant()).Distinct().Take(ColorPalettePanel.RecentLimit).ToArray(),
             OpenedSections = layout.OpenedSections?.Where(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 80).Distinct().Take(64).ToArray(),
             Profile = UserProfiles.Find(layout.Profile)?.Id,
-            PatternFavorites = layout.PatternFavorites?.Where(LinePatterns.IsFavoriteKey).Distinct(StringComparer.Ordinal).Take(MaxPatternFavorites).ToArray()
+            PatternFavorites = layout.PatternFavorites?.Where(LinePatterns.IsFavoriteKey).Distinct(StringComparer.Ordinal).Take(MaxPatternFavorites).ToArray(),
+            ScreenStyle = layout.ScreenStyle == CompactStyle ? CompactStyle : null,
+            CompactDockWidth = layout.CompactDockWidth is { } dock && double.IsFinite(dock) && dock > 0 && dock <= 4000 ? dock : null,
+            DockGroups = layout.DockGroups?.Where(g => g != null && DockGroupKeys.Any(k => k.Key == g.Key) && double.IsFinite(g.Weight)).GroupBy(g => g.Key)
+                .Select(g => g.First()).Select(g => g with
+                {
+                    Weight = Math.Clamp(g.Weight, MinDockWeight, MaxDockWeight),
+                    Tab = DockGroupKeys.First(k => k.Key == g.Key).Tabs.Contains(g.Tab) ? g.Tab : null
+                }).ToArray()
         };
     }
 }

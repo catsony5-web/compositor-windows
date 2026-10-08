@@ -38,6 +38,15 @@ public sealed partial class MainWindow
             string panelTitle = $"{caption} 패널 열기";
             commands.Add(new EditorCommand("panel:page" + page, Loc.T(panelTitle), Loc.T("패널"), "", () => true, () => ShowStudioPage(target), panelTitle, "패널"));
         }
+        // 간결한 화면: the dock's own tabs (내비게이터, 기록 …) open from the palette too.
+        if (screenCompact)
+            foreach (var group in dockGroups)
+                for (int i = 0; i < group.Tabs.Count; i++)
+                {
+                    string key = group.Tabs[i].Key; if (PageForDockTab(key) != null) continue;
+                    string panelTitle = $"{group.Title(i)} 패널 열기";
+                    commands.Add(new EditorCommand("panel:dock-" + key, Loc.T(panelTitle), Loc.T("패널"), "", () => HasDocument, () => ShowDockTab(key), panelTitle, "패널"));
+                }
         return commands;
     }
 
