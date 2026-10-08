@@ -1,3 +1,12 @@
+# Preview 44 validation
+
+- Source self-tests: **883/883 passed** on Windows x64 (864 in Preview 43; +19). The packaged build made by `scripts/Publish.ps1` ran its own self-test with the developer samples supplied (`MORUPIXEL_TEST_FIXTURES`) and passed every check.
+- 간결한 화면 (+10): the screen style switches live and round-trips through the workspace layout; the compact dock builds every group and tab; splitter sizes, folds, open tabs and dock width round-trip; folded groups move to the icon strip and reopen; the navigator click pans the canvas; histogram counts on a known image; the info panel shows coordinates and color for a pointer position; the history panel jumps to a chosen step (undo and redo); the guided screen is unchanged (all existing checks pass untouched). Offscreen captures of the compact window (photo and drawing at 1480×920 and 1280×720) and every dock tab reviewed in Korean, English and Japanese.
+- Package size (+9): measured step by step with the same method — satellite languages (ko, ja, zh-Hans, zh-Hant) 98.3 → 94.5 MiB ZIP; Windows Forms removed at the runtime-pack stage so `Morupixel.deps.json` stays consistent (a check verifies every listed file exists; System.Drawing.Common and the Ribbon assembly stay because WPF loads them) 86.5; debugger-only files 83.9; test samples out of the shipped assembly 83.8; only the screenshots the shipped docs use 77.7; unused embedded fonts 74.6; Windows SDK projection replaced by direct COM calls to the Windows PDF renderer 68.6 MiB (installed 152 MiB, 339 files). Start-up unchanged (2028 vs 2031 ms median of interleaved runs). New PDF interop checks: interface IDs against the Windows rules and the installed renderer, region and transparent rendering, four parallel renders from one stream, damaged, password-protected and canceled PDFs (the password error code is preserved), and that no check loaded a removed assembly. Single-file publishing was evaluated and not adopted (1 MiB smaller, slow first starts extracting native files, antivirus risk).
+- UI text: 2,504 entries per language, 0 missing. Offscreen captures in Korean and English reviewed.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index.
+- Not covered offscreen: real mouse drags of the dock splitters and navigator, real PDFs beyond the test set on other Windows builds.
+
 # Preview 43 validation
 
 - Source self-tests: **864/864 passed** on Windows x64 (765 in Preview 42; +99).
