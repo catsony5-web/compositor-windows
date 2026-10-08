@@ -318,6 +318,8 @@ public static class Theme
         public const string Shape = "M5.3 3.5H11.2A1.8 1.8 0 0 1 13 5.3V11.2A1.8 1.8 0 0 1 11.2 13H5.3A1.8 1.8 0 0 1 3.5 11.2V5.3A1.8 1.8 0 0 1 5.3 3.5Z | M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z | *M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z";
         // Drawing work (사용 목적 · 건축학과): a floor plan with a door swing, and three line weights.
         public const string Plan = "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z M12 4V10.5 M4 13H8.5 | ~M12 13.5V20 M12 13.5A6.5 6.5 0 0 1 18.5 20 | *M12 13.5A6.5 6.5 0 0 1 18.5 20H12Z";
+        // 지도 만들기: a folded map with a location pin on its middle panel.
+        public const string Map = "M3.5 6.5L9 4.5L15 6.5L20.5 4.5V17.5L15 19.5L9 17.5L3.5 19.5Z M9 4.5V17.5 M15 6.5V19.5 | ~M12 8.2A2.3 2.3 0 0 1 14.3 10.5C14.3 12.4 12 14.8 12 14.8C12 14.8 9.7 12.4 9.7 10.5A2.3 2.3 0 0 1 12 8.2Z | *M3.5 6.5L9 4.5V17.5L3.5 19.5Z";
         public const string LineWeight = "M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z M4 13H20 | ~M4 18.5H20 | *M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z";
         // 스케치 사진 정리: a sheet seen in perspective with a hand-drawn stroke on it.
         public const string Sketch = "M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z | M8 15.5C9.4 12.2 11 14.6 12.4 11.6C13.6 9.2 15.2 9.6 16.6 7.6 | *M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z";

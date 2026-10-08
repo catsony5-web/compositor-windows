@@ -166,7 +166,7 @@ public sealed partial class MainWindow
             Success(Call("delete_layer", Write(("layerId", group.ToString()))));
             Check(!w.doc.Layers.Any(DesignStyles.IsStyleGroup), "delete_layer did not remove the style folder");
             var capabilities = Success(Call("get_capabilities", new JsonObject()));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["commands"]!.AsArray().Count == 38 && capabilities["styles"]!["count"]!.GetValue<int>() == 5, "Capabilities do not describe the style commands");
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["commands"]!.AsArray().Count == 39 && capabilities["styles"]!["count"]!.GetValue<int>() == 5, "Capabilities do not describe the style commands");
         });
     }
 }

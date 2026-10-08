@@ -159,6 +159,7 @@ public sealed partial class MainWindow
         AddShapeProperties(layer);
         AddMaterialProperties(layer);
         AddStyleProperties(layer);
+        AddMapProperties(layer);
 
         properties.Children.Add(Theme.Section("외형"));
 

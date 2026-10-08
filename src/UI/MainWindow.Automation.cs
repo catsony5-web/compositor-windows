@@ -300,6 +300,7 @@ public sealed partial class MainWindow
         {
             var tab = AutomationTab(args); SwitchTab(tabs.IndexOf(tab)); return AutomationResult();
         }
+        if (command == "create_map") return await AutomationCreateMapAsync(args, token);
         if (command is "new_document" or "open_document")
         {
             if (tabs.Count >= 8) throw new AutomationFault("document_limit", "문서는 최대 8개까지 열 수 있습니다.");
