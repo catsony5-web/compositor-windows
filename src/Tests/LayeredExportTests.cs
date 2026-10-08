@@ -156,8 +156,7 @@ public static class LayeredExportTests
 
         test("PSD reader follows the stored bottom-first layer order of external files", () =>
         {
-            string path = PathFor("2layers.psd");
-            using (var source = typeof(LayeredExportTests).Assembly.GetManifestResourceStream("Morupixel.Compatibility.2layers.psd")!) using (var output = File.Create(path)) source.CopyTo(output);
+            string path = TestFixtures.CopyTo("2layers.psd", PathFor("2layers.psd"));
             var layered = PsdCompatibility.Read(path, true).Document; var merged = PsdCompatibility.Read(path, false).Document;
             // The first record is the background, so it must be the lowest layer here too.
             Check(layered.Layers[0].Pixels.Width == layered.Width && layered.Layers[0].Pixels.Height == layered.Height, "The background record is no longer at the bottom");

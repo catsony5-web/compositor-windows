@@ -8,25 +8,29 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Morupixel</AssemblyName>
-    <Version>0.2.0-preview.43</Version>
+    <Version>0.2.0-preview.44</Version>
     <Product>Morupixel</Product>
     <Description>Independent Windows image editor derived in part from Compositor</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\assets\morupixel.ico</ApplicationIcon>
     <StartupObject>Compositor.Windows.Program</StartupObject>
+    <!-- src/Formats/NativePdf.cs calls the Windows PDF renderer (Windows.Data.Pdf) through its COM
+         interfaces, so the 24 MB generated Windows SDK projection is neither referenced nor shipped. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeWindowsSDKRefFrameworkReferences>false</IncludeWindowsSDKRefFrameworkReferences>
+    <!-- Framework satellite resources (WPF context-menu and error texts) only for the display
+         languages the editor translates; English is the neutral resource and needs none.
+         zh-Hant stays because Traditional Chinese systems also use the Chinese UI. -->
+    <SatelliteResourceLanguages>ko;ja;zh-Hans;zh-Hant</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\assets\samples\sea-window.png" LogicalName="Morupixel.Sample.SeaWindow" />
     <EmbeddedResource Include="..\assets\i18n\??.json" LogicalName="Morupixel.i18n.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\tools\qa\compatibility\fixtures\*.psd" LogicalName="Morupixel.Compatibility.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\tools\qa\compatibility\fixtures\*.dwg" LogicalName="Morupixel.Compatibility.%(Filename)%(Extension)" />
     <PackageReference Include="PDFsharp" Version="6.2.4" />
-    <Resource Include="..\assets\fonts\Pretendard-Regular.otf" Link="assets\fonts\Pretendard-Regular.otf" />
-    <Resource Include="..\assets\fonts\Pretendard-Medium.otf" Link="assets\fonts\Pretendard-Medium.otf" />
-    <Resource Include="..\assets\fonts\Pretendard-SemiBold.otf" Link="assets\fonts\Pretendard-SemiBold.otf" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
     <PackageReference Include="ACadSharp" Version="3.7.16" />
     <PackageReference Include="PsdSharp" Version="1.2.0" />
     <Content Include="..\models\*" Link="models\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <Import Project="Packaging.targets" />
 </Project>

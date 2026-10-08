@@ -39,6 +39,7 @@ public sealed partial class MainWindow
         var subtitle = Theme.Label("새 문서를 만들거나 이미지를 열어 편집을 시작하세요.", Theme.BodySize, Theme.Muted); subtitle.HorizontalAlignment = HorizontalAlignment.Center; subtitle.TextAlignment = TextAlignment.Center;
         card.Children.Add(subtitle);
         card.Children.Add(BuildStartProfileChoice());
+        card.Children.Add(BuildStartScreenStyleChoice());
         var actions = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3, Margin = new Thickness(0, 20, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
         foreach (var (label, glyph, hint, action) in new (string, string, string, Action)[] {
             ("새 문서", Theme.Glyphs.NewFile, "Ctrl+N", NewDocument), ("열기", Theme.Glyphs.Open, "Ctrl+O", Open), ("배우기", Theme.Glyphs.Learn, "샘플 작업 열기", OpenLearningSample) })
@@ -68,7 +69,10 @@ public sealed partial class MainWindow
         var centered = new Grid(); centered.Children.Add(card);
         centered.SetBinding(MinHeightProperty, new System.Windows.Data.Binding(nameof(ScrollViewer.ViewportHeight)) { Source = scroll });
         scroll.Content = centered;
-        return new Border { Background = Theme.Stage, Child = scroll };
+        // The start screen keeps its friendly size in 간결한 화면 too; only the colors follow.
+        var start = new Border { Background = Theme.Stage, Child = scroll };
+        Density.SetCompact(start, false);
+        return start;
     }
 
     // Quick starts follow the 사용 목적 (UserProfile.QuickSizes / QuickDrawingImport).
@@ -168,7 +172,10 @@ public sealed partial class MainWindow
         Grid.SetColumn(stageCard, empty ? 0 : 2); Grid.SetColumnSpan(stageCard, empty ? 4 : 1);
         foreach (var element in new[] { toolRail, leftPanelHost, rightPanelHost, optionCard })
             if (element != null) element.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
-        if (optionRow != null) optionRow.Height = new GridLength(empty ? 8 : OptionRowHeight);
+        // 간결한 화면 shows its panel dock in place of the friendly right cards.
+        if (rightPanelHost != null && screenCompact) rightPanelHost.Visibility = Visibility.Collapsed;
+        if (compactDock != null) compactDock.Visibility = empty || !screenCompact ? Visibility.Collapsed : Visibility.Visible;
+        if (optionRow != null) optionRow.Height = new GridLength(empty ? (screenCompact ? 0 : 8) : screenCompact ? CompactBarHeight : OptionRowHeight);
         if (viewControls != null) viewControls.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -204,6 +211,6 @@ public sealed partial class MainWindow
         canvas.Document = null; canvas.Composite = null; canvas.Selection = null; composite = null;
         canvas.Guides.Clear(); canvas.BrushPoint = null; canvas.Pan = new(); canvas.Zoom = 1;
         histogram.Update(new Raster(1, 1)); histogramInfo.Text = "";
-        Refresh(false);
+        Refresh(false); UpdateDockAfterRender();
     }
 }

@@ -87,7 +87,7 @@ public sealed partial class MainWindow
 
     FrameworkElement BuildLayersPanel()
     {
-        var panel = new Grid { Background = Brushes.Transparent };
+        var panel = layersPanelGrid = new Grid { Background = Brushes.Transparent };
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -150,7 +150,7 @@ public sealed partial class MainWindow
         };
         var kind = Theme.Label(kindName, Theme.CaptionSize, Theme.Muted); kind.Margin = new Thickness(0, 1, 0, 0);
         var identity = new DockPanel { Margin = new Thickness(2, 1, 2, 6) };
-        var badge = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(9), Background = Theme.Surface, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top, Child = Theme.Glyph(kindGlyph, 18, Theme.Muted), ToolTip = kindName };
+        var badge = Density.Mark(new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(9), Background = Theme.Surface, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top, Child = Theme.Glyph(kindGlyph, 18, Theme.Muted), ToolTip = kindName }, DensityRole.Badge);
         DockPanel.SetDock(badge, Dock.Left); identity.Children.Add(badge);
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; titles.Children.Add(name); titles.Children.Add(kind); identity.Children.Add(titles);
         properties.Children.Add(identity);
@@ -355,7 +355,7 @@ public sealed partial class MainWindow
         {
             var grouped = new LayerRow(entry.Layer, entry.Selected, () => ClickLayerRow(entry, Keyboard.Modifiers),
                 _ => ClickLayerEye(entry, Keyboard.Modifiers), () => ToggleSourceLayer(members), entry.Expanded,
-                () => { foreach (var member in members) if (entry.Expanded) collapsedGroups.Add(member); else collapsedGroups.Remove(member); BuildLayers(); }, entry.Description);
+                () => { foreach (var member in members) if (entry.Expanded) collapsedGroups.Add(member); else collapsedGroups.Remove(member); BuildLayers(); }, entry.Description, screenCompact);
             grouped.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1);
             grouped.Eye.PreviewMouseLeftButtonDown += (_, _) => PressLayerEye(entry, Keyboard.Modifiers);
             // A grouped row lists a copy; a row scrolled into view during a sweep shows the live runs.
@@ -366,7 +366,7 @@ public sealed partial class MainWindow
             () => ClickLayerRow(entry, Keyboard.Modifiers),
             _ => ClickLayerEye(entry, Keyboard.Modifiers),
             () => Edit("잠금", () => { var active = doc.Layers.Single(item => item.Id == id); active.Locked = !active.Locked; }),
-            entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); }, entry.Description);
+            entry.Expanded, () => { if (!collapsedGroups.Add(id)) collapsedGroups.Remove(id); BuildLayers(); }, entry.Description, screenCompact);
         row.Margin = new Thickness(Math.Min(4, entry.Depth) * 10, 1, 0, 1); row.AllowDrop = true;
         row.Eye.PreviewMouseLeftButtonDown += (_, _) => PressLayerEye(entry, Keyboard.Modifiers);
         EnableLayerDrag(row, id);

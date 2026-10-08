@@ -24,6 +24,8 @@ public sealed partial class MainWindow
     {
         if (ReferenceEquals(studioScroll.Content, pane)) studioScroll.Content = null;
         if (ReferenceEquals(layersSlot.Child, pane)) layersSlot.Child = null;
+        // A 간결한 화면 group may hold it.
+        if (pane.Parent is Decorator holder && ReferenceEquals(holder.Child, pane)) holder.Child = null;
         leftPanels.Children.Remove(pane);
         if (pane.Floating is { } floating) { pane.Floating = null; floating.Content = null; floating.Close(); }
         pane.Height = double.NaN;
@@ -72,6 +74,7 @@ public sealed partial class MainWindow
     }
     void ResetPanelLayout()
     {
+        if (screenCompact) { ResetDockLayout(); return; }
         rightPanelColumn.Width = new GridLength(396);
         foreach (var pane in movablePanels) { pane.Unlock(); if (pane.Location != "right") MovePane(pane, "right"); }
         ShowStudioPage(0);

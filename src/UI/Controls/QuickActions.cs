@@ -16,7 +16,8 @@ public static class QuickActions
         var button = Theme.Button("", action, tooltip);
         var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var icon = Theme.Glyph(glyph, 20, Theme.Text); icon.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(icon);
-        content.Children.Add(new KeepWordsTextBlock { Text = label, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 6, 0, 0) });
+        content.Children.Add(Density.Mark(new KeepWordsTextBlock { Text = label, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 6, 0, 0) }, DensityRole.TileLabel));
+        Density.Mark(button, DensityRole.Tile);
         button.Content = content; button.MinHeight = 62; button.Padding = new Thickness(4, 9, 4, 8); button.Margin = new Thickness(3);
         button.HorizontalContentAlignment = HorizontalAlignment.Center;
         AutomationProperties.SetName(button, name ?? label);
@@ -72,15 +73,16 @@ public static class QuickActions
         var button = Theme.Button("", action, tooltip);
         var content = new Grid();
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); content.ColumnDefinitions.Add(new ColumnDefinition()); content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
-        var badge = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(9), Background = Theme.Selected, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, Child = Theme.Glyph(glyph, 20, Theme.Accent) };
+        var badge = Density.Mark(new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(9), Background = Theme.Selected, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, Child = Theme.Glyph(glyph, 20, Theme.Accent) }, DensityRole.Badge);
         content.Children.Add(badge);
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         labels.Children.Add(new KeepWordsTextBlock { Text = title, FontSize = Theme.BodySize, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
-        labels.Children.Add(new KeepWordsTextBlock { Text = description, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
+        labels.Children.Add(Density.Mark(new KeepWordsTextBlock { Text = description, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) }, DensityRole.Description));
         System.Windows.Controls.Grid.SetColumn(labels, 1); content.Children.Add(labels);
         var arrow = new System.Windows.Shapes.Path { Data = Geometry.Parse("M 0 0 L 4 4 L 0 8"), Stroke = Theme.Subtle, StrokeThickness = 1.5, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
         System.Windows.Controls.Grid.SetColumn(arrow, 2); content.Children.Add(arrow);
         button.Content = content; button.Padding = new Thickness(10, 10, 12, 10); button.Margin = new Thickness(2, 2, 2, 6); button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        Density.Mark(button, DensityRole.Feature);
         AutomationProperties.SetName(button, title);
         return button;
     }

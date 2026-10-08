@@ -47,10 +47,13 @@ public sealed partial class MainWindow
         }
         var panes = movablePanels.Where(p => p.Location != "right" || p.Pinned).Select(p => new PaneLayout(PaneKey(p), p.Location, p.Pinned,
             p.Floating is { } f ? new WindowBounds(f.Left, f.Top, f.ActualWidth > 0 ? f.ActualWidth : f.Width, f.ActualHeight > 0 ? f.ActualHeight : f.Height, false) : null)).ToArray();
+        // 간결한 화면 docks every pane; the friendly placements it will restore are the ones to keep.
+        if (screenCompact) panes = friendlyPanes.Where(p => p.Location != "right" || p.Pinned).Select(p => new PaneLayout(PaneKey(p.Pane), p.Location, p.Pinned,
+            p.Bounds is { } b ? new WindowBounds(b.Left, b.Top, b.Width, b.Height, false) : null)).ToArray();
         return new WorkspaceLayout
         {
             Window = window,
-            RightPanelWidth = rightPanelColumn.ActualWidth > 0 ? rightPanelColumn.ActualWidth : rightPanelColumn.Width.Value,
+            RightPanelWidth = FriendlyPanelWidthNow,
             DesignWorkspace = designWorkspace,
             StudioPage = studioPage,
             Panes = panes,
@@ -60,12 +63,17 @@ public sealed partial class MainWindow
             RecentColors = ColorPalettePanel.RecentColors.Select(c => $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}").ToArray(),
             OpenedSections = SectionHeader.OpenedDefaultKeys,
             Profile = userProfileChosen ? userProfile.Id : null,
-            PatternFavorites = patternFavorites.ToArray()
+            PatternFavorites = patternFavorites.ToArray(),
+            ScreenStyle = screenCompact ? WorkspaceLayoutStore.CompactStyle : null,
+            CompactDockWidth = Math.Round(CompactDockWidthNow, 1),
+            DockGroups = CaptureDockGroups()
         };
     }
 
     internal void ApplyPaneLayout(WorkspaceLayout layout)
     {
+        // Panes are placed on the friendly screen; 간결한 화면 (if saved) docks them at the end.
+        if (screenCompact) SetScreenStyle(false);
         rightPanelColumn.Width = new GridLength(Math.Clamp(layout.RightPanelWidth, rightPanelColumn.MinWidth, rightPanelColumn.MaxWidth));
         // The saved purpose first, without its default mode: the saved mode below wins.
         if (UserProfiles.Find(layout.Profile) is { } profile) SetUserProfile(profile.Id, pickedByUser: false);
@@ -91,6 +99,9 @@ public sealed partial class MainWindow
         if (layout.RibbonFavorites != null) ribbonFavorites = MigrateFavorites(layout.RibbonFavorites);
         if (layout.PatternFavorites != null) patternFavorites = layout.PatternFavorites.Where(LinePatterns.IsFavoriteKey).Distinct(StringComparer.Ordinal).ToList();
         RebuildRibbon();
+        if (layout.CompactDockWidth is { } dock) compactDockWidth = Math.Clamp(dock, MinDockWidth, MaxDockWidth);
+        ApplyDockGroups(layout.DockGroups);
+        if (layout.ScreenStyle == WorkspaceLayoutStore.CompactStyle) SetScreenStyle(true);
     }
 
     // Keeps a window (and its minimum size) inside the work area of the screen it opens on,

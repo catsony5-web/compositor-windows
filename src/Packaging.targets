@@ -1,0 +1,41 @@
+<Project>
+  <!--
+    Self-contained release trimming that keeps every editor feature.
+
+    The Windows Desktop runtime pack ships Windows Forms with every WPF application, and the .NET
+    runtime pack ships debugger support. Morupixel uses none of them
+    at run time, so these files are removed from the runtime pack assets themselves. Removing them
+    here, before the SDK copies files and writes Morupixel.deps.json, keeps the dependency manifest
+    consistent with the release folder.
+
+    Kept on purpose: System.Drawing.Common and PresentationFramework-SystemDrawing (WPF loads
+    them when an image is copied to the clipboard), System.Drawing, Microsoft.VisualBasic,
+    PresentationUI, ReachFramework and System.Printing (referenced by WPF assemblies), and
+    System.Windows.Controls.Ribbon: nothing references it, but XAML resolves names such as
+    AncestorType=Button by loading every assembly mapped to the WPF namespace, so dialogs fail to
+    load without it. PackageTrimTests proves the result in the packaged self-test.
+  -->
+  <PropertyGroup>
+    <!-- Windows Forms assemblies (the SDK's WindowsForms-only profile) and their satellites. -->
+    <MorupixelUnusedDesktopFiles>;System.Windows.Forms;System.Windows.Forms.Design;System.Windows.Forms.Design.Editors;System.Windows.Forms.Primitives;Microsoft.VisualBasic.Forms;WindowsFormsIntegration;System.Design;System.Drawing.Design;</MorupixelUnusedDesktopFiles>
+    <!-- Debugger and dump support only: symbol reader, data access component, debugger interface,
+         dump writer. Stack traces still name every method without them. -->
+    <MorupixelDebuggerFiles>;Microsoft.DiaSymReader.Native.amd64;mscordaccore;mscordbi;createdump;</MorupixelDebuggerFiles>
+  </PropertyGroup>
+
+  <Target Name="MorupixelRemoveUnusedRuntimeFiles"
+          AfterTargets="ResolveRuntimePackAssets"
+          Condition="'$(SelfContained)' == 'true'">
+    <ItemGroup>
+      <_MorupixelUnusedRuntimeFile Include="@(RuntimePackAsset)"
+          Condition="$([System.String]::Copy('%(RuntimePackAsset.NuGetPackageId)').StartsWith('Microsoft.WindowsDesktop.App.Runtime.')) and $(MorupixelUnusedDesktopFiles.Contains(';%(RuntimePackAsset.Filename);'))" />
+      <_MorupixelUnusedRuntimeFile Include="@(RuntimePackAsset)"
+          Condition="$([System.String]::Copy('%(RuntimePackAsset.NuGetPackageId)').StartsWith('Microsoft.WindowsDesktop.App.Runtime.')) and '%(RuntimePackAsset.AssetType)' == 'resources' and $(MorupixelUnusedDesktopFiles.Contains(';$([System.IO.Path]::GetFileNameWithoutExtension('%(RuntimePackAsset.Filename)'));'))" />
+      <_MorupixelUnusedRuntimeFile Include="@(RuntimePackAsset)"
+          Condition="$([System.String]::Copy('%(RuntimePackAsset.NuGetPackageId)').StartsWith('Microsoft.NETCore.App.Runtime.')) and ($(MorupixelDebuggerFiles.Contains(';%(RuntimePackAsset.Filename);')) or $([System.String]::Copy('%(RuntimePackAsset.Filename)').StartsWith('mscordaccore_')))" />
+      <RuntimePackAsset Remove="@(_MorupixelUnusedRuntimeFile)" />
+      <ReferenceCopyLocalPaths Remove="@(_MorupixelUnusedRuntimeFile)" />
+    </ItemGroup>
+    <Message Importance="high" Text="Morupixel package: left out @(_MorupixelUnusedRuntimeFile->Count()) unused runtime files (Windows Forms, debugger support)." />
+  </Target>
+</Project>

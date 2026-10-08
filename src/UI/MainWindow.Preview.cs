@@ -200,6 +200,8 @@ public sealed partial class MainWindow
         RenderStyleEffectPreviews(directory, Capture);
         TrimPreviewTabs();
         RenderDesignStylePreviews(directory);
+        TrimPreviewTabs();
+        RenderCompactPreviews(directory);
     }
     // Each review group opens its own sample documents; drop every tab but the active one between
     // groups so the whole review stays under the 8-document limit (no save prompts: review only).

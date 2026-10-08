@@ -24,25 +24,36 @@ public sealed partial class MainWindow
     void WorkspaceCommands(StackPanel panel, params (string Glyph, string Label, Action Run, string Tip, string? Name)[] actions) =>
         panel.Children.Add(QuickActions.Grid(2, actions.Select(a => QuickActions.Command(a.Glyph, a.Label, Run(a.Run), a.Tip, a.Name)), QuickActions.CommandWidth));
 
+    // Adjustment layers: tiles on the friendly 보정 tab, icon buttons on the 간결한 화면 조정 tab.
+    internal static readonly (string Glyph, string Label, AdjustmentKind Kind, string Tip)[] AdjustmentTiles =
+    [
+        (Theme.Glyphs.Exposure, "노출", AdjustmentKind.Exposure, "노출 · 미리보기 후 조정 레이어 추가"),
+        (Theme.Glyphs.Levels, "레벨", AdjustmentKind.Levels, "입력·출력 레벨과 감마 조절"),
+        (Theme.Glyphs.Curves, "곡선", AdjustmentKind.Curves, "RGB와 각 채널의 톤 곡선 조절"),
+        (Theme.Glyphs.HueSaturation, "색조 / 채도", AdjustmentKind.HueSaturation, "색조·채도·명도 조절"),
+        (Theme.Glyphs.GradientMap, "그라데이션 맵", AdjustmentKind.GradientMap, "명암에 따라 색상 매핑"),
+        (Theme.Glyphs.Grain, "그레인", AdjustmentKind.Grain, "필름 입자 추가")
+    ];
+    internal static readonly (string Glyph, string Label, AdjustmentKind Kind, string Tip)[] StyleEffectTiles =
+    [
+        (Theme.Glyphs.Threshold, "한계값", AdjustmentKind.Threshold, "기준 밝기로 나눠 순수한 흑백 비트맵 만들기"),
+        (Theme.Glyphs.Halftone, "망점", AdjustmentKind.Halftone, "어두운 곳일수록 크게 찍히는 인쇄 망점으로 바꾸기"),
+        (Theme.Glyphs.PaperTexture, "종이·인쇄 질감", AdjustmentKind.PaperTexture, "종이 섬유·복사 토너·줄무늬·탄 가장자리 질감 더하기"),
+        (Theme.Glyphs.Glow, "빛 번짐", AdjustmentKind.Glow, "밝은 창과 조명의 빛이 주변으로 번지게 하기")
+    ];
+
+    (string Glyph, string Label, Action Run, string Tip)[] AdjustmentActions((string Glyph, string Label, AdjustmentKind Kind, string Tip)[] tiles) =>
+        tiles.Select(t => (t.Glyph, t.Label, (Action)(() => ShowAdjustment(t.Kind)), t.Tip)).ToArray();
+
     void BuildPhotoActions(StackPanel panel)
     {
         panel.Children.Add(QuickActions.Feature(Theme.Glyphs.Camera, "사진 현상", "화이트 밸런스 · 명암 · 질감을 한 번에 조절",
             Run(() => ShowAdjustment(AdjustmentKind.PhotoDevelop)), "화이트 밸런스·톤·질감을 한 번에 보정 · 수정 가능한 조정 레이어로 적용"));
         WorkspaceSection(panel, "조정 레이어", "원본을 유지하며 빛과 색을 보정합니다. 미리보기 후 조정 레이어로 추가됩니다.");
-        WorkspaceTiles(panel, 3,
-            (Theme.Glyphs.Exposure, "노출", () => ShowAdjustment(AdjustmentKind.Exposure), "노출 · 미리보기 후 조정 레이어 추가"),
-            (Theme.Glyphs.Levels, "레벨", () => ShowAdjustment(AdjustmentKind.Levels), "입력·출력 레벨과 감마 조절"),
-            (Theme.Glyphs.Curves, "곡선", () => ShowAdjustment(AdjustmentKind.Curves), "RGB와 각 채널의 톤 곡선 조절"),
-            (Theme.Glyphs.HueSaturation, "색조 / 채도", () => ShowAdjustment(AdjustmentKind.HueSaturation), "색조·채도·명도 조절"),
-            (Theme.Glyphs.GradientMap, "그라데이션 맵", () => ShowAdjustment(AdjustmentKind.GradientMap), "명암에 따라 색상 매핑"),
-            (Theme.Glyphs.Grain, "그레인", () => ShowAdjustment(AdjustmentKind.Grain), "필름 입자 추가"));
+        WorkspaceTiles(panel, 3, AdjustmentActions(AdjustmentTiles));
         panel.Children.Add(Theme.ActionRow("선택한 조정 레이어 편집", Run(EditAdjustment), "선택한 조정 레이어의 값을 다시 편집", Theme.Glyphs.Sliders));
         WorkspaceSection(panel, "스타일 효과", "흑백 비트맵, 인쇄 망점, 종이와 복사 질감, 빛 번짐을 원본을 유지하는 조정 레이어로 더합니다.");
-        WorkspaceTiles(panel, 2,
-            (Theme.Glyphs.Threshold, "한계값", () => ShowAdjustment(AdjustmentKind.Threshold), "기준 밝기로 나눠 순수한 흑백 비트맵 만들기"),
-            (Theme.Glyphs.Halftone, "망점", () => ShowAdjustment(AdjustmentKind.Halftone), "어두운 곳일수록 크게 찍히는 인쇄 망점으로 바꾸기"),
-            (Theme.Glyphs.PaperTexture, "종이·인쇄 질감", () => ShowAdjustment(AdjustmentKind.PaperTexture), "종이 섬유·복사 토너·줄무늬·탄 가장자리 질감 더하기"),
-            (Theme.Glyphs.Glow, "빛 번짐", () => ShowAdjustment(AdjustmentKind.Glow), "밝은 창과 조명의 빛이 주변으로 번지게 하기"));
+        WorkspaceTiles(panel, 2, AdjustmentActions(StyleEffectTiles));
         AddDesignStyleCommands(panel);
 
         WorkspaceSection(panel, "선택과 마스크", "선택 영역을 만들고 마스크나 새 레이어로 바꿉니다.");

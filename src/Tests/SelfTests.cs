@@ -9,7 +9,7 @@ public static class SelfTests
 {
     public static int Run(string output)
     {
-        var results = new List<string>(); int failed = 0;
+        var results = new List<string>(); int failed = 0, skipped = 0;
         string directory = Path.GetDirectoryName(Path.GetFullPath(output))!; Directory.CreateDirectory(directory);
         File.WriteAllText(output, "");
         // MORUPIXEL_TEST_FILTER runs only the tests whose name contains it (for reproducing one failure).
@@ -20,7 +20,9 @@ public static class SelfTests
             // Retain the last test even if a native renderer aborts the process.
             File.AppendAllText(output, "RUN " + name + Environment.NewLine);
             Console.WriteLine("RUN " + name);
-            try { test(); results.Add("PASS " + name); } catch (Exception e) { failed++; results.Add("FAIL " + name + ": " + e); }
+            try { test(); results.Add("PASS " + name); }
+            catch (SkippedTestException e) { skipped++; results.Add("SKIP " + name + ": " + e.Message); }
+            catch (Exception e) { failed++; results.Add("FAIL " + name + ": " + e); }
             File.AppendAllText(output, results[^1] + Environment.NewLine);
         }
         void Assert(bool truth, string detail = "Assertion failed") { if (!truth) throw new Exception(detail); }
@@ -103,6 +105,7 @@ public static class SelfTests
         MainWindow.RunStartFocusTests(Test, directory);
         MainWindow.RunRibbonTests(Test, directory);
         MainWindow.RunWindowFitTests(Test);
+        MainWindow.RunCompactScreenTests(Test, directory);
         LocalizationTests.Run(Test);
         MainWindow.RunKeepWordsTests(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);
@@ -167,7 +170,12 @@ public static class SelfTests
         CadObjectImportTests.Run(Test, directory);
         CompatibilityDialog.RunStructureTests(Test, directory);
         NativePdfLifetimeTests.Run(Test, directory);
-        results.Add($"\n{results.Count - failed}/{results.Count} passed; {failed} failed. {DateTimeOffset.Now:O}");
+        NativePdfInteropTests.Run(Test, directory);
+        PackageTrimTests.Run(Test);
+        PackageTrimTests.RunLast(Test);
+        // Installers match "0 failed." exactly; skipped tests are reported after it, never counted as passed.
+        string skippedNote = skipped == 0 ? "" : $" {skipped} skipped (external test files are not shipped with the release).";
+        results.Add($"\n{results.Count - failed - skipped}/{results.Count} passed; {failed} failed.{skippedNote} {DateTimeOffset.Now:O}");
         File.WriteAllLines(output, results); return failed == 0 ? 0 : 1;
     }
 }

@@ -100,7 +100,7 @@ public sealed partial class MainWindow
                 if (movePlanes is { Bytes: > SpeculativeMovePlaneBytes }) DropMovePlanes();
             }
             bool settled = !gesture && canvas.MovePreviewSettled;
-            if (!gesture) { ClearTextMovePreview(); if (settled) canvas.AdoptComposite(); histogram.Update(result.Display); histogramInfo.Text = $"{doc.Width:N0} × {doc.Height:N0} px · {doc.Dpi:0.#} DPI · {(proof ? "CMYK 미리보기" : "RGB / 8 bit")}"; }
+            if (!gesture) { ClearTextMovePreview(); if (settled) canvas.AdoptComposite(); histogram.Update(result.Display); histogramInfo.Text = $"{doc.Width:N0} × {doc.Height:N0} px · {doc.Dpi:0.#} DPI · {(proof ? "CMYK 미리보기" : "RGB / 8 bit")}"; UpdateDockAfterRender(); }
             canvas.InvalidateVisual();
             if (status.Text.StartsWith("CMYK 인쇄색을 준비합니다", StringComparison.Ordinal))
                 status.Text = proof ? "CMYK 인쇄색 미리보기 · RGB 원본 유지 · 상단 RGB 버튼으로 복귀" : "RGB 편집 화면";

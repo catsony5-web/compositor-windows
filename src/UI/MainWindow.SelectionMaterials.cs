@@ -94,7 +94,7 @@ public sealed partial class MainWindow
             SurfaceHint.Ground => "외부 바닥에 어울리는 재질부터 보여 줍니다.",
             _ => "선택 영역에 채울 재질을 고르세요."
         };
-        var caption = Theme.Label(lead, Theme.CaptionSize, Theme.Muted); caption.Margin = new Thickness(2, 0, 2, 2);
+        var caption = Density.Mark(Theme.Label(lead, Theme.CaptionSize, Theme.Muted), DensityRole.Description); caption.Margin = new Thickness(2, 0, 2, 2);
         panel.Children.Add(caption);
         if (suggestion.LayerName is { } source)
         {
@@ -106,7 +106,7 @@ public sealed partial class MainWindow
         var hint = Theme.Label(target != null ? "다른 재질을 누르면 방금 만든 재질 레이어를 바꿉니다."
             : SelectionMaterials.IsDrawing(doc) ? "누르면 선택 영역 모양의 재질 레이어를 도면 선 아래에 만듭니다." : "누르면 선택 영역 모양의 재질 레이어를 만듭니다.",
             Theme.CaptionSize, Theme.Subtle);
-        hint.Margin = new Thickness(2, 0, 2, 6); panel.Children.Add(hint);
+        hint.Margin = new Thickness(2, 0, 2, 6); panel.Children.Add(Density.Mark(hint, DensityRole.Description));
         var current = target?.Material?.Asset.Id;
         var tab = LinePatterns.IsPattern(target?.Material?.Asset) ? MaterialPaletteTab.Patterns : materialPaletteTab;
         panel.Children.Add(MaterialPalette(tab, current, target != null, (asset, name) => ApplySelectionMaterial(asset, name),

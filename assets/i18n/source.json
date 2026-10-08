@@ -3008,10 +3008,6 @@
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
-  "ko": "추천 색상",
-  "file": "UI/Controls/ColorPalettePanel.cs"
- },
- {
   "ko": "보색",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
@@ -3037,6 +3033,10 @@
  },
  {
   "ko": "추천색을 누르면 전경색으로 사용합니다",
+  "file": "UI/Controls/ColorPalettePanel.cs"
+ },
+ {
+  "ko": "추천 색상",
   "file": "UI/Controls/ColorPalettePanel.cs"
  },
  {
@@ -3152,6 +3152,26 @@
   "file": "UI/Controls/ColorSwatches.cs"
  },
  {
+  "ko": "패널 그룹 메뉴 · 접기와 배치 초기화",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "{0} 그룹 메뉴",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "{0} 패널",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "{0} 패널 그룹",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "열림",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
   "ko": "현재 합성 이미지의 RGB 분포 · 투명 픽셀 제외",
   "file": "UI/Controls/HistogramView.cs"
  },
@@ -3189,6 +3209,10 @@
  },
  {
   "ko": " · 마스크",
+  "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "{0} · {1}\n선택 · Shift+클릭: 범위 선택 · Ctrl+클릭: 추가/빼기",
   "file": "UI/Controls/LayerRow.cs"
  },
  {
@@ -3270,6 +3294,14 @@
  {
   "ko": "위아래로 드래그(Shift+드래그도 가능): 지나간 눈에 같은 상태 적용 · Esc 취소",
   "file": "UI/Controls/LayerRow.cs"
+ },
+ {
+  "ko": "누르거나 끌어서 화면 이동 · 방향키로도 이동",
+  "file": "UI/Controls/NavigatorView.cs"
+ },
+ {
+  "ko": "내비게이터",
+  "file": "UI/Controls/NavigatorView.cs"
  },
  {
   "ko": "이동 간격 · 슬라이더와 방향키가 움직이는 단위",
@@ -6816,8 +6848,308 @@
   "file": "UI/MainWindow.DesignStyles.cs"
  },
  {
+  "ko": "디자인",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "보정",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "전경색·배경색과 색상 선택기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "견본",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "최근 사용 색 · 색상 견본 · 톤 · 추천 색상",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그라데이션 도구가 칠할 색 흐름",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "패턴",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "해치 패턴과 스크린톤으로 선택 영역이나 재질 레이어 채우기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "속성",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "선택한 레이어의 속성",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "조정 레이어 · 사진 현상 · 디자인 스타일",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "문서 전체와 지금 보이는 영역 · 누르거나 끌어서 화면 이동",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "히스토그램",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "합성 이미지의 명도와 RGB 분포",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "정보",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "포인터 위치와 그 자리의 색, 문서와 선택 영역 크기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "레이어 목록",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "문서의 대지 목록",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "기록",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "작업 기록 · 단계를 누르면 그 상태로 돌아갑니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "사진 보정과 디자인 작업 모음",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "브러시 모양 · 크기 · 프리셋",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "패널 도크",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "패널 너비 조절 · 두 번 클릭하면 기본 너비",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "패널 도크 너비 조절",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "접은 패널",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "패널 높이 조절",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "{0} · {1} 패널 높이 조절",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "{0} 패널 펼치기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "패널 배치 초기화",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그룹을 오른쪽 아이콘 줄로 접거나 다시 펼칩니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그룹 크기·접기·열린 탭과 도크 너비를 처음 상태로 되돌립니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
   "ko": "레이어 패널을 오른쪽으로",
   "file": "UI/MainWindow.Docking.cs"
+ },
+ {
+  "ko": "전경색 RGB 값",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "그라데이션 맵 조정 레이어",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "명암에 따라 색을 입히는 조정 레이어 추가",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "점 · 스크린톤 그라데이션 패턴",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "선택 영역을 농도가 변하는 망점·스크린톤으로 채우기 · 패턴 탭",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "{0} · 그라데이션 도구로 칠하기",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "{0} 그라데이션",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "문서를 열면 패턴을 고를 수 있습니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "누르면 방금 만든 재질 레이어의 패턴을 바꿉니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "누르면 선택 영역을 이 패턴으로 채웁니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "누르면 선택한 재질 레이어의 패턴을 바꿉니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "선택 영역을 만들거나 재질 레이어를 고르면 패턴으로 채울 수 있습니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "먼저 패턴을 채울 영역을 선택하세요. 마술봉으로 방을 누르면 빠릅니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "{0} 조정 레이어",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "화이트 밸런스·톤·질감을 한 번에 보정 · 수정 가능한 조정 레이어로 적용 · Ctrl+Shift+A",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "선택한 조정 레이어 편집",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "선택한 조정 레이어의 값을 다시 편집",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "축소 · Ctrl+-",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "확대 · Ctrl++",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "화면 배율 · 끌어서 확대/축소",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "내비게이터 배율",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "합성 이미지의 명도(회색)와 RGB 분포 · 투명 픽셀 제외",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "불투명한 픽셀이 없습니다.",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "명도 평균 {0} · 중간값 {1}",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "CMYK 미리보기",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "{0} · 투명 픽셀 제외 · 회색: 명도, 선: 빨강·초록·파랑",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "문서",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "문서 밖",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "캔버스 위에 포인터를 올리세요",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "없음",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "새 대지 · 오른쪽에 같은 크기로 추가",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "대지 편집 도구 · 끌어서 만들기와 크기 조절 · Shift+O",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "선택한 대지 내보내기",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "선택한 대지 삭제",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "대지 목록",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "대지 선택: ",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "작업 기록",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "시작 상태",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "지금 상태",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "다시 실행해 이 단계로 가기",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "실행 취소해 이 단계로 돌아가기",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "기록 {0}: {1}",
+  "file": "UI/MainWindow.DockPanels.cs"
+ },
+ {
+  "ko": "다시 실행할 단계",
+  "file": "UI/MainWindow.DockPanels.cs"
  },
  {
   "ko": "도면 레이어",
@@ -6996,15 +7328,7 @@
   "file": "UI/MainWindow.HatchPreview.cs"
  },
  {
-  "ko": "패널 너비 조절 · 두 번 클릭하면 기본 너비",
-  "file": "UI/MainWindow.Inspector.cs"
- },
- {
   "ko": "오른쪽 패널 너비 조절",
-  "file": "UI/MainWindow.Inspector.cs"
- },
- {
-  "ko": "패널 높이 조절",
   "file": "UI/MainWindow.Inspector.cs"
  },
  {
@@ -7616,10 +7940,6 @@
   "file": "UI/MainWindow.LinePatterns.cs"
  },
  {
-  "ko": "없음",
-  "file": "UI/MainWindow.LinePatterns.cs"
- },
- {
   "ko": "바탕색",
   "file": "UI/MainWindow.LinePatterns.cs"
  },
@@ -7960,10 +8280,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "보정",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "채도…",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -8100,10 +8416,6 @@
   "file": "UI/MainWindow.Menu.cs"
  },
  {
-  "ko": "패널 배치 초기화",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
   "ko": "언어 · Language",
   "file": "UI/MainWindow.Menu.cs"
  },
@@ -8137,10 +8449,6 @@
  },
  {
   "ko": "사진 편집",
-  "file": "UI/MainWindow.Modes.cs"
- },
- {
-  "ko": "디자인",
   "file": "UI/MainWindow.Modes.cs"
  },
  {
@@ -8412,10 +8720,6 @@
   "file": "UI/MainWindow.Proof.cs"
  },
  {
-  "ko": "CMYK 미리보기",
-  "file": "UI/MainWindow.Rendering.cs"
- },
- {
   "ko": "CMYK 인쇄색을 준비합니다",
   "file": "UI/MainWindow.Rendering.cs"
  },
@@ -8468,19 +8772,11 @@
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {
-  "ko": "문서",
-  "file": "UI/MainWindow.Ribbon.cs"
- },
- {
   "ko": "내보내기 미리보기",
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {
   "ko": "호환 파일",
-  "file": "UI/MainWindow.Ribbon.cs"
- },
- {
-  "ko": "기록",
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {
@@ -8648,10 +8944,6 @@
   "file": "UI/MainWindow.Ribbon.cs"
  },
  {
-  "ko": "히스토그램",
-  "file": "UI/MainWindow.Ribbon.cs"
- },
- {
   "ko": "리본",
   "file": "UI/MainWindow.Ribbon.cs"
  },
@@ -8662,6 +8954,42 @@
  {
   "ko": "연결 설정",
   "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "친절한 화면",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "간결한 화면",
+  "file": "UI/MainWindow.Ribbon.cs"
+ },
+ {
+  "ko": "다른 편집기에 익숙한 분께: 아이콘 도구 열과 탭으로 겹친 패널로 작업 화면을 넓게 씁니다.",
+  "file": "UI/MainWindow.ScreenStyle.cs"
+ },
+ {
+  "ko": "큰 버튼과 설명으로 기능을 안내합니다. 처음 쓰는 분께 알맞습니다.",
+  "file": "UI/MainWindow.ScreenStyle.cs"
+ },
+ {
+  "ko": "간결한 화면 · 도구 열과 오른쪽 패널 그룹을 얇게 표시합니다",
+  "file": "UI/MainWindow.ScreenStyle.cs"
+ },
+ {
+  "ko": "친절한 화면 · 버튼과 설명을 크게 표시합니다",
+  "file": "UI/MainWindow.ScreenStyle.cs"
+ },
+ {
+  "ko": "화면 스타일",
+  "file": "UI/MainWindow.ScreenStyle.cs"
+ },
+ {
+  "ko": "친절한 화면: 큰 버튼과 설명 / 간결한 화면: 아이콘 도구 열과 탭으로 겹친 패널",
+  "file": "UI/MainWindow.ScreenStyle.cs"
+ },
+ {
+  "ko": "바다 창문",
+  "file": "UI/MainWindow.ScreenStylePreview.cs"
  },
  {
   "ko": "스크린톤 평면",
@@ -8924,19 +9252,11 @@
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {
-  "ko": "축소 · Ctrl+-",
-  "file": "UI/MainWindow.StatusBar.cs"
- },
- {
   "ko": "배율 · 숫자를 입력하고 Enter",
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {
   "ko": "화면 배율",
-  "file": "UI/MainWindow.StatusBar.cs"
- },
- {
-  "ko": "확대 · Ctrl++",
   "file": "UI/MainWindow.StatusBar.cs"
  },
  {
@@ -8969,10 +9289,6 @@
  },
  {
   "ko": "작업",
-  "file": "UI/MainWindow.Studio.cs"
- },
- {
-  "ko": "속성",
   "file": "UI/MainWindow.Studio.cs"
  },
  {
@@ -9176,18 +9492,6 @@
   "file": "UI/MainWindow.Transform.cs"
  },
  {
-  "ko": "화이트 밸런스 · 명암 · 질감을 한 번에 조절",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "화이트 밸런스·톤·질감을 한 번에 보정 · 수정 가능한 조정 레이어로 적용",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "원본을 유지하며 빛과 색을 보정합니다. 미리보기 후 조정 레이어로 추가됩니다.",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
   "ko": "노출 · 미리보기 후 조정 레이어 추가",
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
@@ -9212,22 +9516,6 @@
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
  {
-  "ko": "선택한 조정 레이어 편집",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "선택한 조정 레이어의 값을 다시 편집",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "스타일 효과",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
-  "ko": "흑백 비트맵, 인쇄 망점, 종이와 복사 질감, 빛 번짐을 원본을 유지하는 조정 레이어로 더합니다.",
-  "file": "UI/MainWindow.WorkspaceActions.cs"
- },
- {
   "ko": "기준 밝기로 나눠 순수한 흑백 비트맵 만들기",
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
@@ -9241,6 +9529,26 @@
  },
  {
   "ko": "밝은 창과 조명의 빛이 주변으로 번지게 하기",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "화이트 밸런스 · 명암 · 질감을 한 번에 조절",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "화이트 밸런스·톤·질감을 한 번에 보정 · 수정 가능한 조정 레이어로 적용",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "원본을 유지하며 빛과 색을 보정합니다. 미리보기 후 조정 레이어로 추가됩니다.",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "스타일 효과",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "흑백 비트맵, 인쇄 망점, 종이와 복사 질감, 빛 번짐을 원본을 유지하는 조정 레이어로 더합니다.",
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
  {

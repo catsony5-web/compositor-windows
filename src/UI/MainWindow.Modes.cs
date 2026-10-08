@@ -55,6 +55,9 @@ public sealed partial class MainWindow
     internal int toolRailLayout;
     const double ToolRailWidth = 84, ToolButtonHeight = 34;
     internal static readonly (int Columns, double Button, double Gap)[] ToolRailLayouts = [(2, ToolButtonHeight, 5), (2, 30, 3), (3, 30, 3), (3, 28, 2), (4, 28, 2)];
+    // 간결한 화면: one column of 32 DIP icon buttons, tightened and then doubled on short windows.
+    internal static readonly (int Columns, double Button, double Gap)[] CompactToolRailLayouts = [(1, 32, 4), (1, 30, 3), (1, 28, 2), (2, 28, 2), (2, 26, 1), (3, 26, 1)];
+    (int Columns, double Button, double Gap)[] RailLayouts => screenCompact ? CompactToolRailLayouts : ToolRailLayouts;
 
     void FitToolRail()
     {
@@ -63,7 +66,7 @@ public sealed partial class MainWindow
         if (!(available > 0)) { ApplyToolRailLayout(toolRailLayout); return; }
         try
         {
-            for (int i = 0; i < ToolRailLayouts.Length; i++)
+            for (int i = 0; i < RailLayouts.Length; i++)
             {
                 ApplyToolRailLayout(i);
                 // Measure skips elements that are not dirty; invalidate the chain down to the changed grids.
@@ -79,16 +82,23 @@ public sealed partial class MainWindow
 
     void ApplyToolRailLayout(int index)
     {
-        var (columns, button, gap) = ToolRailLayouts[index]; toolRailLayout = index;
+        index = Math.Clamp(index, 0, RailLayouts.Length - 1);
+        var (columns, button, gap) = RailLayouts[index]; toolRailLayout = index;
         if (workspaceTools != null)
             foreach (var child in workspaceTools.Children)
             {
                 if (child is UniformGrid grid) grid.Columns = columns;
                 else if (child is Border separator) separator.Margin = new Thickness(8, gap, 8, gap);
             }
-        foreach (var tool in toolButtons.Values) tool.Height = button;
+        foreach (var tool in toolButtons.Values)
+        {
+            tool.Height = button;
+            if (screenCompact) { tool.Width = button; tool.HorizontalAlignment = HorizontalAlignment.Center; }
+            else { tool.ClearValue(WidthProperty); tool.ClearValue(HorizontalAlignmentProperty); }
+        }
         // Each extra column is one button wide (the button is square in the two-column rail).
-        toolRailColumn.Width = new GridLength(ToolRailWidth + (columns - 2) * (button + 4));
+        // 간결한 화면: square buttons with their 1.5 DIP margins, the column's 3 DIP insets and the border.
+        toolRailColumn.Width = new GridLength(screenCompact ? columns * (button + 3) + 7 : ToolRailWidth + (columns - 2) * (button + 4));
     }
 
     FrameworkElement BuildWorkspaceSwitch()

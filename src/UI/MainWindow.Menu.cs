@@ -94,7 +94,7 @@ public sealed partial class MainWindow
             };
             languages.Items.Add(choice);
         }
-        view.Items.Add(new Separator()); view.Items.Add(BuildProfileMenu()); view.Items.Add(languages);
+        view.Items.Add(new Separator()); view.Items.Add(BuildProfileMenu()); view.Items.Add(BuildScreenStyleMenu()); view.Items.Add(languages);
         ribbonToggle = new MenuItem { Header = "리본 메뉴로 보기", IsCheckable = true, IsChecked = ribbonMode, ToolTip = "메뉴를 탭과 아이콘 버튼으로 표시합니다. ^로 접을 수 있습니다." };
         ribbonToggle.Click += (_, _) => SetRibbonMode(ribbonToggle.IsChecked);
         view.Items.Add(new Separator()); view.Items.Add(ribbonToggle);

@@ -68,13 +68,6 @@ $packageDocuments = @(
     @{ Source = (Join-Path $RepositoryRoot 'assets\fonts\README.md'); Destination = (Join-Path $stagingPath 'assets\fonts\README.md') },
     @{ Source = (Join-Path $RepositoryRoot 'licenses\Pretendard-LICENSE.txt'); Destination = (Join-Path $stagingPath 'licenses\Pretendard-LICENSE.txt') },
     @{ Source = (Join-Path $RepositoryRoot 'README.md'); Destination = (Join-Path $stagingPath 'README.md') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\editor.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\editor.png') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\bucket.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\bucket.png') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\new-document.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\new-document.png') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\adjustment.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\adjustment.png') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\colors.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\colors.png') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\brush.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\brush.png') },
-    @{ Source = (Join-Path $RepositoryRoot 'docs\screenshots\compact.png'); Destination = (Join-Path $stagingPath 'docs\screenshots\compact.png') },
     @{ Source = (Join-Path $RepositoryRoot 'CONTRIBUTING.md'); Destination = (Join-Path $stagingPath 'CONTRIBUTING.md') },
     @{ Source = (Join-Path $RepositoryRoot 'NOTICE.md'); Destination = (Join-Path $stagingPath 'NOTICE.md') },
     @{ Source = (Join-Path $RepositoryRoot 'THIRD_PARTY_NOTICES.md'); Destination = (Join-Path $stagingPath 'THIRD_PARTY_NOTICES.md') },
@@ -98,9 +91,6 @@ foreach ($documentName in @('GUIDE', 'RELEASE_NOTES_ARCHIVE', 'FILE_COMPATIBILIT
 foreach ($licenseName in @('ACadSharp-LICENSE.txt', 'PsdSharp-LICENSE.txt', 'psd-tools-LICENSE.txt', 'CsWinRT-LICENSE.txt', 'WindowsSDK-License.rtf', 'PDFsharp-LICENSE.txt', 'Microsoft-PdfDependencies-LICENSE.txt')) {
     $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "licenses\$licenseName"); Destination = (Join-Path $stagingPath "licenses\$licenseName") }
 }
-foreach ($imageName in @('startup', 'save-changes', 'color-palette', 'text-properties', 'shape-properties', 'image-properties', 'design', 'brush-settings', 'photo-develop', 'quick-exposure', 'quick-levels', 'quick-saturation', 'quick-blur')) {
-    $packageDocuments += @{ Source = (Join-Path $RepositoryRoot "docs\screenshots\$imageName.png"); Destination = (Join-Path $stagingPath "docs\screenshots\$imageName.png") }
-}
 if (-not (Test-Path -LiteralPath $modelPath -PathType Leaf) -or
     (Get-FileHash -LiteralPath $modelPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne '309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8') {
     throw 'The bundled U2NetP model is missing or its pinned checksum differs.'
@@ -113,6 +103,21 @@ foreach ($document in $packageDocuments) {
     $destinationDirectory = Split-Path -Parent $document.Destination
     New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
     Copy-Item -LiteralPath $document.Source -Destination $document.Destination
+}
+
+# Ship exactly the screenshots that the shipped documents show or name. The other images in
+# docs/screenshots serve the website and repository pages and would only enlarge the download.
+$screenshotNames = @(Get-ChildItem -LiteralPath $stagingPath -Recurse -File -Filter *.md |
+    Select-String -Pattern 'screenshots/([A-Za-z0-9._-]+\.png)' -AllMatches |
+    ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+foreach ($imageName in $screenshotNames) {
+    $imageSource = Join-Path $RepositoryRoot "docs\screenshots\$imageName"
+    if (-not (Test-Path -LiteralPath $imageSource -PathType Leaf)) {
+        throw "A shipped document refers to a missing screenshot: docs/screenshots/$imageName"
+    }
+    $imageDirectory = Join-Path $stagingPath 'docs\screenshots'
+    New-Item -ItemType Directory -Path $imageDirectory -Force | Out-Null
+    Copy-Item -LiteralPath $imageSource -Destination (Join-Path $imageDirectory $imageName)
 }
 
 $dotnetCommand = Get-Command dotnet -ErrorAction Stop
@@ -137,13 +142,26 @@ if (-not (Test-Path -LiteralPath $publishedExe -PathType Leaf)) {
     throw "Published executable is missing: $publishedExe"
 }
 $quotedReportPath = '"' + $publishedReportPath + '"'
-$process = Start-Process -FilePath $publishedExe -ArgumentList @('--self-test', $quotedReportPath) -WindowStyle Hidden -Wait -PassThru
+# External PSD/DWG test files are not part of the package. Point the packaged self-test at the
+# checkout's copies so the release candidate still runs every test; installed copies skip them.
+$fixtureDirectory = Join-Path $RepositoryRoot 'tools\qa\compatibility\fixtures'
+$previousFixtureDirectory = $env:MORUPIXEL_TEST_FIXTURES
+$env:MORUPIXEL_TEST_FIXTURES = $fixtureDirectory
+try {
+    $process = Start-Process -FilePath $publishedExe -ArgumentList @('--self-test', $quotedReportPath) -WindowStyle Hidden -Wait -PassThru
+}
+finally {
+    $env:MORUPIXEL_TEST_FIXTURES = $previousFixtureDirectory
+}
 if ($process.ExitCode -ne 0) {
     throw "Published self-test exited with code $($process.ExitCode). See $publishedReportPath"
 }
 if (-not (Test-Path -LiteralPath $publishedReportPath -PathType Leaf) -or
     (Get-Item -LiteralPath $publishedReportPath).Length -eq 0) {
     throw "Published self-test did not create a non-empty report: $publishedReportPath"
+}
+if (Select-String -LiteralPath $publishedReportPath -Pattern '^SKIP ' -Quiet) {
+    throw "Published self-test skipped tests although the test files were provided. See $publishedReportPath"
 }
 
 & (Join-Path $PSScriptRoot 'TestPrivacy.ps1') -RepositoryPath $RepositoryRoot -PackagePath $stagingPath
