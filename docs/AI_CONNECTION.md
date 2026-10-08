@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **38개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **40개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -71,7 +71,8 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 객체 검색·상세 조회 | `morupixel_query_layers`, `morupixel_get_layer` |
 | 문서 만들기·열기·전환 | `morupixel_new_document`, `morupixel_inspect_file`, `morupixel_open_document`, `morupixel_activate_document` |
 | 대지 만들기·수정·삭제 | `morupixel_add_artboard`, `morupixel_update_artboard`, `morupixel_delete_artboard` |
-| 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape` |
+| 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape`, `morupixel_update_shape` |
+| 라벨·지시선 | `morupixel_add_callout` |
 | 레이어 속성·삭제·순서 | `morupixel_set_layer`, `morupixel_delete_layer`, `morupixel_reorder_layer` |
 | 조정 레이어·AI 배경 제거 | `morupixel_add_adjustment`, `morupixel_remove_background` |
 | 스케치 사진을 선 그림으로 정리 | `morupixel_clean_sketch` |
@@ -141,7 +142,29 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 재료 작업은 **이미지 준비 → 원본 등록 → 영역 지정 → 적용 → 미리보기** 순서입니다. 닫힌 도형·CAD 경로, 현재 선택 영역, 직접 지정한 다각형을 사용할 수 있습니다. 재료와 경계를 저장하고 반복 크기·회전·위치·원본 교체를 지원합니다. [재료 맵핑 안내와 요청 예시](MATERIAL_MAPPING.md)
 
-문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형과 타원을 지원합니다. `add_text`·`update_text`는 글자 외곽선도 받습니다: `outline`(켜기·끄기), `outlineWidth`(0.5~512px, 기본 4), `outlineColor`(기본 검정), `outlinePosition`(`outside` 글자 밖으로·기본, `center` 가장자리 중심), `outlineOnly`(채우기 없이 외곽선만 그린 속이 빈 글자). `outline`을 생략하고 다른 외곽선 인자를 주면 외곽선이 켜집니다. `boxWidth`(px, 0은 줄바꿈 없음)를 주면 그 폭 안에서 낱말 사이로 줄을 바꾸고(한국어는 어절 단위), `alignment: "Justify"`는 줄바꿈된 줄을 양쪽 끝에 맞춥니다(단락의 마지막 줄은 왼쪽). 외곽선은 화면·PNG·.psd·PDF(벡터)에 같은 모양으로 그려지고, `get_layer`의 `text`에 `Outline`·`OutlineWidth`·`OutlineArgb`·`OutlinePosition`(0 바깥, 1 가운데)·`OutlineOnly`·`BoxWidth`로 나옵니다. 외곽선을 켜고 끄면 레이어 표면이 외곽선 두께만큼 넓어지거나 줄어들고 `x`·`y`가 그만큼 바뀌지만 글자는 제자리에 있습니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상과 디자인 스타일 효과(한계값·망점·종이·인쇄 질감·빛 번짐)를 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
+문자는 글꼴·크기·색·굵기·기울임·정렬·줄 간격·자간을 변경할 수 있고, 도형은 사각형·타원과 선·꺾은선·곡선, 라벨·지시선을 지원합니다([다이어그램 선과 지시선](#다이어그램-선과-지시선)). `add_text`·`update_text`는 글자 외곽선도 받습니다: `outline`(켜기·끄기), `outlineWidth`(0.5~512px, 기본 4), `outlineColor`(기본 검정), `outlinePosition`(`outside` 글자 밖으로·기본, `center` 가장자리 중심), `outlineOnly`(채우기 없이 외곽선만 그린 속이 빈 글자). `outline`을 생략하고 다른 외곽선 인자를 주면 외곽선이 켜집니다. `boxWidth`(px, 0은 줄바꿈 없음)를 주면 그 폭 안에서 낱말 사이로 줄을 바꾸고(한국어는 어절 단위), `alignment: "Justify"`는 줄바꿈된 줄을 양쪽 끝에 맞춥니다(단락의 마지막 줄은 왼쪽). 외곽선은 화면·PNG·.psd·PDF(벡터)에 같은 모양으로 그려지고, `get_layer`의 `text`에 `Outline`·`OutlineWidth`·`OutlineArgb`·`OutlinePosition`(0 바깥, 1 가운데)·`OutlineOnly`·`BoxWidth`로 나옵니다. 외곽선을 켜고 끄면 레이어 표면이 외곽선 두께만큼 넓어지거나 줄어들고 `x`·`y`가 그만큼 바뀌지만 글자는 제자리에 있습니다. 레이어 위치·크기 배율·회전·불투명도·표시·잠금·혼합 모드도 조절할 수 있습니다. 보정은 노출, 레벨, 색조/채도, 사진 현상과 디자인 스타일 효과(한계값·망점·종이·인쇄 질감·빛 번짐)를 지원합니다. 배경 제거는 앱에 포함된 로컬 모델로 레이어 마스크를 만듭니다.
+
+### 다이어그램 선과 지시선
+
+발표 보드의 동선 화살표·점선 경계·설명 라벨을 편집 가능한 벡터 도형으로 만듭니다. 화면에서는 확대해도 선명하고, PDF·.ai에서는 벡터(점선·선 끝·곡선 그대로), PNG·.psd에서는 다른 도형처럼 픽셀로 나갑니다. 좌표는 루트 레이어 기준 문서 픽셀입니다.
+
+- `add_shape`에 `shape: "line"`(점을 곧게 잇는 선, 점이 셋 이상이면 꺾은선) 또는 `"curve"`(모든 점을 지나는 매끄러운 곡선)와 `points`(2~1024개 `{x, y}`)를 줍니다. `x`·`y`를 주면 모든 점에 더합니다. 선은 점에 맞춰 스스로 크기를 정하므로 `width`·`height`·`cornerRadius`는 받지 않습니다. `closed: true`(점 3개 이상)는 마지막 점을 첫 점과 잇고 `fill`을 주면 안쪽을 칠합니다. 닫힌 선은 `apply_material`의 `boundaryLayerId`로도 씁니다.
+- 선 모양은 모든 도형에 쓸 수 있습니다: `dash`(`solid`·`dotted`·`dashed`·`dash_dot`), `dashScale`(0.1~20, 간격 배율), `cap`(`round` 기본·`square`·`flat`). 점선 길이는 선 두께를 따릅니다(두께 2px의 `dashed`는 10px 선·6px 간격).
+- 선과 곡선의 끝 모양: `startMark`·`endMark`(`none`·`arrow`·`open_arrow`·`dot`·`ring`·`bar`), `markSize`(px, 기본은 두께의 5배와 10 중 큰 값). 화살표는 끝점에서 선 방향을 가리키고 선은 화살촉 안에서 끝납니다.
+- `add_callout`은 대상 점(`anchorX`·`anchorY`)에서 라벨 점(`labelX`·`labelY`)까지 지시선을 긋고 그 옆에 `text`를 둡니다. 글자는 지시선이 들어오는 쪽 반대편에 놓이고 세로 가운데가 라벨 점에 맞습니다. `leader: "elbow"`(기본)는 대상에서 위아래로 올라가 라벨과 같은 높이에서 꺾이고(`elbowX`·`elbowY`로 지정 가능), `"straight"`는 곧게 잇습니다. 끝 모양은 `anchorMark`(기본 `dot`)·`labelMark`(기본 `none`), 지시선은 `stroke`·`strokeWidth`·`dash`, 라벨 바탕은 `fill`·`cornerRadius`, 글자는 `add_text`와 같은 인자(`fontFamily`·`fontSize`·`color`·`outline`·`boxWidth` 등)를 받습니다.
+- `update_shape`는 모든 도형 레이어(`add_shape`·`add_callout`·앱에서 그린 것)의 선·채우기·선 모양·끝 모양을 바꾸고, 선은 `points`·`curve`·`closed`, 지시선은 대상·꺾임·라벨 점, `leader`, 라벨 글자를 바꿉니다. 생략한 값은 그대로이며, 꺾인 지시선은 라벨 점을 옮기면 꺾임이 같은 높이로 따라갑니다. 다른 종류의 인자(사각형의 `points`, 선의 `labelX` 등)는 `invalid_arguments`입니다.
+- `get_layer`의 `shape`에 `Points`(레이어 픽셀 `[x, y]`)·`Dash`·`StartMark` 등이, `documentPoints`에 캔버스 위 점 좌표가 들어갑니다. 세 명령 모두 `apply_batch` 단계로 쓸 수 있습니다.
+
+```json
+{ "command": "add_shape", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "shape": "curve", "points": [ { "x": 120, "y": 640 }, { "x": 420, "y": 380 }, { "x": 760, "y": 520 } ],
+  "stroke": "#202020", "strokeWidth": 2, "dash": "dashed", "startMark": "dot", "endMark": "arrow" } }
+```
+
+```json
+{ "command": "add_callout", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "anchorX": 520, "anchorY": 610, "labelX": 700, "labelY": 420, "text": "주출입구", "fontSize": 28, "dash": "dotted" } }
+```
 
 ### 디자인 스타일 효과 넣기
 
@@ -233,7 +256,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `update_shape`, `add_callout`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
 
 파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거, 디자인 스타일 적용은 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 

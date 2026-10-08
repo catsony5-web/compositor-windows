@@ -165,6 +165,7 @@ public static partial class AutomationCatalog
             ["properties"] = new JsonObject { ["x"] = coordinate.DeepClone(), ["y"] = coordinate.DeepClone() }
         };
         if (type == "corners") return new JsonObject { ["type"] = "array", ["minItems"] = 4, ["maxItems"] = 4, ["items"] = point };
+        if (type == "path") return new JsonObject { ["type"] = "array", ["minItems"] = 2, ["maxItems"] = ShapePoints.MaxCount, ["items"] = point };
         var contour = new JsonObject { ["type"] = "array", ["minItems"] = 3, ["maxItems"] = 2048, ["items"] = point };
         return type == "points" ? contour : new JsonObject { ["type"] = "array", ["maxItems"] = 16, ["items"] = contour };
     }
@@ -203,6 +204,11 @@ public static partial class AutomationCatalog
         if (type == "corners")
         {
             if (array.Count != 4) throw new ArgumentException("corners needs exactly four points: top-left, top-right, bottom-right, bottom-left.");
+            _ = MaterialPoints(array);
+        }
+        else if (type == "path")
+        {
+            if (array.Count < 2 || array.Count > ShapePoints.MaxCount) throw new ArgumentException($"A line needs 2..{ShapePoints.MaxCount} points.");
             _ = MaterialPoints(array);
         }
         else if (type == "points")

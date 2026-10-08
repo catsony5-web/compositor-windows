@@ -12,14 +12,14 @@ public sealed partial class MainWindow
     Tool[] photoToolOrder = [];
 
     static (string Caption, Tool[] Tools)[] WorkspaceToolGroups(bool design) => design
-        ? [("만들기", [Tool.Move, Tool.Text, Tool.Rectangle, Tool.Ellipse, Tool.Artboard]),
+        ? [("만들기", [Tool.Move, Tool.Text, Tool.Rectangle, Tool.Ellipse, Tool.Line, Tool.Callout]),
            ("색상", [Tool.Eyedropper, Tool.Gradient, Tool.Bucket, Tool.Brush]),
            ("선택", [Tool.RectangleSelect, Tool.EllipseSelect, Tool.Lasso, Tool.PolygonLasso, Tool.MagicWand]),
            ("사진", [Tool.Crop, Tool.Eraser, Tool.Heal, Tool.CloneStamp, Tool.BlurBrush, Tool.Smudge, Tool.Liquify]),
-           ("보기", [Tool.Hand])]
+           ("보기", [Tool.Artboard, Tool.Hand])]
         : [("선택", [Tool.Move, Tool.Crop, Tool.RectangleSelect, Tool.EllipseSelect, Tool.Lasso, Tool.PolygonLasso, Tool.MagicWand]),
            ("리터치", [Tool.Brush, Tool.Heal, Tool.CloneStamp, Tool.Eraser, Tool.BlurBrush, Tool.Smudge, Tool.Liquify]),
-           ("만들기", [Tool.Text, Tool.Rectangle, Tool.Ellipse, Tool.Gradient, Tool.Bucket, Tool.Eyedropper]),
+           ("만들기", [Tool.Text, Tool.Rectangle, Tool.Ellipse, Tool.Line, Tool.Callout, Tool.Gradient, Tool.Bucket, Tool.Eyedropper]),
            ("보기", [Tool.Hand, Tool.Artboard])];
 
     void BuildWorkspaceTools()
