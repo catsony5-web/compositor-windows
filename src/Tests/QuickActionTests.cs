@@ -29,13 +29,17 @@ public sealed partial class MainWindow
                 foreach (bool design in new[] { false, true })
                 {
                     window.SetWorkspaceMode(design);
-                    var buttons = Descendants(window.studioContents[0]).OfType<Button>().ToArray();
-                    // Photo: 16 commands + 스케치 사진 정리 + four 스타일 효과 tiles + 피사체를 글자 앞으로 + 디자인 스타일; design: 16 + 피사체를 글자 앞으로 + 디자인 스타일.
-                    Check(buttons.Length == (design ? 18 : 23), "Quick actions are missing or duplicated");
+                    // The 점경 palette (design) has its own tiles and filters, checked in MainWindow.EntourageTests.
+                    var palette = Descendants(window.studioContents[0]).OfType<FrameworkElement>().FirstOrDefault(e => AutomationProperties.GetName(e) == "점경 라이브러리");
+                    var inPalette = palette == null ? [] : Descendants(palette).ToHashSet();
+                    Check(design == (palette != null), "The 점경 palette is not (only) in the design panel");
+                    var buttons = Descendants(window.studioContents[0]).OfType<Button>().Where(b => !inPalette.Contains(b)).ToArray();
+                    // Photo: 16 commands + 스케치 사진 정리 + four 스타일 효과 tiles + 피사체를 글자 앞으로 + 디자인 스타일; design: 16 + 선 · 곡선 + 지시선 + 피사체를 글자 앞으로 + 디자인 스타일 + the two 지도 commands.
+                    Check(buttons.Length == (design ? 22 : 23), "Quick actions are missing or duplicated");
                     Check(buttons.All(b => b.Content is not string && !string.IsNullOrWhiteSpace(AutomationProperties.GetName(b)) && b.ToolTip is string { Length: > 0 }), "A quick action is text-only or lacks a name or tooltip");
                     var names = buttons.Select(AutomationProperties.GetName).ToArray();
                     Check(names.Distinct().Count() == names.Length && names.All(n => !n.Contains('…') && !n.Contains("...")), "Quick action names repeat or are abbreviated");
-                    Check(window.studioContents[0].Children.OfType<SectionHeader>().Count() == (design ? 5 : 6), "Quick action groups are not collapsible sections");
+                    Check(window.studioContents[0].Children.OfType<SectionHeader>().Count() == (design ? 7 : 6), "Quick action groups are not collapsible sections: " + window.studioContents[0].Children.OfType<SectionHeader>().Count());
                 }
                 Check(Descendants(window.studioContents[0]).OfType<Button>().Any(b => AutomationProperties.GetName(b) == "선택 레이어 내보내기"), "A shortened label lost its complete name");
                 window.AddShape(new Rect(20, 24, 10, 8), false);

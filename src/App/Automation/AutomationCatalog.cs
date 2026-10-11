@@ -126,10 +126,39 @@ public static partial class AutomationCatalog
         Add("add_text", "Add editable text. Coordinates and font size use document pixels.", false, addText, WriteRequired("text"));
         var updateText = Mutation(("layerId", Id)); foreach (var field in textFields) updateText.Add(field.Key, field.Value);
         Add("update_text", "Change supported properties of an existing editable text layer.", false, updateText, WriteRequired("layerId"));
-        Add("add_shape", "Add an editable rectangle or ellipse (maximum 16,777,216 pixels).", false,
-            Mutation(("shape", Choice("rectangle", "ellipse")), ("width", Integer(1, 8192)), ("height", Integer(1, 8192)),
-                ("x", Coordinate), ("y", Coordinate), ("fill", Color), ("stroke", Color), ("strokeWidth", Number(0, 512)),
-                ("cornerRadius", Number(0, 4096)), ("name", Name)), WriteRequired("shape", "width", "height"));
+        var addShape = Mutation(("shape", Choice("rectangle", "ellipse", "line", "curve")), ("width", Integer(1, 8192, "rectangle/ellipse: width in pixels (required for them).")),
+            ("height", Integer(1, 8192, "rectangle/ellipse: height in pixels (required for them).")),
+            ("x", Coordinate with { Description = "rectangle/ellipse: left edge. line/curve: added to every point (default 0)." }),
+            ("y", Coordinate with { Description = "rectangle/ellipse: top edge. line/curve: added to every point (default 0)." }),
+            ("fill", Color with { Description = "Fill: #RRGGBB, #AARRGGBB, or transparent. A line or curve fills only when closed=true." }),
+            ("stroke", Color with { Description = "Stroke color. A rectangle or ellipse gets a stroke only when this is given; lines and curves always have one (default #20344F)." }),
+            ("strokeWidth", Number(0, 512)), ("cornerRadius", Number(0, 4096)), ("name", Name));
+        foreach (var (key, field) in StrokeStyleFields()) addShape.Add(key, field);
+        foreach (var (key, field) in LineFields()) addShape.Add(key, field);
+        Add("add_shape", "Add an editable vector shape: a rectangle or ellipse (width/height, maximum 16,777,216 pixels), or a line through points (shape=line: straight segments, a polyline with more than two points; shape=curve: a smooth curve that passes through every point). Strokes take dash patterns (solid, dotted, dashed, dash_dot), line ends (round, square, flat) and end marks (arrow, open_arrow, dot, ring, bar) for diagrams. Vector in PDF/.ai exports, pixels in PNG/.psd. Returns layerId.", false,
+            addShape, WriteRequired("shape"));
+        var updateShape = Mutation(("layerId", Id), ("name", Name),
+            ("width", Integer(1, 8192, "rectangle/ellipse only.")), ("height", Integer(1, 8192, "rectangle/ellipse only.")),
+            ("fill", Color with { Description = "Fill color (a closed line's inside, a callout's label box). transparent hides it." }),
+            ("fillEnabled", Bool("Show the fill (a closed line's inside, a callout's label box).")),
+            ("stroke", Color with { Description = "Stroke color; turns the stroke on unless strokeEnabled=false." }),
+            ("strokeEnabled", Bool("Show the stroke.")), ("strokeWidth", Number(0, 512)), ("cornerRadius", Number(0, 4096, "Rectangle corners, or a callout label box's corners.")),
+            ("curve", Bool("line only: true makes a smooth curve through the points, false straight segments.")));
+        foreach (var (key, field) in StrokeStyleFields()) updateShape.Add(key, field);
+        foreach (var (key, field) in LineFields()) updateShape.Add(key, field);
+        foreach (var (key, field) in CalloutGeometryFields(false)) updateShape.Add(key, field);
+        foreach (var field in textFields.Where(f => f.Key is not ("x" or "y" or "name"))) updateShape.Add(field.Key, field.Value with { Description = "callout label: " + field.Value.Description });
+        Add("update_shape", "Change an existing shape layer (add_shape or add_callout, or drawn in the app): stroke, fill, dash pattern, line ends, end marks; the points of a line or curve; the target, bend and label point, leader style and label text of a callout. Points are in document pixels for root layers (parent-layer pixels otherwise); the layer refits around them and every unchanged point keeps its place. Omitted fields keep their values. Can be included in apply_batch.", false,
+            updateShape, WriteRequired("layerId"));
+        var addCallout = Mutation(("name", Name),
+            ("stroke", Color with { Description = "Leader and mark color; defaults to the label color." }), ("strokeWidth", Number(.1, 512, "Leader width in pixels; defaults to 2.")),
+            ("fill", Color with { Description = "Label box color behind the text; omit for no box." }), ("cornerRadius", Number(0, 4096, "Label box corner radius; defaults to 4.")));
+        foreach (var (key, field) in StrokeStyleFields()) addCallout.Add(key, field);
+        foreach (var (key, field) in CalloutGeometryFields(true)) addCallout.Add(key, field);
+        addCallout.Add("markSize", Number(1, ShapeSpec.MaxMarkSize, "End mark length in pixels; defaults to max(10, 5 × strokeWidth)."));
+        foreach (var field in textFields.Where(f => f.Key is not ("x" or "y" or "name"))) addCallout.Add(field.Key, field.Value with { Description = "label: " + field.Value.Description });
+        Add("add_callout", "Add a label callout as one editable shape: a leader from a target point (anchorX/anchorY, default mark a dot) over an optional bend to the label point (labelX/labelY), with the label text beside it on the side the leader comes from, vertically centred on the label point. leader=elbow (default) bends level with the label (elbow defaults to straight above or below the target); straight runs directly. The text uses the text engine (font, size, color, outline, paragraph box). Returns layerId; change it later with update_shape. Can be included in apply_batch.", false,
+            addCallout, WriteRequired("anchorX", "anchorY", "labelX", "labelY", "text"));
         Add("set_layer", "Change layer properties; opacity is 0–1 and scale values are multipliers. Locked layers may reject editing.", false,
             Mutation(("layerId", Id), ("name", Name), ("x", Coordinate), ("y", Coordinate), ("scaleX", Number(.01, 20)),
                 ("scaleY", Number(.01, 20)), ("rotation", Number(-36_000, 36_000)), ("opacity", Number(0, 1)),
@@ -158,6 +187,25 @@ public static partial class AutomationCatalog
                 ("lineColor", new("string", "original (default: each pen's own color), black, or #RRGGBB for one color.", MaxLength: 8, TextPattern: "^(original|black|#[0-9a-fA-F]{6})$")),
                 ("background", new("string", "white (default) adds a white layer under the lines; none leaves the lines on transparency.", Choices: ["white", "none"])),
                 ("name", Name with { Description = "Name of the new group; defaults to the app's own name for it." })), WriteRequired("layerId"));
+        Add("create_map", "Create a map poster (template=poster) or a site location map (template=site) as a new document from OpenStreetMap data: roads by class, rail, water, green and buildings as editable vector layers grouped by class, in Web Mercator at a known ground scale (metersPerPixel, scaleDenominator at the document DPI), with the title, subtitle and coordinates of the poster or the site marker, radius rings, north arrow and scale bar of the site map, and the required attribution \"© OpenStreetMap contributors\" (locked, always on top). source=file (default with path) reads a local .osm export or GeoJSON and never uses the network. source=online downloads a small area (radius ≤ 2500 m around centerLatitude/centerLongitude, or the first result of place) from the public OpenStreetMap servers and is refused with online_map_not_allowed unless the user allowed it for this run in the app's consent window. Not part of apply_batch.", false,
+            Fields(("path", Path with { Description = "Absolute path of an .osm (OpenStreetMap XML export) or .geojson file." }), ("source", Choice("file", "online")),
+                ("place", new("string", "source=online: place name or address to look up (first result is used).", MaxLength: 200)),
+                ("centerLatitude", Number(-85, 85, "source=online: center of the downloaded area; otherwise an optional map center.")), ("centerLongitude", Number(-180, 180, "Longitude paired with centerLatitude.")),
+                ("radius", Number(100, MapDownload.MaxRadius, "source=online: metres around the center (default 1000). Buildings are downloaded only up to 1500 m.")),
+                ("template", Choice("poster", "site")), ("theme", Choice(MapThemes.All.Select(t => t.Key).ToArray())),
+                ("title", new("string", "Title text; defaults to the file or place name (poster) or the app's site-map title (site).", MaxLength: 200, EmptyAllowed: true)),
+                ("subtitle", new("string", "Subtitle text.", MaxLength: 400, EmptyAllowed: true)),
+                ("width", Integer(200, 8192, "Document width in pixels.")), ("height", Integer(200, 8192, "Document height in pixels.")), ("dpi", Number(36, 1200, "Print resolution; scale 1:N refers to it.")),
+                ("buildings", Bool("Draw buildings (default true).")), ("paths", Bool("Draw footways and paths (default true).")), ("rail", Bool("Draw railways (default true).")),
+                ("green", Bool("Draw parks, forests and grass (default true).")), ("water", Bool("Draw sea, lakes, rivers and streams (default true).")),
+                ("coordinates", Bool("Write the center (site) coordinates (default true).")), ("fade", Bool("Fade the map toward the page colour at the edges and behind a poster title (poster default true).")),
+                ("frame", Bool("Poster: margins and a border line with the title below the map.")), ("lineWeight", Number(.25, 4, "Line weight multiplier (default 1).")),
+                ("siteLatitude", Number(-85, 85, "Site marker position; site maps default to the downloaded center or the data center.")), ("siteLongitude", Number(-180, 180, "Longitude paired with siteLatitude.")),
+                ("marker", Choice("circle", "pin")), ("siteLabel", new("string", "Label beside the site marker; defaults to the app's word for the site.", MaxLength: 100, EmptyAllowed: true)),
+                ("rings", new("string", "Radius rings around the site in metres, comma separated, up to 6 (e.g. 500,1000). Empty string for none.", MaxLength: 80, EmptyAllowed: true, TextPattern: @"^$|^[0-9]{1,7}(\.[0-9]+)?( *, *[0-9]{1,7}(\.[0-9]+)?){0,5}$")),
+                ("northArrow", Bool("North arrow (site default true).")), ("scaleBar", Bool("Scale bar in metres from the projection (site default true).")),
+                ("scale", Integer(100, 1_000_000, "Paper scale denominator 1:N at dpi; omit to fit the data to the map frame.")),
+                ("includeLayers", IncludeLayers)));
         Add("save_project", "Save the active document to an absolute .moruproj path. Existing files require overwrite=true.", false,
             Mutation(("path", Path), ("overwrite", Bool("Defaults to false; true explicitly permits replacing the destination."))), WriteRequired("path"));
         Add("export_image", "Export the active document, one artboard or one selected layer to PNG, JPEG or TIFF, optionally scaled. Existing files require overwrite=true.", false,
@@ -235,6 +283,7 @@ public static partial class AutomationCatalog
                 ("groupId", Id with { Description = "A style folder to re-apply in place (from query_styles or a previous apply_style)." })), WriteRequired("styleId"));
         Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, gradient (gradientAngle, gradientStart, gradientEnd, gradientSeed of dot-gradient and stipple-gradient), opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
+        AddEntourageCommands(Add, Mutation, WriteRequired);
         return commands;
     }
 
@@ -302,6 +351,9 @@ public static partial class AutomationCatalog
         }
         if (command is "new_document" or "add_shape" && (double)NumberValue(arguments, "width") * NumberValue(arguments, "height") > 16_777_216)
             throw new ArgumentException("Automation images must not exceed 16,777,216 pixels.");
+        if (command is "add_shape" or "update_shape" or "add_callout") ValidateShapeArguments(command, arguments);
+        if (command is "add_callout" or "update_shape" && NumberValue(arguments, "boxWidth") is > 0 and < 1)
+            throw new ArgumentException("boxWidth must be 0 (no wrapping) or at least 1 pixel.");
         if (command is "add_text" or "update_text" && NumberValue(arguments, "boxWidth") is > 0 and < 1)
             throw new ArgumentException("boxWidth must be 0 (no wrapping) or at least 1 pixel.");
         if (command is "query_layers" or "query_materials" or "query_regions")
@@ -324,6 +376,8 @@ public static partial class AutomationCatalog
         if (command == "clean_sketch" && arguments.ContainsKey("corners") && arguments["flatten"]?.GetValue<bool>() == false)
             throw new ArgumentException("corners need flatten=true (the default); flatten=false keeps the whole photo.");
         if (command == "apply_style") ValidateStyleArguments(arguments);
+        if (command == "create_map") ValidateMapArguments(arguments);
+        if (command == "place_entourage") ValidateEntourageArguments(arguments);
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() != "line_pattern" && new[] { "threshold", "trim", "saveToMyPatterns" }.Any(arguments.ContainsKey))
             throw new ArgumentException("threshold, trim and saveToMyPatterns apply to kind=line_pattern only.");
         if (command == "register_material" && arguments["kind"]?.GetValue<string>() == "line_pattern" && new[] { "source", "tileable" }.Any(arguments.ContainsKey))
@@ -354,6 +408,34 @@ public static partial class AutomationCatalog
                 throw new ArgumentException("photo_develop exposure must be between -5 and 5 EV.");
         }
     }
+
+    // Stroke style of every shape kind: dash pattern, its spacing and the line ends.
+    static (string Key, Field Field)[] StrokeStyleFields() =>
+    [
+        ("dash", new("string", "Stroke pattern: solid (default), dotted, dashed or dash_dot (one long dash and a dot). Lengths follow the stroke width.", Choices: ["solid", "dotted", "dashed", "dash_dot"])),
+        ("dashScale", Number(ShapeSpec.MinDashScale, ShapeSpec.MaxDashScale, "Dash and gap length multiplier; 1 is the default spacing.")),
+        ("cap", new("string", "Line ends and dash ends: round (default; dotted lines get round dots), square or flat.", Choices: ["round", "square", "flat"])),
+    ];
+    static readonly string[] MarkNames = ["none", "arrow", "open_arrow", "dot", "ring", "bar"];
+    // Lines and curves: points and end marks.
+    static (string Key, Field Field)[] LineFields() =>
+    [
+        ("points", new("array", "line/curve: 2-1024 points {x, y} in document pixels for root layers (offset by x/y on add_shape). A curve passes through every point.", ArrayShape: "path")),
+        ("closed", Bool("line/curve: join the last point to the first (at least 3 points); fill paints inside. A closed line can bound apply_material (boundaryLayerId).")),
+        ("startMark", new("string", "line/curve: mark at the first point: none (default), arrow, open_arrow, dot, ring or bar.", Choices: MarkNames)),
+        ("endMark", new("string", "line/curve: mark at the last point: none (default), arrow, open_arrow, dot, ring or bar.", Choices: MarkNames)),
+        ("markSize", Number(1, ShapeSpec.MaxMarkSize, "End mark length in pixels (arrows are at least 2.5 stroke widths); defaults to max(10, 5 × strokeWidth).")),
+    ];
+    static (string Key, Field Field)[] CalloutGeometryFields(bool adding) =>
+    [
+        ("anchorX", Coordinate with { Description = "callout: the target point the leader points at (x)." }), ("anchorY", Coordinate with { Description = "callout: target point (y)." }),
+        ("labelX", Coordinate with { Description = "callout: where the leader meets the label (x); the text sits beside it." }), ("labelY", Coordinate with { Description = "callout: label point (y); the text is vertically centred on it." }),
+        ("elbowX", Coordinate with { Description = "callout with leader=elbow: the bend (x). " + (adding ? "Defaults to anchorX." : "Moving the label point keeps the bend level with it.") }),
+        ("elbowY", Coordinate with { Description = "callout with leader=elbow: the bend (y). " + (adding ? "Defaults to labelY." : "") }),
+        ("leader", new("string", "callout: elbow (bends level with the label) or straight.", Choices: ["elbow", "straight"])),
+        ("anchorMark", new("string", "callout: mark at the target: dot (default for add_callout), none, arrow, open_arrow, ring or bar.", Choices: MarkNames)),
+        ("labelMark", new("string", "callout: mark at the label end: none (default), dot, arrow, open_arrow, ring or bar.", Choices: MarkNames)),
+    ];
 
     // Parameters of the design-style adjustment kinds (names unique within add_adjustment). A method, not a
     // field: the command table is built while the type initializes, before later static fields exist.
@@ -390,6 +472,22 @@ public static partial class AutomationCatalog
         ["paper_texture"] = ["seed", "textureSize", "paperTint", "paperColor", "grain", "fibers", "toner", "streaks", "edges", "edgeWidth", "edgeColor"],
         ["glow"] = ["threshold", "radius", "intensity", "glowColor"]
     };
+
+    static void ValidateShapeArguments(string command, JsonObject arguments)
+    {
+        if (command == "add_shape")
+        {
+            string shape = arguments["shape"]!.GetValue<string>(); bool line = shape is "line" or "curve";
+            if (line && (arguments.ContainsKey("width") || arguments.ContainsKey("height") || arguments.ContainsKey("cornerRadius")))
+                throw new ArgumentException("Lines and curves size themselves from their points; width, height and cornerRadius apply to rectangles and ellipses.");
+            if (line && !arguments.ContainsKey("points")) throw new ArgumentException("shape=line and shape=curve require points.");
+            if (!line && (!arguments.ContainsKey("width") || !arguments.ContainsKey("height"))) throw new ArgumentException("Rectangles and ellipses require width and height.");
+            if (!line && new[] { "points", "closed", "startMark", "endMark", "markSize" }.Any(arguments.ContainsKey))
+                throw new ArgumentException("points, closed and end marks apply to shape=line and shape=curve.");
+        }
+        if (arguments["closed"]?.GetValue<bool>() == true && arguments["points"] is JsonArray closedPoints && closedPoints.Count < 3)
+            throw new ArgumentException("A closed line needs at least 3 points.");
+    }
 
     static double NumberValue(JsonObject arguments, string key, double fallback = 0)
         => arguments[key] is { } value ? JsonSerializer.Deserialize<double>(value.ToJsonString()) : fallback;

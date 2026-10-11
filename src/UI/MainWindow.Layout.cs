@@ -66,7 +66,8 @@ public sealed partial class MainWindow
             PatternFavorites = patternFavorites.ToArray(),
             ScreenStyle = screenCompact ? WorkspaceLayoutStore.CompactStyle : null,
             CompactDockWidth = Math.Round(CompactDockWidthNow, 1),
-            DockGroups = CaptureDockGroups()
+            DockGroups = CaptureDockGroups(),
+            DockVersion = WorkspaceLayoutStore.DockLayoutVersion
         };
     }
 

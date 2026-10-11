@@ -65,6 +65,7 @@ public sealed partial class MainWindow
     // Reuse the last settings (same sun for a whole board) when they suit the kind of source.
     ShadowSpec InitialShadowSpec(Guid[] sources, Layer first)
     {
+        if (EntourageShadowSpec(sources, first) is { } entourage) return entourage;
         bool drawing = DrawingLayers.Categories(doc)[first.Id] == LayerCategory.Drawing;
         var spec = lastShadowSpec is { } last && (drawing ? last.Projection == ShadowProjection.Plan : last.Projection != ShadowProjection.Plan)
             ? last : ShadowSpec.Default(drawing ? ShadowProjection.Plan : ShadowProjection.Drop);

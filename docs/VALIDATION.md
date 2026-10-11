@@ -1,3 +1,14 @@
+# Preview 45 validation
+
+- Source self-tests: **942/942 passed** on Windows x64 (883 in Preview 44; +59). The packaged build made by `scripts/Publish.ps1` ran its own self-test with the developer samples supplied and passed every check.
+- Diagram tools (+14): dash lengths and patterns along straight and curved paths, end-mark placement and orientation, smooth curves passing through every point (centripetal, no loops for uneven spacing), point editing and 15° snapping, callout parts moving independently with the bent leader keeping its horizontal run, hit-testing inside dash gaps, project round trip (older projects unchanged), vector strokes with caps, joins and dashes in PDF/.ai, raster parity in PNG/.psd, the AI commands inside batches as one undo step.
+- 점경 (+19): every built-in item renders non-empty and deterministically with stable ids; placement height, scale, flip, fill and line style; seeded scatter; 내 점경 import (transparent PNG, cut-out, line drawing), its per-user library through an injected path and documents carrying their originals; shadows from placed items; vector PDF/.ai export without image objects; AI query/place/scatter/restyle.
+- Maps (+19), never touching the network: synthetic .osm fixtures (road classes, a river multipolygon with an island, a park, buildings, coastline) for streaming parsing with limits, multipolygon assembly and cut-off warnings, projection and scale accuracy against known distances, class styling and theme switching, both templates, attribution always present and on top, layered PDF/.ai keeping each class as vectors, and the online path requiring consent through an injected fake HTTP layer (rate spacing, size cap, error messages); AI `create_map` refuses online data unless the user allowed it.
+- Compact dock (+7): tab drags to another group and back with the marker, split into a new group and removal of an emptied one, group reordering, flyout open/close/dock, floating windows kept inside the work area with remembered bounds, layout round trip with migration from a Preview 44 layout, reset.
+- AI connection: contract 10, 43 tools, 16 batch step kinds; `tools/qa/automation-smoke.cjs` against the release build. UI text: 3,087 entries per language, 0 missing; English count templates reworded to read correctly for one.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index. Offscreen captures in Korean and English reviewed.
+- Not covered offscreen: real mouse drags (dock tabs, line points, callouts), real OpenStreetMap exports beyond the synthetic fixtures, and the online download against the live servers.
+
 # Preview 44 validation
 
 - Source self-tests: **883/883 passed** on Windows x64 (864 in Preview 43; +19). The packaged build made by `scripts/Publish.ps1` ran its own self-test with the developer samples supplied (`MORUPIXEL_TEST_FIXTURES`) and passed every check.

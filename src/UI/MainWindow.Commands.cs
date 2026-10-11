@@ -30,6 +30,8 @@ public sealed partial class MainWindow
             string toolTitle = $"{title} 도구", toolCategory = alias == title ? "도구" : "도구 · " + alias;
             commands.Add(new EditorCommand("tool:" + tool, Loc.T(toolTitle), Loc.T(toolCategory), key, () => HasDocument, () => SetTool(tool), toolTitle, toolCategory));
         }
+        const string curveTool = "곡선 도구", curveCategory = "도구 · 선 · 곡선";
+        commands.Add(new EditorCommand("tool:Curve", Loc.T(curveTool), Loc.T(curveCategory), "Shift+P", () => HasDocument, () => SelectLineTool(true), curveTool, curveCategory));
         const string savePreset = "현재 브러시를 프리셋으로 저장…";
         commands.Add(new EditorCommand("brush:save-preset", Loc.T(savePreset), Loc.T("브러시"), "", () => true, () => SaveBrushPresetWithDialog(), savePreset, "브러시"));
         for (int page = 0; page < studioTabs.Count; page++)

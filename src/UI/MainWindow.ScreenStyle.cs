@@ -177,6 +177,8 @@ public sealed partial class MainWindow
     {
         var roots = new List<DependencyObject> { this };
         roots.AddRange(movablePanels); if (compactDock != null) roots.Add(compactDock);
+        // Folded and floating groups are outside the window's tree; each group is repainted every switch.
+        roots.AddRange(dockGroups);
         roots.AddRange(dockContent.Values.OfType<DependencyObject>());
         roots.AddRange(toolButtons.Values);
         var seen = new HashSet<DependencyObject>(ReferenceEqualityComparer.Instance);

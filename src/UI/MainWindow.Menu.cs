@@ -47,6 +47,7 @@ public sealed partial class MainWindow
         var layerMenu = Find("레이어");
         Find("파일").Items.Add(BuildCompatibilityExportMenu());
         AddImportSettingsMenu(Find("파일"));
+        AddMapMenu(Find("파일"));
         foreach (var target in new[] { Find("파일"), layerMenu })
         {
             var selectedExport = DocumentControl(new MenuItem { Header = "선택 레이어 이미지로 내보내기…" });
@@ -58,6 +59,7 @@ public sealed partial class MainWindow
         var adjustments = Find("조정 레이어"); menu.Items.Remove(adjustments); adjustments.Header = "새 조정 레이어";
         layerMenu.Items.Add(new Separator()); layerMenu.Items.Add(adjustments);
         AddShadowMenuItems(layerMenu);
+        AddEntourageMenuItems(layerMenu);
         var print = Find("인쇄"); menu.Items.Remove(print);
         var printItem = (MenuItem)print.Items[0]; print.Items.RemoveAt(0); printItem.Header = "인쇄용 CMYK 내보내기…";
         // Beside the export preview, wherever other File items put it.

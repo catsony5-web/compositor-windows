@@ -44,7 +44,8 @@ public static class DrawingLineCleanup
     // scope, or one without any drawing line, means the whole document.
     static Layer[] Candidates(Document doc, IReadOnlyCollection<Guid>? scope)
     {
-        var paths = doc.Layers.Where(l => l.Kind == LayerKind.Vector && l.Vector is { Format: VectorFormat.Paths }).ToArray();
+        // Entourage keeps its own line weight and colour (EntourageSpec); it is not drawing line work.
+        var paths = doc.Layers.Where(l => l.Kind == LayerKind.Vector && l.Vector is { Format: VectorFormat.Paths } && l.Entourage == null).ToArray();
         if (scope is not { Count: > 0 }) return paths;
         var children = doc.Layers.ToLookup(l => l.ParentId);
         var within = new HashSet<Guid>();
@@ -126,7 +127,7 @@ public static class DrawingLineCleanup
         var index = doc.Layers.ToDictionary(l => l.Id); var categories = DrawingLayers.Categories(doc); var cleanup = new CadCleanup(Roles: roles);
         bool Match(Layer layer) => categories.GetValueOrDefault(layer.Id) == LayerCategory.Drawing && (layer.Kind == LayerKind.Group
             ? !string.IsNullOrWhiteSpace(layer.SourceLayerName) && cleanup.RoleFor(layer.SourceLayerName) == role
-            : layer.Kind == LayerKind.Vector && RoleOf(doc, layer, index, roles) == role);
+            : layer.Kind == LayerKind.Vector && layer.Entourage == null && RoleOf(doc, layer, index, roles) == role);
         var matches = doc.Layers.Where(Match).Select(l => l.Id).ToHashSet();
         bool UnderMatch(Layer layer)
         {

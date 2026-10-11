@@ -52,6 +52,10 @@
   "file": "App/UserProfiles.cs"
  },
  {
+  "ko": "점경",
+  "file": "App/UserProfiles.cs"
+ },
+ {
   "ko": "기본",
   "file": "App/UserProfiles.cs"
  },
@@ -390,6 +394,54 @@
  {
   "ko": "도면 · 사진",
   "file": "Core/DesignStyles.cs"
+ },
+ {
+  "ko": "선의 점 개수가 올바르지 않습니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "선의 점 좌표가 올바르지 않습니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "점 목록은 배열이어야 합니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "점은 [x, y] 배열이어야 합니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "점 좌표는 숫자여야 합니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "점은 [x, y] 두 값이어야 합니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "점이 있는 도형이 아닙니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "선에만 점을 추가할 수 있습니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "선의 점은 최대 {0}개입니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "지시선의 점은 지울 수 없습니다. 꺾임을 없애려면 곧은 지시선을 고르세요.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "닫힌 선에는 점이 3개 이상 있어야 합니다.",
+  "file": "Core/DiagramShapes.cs"
+ },
+ {
+  "ko": "선에는 점이 2개 이상 있어야 합니다.",
+  "file": "Core/DiagramShapes.cs"
  },
  {
   "ko": "텍스트",
@@ -768,6 +820,38 @@
   "file": "Core/DrawingCleanup.cs"
  },
  {
+  "ko": "점경 항목 ID가 올바르지 않습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "점경 크기·축척·선 설정이 올바르지 않습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "점경은 긴 변 {0}px까지 놓을 수 있습니다. 높이나 축척을 줄이세요.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "내장 점경에는 원본 이미지가 없습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "선 그림 표시는 내 점경에만 쓸 수 있습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "점경 정보와 레이어 종류가 맞지 않습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "내 점경의 원본 이미지가 없습니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
+  "ko": "내 점경 원본 이미지가 너무 큽니다.",
+  "file": "Core/Entourage.cs"
+ },
+ {
   "ko": "패턴 · ",
   "file": "Core/HatchPatterns.cs"
  },
@@ -864,6 +948,194 @@
   "file": "Core/LinePatterns.cs"
  },
  {
+  "ko": "지도 레이어 정보가 올바르지 않습니다.",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "지도의 위치·축척 정보가 올바르지 않습니다.",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "배경",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "테두리",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "가장자리 흐림",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "공원",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "숲",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "잔디·초지",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "바다",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "강·호수",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "강줄기",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "개울·수로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "건물",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "철도",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "고속도로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "주요 도로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "보조 도로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "생활 도로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "골목·서비스 도로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "보행로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "반경 원",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "반경 표시",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "대지 표시",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "대지 이름",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "방위표",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "축척 막대",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "축척",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "제목 밑줄",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "부제",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "좌표",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "데이터 출처",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "녹지",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "물",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "도로",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "위치 표시",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "글자",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "밝은",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "따뜻한 종이색 바탕에 짙은 회색 길",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "어두운",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "어두운 청회색 바탕에 밝은 길",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "녹색",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "연한 녹색 바탕에 숲빛 길과 물",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "흰 바탕에 검은 선, 인쇄와 도면에 알맞은 무채색",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "남색",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "깊은 남색 바탕에 흰 선, 청사진 느낌",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "노을",
+  "file": "Core/MapSpec.cs"
+ },
+ {
+  "ko": "모래색 바탕에 적갈색 길",
+  "file": "Core/MapSpec.cs"
+ },
+ {
   "ko": "영역 경로 또는 변환이 올바르지 않습니다.",
   "file": "Core/Materials.cs"
  },
@@ -933,6 +1205,10 @@
  },
  {
   "ko": "영역으로 사용할 객체가 없습니다.",
+  "file": "Core/Materials.cs"
+ },
+ {
+  "ko": "열린 선은 면으로 추측하지 않습니다. 닫힌 선이나 선택 영역을 사용하세요.",
   "file": "Core/Materials.cs"
  },
  {
@@ -1120,6 +1396,10 @@
   "file": "Core/Model.cs"
  },
  {
+  "ko": "지도 정보는 그룹에만 둘 수 있습니다.",
+  "file": "Core/Model.cs"
+ },
+ {
   "ko": "사진 현상은 노출 -5~5 EV, 나머지 값 -100~100 범위로 입력하세요.",
   "file": "Core/PhotoDevelopSpec.cs"
  },
@@ -1244,7 +1524,47 @@
   "file": "Core/VectorShapes.cs"
  },
  {
+  "ko": "선 모양과 끝 모양 값을 확인하세요.",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "선의 점 정보가 없습니다.",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "사각형과 타원에는 점 정보가 없습니다.",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "지시선 라벨 정보가 없습니다.",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "라벨은 지시선에만 있습니다.",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
   "ko": "타원",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "닫힌 선",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "매끄러운 곡선",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "꺾은선",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "선",
+  "file": "Core/VectorShapes.cs"
+ },
+ {
+  "ko": "지시선",
   "file": "Core/VectorShapes.cs"
  },
  {
@@ -1332,6 +1652,326 @@
   "file": "Engine/DrawingLineCleanup.cs"
  },
  {
+  "ko": "이미지 파일을 찾을 수 없습니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "점경 이미지는 96MiB 이하로 사용하세요.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "배경 마스크 크기가 이미지와 다릅니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "이미지에서 선을 찾지 못했습니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "이미지에 보이는 부분이 없습니다.",
+  "file": "Engine/EntourageImport.cs"
+ },
+ {
+  "ko": "사람",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "나무 · 식물",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "탈것",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "소품",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "평면",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "입면·단면",
+  "file": "Engine/EntourageLibrary.cs"
+ },
+ {
+  "ko": "서 있는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "정면",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "옆으로 선 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "옆모습",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "휴대폰",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "걷는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "보행",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "산책",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "가방을 든 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "가방",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "쇼핑",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "앉은 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "의자",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "벤치",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "휴식",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "유모차를 미는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "유모차",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "아기",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "아이",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "어린이",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "자전거 타는 사람",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "자전거",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "사람 · 평면",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "걷는 사람 · 평면",
+  "file": "Engine/EntourageLibrary.People.cs"
+ },
+ {
+  "ko": "나무",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "둥근 활엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "활엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "가로수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "키 큰 활엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "가지가 보이는 나무",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "가지",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "단풍",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "침엽수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "소나무",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "상록수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "야자수",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "야자",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "관목",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "생울타리",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "식물",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "풀",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "억새",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목 · 잎 뭉치",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목 · 가지",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "수목 · 손그림",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "손그림",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "침엽수 · 평면",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "관목 무리 · 평면",
+  "file": "Engine/EntourageLibrary.Plants.cs"
+ },
+ {
+  "ko": "승용차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "자동차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "세단",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "소형차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "해치백",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "승용차 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "주차",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "자전거 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "벤치 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "가로등",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "조명",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "파라솔 테이블",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "파라솔",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "테이블",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "카페",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "테라스",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "테이블과 의자 · 평면",
+  "file": "Engine/EntourageLibrary.Things.cs"
+ },
+ {
+  "ko": "알 수 없는 점경 항목입니다: {0}",
+  "file": "Engine/EntourageRenderer.cs"
+ },
+ {
+  "ko": "점경 레이어가 아닙니다.",
+  "file": "Engine/EntourageRenderer.cs"
+ },
+ {
+  "ko": "내장 점경과 내 점경은 서로 바꿀 수 없습니다.",
+  "file": "Engine/EntourageRenderer.cs"
+ },
+ {
   "ko": "레이어가 없습니다.",
   "file": "Engine/FillTools.cs"
  },
@@ -1368,10 +2008,6 @@
   "file": "Engine/LinePatternRenderer.cs"
  },
  {
-  "ko": "이미지 파일을 찾을 수 없습니다.",
-  "file": "Engine/LinePatternRenderer.cs"
- },
- {
   "ko": "패턴 이미지는 96MiB 이하로 사용하세요.",
   "file": "Engine/LinePatternRenderer.cs"
  },
@@ -1386,6 +2022,78 @@
  {
   "ko": "이미지의 거의 전부가 선으로 인식됩니다. 밝은 바탕에 어두운 선이 있는 이미지를 쓰거나 선 인식 기준을 높여 보세요.",
   "file": "Engine/LinePatternRenderer.cs"
+ },
+ {
+  "ko": "계획 대지",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "대지 위치도",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 양식·표시 모양·테마가 올바르지 않습니다.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 크기는 한 변 200~12,000px, 전체 6,400만 픽셀 이하로 정해 주세요.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 해상도는 36~1,200 DPI로 정해 주세요.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "선 굵기는 25~400%로 정해 주세요.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 글자가 너무 깁니다.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 중심·대지 좌표가 올바르지 않습니다.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 축척이 올바르지 않습니다.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "반경 원은 6개까지, 1m~1,000km로 정해 주세요.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 포스터",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "고른 범위와 항목으로는 그릴 지도 요소가 없습니다. 그릴 것을 더 켜거나 다른 영역을 골라 주세요.",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "축척 1:{0}",
+  "file": "Engine/MapComposer.cs"
+ },
+ {
+  "ko": "지도 그룹을 찾을 수 없습니다.",
+  "file": "Engine/MapStyling.cs"
+ },
+ {
+  "ko": "지도 포스터·대지 위치도 그룹을 선택하세요.",
+  "file": "Engine/MapStyling.cs"
+ },
+ {
+  "ko": "알 수 없는 지도 테마입니다.",
+  "file": "Engine/MapStyling.cs"
+ },
+ {
+  "ko": "레이어를 찾을 수 없습니다.",
+  "file": "Engine/MapStyling.cs"
  },
  {
   "ko": "추천 · ",
@@ -1510,6 +2218,10 @@
  {
   "ko": "그림자 레이어를 선택하세요.",
   "file": "Engine/ShadowRenderer.cs"
+ },
+ {
+  "ko": "선과 지시선은 한 변 {0}px 안에 그려 주세요.",
+  "file": "Engine/ShapeGeometry.cs"
  },
  {
   "ko": "꼭짓점 네 개를 지정하세요.",
@@ -1980,10 +2692,6 @@
   "file": "Formats/CadCompatibility.cs"
  },
  {
-  "ko": "선",
-  "file": "Formats/CadCompatibility.cs"
- },
- {
   "ko": "닫힌 폴리라인",
   "file": "Formats/CadCompatibility.cs"
  },
@@ -2388,6 +3096,18 @@
   "file": "Formats/CompositorPackage.cs"
  },
  {
+  "ko": "내 점경",
+  "file": "Formats/EntourageStore.cs"
+ },
+ {
+  "ko": "내 점경 이미지는 한 변 {0}px 이하로 저장합니다.",
+  "file": "Formats/EntourageStore.cs"
+ },
+ {
+  "ko": "내 점경 원본 이미지가 없습니다.",
+  "file": "Formats/EntourageStore.cs"
+ },
+ {
   "ko": "HEIC/HEIF 이미지를 읽을 수 없습니다. Windows HEIF 이미지 확장과 해당 HEVC 코덱이 필요합니다. 설치되어 있다면 파일 손상 여부를 확인하거나 PNG/JPEG로 변환해 주세요.",
   "file": "Formats/ImportExport.cs"
  },
@@ -2402,6 +3122,162 @@
  {
   "ko": "내 패턴",
   "file": "Formats/LinePatternStore.cs"
+ },
+ {
+  "ko": "지도 데이터 (OSM · GeoJSON)|*.osm;*.geojson;*.json|모든 파일|*.*",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터 파일을 찾을 수 없습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터 파일은 0바이트보다 크고 {0}MB 이하여야 합니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터에 올바르지 않은 좌표가 있습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터에 올바르지 않은 번호가 있습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터의 길·면이 {0}개를 넘습니다. 더 작은 영역을 내보내 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터가 너무 큽니다. 더 작은 영역을 내보내 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터의 관계가 {0}개를 넘습니다. 더 작은 영역을 내보내 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "OpenStreetMap 데이터(.osm) 파일이 아닙니다. openstreetmap.org의 내보내기 파일을 선택해 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터의 점이 {0}개를 넘습니다. 더 작은 영역을 내보내 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "OpenStreetMap 데이터(.osm) 파일이 아닙니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터의 점이 너무 많습니다. 더 작은 영역을 내보내 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터에서 그릴 길·물·녹지·건물을 찾지 못했습니다. openstreetmap.org의 ‘내보내기’로 받은 .osm 파일인지 확인해 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "내보낸 영역 밖의 점 {0}개가 빠져 일부 길과 면을 잘라 그렸습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "영역 밖으로 이어지는 큰 물·녹지 면은 받은 부분만 이어 그렸습니다. 가장자리 모양이 실제와 다를 수 있습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 데이터의 범위를 알 수 없습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "해안선으로 바다를 채우지 못했습니다. 해안선이 영역을 가로지르는지 확인해 주세요.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "GeoJSON 파일이 아닙니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "GeoJSON 좌표가 올바르지 않습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "GeoJSON 파일에 features가 없습니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "지도 레이어를 만들려면 OpenStreetMap 태그가 있는 GeoJSON Feature가 필요합니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "GeoJSON에서 그릴 길·물·녹지·건물을 찾지 못했습니다. 속성에 OpenStreetMap 태그(highway, building 등)가 있어야 합니다.",
+  "file": "Formats/MapData.cs"
+ },
+ {
+  "ko": "찾을 장소를 2~200자로 입력해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "중심 위도는 -85~85, 경도는 -180~180으로 입력해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "인터넷에서 받는 영역은 반경 100~{0}m입니다. 더 넓은 지도는 openstreetmap.org에서 내보낸 .osm 파일을 사용해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "장소 검색 결과를 읽지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터 서버가 이 영역을 처리하지 못했습니다(시간·용량 초과). 반경을 줄이거나 건물을 빼고 다시 받아 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "받은 지도 데이터를 읽지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "인터넷에 요청을 보내려면 먼저 사용자 동의가 필요합니다.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "동의한 요청과 다른 요청입니다.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터는 HTTPS로만 받습니다.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "인터넷에 연결할 수 없습니다. 연결을 확인하거나, openstreetmap.org에서 내보낸 .osm 파일로 만들어 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터 서버가 시간 안에 응답하지 않았습니다. 반경을 줄이거나 잠시 후 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터 서버에 요청이 많습니다. 1~2분 뒤에 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터 서버가 바쁘거나 시간 안에 처리하지 못했습니다. 반경을 줄이거나 잠시 후 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터 서버가 요청을 받아들이지 않았습니다. 영역을 바꿔 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터 서버 오류입니다(HTTP {0}). 잠시 후 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "받을 지도 데이터가 너무 큽니다. 반경을 줄이거나 건물을 빼고 다시 받아 주세요.",
+  "file": "Formats/MapDownload.cs"
+ },
+ {
+  "ko": "지도 데이터를 받는 중 연결이 끊겼습니다. 다시 시도해 주세요.",
+  "file": "Formats/MapDownload.cs"
  },
  {
   "ko": "재료 원본 파일이 96MiB를 초과합니다.",
@@ -3152,15 +4028,31 @@
   "file": "UI/Controls/ColorSwatches.cs"
  },
  {
+  "ko": "빈 곳을 끌어 그룹 순서 바꾸기 · 두 번 누르면 접기",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
   "ko": "패널 그룹 메뉴 · 접기와 배치 초기화",
   "file": "UI/Controls/DockGroup.cs"
  },
  {
-  "ko": "{0} 그룹 메뉴",
+  "ko": "도킹 · 이 그룹을 오른쪽 도크에 다시 넣습니다",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "도킹",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "{0} · 끌어서 다른 그룹으로 옮기기",
   "file": "UI/Controls/DockGroup.cs"
  },
  {
   "ko": "{0} 패널",
+  "file": "UI/Controls/DockGroup.cs"
+ },
+ {
+  "ko": "{0} 그룹 메뉴",
   "file": "UI/Controls/DockGroup.cs"
  },
  {
@@ -4792,6 +5684,86 @@
   "file": "UI/Dialogs/EditingDialogs.cs"
  },
  {
+  "ko": "내 점경 추가",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "내 점경 만들기",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "사람·나무·탈것 이미지를 점경으로 등록합니다. 놓은 뒤에도 높이와 색을 바꿀 수 있습니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "투명 PNG 그대로",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "사진 배경 지우기",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "선 그림으로",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "이 컴퓨터의 AI 모델로 사람이나 물체만 남깁니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "종이에 그린 그림의 어두운 선만 남겨 선 색을 입힐 수 있게 합니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "변환 방법",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "점경 이름",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "점경 종류",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "실제 크기",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "입면은 바닥에서 꼭대기까지 높이, 평면은 긴 쪽 길이(미터)",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "종류",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "실제 크기 · m",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "입면 점경은 아래쪽 끝이 바닥에 닿도록, 평면 점경은 가운데를 기준으로 놓입니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "내 점경에 추가",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "배경을 지우는 중…",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "{0} × {1} px · 투명한 여백은 잘라 냅니다.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
+  "ko": "실제 크기는 {0}~{1} m로 입력하세요.",
+  "file": "UI/Dialogs/EntourageImportDialog.cs"
+ },
+ {
   "ko": "가장자리 빈 여백 자르기",
   "file": "UI/Dialogs/LinePatternDialog.cs"
  },
@@ -4834,6 +5806,414 @@
  {
   "ko": "패턴 타일 {0}×{1}px · 미리보기는 2×2로 반복합니다.",
   "file": "UI/Dialogs/LinePatternDialog.cs"
+ },
+ {
+  "ko": "인터넷에서 장소 찾기",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "인터넷에서 지도 데이터 받기",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "아래 내용을 OpenStreetMap의 공개 서버로 보냅니다. ‘보내고 찾기’를 누르기 전에는 아무것도 보내지 않습니다.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "아래 내용을 OpenStreetMap의 공개 서버로 보냅니다. ‘보내고 받기’를 누르기 전에는 아무것도 보내지 않습니다.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "영역 {0} (남서–북동, 약 {1} × {2} km)",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "보내는 곳",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "OpenStreetMap 장소 검색(Nominatim)",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "OpenStreetMap 데이터 조회(Overpass API)",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "보내는 내용",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "검색어 “{0}”",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "그릴 항목 목록: 길·철도·물·녹지·건물",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "그릴 항목 목록: 길·철도·물·녹지",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "함께 전달되는 것",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "프로그램 이름과 버전({0}) · 이 컴퓨터의 인터넷 주소(IP)는 서버에 보입니다.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "보내지 않는 것",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "열린 문서, 파일, 이미지, 레이어 이름, 계정 정보",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "받는 것",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "장소 이름과 좌표 최대 6개",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "이 영역의 OpenStreetMap 데이터(ODbL 사용권). 지도에 ‘© OpenStreetMap contributors’를 표시합니다.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "이용 규칙",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "공개 서버의 이용 규칙에 따라 1초에 한 번만, 작은 영역만 요청합니다. 받은 내용은 이번 실행 동안만 메모리에 두고 같은 요청에 다시 씁니다.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "AI 연결이 보내는 지도 요청도 이번 실행 동안 묻지 않고 허용",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "켜면 AI 연결(create_map)이 같은 공개 서버에 작은 영역의 지도 데이터를 요청할 수 있습니다. 앱을 끄면 다시 꺼집니다.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "인터넷을 쓰지 않으려면 openstreetmap.org의 ‘내보내기’로 받은 .osm 파일로 지도를 만드세요.",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "보내고 찾기",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "보내고 받기",
+  "file": "UI/Dialogs/MapConsentDialog.cs"
+ },
+ {
+  "ko": "세로 30 × 40 cm",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "A3 세로",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "A2 세로",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "정사각형 30 cm",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "가로 40 × 30 cm",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "A4 가로",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "A4 세로",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "없음",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "찾을 장소",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "중심 위도",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "중심 경도",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "찾은 장소",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "대지 표시 글자",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "인터넷 지도 데이터로 지도 만들기",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 만들기",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소나 좌표를 정한 뒤 직접 받기를 누르면, 보내는 내용을 확인한 다음 OpenStreetMap 공개 서버에서 작은 영역의 데이터를 받습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "openstreetmap.org의 ‘내보내기’로 받은 .osm 파일(또는 GeoJSON)로 길·물·녹지·건물을 편집할 수 있는 벡터 레이어로 그립니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "다른 지도 파일 열기",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "openstreetmap.org에서 내보낸 .osm 또는 GeoJSON 파일을 고릅니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소 찾기 (선택)",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "찾기…",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "검색어를 OpenStreetMap 장소 검색으로 보냅니다. 보내기 전에 확인합니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "범위 (중심에서 반경)",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "건물도 받기 (반경 1.5 km 이하)",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "인터넷에서 지도 데이터 받기…",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "보내는 영역과 서버를 확인한 뒤 데이터를 받습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "받기 전에 보내는 내용과 받는 곳을 보여 드립니다. 앱을 열 때나 미리보기 중에는 인터넷을 쓰지 않습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "받은 데이터를 .osm 파일로 저장…",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "다음에는 인터넷 없이 이 파일로 지도를 만들 수 있습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "받기 취소",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "읽거나 받는 중인 지도 데이터를 멈춥니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 양식",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "포스터는 넓은 자간의 제목·부제·좌표를, 위치도는 대지 표시·방위표·실제 축척 막대를 넣습니다. 모두 만든 뒤에도 편집할 수 있습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 색",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 글자",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "좌표 표시",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 가운데(위치도는 대지)의 위도·경도를 적습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "그릴 것",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "크기와 선",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "선 굵기 %",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "모든 길·철도·물줄기 선의 굵기",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "가장자리 흐리게",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 가장자리와 제목 뒤를 바탕색으로 부드럽게 덮습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "테두리와 여백",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 둘레에 여백과 가는 테두리를 두고 제목을 지도 아래에 둡니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "표시 모양",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "핀",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "자동 (데이터에 맞춤)",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "미리보기 상태",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터 © OpenStreetMap contributors (ODbL). 만든 지도에는 이 출처 표기가 항상 들어갑니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "대지 {0} · 미리보기를 클릭하면 대지 위치를 옮깁니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "미리보기를 클릭하면 대지 위치를 옮깁니다. 정하지 않으면 지도 가운데입니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "아직 받은 데이터가 없습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 파일을 열어 주세요.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소를 찾거나 중심 좌표를 넣고 ‘인터넷에서 지도 데이터 받기…’를 누르면 미리보기가 나타납니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 파일을 열면 미리보기가 나타납니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "길 {0} · 건물 {1} · 물 {2} · 녹지 {3}",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "범위 약 {0} × {1} km",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터 읽는 중… {0}%",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터 읽는 중…",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터 읽기를 취소했습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소를 찾지 않았습니다. 인터넷으로 보낸 것은 없습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소 찾는 중…",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소 {0}곳을 찾았습니다. 하나를 고르면 중심 좌표가 바뀝니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "찾은 장소가 없습니다. 다른 이름이나 주소로 찾아 보세요.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "장소 찾기를 취소했습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터를 받지 않았습니다. 인터넷으로 보낸 것은 없습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "받은 지도 데이터 읽는 중… {0}%",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터 받는 중… 영역에 따라 1분 넘게 걸릴 수 있습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "인터넷에서 받은 OpenStreetMap 데이터",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "지도 데이터 받기를 취소했습니다.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "저장했습니다: {0}",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "먼저 지도 데이터를 열거나 받아 주세요.",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "미리보기 그리는 중…",
+  "file": "UI/Dialogs/MapDialog.cs"
+ },
+ {
+  "ko": "미리보기 · 1 px ≈ {0} m · 축척 1:{1} ({2} DPI 출력 기준)",
+  "file": "UI/Dialogs/MapDialog.cs"
  },
  {
   "ko": "작업을 완료하지 못했습니다",
@@ -4981,10 +6361,6 @@
  },
  {
   "ko": "해상도 · DPI",
-  "file": "UI/Dialogs/NewDocumentDialog.cs"
- },
- {
-  "ko": "배경",
   "file": "UI/Dialogs/NewDocumentDialog.cs"
  },
  {
@@ -5225,10 +6601,6 @@
  },
  {
   "ko": "그림자 윤곽선의 두께",
-  "file": "UI/Dialogs/ShadowDialog.cs"
- },
- {
-  "ko": "미리보기 상태",
   "file": "UI/Dialogs/ShadowDialog.cs"
  },
  {
@@ -5864,10 +7236,6 @@
   "file": "UI/MainWindow.Artboards.cs"
  },
  {
-  "ko": "대지 이름",
-  "file": "UI/MainWindow.Artboards.cs"
- },
- {
   "ko": "너비 (px)",
   "file": "UI/MainWindow.Artboards.cs"
  },
@@ -6048,10 +7416,6 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
-  "ko": "레이어를 찾을 수 없습니다.",
-  "file": "UI/MainWindow.Automation.cs"
- },
- {
   "ko": "layerId와 artboardId 중 하나만 지정하세요.",
   "file": "UI/MainWindow.Automation.cs"
  },
@@ -6108,6 +7472,10 @@
   "file": "UI/MainWindow.Automation.cs"
  },
  {
+  "ko": "도형 레이어가 아닙니다.",
+  "file": "UI/MainWindow.Automation.cs"
+ },
+ {
   "ko": "그룹 안에 잠긴 레이어가 있습니다.",
   "file": "UI/MainWindow.Automation.cs"
  },
@@ -6122,6 +7490,18 @@
  {
   "ko": "대상 폴더가 없습니다.",
   "file": "UI/MainWindow.Automation.cs"
+ },
+ {
+  "ko": "점경 레이어가 아닙니다. query_entourage의 placed 목록에서 layerId를 고르세요.",
+  "file": "UI/MainWindow.AutomationEntourage.cs"
+ },
+ {
+  "ko": "이 버전에 없는 점경이라 다시 그릴 수 없습니다.",
+  "file": "UI/MainWindow.AutomationEntourage.cs"
+ },
+ {
+  "ko": "점경 항목을 찾을 수 없습니다. query_entourage의 itemId를 사용하세요.",
+  "file": "UI/MainWindow.AutomationEntourage.cs"
  },
  {
   "ko": ".ai 내보내기는 레이어를 유지합니다. 한 장으로 합치려면 format=pdf, layers=flatten을 사용하세요.",
@@ -6456,6 +7836,10 @@
   "file": "UI/MainWindow.Chrome.cs"
  },
  {
+  "ko": "선 · 곡선",
+  "file": "UI/MainWindow.Chrome.cs"
+ },
+ {
   "ko": "도구",
   "file": "UI/MainWindow.Chrome.cs"
  },
@@ -6465,6 +7849,14 @@
  },
  {
   "ko": "도구 · ",
+  "file": "UI/MainWindow.Commands.cs"
+ },
+ {
+  "ko": "곡선 도구",
+  "file": "UI/MainWindow.Commands.cs"
+ },
+ {
+  "ko": "도구 · 선 · 곡선",
   "file": "UI/MainWindow.Commands.cs"
  },
  {
@@ -6848,6 +8240,394 @@
   "file": "UI/MainWindow.DesignStyles.cs"
  },
  {
+  "ko": "선을 그리려면 서로 다른 두 점 이상을 클릭하세요.",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "곡선 그리기",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "선 그리기",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "지시선 추가",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "지시선 손잡이 이동 · Shift: 15° 단위 · Esc: 취소",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "점 이동 · Shift: 이웃 점 기준 15° 단위 · Esc: 취소",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "지시선 편집",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "선 점 이동",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "선 점 추가",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "선 점 삭제",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "곡선: 클릭한 점을 모두 지나는 매끄러운 선 · 더블클릭 / Enter: 완성 · 첫 점 클릭: 닫기 · Backspace: 마지막 점 삭제 · Esc: 취소",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "클릭: 점 추가 · 드래그: 직선 하나 · 더블클릭 / Enter: 완성 · 첫 점 클릭: 닫기 · Shift: 15° 단위 · Backspace: 마지막 점 삭제",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "대상에서 라벨 쪽으로 드래그 · 클릭: 기본 위치에 라벨 · 손잡이로 대상·꺾임·라벨을 따로 옮기기",
+  "file": "UI/MainWindow.Diagram.cs"
+ },
+ {
+  "ko": "실선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "점선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "파선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "일점쇄선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "화살표",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "열린 화살표",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "채운 점",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "고리",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "막대",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "둥근 끝",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "각진 끝",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "평평한 끝",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "직선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "직선: 클릭한 점을 곧게 잇기 · 곡선: 클릭한 점을 모두 지나는 매끄러운 선 (Shift+P)",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "꺾은 지시선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "곧은 지시선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "꺾은 지시선: 대상에서 꺾여 라벨까지 수평으로 · 곧은 지시선: 대상에서 라벨까지 곧게",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "두께",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "새 선과 지시선의 두께 (px)",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "선 두께 0.5~24px · 끝 모양 크기도 함께 바뀝니다",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "새 선 두께",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "새 선 모양",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "새 선의 시작 끝 모양",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "새 선의 끝 모양",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "새 지시선의 대상 쪽 끝 모양",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "시작",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "첫 점의 끝 모양 (화살표·점·막대)",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "끝",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "마지막 점의 끝 모양 (화살표·점·막대)",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "대상 쪽",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "지시선이 가리키는 쪽의 끝 모양",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "선 모양",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "실선 · 점선 · 파선 · 일점쇄선",
+  "file": "UI/MainWindow.DiagramOptions.cs"
+ },
+ {
+  "ko": "다이어그램 예시 · 배치도",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "대지 경계",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "보행 동선",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "차량 동선",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "주출입구",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "중정 · 공용 마당",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "주차장 진입",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "배치 다이어그램",
+  "file": "UI/MainWindow.DiagramPreview.cs"
+ },
+ {
+  "ko": "지시선 모양",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "곡선: 모든 점을 지나는 매끄러운 선",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 종류",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "곡선으로 바꾸기",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "직선으로 바꾸기",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 색상",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 색상 변경",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 두께 · px",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 두께",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "끝 모양 크기 · px",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "끝 모양 크기",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "대상 쪽 끝 모양",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "시작점 모양",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "끝 모양",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "라벨 쪽 끝 모양",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "끝점 모양",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "대상 쪽 끝",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "시작점",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "라벨 쪽 끝",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "끝점",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "닫힌 선에는 끝 모양이 없습니다.",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "이동 도구에서 원은 대상, 마름모는 꺾임, 사각형은 라벨 위치입니다. 손잡이를 끌어 따로 옮깁니다.",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "닫힌 선 · 채우기",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "마지막 점을 첫 점과 잇고 안쪽을 채웁니다 · 재료 맵핑의 경계로도 쓸 수 있습니다",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "채우기 색상",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "채우기 색상 변경",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "방향 바꾸기",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 방향 바꾸기",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "시작과 끝을 바꿉니다. 화살표가 반대쪽을 가리킵니다.",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "점 {0}개 · 손잡이를 끌어 옮기고, 이동 도구로 선을 두 번 클릭해 점을 더하고, Alt+클릭 또는 Delete로 지웁니다.",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "실선 · 점선 · 파선 · 일점쇄선 · 간격은 선 두께를 따릅니다",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선 끝",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "둥근 끝: 점선이 둥근 점 · 각진 끝: 네모 점 · 평평한 끝: 선이 점에서 딱 끝남",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "점선 간격",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "점선 간격 · %",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "라벨 바탕",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "글자 뒤에 둥근 상자를 깔아 복잡한 그림 위에서도 읽히게 합니다",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "라벨 바탕 색상",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "라벨 바탕 색상 변경",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "라벨 바탕 모서리",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "바탕 모서리 · px",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "선택한 레이어가 바뀌었습니다. 현재 속성에서 편집하세요.",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
+  "ko": "지시선 라벨",
+  "file": "UI/MainWindow.DiagramProperties.cs"
+ },
+ {
   "ko": "디자인",
   "file": "UI/MainWindow.Dock.cs"
  },
@@ -6877,6 +8657,10 @@
  },
  {
   "ko": "해치 패턴과 스크린톤으로 선택 영역이나 재질 레이어 채우기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "사람·나무·탈것·소품을 도면에 놓기 · 내 점경",
   "file": "UI/MainWindow.Dock.cs"
  },
  {
@@ -6960,7 +8744,11 @@
   "file": "UI/MainWindow.Dock.cs"
  },
  {
-  "ko": "{0} 패널 펼치기",
+  "ko": "{0} 패널 열기 · 오른쪽 클릭: 그룹 펼치기와 떠 있는 패널",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "떠 있는 패널로 열기",
   "file": "UI/MainWindow.Dock.cs"
  },
  {
@@ -6968,12 +8756,64 @@
   "file": "UI/MainWindow.Dock.cs"
  },
  {
+  "ko": "이 그룹을 오른쪽 도크에 다시 넣습니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
   "ko": "그룹을 오른쪽 아이콘 줄로 접거나 다시 펼칩니다",
   "file": "UI/MainWindow.Dock.cs"
  },
  {
-  "ko": "그룹 크기·접기·열린 탭과 도크 너비를 처음 상태로 되돌립니다",
+  "ko": "다른 그룹으로 옮기기",
   "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "열린 탭({0})을 고른 그룹의 끝으로 옮깁니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "새 그룹으로 분리",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "열린 탭({0})을 이 그룹 아래의 새 그룹으로 꺼냅니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "위로 옮기기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그룹을 한 칸 위로 옮깁니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "아래로 옮기기",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그룹을 한 칸 아래로 옮깁니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그룹을 따로 움직이는 작은 창으로 엽니다 · 닫거나 📌 도킹을 누르면 도크로 돌아옵니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "그룹 구성·순서·크기·접기·떠 있는 패널과 도크 너비를 처음 상태로 되돌립니다",
+  "file": "UI/MainWindow.Dock.cs"
+ },
+ {
+  "ko": "잠시 연 패널",
+  "file": "UI/MainWindow.DockArrange.cs"
+ },
+ {
+  "ko": "패널 배치를 바꿨습니다 · ☰ 메뉴의 패널 배치 초기화로 되돌릴 수 있습니다",
+  "file": "UI/MainWindow.DockArrange.cs"
+ },
+ {
+  "ko": "{0} 떠 있는 패널",
+  "file": "UI/MainWindow.DockArrange.cs"
  },
  {
   "ko": "레이어 패널을 오른쪽으로",
@@ -7093,10 +8933,6 @@
  },
  {
   "ko": "캔버스 위에 포인터를 올리세요",
-  "file": "UI/MainWindow.DockPanels.cs"
- },
- {
-  "ko": "없음",
   "file": "UI/MainWindow.DockPanels.cs"
  },
  {
@@ -7272,6 +9108,374 @@
   "file": "UI/MainWindow.EmptyWorkspace.cs"
  },
  {
+  "ko": "문서를 열면 축척을 정할 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "직접 정한 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 문서의 점경과 같은 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "문서 해상도 {0} DPI에서 1:100",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "사람(1.7 m) {0} px · {1}",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경은 {0}개까지 보관합니다. 쓰지 않는 항목을 삭제하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경 이름을 바꿨습니다: {0}",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에서 삭제했습니다: {0} · 이 점경을 놓은 문서는 그대로 남습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경으로 쓸 이미지",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에 추가했습니다: {0}",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "사람·나무·탈것·소품을 도면에 놓습니다. 눌러서 화면 가운데에, 끌어서 원하는 자리에 놓고, 놓은 뒤에도 높이·색·채우기를 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 라이브러리",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 검색",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 검색 (예: 나무, 자전거, 앉은)",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "찾는 점경이 없습니다. 다른 낱말로 찾아 보세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 보기의 내 점경이 없습니다. 투명 PNG, 사진, 선 그림으로 내 점경을 만들 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 보기의 점경이 없습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이미지로 점경 추가…",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "투명 PNG는 그대로, 사진은 AI로 배경을 지우고, 종이에 그린 그림은 선만 남겨 내 점경에 등록하고 바로 놓습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "자연스럽게 흩어 놓기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "여러 개를 크기·방향·모양을 조금씩 달리해 흩어 놓습니다. 선택 영역이 있으면 그 안(입면은 아래쪽 바닥선)에 놓고, 한 그룹으로 묶습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "흩어 놓을 개수",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "한 번에 놓을 개수 (2~24)",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "1 m당 px",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "새로 놓는 점경의 축척입니다. 도면에서 1 m가 몇 px인지 입력하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "1 m당 px는 {0}~{1} 사이로 입력하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "축척 · 1 m당 px",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다. 입면은 발끝·밑동이 놓은 곳(바닥선)에 닿습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "{0} · {1} · {2} · {3} m\n누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 이름 바꾸기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에서 삭제",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경에 저장",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "먼저 문서를 열거나 새 캔버스를 만드세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 넣기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 흩어 놓기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경을 놓았습니다: {0} · 속성에서 높이·색·채우기를 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 {0}개를 흩어 놓았습니다: {1} · 그룹을 고르면 한꺼번에 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 레이어를 선택하세요. 잠긴 레이어는 먼저 잠금을 해제하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 {0}개",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 버전에 없는 점경입니다. 모양은 그대로 두고 위치·크기만 바꿀 수 있습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 길이",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 높이",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "평면에서 긴 쪽 길이(수관은 지름), 미터",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "바닥에서 꼭대기까지 높이, 미터",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "도면에서 1 m가 몇 px인지입니다. 바꾸면 같은 높이로 다시 그립니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "길이 · m",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "높이 · m",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "다른 모양으로 바꾸기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 모양",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "같은 종류의 다른 모양 {0}가지를 차례로 보여 줍니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "채우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "흐리게",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "회색조",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "실루엣",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "회색 바탕",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 채우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "원본 색, 흐리게, 회색조, 선 색 실루엣",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선만 · 흰 바탕 · 회색 바탕 · 선 색으로 채운 실루엣",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 선 색",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선 색 기본값",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 선 색 변경",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 선 굵기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "100%는 축척에 맞춘 기본 굵기입니다. 같은 축척의 점경은 같은 굵기로 그려집니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선 굵기 · %",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "좌우 뒤집기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "선택한 점경을 좌우로 뒤집습니다. 놓인 자리는 그대로입니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 좌우 뒤집기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "그림자 드리우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "바닥에 그림자",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "실제 높이에 맞춘 평면 그림자를 새 레이어로 만듭니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "발끝·밑동에서 바닥으로 눕는 그림자를 새 레이어로 만듭니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 그림자 드리우기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "축척 기준으로",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 점경의 지금 크기를 새로 놓을 점경의 축척으로 씁니다. 손잡이로 크기를 맞춘 뒤 누르세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "이 크기를 점경 축척 기준으로",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "모두 같은 축척",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "문서의 모든 점경을 이 점경의 축척으로 다시 그립니다. 실제 높이는 그대로입니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "문서의 모든 점경을 같은 축척으로",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 레이어를 선택하세요.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 축척: 1 m = {0} px · 새로 놓는 점경에 씁니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 축척 맞추기",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 {0}개를 같은 축척(1 m = {1} px)으로 맞췄습니다.",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "점경 라이브러리…",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "내 점경 추가…",
+  "file": "UI/MainWindow.Entourage.cs"
+ },
+ {
+  "ko": "손그림 나무",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "점경 예시 · 단면",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "단면선",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "그림자 · 점경",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "점경 예시 · 배치도",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "배치도",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
+  "ko": "그림자 · 수목",
+  "file": "UI/MainWindow.EntouragePreview.cs"
+ },
+ {
   "ko": "이미지 편집으로 전환한 뒤 채우기 도구를 사용하세요.",
   "file": "UI/MainWindow.Fill.cs"
  },
@@ -7321,10 +9525,6 @@
  },
  {
   "ko": "세로 비율 %",
-  "file": "UI/MainWindow.HatchPreview.cs"
- },
- {
-  "ko": "선 굵기 %",
   "file": "UI/MainWindow.HatchPreview.cs"
  },
  {
@@ -7952,6 +10152,150 @@
   "file": "UI/MainWindow.LinePatterns.cs"
  },
  {
+  "ko": "지도 만들기 (OSM 파일)…",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "openstreetmap.org에서 내보낸 .osm 파일로 지도 포스터나 대지 위치도를 만듭니다. 인터넷을 쓰지 않습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "보내는 내용을 확인한 뒤 OpenStreetMap 공개 서버에서 작은 영역의 데이터를 받아 지도를 만듭니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "OpenStreetMap 데이터로 지도 포스터나 대지 위치도를 편집할 수 있는 벡터 레이어로 만듭니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 파일로",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "openstreetmap.org에서 내보낸 .osm 파일로 지도 포스터·대지 위치도 만들기",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 만들기 (OSM 파일)",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "인터넷 데이터로",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "보내는 내용을 확인한 뒤 공개 서버에서 작은 영역의 지도 데이터를 받아 만들기",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 데이터 열기",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "받은 지도 데이터 저장",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "OpenStreetMap 데이터|*.osm",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 만드는 중…  Esc: 취소",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 만들기를 취소했습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도를 만들었습니다 · 1 px ≈ {0} m · 데이터 © OpenStreetMap contributors",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "{0} · 1 px ≈ {1} m · 중심 {2}",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 테마",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "이 묶음 색 바꾸기",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "이 레이어 색 바꾸기",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "선택한 지도 묶음(예: 도로, 물)이나 레이어를 한 가지 색으로 바꿉니다. 테마를 다시 고르면 테마 색으로 돌아갑니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도를 공개하거나 인쇄할 때는 ‘© OpenStreetMap contributors’ 출처 표기를 지우지 마세요(ODbL).",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 색 바꾸는 중…",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "색을 바꾸는 동안 문서가 바뀌어 적용하지 않았습니다. 다시 고르세요.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 테마를 ‘{0}’(으)로 바꿨습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 색 바꾸기를 취소했습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "바꿀 색이 없습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 색 바꾸기",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "지도 레이어 {0}개의 색을 바꿨습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "인터넷 지도 데이터는 사용자가 앱의 ‘인터넷에서 지도 데이터 받기’ 동의 창에서 AI 연결에 허용한 경우에만 받을 수 있습니다.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "장소를 찾지 못했습니다. 다른 이름이나 좌표(centerLatitude, centerLongitude)로 요청하세요.",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "AI 연결이 인터넷에서 지도 데이터를 받는 중… {0}",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "AI 연결이 인터넷에서 지도 데이터를 받았습니다 · {0}",
+  "file": "UI/MainWindow.Map.cs"
+ },
+ {
+  "ko": "모루 시 · 예시 데이터",
+  "file": "UI/MainWindow.MapPreview.cs"
+ },
+ {
+  "ko": "모루 시",
+  "file": "UI/MainWindow.MapPreview.cs"
+ },
+ {
+  "ko": "모루 시 중앙로 12 · 예시 대지",
+  "file": "UI/MainWindow.MapPreview.cs"
+ },
+ {
+  "ko": "모루 시청",
+  "file": "UI/MainWindow.MapPreview.cs"
+ },
+ {
   "ko": "재질과 패턴",
   "file": "UI/MainWindow.MaterialProperties.cs"
  },
@@ -8357,10 +10701,6 @@
  },
  {
   "ko": "화면에 맞춤",
-  "file": "UI/MainWindow.Menu.cs"
- },
- {
-  "ko": "실제 크기",
   "file": "UI/MainWindow.Menu.cs"
  },
  {
@@ -9148,27 +11488,11 @@
   "file": "UI/MainWindow.Shadow.cs"
  },
  {
-  "ko": "건물",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
-  "ko": "수목",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
   "ko": "그림자 예시 · 보드",
   "file": "UI/MainWindow.Shadow.cs"
  },
  {
   "ko": "바닥선",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
-  "ko": "사람",
-  "file": "UI/MainWindow.Shadow.cs"
- },
- {
-  "ko": "나무",
   "file": "UI/MainWindow.Shadow.cs"
  },
  {
@@ -9189,18 +11513,6 @@
  },
  {
   "ko": " 색상 변경",
-  "file": "UI/MainWindow.ShapeProperties.cs"
- },
- {
-  "ko": "채우기",
-  "file": "UI/MainWindow.ShapeProperties.cs"
- },
- {
-  "ko": "선 두께 · px",
-  "file": "UI/MainWindow.ShapeProperties.cs"
- },
- {
-  "ko": "선 두께",
   "file": "UI/MainWindow.ShapeProperties.cs"
  },
  {
@@ -9408,10 +11720,6 @@
   "file": "UI/MainWindow.TextProperties.cs"
  },
  {
-  "ko": "선택한 레이어가 바뀌었습니다. 현재 속성에서 편집하세요.",
-  "file": "UI/MainWindow.TextProperties.cs"
- },
- {
   "ko": "문자와 단락 속성",
   "file": "UI/MainWindow.TextProperties.cs"
  },
@@ -9604,11 +11912,19 @@
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
  {
+  "ko": "클릭한 점을 잇는 선·꺾은선·곡선과 화살표 · P / 곡선 Shift+P",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
+  "ko": "대상에서 라벨까지 끌어 점·지시선·글자를 한 번에 · N",
+  "file": "UI/MainWindow.WorkspaceActions.cs"
+ },
+ {
   "ko": "채우기 · 선",
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
  {
-  "ko": "선택한 도형의 채우기·선 색상과 두께 조절",
+  "ko": "선택한 도형의 채우기·선 색상과 두께, 점선과 끝 모양 조절",
   "file": "UI/MainWindow.WorkspaceActions.cs"
  },
  {

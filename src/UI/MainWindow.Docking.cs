@@ -83,5 +83,6 @@ public sealed partial class MainWindow
     {
         closingPanels = true;
         foreach (var pane in movablePanels) { if (pane.Floating is { } floating) { pane.Floating = null; floating.Close(); } }
+        CloseDockWindows();
     }
 }

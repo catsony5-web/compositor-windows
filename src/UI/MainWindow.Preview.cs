@@ -188,6 +188,9 @@ public sealed partial class MainWindow
         RenderTextPosterPreviews(directory);
         TrimPreviewTabs();
         RenderShadowPreviews(Capture, CapturePane);
+        TrimPreviewTabs();
+        RenderDiagramPreviews(Capture, CapturePane);
+        RenderMapPreviews(directory, Capture, CaptureFit);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.
         string plan = Path.Combine(directory, "평면 예시.dxf");
         var drawing = CompatibilityImport.ReadAsync(plan, new ImportSettings { CadLongEdge = 900 }.Options(plan)).GetAwaiter().GetResult().Document;
@@ -200,6 +203,8 @@ public sealed partial class MainWindow
         RenderStyleEffectPreviews(directory, Capture);
         TrimPreviewTabs();
         RenderDesignStylePreviews(directory);
+        TrimPreviewTabs();
+        RenderEntouragePreviews(directory);
         TrimPreviewTabs();
         RenderCompactPreviews(directory);
     }

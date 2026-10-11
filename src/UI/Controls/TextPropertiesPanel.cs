@@ -25,7 +25,8 @@ public sealed class TextPropertiesPanel : StackPanel
     public event Action? EditingStarted;
     public Action CommitPending => () => TryApply();
 
-    public TextPropertiesPanel(TextSpec spec, Func<TextSpec, string?> commit, Func<Color, Color?> pickColor, Action<string> alignLayer)
+    // alignLayer null: no canvas alignment row (a callout's label sits beside its leader).
+    public TextPropertiesPanel(TextSpec spec, Func<TextSpec, string?> commit, Func<Color, Color?> pickColor, Action<string>? alignLayer)
     {
         original = spec; this.commit = commit; alignment = spec.Alignment; color = DocumentFeatures.Color(spec.ColorArgb); outlineColor = DocumentFeatures.Color(spec.OutlineArgb);
         Margin = new Thickness(2, 4, 2, 12);
@@ -93,9 +94,12 @@ public sealed class TextPropertiesPanel : StackPanel
         var apply = Theme.Styled(Theme.Button("텍스트 적용", () => TryApply(), "내용과 문자 서식을 한 번에 적용 · Ctrl+Enter"), "PrimaryButton"); apply.MinHeight = 34;
         apply.Margin = new Thickness(0, 0, 0, 4); Children.Add(apply);
         message = Theme.Label("", Theme.CaptionSize, Theme.Muted); message.TextWrapping = TextWrapping.Wrap; message.Visibility = Visibility.Collapsed; Children.Add(message);
-        AddLabel("캔버스에 정렬");
-        var position = QuickActions.IconStrip(MainWindow.CanvasAlignments.Select(a => (a.Glyph, $"텍스트 레이어 {a.Name}", (Action)(() => { if (TryApply()) alignLayer(a.Direction); }))), out _);
-        position.Margin = new Thickness(0, 4, 0, 0); Children.Add(position);
+        if (alignLayer != null)
+        {
+            AddLabel("캔버스에 정렬");
+            var position = QuickActions.IconStrip(MainWindow.CanvasAlignments.Select(a => (a.Glyph, $"텍스트 레이어 {a.Name}", (Action)(() => { if (TryApply()) alignLayer(a.Direction); }))), out _);
+            position.Margin = new Thickness(0, 4, 0, 0); Children.Add(position);
+        }
         AddHandler(Keyboard.GotKeyboardFocusEvent, new KeyboardFocusChangedEventHandler((_, _) => EditingStarted?.Invoke()));
         AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler((_, _) => ClearError()));
         PreviewKeyDown += (_, e) =>

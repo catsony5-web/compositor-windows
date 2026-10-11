@@ -106,6 +106,7 @@ public static class SelfTests
         MainWindow.RunRibbonTests(Test, directory);
         MainWindow.RunWindowFitTests(Test);
         MainWindow.RunCompactScreenTests(Test, directory);
+        MainWindow.RunDockArrangeTests(Test, directory);
         LocalizationTests.Run(Test);
         MainWindow.RunKeepWordsTests(Test);
         MainWindow.RunDrawingCleanupTests(Test, directory);
@@ -142,8 +143,12 @@ public static class SelfTests
         SelectedLayerExportTests.Run(Test, directory);
         ShadowTests.Run(Test, directory);
         MainWindow.RunShadowCommandTests(Test);
+        EntourageTests.Run(Test, directory);
+        MainWindow.RunEntourageTests(Test, directory);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
+        DiagramShapeTests.Run(Test, directory);
+        MainWindow.RunDiagramToolTests(Test);
         VectorContentTests.Run(Test, directory);
         MaterialMappingTests.Run(Test, directory);
         HatchPatternTests.Run(Test, directory);
@@ -161,6 +166,8 @@ public static class SelfTests
         MainWindow.RunLinePatternTests(Test, directory);
         SketchCleanupTests.Run(Test);
         MainWindow.RunSketchCleanupTests(Test, directory);
+        MapTests.Run(Test, directory);
+        MainWindow.RunMapTests(Test, directory);
         MainWindow.RunScreentoneTests(Test, directory);
         UnifiedWorkspaceTests.Run(Test, directory);
         CompatibilityTests.Run(Test, directory);

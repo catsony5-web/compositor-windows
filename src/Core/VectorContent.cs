@@ -7,7 +7,8 @@ using System.Windows.Media;
 namespace Compositor.Windows;
 
 public enum VectorFormat { Paths, Pdf }
-public sealed record VectorPrimitive(Geometry Geometry, Color Color, bool Fill, double StrokeWidth, Geometry? Clip = null);
+// Round: a stroke with round caps and joins (drawn line art such as entourage); CAD lines keep flat ones.
+public sealed record VectorPrimitive(Geometry Geometry, Color Color, bool Fill, double StrokeWidth, Geometry? Clip = null, bool Round = false);
 
 // Self-contained, immutable source. Pixel caches are only previews/raster-tool inputs.
 // No XAML, executable objects, external filenames or network links are deserialized.
@@ -15,7 +16,9 @@ public sealed class VectorContent
 {
     public const long MaxDocumentBytes = 512L * 1024 * 1024;
     public sealed record PathData(string Data, double[] Matrix);
-    public sealed record Item(PathData Path, uint Color, bool Fill, double StrokeWidth, int Clip);
+    // Round is written only when set, so existing sources keep their exact bytes and older readers ignore it.
+    public sealed record Item(PathData Path, uint Color, bool Fill, double StrokeWidth, int Clip,
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)] bool Round = false);
     public sealed record Scene(PathData[] Clips, Item[] Items);
     readonly byte[] payload;
     readonly Lazy<DrawingGroup>? drawing;
@@ -60,7 +63,7 @@ public sealed class VectorContent
         {
             int clip = -1;
             if (primitive.Clip is { } boundary && !clipIds.TryGetValue(boundary, out clip)) { clip = clips.Count; clipIds[boundary] = clip; clips.Add(Encode(boundary)); }
-            items.Add(new(Encode(primitive.Geometry), VectorShapes.Argb(primitive.Color), primitive.Fill, primitive.StrokeWidth, clip));
+            items.Add(new(Encode(primitive.Geometry), VectorShapes.Argb(primitive.Color), primitive.Fill, primitive.StrokeWidth, clip, primitive.Round && !primitive.Fill));
         }
         return new(VectorFormat.Paths, width, height, 1, JsonSerializer.SerializeToUtf8Bytes(new Scene(clips.ToArray(), items.ToArray())));
     }
@@ -83,14 +86,19 @@ public sealed class VectorContent
         var clips = scene.Clips.Select(Geometry).ToArray(); var result = new DrawingGroup();
         using (var dc = result.Open())
         {
-            int current = -1; var brushes = new Dictionary<uint, SolidColorBrush>(); var pens = new Dictionary<(uint, double), Pen>();
+            int current = -1; var brushes = new Dictionary<uint, SolidColorBrush>(); var pens = new Dictionary<(uint, double, bool), Pen>();
             foreach (var item in scene.Items)
             {
                 if (item == null || item.Clip < -1 || item.Clip >= clips.Length || !double.IsFinite(item.StrokeWidth) || item.StrokeWidth < 0 || item.StrokeWidth > 100000)
                     throw new InvalidDataException("벡터 경로 스타일이 올바르지 않습니다.");
                 if (item.Clip != current) { if (current >= 0) dc.Pop(); current = item.Clip; if (current >= 0) dc.PushClip(clips[current]); }
                 if (!brushes.TryGetValue(item.Color, out var brush)) { brush = new SolidColorBrush(VectorShapes.Color(item.Color)); brush.Freeze(); brushes[item.Color] = brush; }
-                if (!pens.TryGetValue((item.Color, item.StrokeWidth), out var pen)) { pen = new Pen(brush, item.StrokeWidth); pen.Freeze(); pens[(item.Color, item.StrokeWidth)] = pen; }
+                if (!pens.TryGetValue((item.Color, item.StrokeWidth, item.Round), out var pen))
+                {
+                    pen = new Pen(brush, item.StrokeWidth);
+                    if (item.Round) { pen.StartLineCap = pen.EndLineCap = PenLineCap.Round; pen.LineJoin = PenLineJoin.Round; }
+                    pen.Freeze(); pens[(item.Color, item.StrokeWidth, item.Round)] = pen;
+                }
                 dc.DrawGeometry(item.Fill ? brush : null, item.Fill ? null : pen, Geometry(item.Path));
             }
             if (current >= 0) dc.Pop();

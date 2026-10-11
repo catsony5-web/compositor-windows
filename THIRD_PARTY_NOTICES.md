@@ -40,6 +40,10 @@ The `2layers.psd` and `layer_mask_data.psd` test fixtures (kept in the developme
 
 PDF rendering calls the operating system's Windows.Data.Pdf API directly through its documented COM interfaces, whose identifiers and layouts follow the Windows SDK metadata. The portable package no longer includes the generated `Microsoft.Windows.SDK.NET.dll` projection or `WinRT.Runtime.dll`, and it does not bundle a separate PDFium or Ghostscript engine. Microsoft Windows SDK terms are identified by the NuGet package at [Windows SDK license](https://aka.ms/WinSDKLicenseURL), with a downloaded copy in [licenses/WindowsSDK-License.rtf](licenses/WindowsSDK-License.rtf). Copyright Microsoft Corporation. [C#/WinRT](https://github.com/microsoft/CsWinRT) is MIT licensed; see [licenses/CsWinRT-LICENSE.txt](licenses/CsWinRT-LICENSE.txt).
 
+## OpenStreetMap data (not bundled)
+
+Morupixel contains no map data. Maps made with **지도 만들기** use OpenStreetMap data that the user exports or, after explicit consent, downloads from the public OpenStreetMap servers (Overpass API, Nominatim). That data is © OpenStreetMap contributors and available under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/); every map Morupixel makes carries the attribution "© OpenStreetMap contributors" as a locked text layer. See [docs/MAPS.md](docs/MAPS.md).
+
 ## Fonts and other assets
 
 The source tree keeps unmodified static OpenType faces from Pretendard v1.3.9 by Kil Hyung-jin under the SIL Open Font License, Version 1.1; no code uses them, so release packages no longer embed them. The files, source release URL, tag, checksums, family name, resource path, and license are documented in [assets/fonts/README.md](assets/fonts/README.md) and [licenses/Pretendard-LICENSE.txt](licenses/Pretendard-LICENSE.txt). The bundled seaside sample was generated for Morupixel with OpenAI's built-in image generation tool; it is not copied from Compositor or the visual references. Its native size is 1586 × 992 pixels. See [sample provenance](assets/samples/README.md). The user's imported photographs retain their own rights.

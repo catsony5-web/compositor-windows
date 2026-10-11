@@ -288,6 +288,14 @@ public static class LayerPicking
     {
         if (maskOnly && DrawingLayers.IsContainer(layer)) return 1;
         var raster = layer.Pixels;
+        // Lines and callouts are picked by their geometry: dash gaps, thin strokes and the label box count as the object.
+        if (!maskOnly && layer.Shape is { HasPoints: true } diagram)
+        {
+            if (!ShapeGeometry.Hit(diagram, local, .5)) return 0;
+            if (layer.Mask == null) return 1;
+            int mx = Math.Clamp((int)local.X, 0, raster.Width - 1), my = Math.Clamp((int)local.Y, 0, raster.Height - 1);
+            return layer.Mask[my * raster.Width + mx] / 255.0;
+        }
         double sx = local.X - .5, sy = local.Y - .5;
         if (sx < -1 || sy < -1 || sx > raster.Width || sy > raster.Height) return 0;
         int x0 = (int)Math.Floor(sx), y0 = (int)Math.Floor(sy); double fx = sx - x0, fy = sy - y0;

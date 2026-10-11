@@ -64,6 +64,7 @@ public sealed partial class MainWindow
         if (handleGesture is { } gesture && doc.Active is { } transforming)
             return TransformHandles.CursorForHandle(doc, transforming, gesture.Handle, canvas.Zoom);
         if (panModifier && !dragging) return Cursors.Hand;
+        if (DiagramCursor(documentPoint) is { } diagram) return diagram;
         if (tool != Tool.Move) return canvas.Cursor ?? Cursors.Cross;
         if (!dragging && jobCts == null && doc.Active is { } layer && CanUseTransformHandles(layer))
         {
@@ -82,7 +83,7 @@ public sealed partial class MainWindow
         int opposite = handle < 4 ? (handle + 2) % 4 : handle < 8 ? 4 + (handle - 4 + 2) % 4 : 0;
         var pivot = original.Document(new Point(layer.Pixels.Width / 2.0, layer.Pixels.Height / 2.0));
         var anchor = handle == 8 ? pivot : DocumentFeatures.ToParentSpace(doc, layer, handles[opposite]);
-        handleGesture = new(handle, handle < 4 && Keyboard.Modifiers.HasFlag(ModifierKeys.Control), original, parentPoint, anchor, pivot);
+        handleGesture = new(handle, handle < 4 && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && layer.Shape?.HasPoints != true, original, parentPoint, anchor, pivot);
         beforeGesture = doc.Snapshot(); start = point; screenStart = screen; dragging = true; moveStarted = true; canvas.CaptureMouse();
         CaptureMoveInterimSource();
         status.Text = handle == 8 ? "회전 · Shift: 15° 단위" : handleGesture.Distort ? "원근 왜곡 · 볼록 사각형 범위 · Esc: 취소" : "크기 조절 · Shift: 비율 고정 · Ctrl+꼭짓점: 원근 왜곡";

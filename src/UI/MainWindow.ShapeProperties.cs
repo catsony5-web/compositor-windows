@@ -8,8 +8,10 @@ public sealed partial class MainWindow
 {
     void AddShapeProperties(Layer layer)
     {
+        calloutLabelPanel = null;
         if (layer.Shape is not { } shape) return;
         var content = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+        if (shape.HasPoints) { AddDiagramProperties(layer, shape, content); properties.Children.Add(content); return; }
         content.Children.Add(Theme.Section("도형 크기 · px"));
         content.Children.Add(TransformRow(layer,
             ("너비", shape.Width, 1, Raster.MaxDimension, "도형 너비", (l, v) => VectorShapes.Update(l, l.Shape! with { Width = (int)Math.Round(v) })),
@@ -36,6 +38,9 @@ public sealed partial class MainWindow
         content.Children.Add(TransformRow(layer,
             ("선 두께 · px", shape.StrokeWidth, 0, 512, "선 두께", (l, v) => VectorShapes.Update(l, l.Shape! with { StrokeWidth = v })),
             ("모서리 · px", shape.CornerRadius, 0, 4096, "둥근 모서리", (l, v) => VectorShapes.Update(l, l.Shape! with { CornerRadius = v }))));
+        // Dashed outlines (site boundaries, zones): the same dash rows as lines.
+        AddDashRows(layer, shape, content, (label, change) => { if (Current()) EditLayer(label, l => { if (l.Shape is { } s) VectorShapes.Update(l, change(s)); }); },
+            element => { element.IsEnabled = !IsLockedWithParents(layer); return element; });
         if (shape.Kind == ShapeKind.Ellipse) content.ToolTip = "타원에는 모서리 값이 적용되지 않습니다.";
         properties.Children.Add(content);
     }

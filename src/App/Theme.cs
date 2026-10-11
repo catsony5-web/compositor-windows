@@ -318,6 +318,8 @@ public static class Theme
         public const string Shape = "M5.3 3.5H11.2A1.8 1.8 0 0 1 13 5.3V11.2A1.8 1.8 0 0 1 11.2 13H5.3A1.8 1.8 0 0 1 3.5 11.2V5.3A1.8 1.8 0 0 1 5.3 3.5Z | M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z | *M15.8 10.8A5 5 0 1 0 15.8 20.8A5 5 0 1 0 15.8 10.8Z";
         // Drawing work (사용 목적 · 건축학과): a floor plan with a door swing, and three line weights.
         public const string Plan = "M5 4H19A1 1 0 0 1 20 5V19A1 1 0 0 1 19 20H5A1 1 0 0 1 4 19V5A1 1 0 0 1 5 4Z M12 4V10.5 M4 13H8.5 | ~M12 13.5V20 M12 13.5A6.5 6.5 0 0 1 18.5 20 | *M12 13.5A6.5 6.5 0 0 1 18.5 20H12Z";
+        // 지도 만들기: a folded map with a location pin on its middle panel.
+        public const string Map = "M3.5 6.5L9 4.5L15 6.5L20.5 4.5V17.5L15 19.5L9 17.5L3.5 19.5Z M9 4.5V17.5 M15 6.5V19.5 | ~M12 8.2A2.3 2.3 0 0 1 14.3 10.5C14.3 12.4 12 14.8 12 14.8C12 14.8 9.7 12.4 9.7 10.5A2.3 2.3 0 0 1 12 8.2Z | *M3.5 6.5L9 4.5V17.5L3.5 19.5Z";
         public const string LineWeight = "M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z M4 13H20 | ~M4 18.5H20 | *M5 4.8H19A1 1 0 0 1 20 5.8V7.2A1 1 0 0 1 19 8.2H5A1 1 0 0 1 4 7.2V5.8A1 1 0 0 1 5 4.8Z";
         // 스케치 사진 정리: a sheet seen in perspective with a hand-drawn stroke on it.
         public const string Sketch = "M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z | M8 15.5C9.4 12.2 11 14.6 12.4 11.6C13.6 9.2 15.2 9.6 16.6 7.6 | *M6.5 4.5L18 3.5L20.5 20.5L3.5 19.5Z";
@@ -338,6 +340,9 @@ public static class Theme
         // A cut-out figure standing in front of a large letter T (피사체를 글자 앞으로).
         public const string SubjectFront = "M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z | ~M3 4.5H17 M8.5 4.5V20.5 | *M15.5 6.6A2.7 2.7 0 1 0 15.5 12A2.7 2.7 0 1 0 15.5 6.6Z M10 20.5C10 16.7 12.4 14 15.5 14C18.6 14 21 16.7 21 20.5Z";
         public const string Search = "M10.5 4A6.5 6.5 0 1 0 10.5 17A6.5 6.5 0 1 0 10.5 4Z M15.5 15.5L20 20";
+        // 점경 (entourage): a standing figure beside a tree on a ground line; scattering: three small trees at irregular spacing.
+        public const string Entourage = "M7.5 4.6A1.9 1.9 0 1 0 7.5 8.4A1.9 1.9 0 1 0 7.5 4.6Z M5.3 20V13.6C5.3 11.5 6.3 10.3 7.5 10.3C8.7 10.3 9.7 11.5 9.7 13.6V20 | M16.5 4A4.5 4.5 0 1 0 16.5 13A4.5 4.5 0 1 0 16.5 4Z M16.5 13V20 | ~M3 20.5H21 | *M16.5 4A4.5 4.5 0 1 0 16.5 13A4.5 4.5 0 1 0 16.5 4Z";
+        public const string Scatter = "M6 11.5A2.5 2.5 0 1 0 6 16.5A2.5 2.5 0 1 0 6 11.5Z M12.5 4A3 3 0 1 0 12.5 10A3 3 0 1 0 12.5 4Z M18 9.5A2.5 2.5 0 1 0 18 14.5A2.5 2.5 0 1 0 18 9.5Z | ~M6 16.5V20 M12.5 10V18 M18 14.5V19 | *M12.5 4A3 3 0 1 0 12.5 10A3 3 0 1 0 12.5 4Z";
         // 디자인 스타일: a picture split on its diagonal, one half restyled (tint) and the other screened (strokes).
         public const string Style = "M6 4.5H18A1.5 1.5 0 0 1 19.5 6V18A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z | M5 19L19 5 | ~M11.5 19.5L19.5 11.5 M15.5 19.5L19.5 15.5 | *M6 4.5H18.5L4.5 18.5V6A1.5 1.5 0 0 1 6 4.5Z";
         // 화면 스타일: 친절한 화면 (a window with large cards) and 간결한 화면 (a thin tool column and stacked tab panels).

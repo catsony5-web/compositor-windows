@@ -311,7 +311,7 @@ public sealed partial class MainWindow
             Ok(Call(w, "undo", Edit(w)));
             Check(w.doc.Layers.Count == count && w.doc.Layers.All(l => l.Visible), "Undo did not restore the batch in one step");
             var capabilities = Ok(Call(w, "get_capabilities", new JsonObject()));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 9 && capabilities["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "clean_sketch")
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 10 && capabilities["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "clean_sketch")
                 && capabilities["batch"]!["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "clean_sketch") && capabilities["sketch"]!["command"]!.GetValue<string>() == "clean_sketch", "Capabilities do not advertise clean_sketch");
         });
     }

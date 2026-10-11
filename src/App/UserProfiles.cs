@@ -35,6 +35,8 @@ public static class UserProfiles
     public const string SketchPhoto = "스케치 사진";
     /// <summary>The 디자인 스타일 section of the photo and design panels (MainWindow.DesignStyles.cs).</summary>
     public const string DesignStyle = "디자인 스타일";
+    /// <summary>The design panel's 점경 (entourage library) section (MainWindow.Entourage.cs).</summary>
+    public const string Entourage = "점경";
 
     public static readonly UserProfile Default = new(DefaultId, "기본", "사진 보정과 디자인 작업을 고르게 보여 줍니다.", Theme.Glyphs.Image);
 
@@ -42,15 +44,15 @@ public static class UserProfiles
     public static readonly UserProfile Architecture = new(ArchitectureId, "건축학과", "도면 선 정리와 리터치를 먼저 보여 주고, 발표 보드 크기로 시작합니다.", Theme.Glyphs.Plan)
     {
         TabCaption = "도면", PaneCaption = "도면 작업",
-        PhotoSections = [LineCleanup, Retouch, "배치와 그룹", DesignStyle, SketchPhoto, PhotoLead, "조정 레이어", "선택과 마스크"],
-        DesignSections = [LineCleanup, Retouch, "배치와 그룹", DesignStyle, SketchPhoto, PhotoLead, "조정 레이어", "만들기", "캔버스에 정렬", "색상과 내보내기"],
+        PhotoSections = [LineCleanup, Retouch, "배치와 그룹", DesignStyle, SketchPhoto, Entourage, PhotoLead, "조정 레이어", "선택과 마스크"],
+        DesignSections = [LineCleanup, Retouch, "배치와 그룹", DesignStyle, SketchPhoto, Entourage, PhotoLead, "조정 레이어", "만들기", "캔버스에 정렬", "색상과 내보내기"],
         ToolGroups =
         [
             ("선택", [Tool.Move, Tool.MagicWand, Tool.PolygonLasso, Tool.RectangleSelect, Tool.Lasso, Tool.EllipseSelect]),
             ("리터치", [Tool.Heal, Tool.CloneStamp, Tool.BlurBrush, Tool.Eraser, Tool.Brush, Tool.Smudge, Tool.Liquify]),
-            ("보드", [Tool.Text, Tool.Rectangle, Tool.Ellipse, Tool.Artboard, Tool.Crop]),
+            ("보드", [Tool.Text, Tool.Callout, Tool.Line, Tool.Rectangle, Tool.Ellipse, Tool.Crop]),
             ("색상", [Tool.Bucket, Tool.Eyedropper, Tool.Gradient]),
-            ("보기", [Tool.Hand])
+            ("보기", [Tool.Artboard, Tool.Hand])
         ],
         DesignWorkspace = true,
         QuickSizes =
