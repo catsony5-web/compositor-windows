@@ -60,8 +60,9 @@ public sealed partial class MainWindow
 
     static Rect DocumentBounds(Document document, Layer layer)
     {
-        var bounds = Rect.Empty;
-        foreach (var corner in new[] { new Point(0, 0), new Point(layer.Pixels.Width, 0), new Point(layer.Pixels.Width, layer.Pixels.Height), new Point(0, layer.Pixels.Height) })
+        // Effects (레이어 효과) reach beyond the layer's rectangle and move with it.
+        var bounds = Rect.Empty; var local = LayerEffectRenderer.LocalBounds(layer);
+        foreach (var corner in new[] { local.TopLeft, local.TopRight, local.BottomRight, local.BottomLeft })
             bounds.Union(DocumentFeatures.ToDocumentSpace(document, layer, corner));
         return bounds;
     }

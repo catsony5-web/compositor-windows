@@ -185,7 +185,7 @@ public sealed partial class MainWindow
     bool InspectorHoldsPointer() => Mouse.LeftButton == MouseButtonState.Pressed && Mouse.Captured is Visual held && (ReferenceEquals(held, properties) || properties.IsAncestorOf(held));
 
     // A canvas gesture starts: record a pending material change first, so its undo step comes before the gesture's.
-    void SettleMaterialPreview() { if (materialPreview != null) CommitMaterialPreview(true); }
+    void SettleMaterialPreview() { if (materialPreview != null) CommitMaterialPreview(true); if (effectPreview != null) CommitEffectPreview(true); }
 
     // Re-renders the pixels once and records one undo step. While the slider is still held the
     // commit waits, so the inspector is not rebuilt under the pointer; a forced commit from another

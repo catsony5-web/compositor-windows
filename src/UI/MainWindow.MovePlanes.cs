@@ -149,7 +149,7 @@ public sealed partial class MainWindow
         canvas.MovePreviewBackground = planes.Background; canvas.MovePreviewLayer = textPreviewBitmap;
         canvas.MovePreviewForeground = planes.Foreground; canvas.MovePreviewForegroundTiles = null; canvas.MovePreviewBackgroundTiles = null;
         // The object may have run ahead of the interim frame; show it where it is.
-        if (doc.Layers.Find(l => l.Id == planes.LayerId) is { } layer) canvas.MovePreviewMatrix = layer.Matrix;
+        if (doc.Layers.Find(l => l.Id == planes.LayerId) is { } layer) canvas.MovePreviewMatrix = MoverMatrix(layer);
         canvas.InvalidateVisual();
     }
 
@@ -227,10 +227,10 @@ public sealed partial class MainWindow
         if (lastCompositeMilliseconds >= SpeculativeMovePlaneMilliseconds) EnsureMovePlanes(doc, layer, true, holdFlatten: true);
     }
 
-    // Pixels the object can touch at its current matrix, with an antialiasing margin.
+    // Pixels the object (and its effects) can touch at its current matrix, with an antialiasing margin.
     internal static Int32Rect MoveFootprint(Document document, Layer layer)
     {
-        var bounds = new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height); bounds.Transform(layer.Matrix);
+        var bounds = LayerEffectRenderer.LocalBounds(layer); bounds.Transform(layer.Matrix);
         if (bounds.IsEmpty || !double.IsFinite(bounds.X + bounds.Y + bounds.Width + bounds.Height)) return default;
         int left = (int)Math.Clamp(Math.Floor(bounds.Left) - 2, 0, document.Width), top = (int)Math.Clamp(Math.Floor(bounds.Top) - 2, 0, document.Height);
         int right = (int)Math.Clamp(Math.Ceiling(bounds.Right) + 2, 0, document.Width), bottom = (int)Math.Clamp(Math.Ceiling(bounds.Bottom) + 2, 0, document.Height);
@@ -332,7 +332,7 @@ public sealed partial class MainWindow
             canvas.MovePreviewForeground = null; canvas.MovePreviewForegroundTiles = interim.Foreground;
             interim.FirstFrame.TrySetResult();
         }
-        canvas.MovePreviewMatrix = interim.Mover.Matrix;
+        canvas.MovePreviewMatrix = MoverMatrix(interim.Mover);
         canvas.InvalidateVisual();
     }
 
@@ -342,7 +342,7 @@ public sealed partial class MainWindow
     {
         if (interim.Planes.Ready) return;
         var footprint = MoveFootprint(doc, interim.Mover);
-        if (interim.Shown && MoveTilesReady(interim, footprint)) canvas.MovePreviewMatrix = interim.Mover.Matrix;
+        if (interim.Shown && MoveTilesReady(interim, footprint)) canvas.MovePreviewMatrix = MoverMatrix(interim.Mover);
         else RequestMoveTiles(interim, footprint, true);
     }
 
@@ -435,7 +435,7 @@ public sealed partial class MainWindow
                     runs.Add(([.. members], everywhere)); continue;
                 }
                 if (layer.Warp != null) { runs.Add(([layer], everywhere)); continue; }
-                var bounds = new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height); bounds.Transform(layer.Matrix); bounds.Inflate(2, 2);
+                var bounds = LayerEffectRenderer.LocalBounds(layer); bounds.Transform(layer.Matrix); bounds.Inflate(2, 2);
                 runs.Add(([layer], bounds));
             }
         }

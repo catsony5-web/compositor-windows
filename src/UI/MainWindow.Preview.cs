@@ -189,6 +189,8 @@ public sealed partial class MainWindow
         TrimPreviewTabs();
         RenderShadowPreviews(Capture, CapturePane);
         TrimPreviewTabs();
+        RenderLayerEffectPreviews(directory);
+        TrimPreviewTabs();
         RenderDiagramPreviews(Capture, CapturePane);
         RenderMapPreviews(directory, Capture, CaptureFit);
         // A cleaned-up plan: its hatch materials are listed and edited on the photo layer tab.

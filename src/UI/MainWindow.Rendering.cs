@@ -1,3 +1,4 @@
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -6,6 +7,8 @@ namespace Compositor.Windows;
 public sealed partial class MainWindow
 {
     long renderGeneration;
+    // Grid → local pixels of the moving image (identity unless the layer has effects).
+    Matrix textPreviewOffset = Matrix.Identity;
     CancellationTokenSource? renderCts;
     readonly DispatcherTimer gestureRenderTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
     bool rendering, pendingGestureRender, pendingFullRender;
@@ -153,7 +156,9 @@ public sealed partial class MainWindow
             // Planes made while the object was selected, or kept from its last
             // drag, show at once. Otherwise the composite on screen stands in.
             var planes = textPreviewPlanes = EnsureMovePlanes(doc, layer, false);
-            textPreviewBitmap = layer.Pixels.Bitmap();
+            // A layer with effects moves as one image of itself with its effects, on its effect grid.
+            if (LayerEffects.Any(layer)) { var (pixels, toLocal) = LayerEffectRenderer.Flatten(layer); textPreviewBitmap = pixels.Bitmap(); textPreviewOffset = toLocal; }
+            else { textPreviewBitmap = layer.Pixels.Bitmap(); textPreviewOffset = Matrix.Identity; }
             if (planes.Ready) ShowMovePlanes(planes);
             else if (moveInterimSource is { } source && ReferenceEquals(source.Document, doc) && source.LayerId == layer.Id)
                 StartMoveInterim(planes, source, layer);
@@ -161,7 +166,7 @@ public sealed partial class MainWindow
         }
         // While the interim frame stands in, the object moves only where it is ready.
         if (moveInterim is { } interim && ReferenceEquals(interim.Planes, textPreviewPlanes) && !interim.Planes.Ready) FollowMoveInterim(interim);
-        else canvas.MovePreviewMatrix = layer.Matrix;
+        else canvas.MovePreviewMatrix = MoverMatrix(layer);
         canvas.InvalidateVisual();
         return true;
     }
@@ -183,12 +188,18 @@ public sealed partial class MainWindow
         return MovePreviewPlan(document, layer.Id) != null;
     }
 
-    // What the object itself must satisfy to move as one bitmap over fixed planes.
+    // The moving image is drawn at its grid mapping followed by the layer's transform.
+    Matrix MoverMatrix(Layer layer) { var matrix = textPreviewOffset; matrix.Append(layer.Matrix); return matrix; }
+
+    // What the object itself must satisfy to move as one bitmap over fixed planes. With effects the
+    // bitmap holds the layer and its effects together: that equals the compositor only when shadows and
+    // glows paint normally and the layer's opacity need not reach them separately.
     static bool CanPreviewMover(Document document, Layer layer)
     {
         if (!layer.Visible || layer.Opacity <= 0 || layer.Locked ||
             layer.Kind is not (LayerKind.Raster or LayerKind.Text or LayerKind.Shape or LayerKind.Vector) ||
             layer.Clipped || layer.Mask != null || layer.Warp != null || layer.Blend != BlendMode.Normal) return false;
+        if (LayerEffectRenderer.ReadsBackdrop(layer) || layer.Opacity < 1 && LayerEffectRenderer.HasBehind(layer)) return false;
         // Bound additional raster/WIC copies without limiting document editing.
         // Large or interdependent stacks retain the full compositor path.
         long estimatedBytes = (long)document.Width * document.Height * 16 + layer.Pixels.Data.LongLength;
@@ -228,7 +239,7 @@ public sealed partial class MainWindow
         {
             if (direct.TryGetValue(group.Id, out var known)) return known;
             bool result = depth <= 16 && group.Blend == BlendMode.Normal && !group.Clipped && IsMovePreviewContainer(document, group) &&
-                children[group.Id].All(child => !child.Clipped && child.Blend == BlendMode.Normal && child.Kind != LayerKind.Adjustment &&
+                children[group.Id].All(child => !child.Clipped && child.Blend == BlendMode.Normal && child.Kind != LayerKind.Adjustment && !LayerEffectRenderer.ReadsBackdrop(child) &&
                     (child.Kind != LayerKind.Group || Direct(child, depth + 1)));
             return direct[group.Id] = result;
         }
@@ -248,7 +259,8 @@ public sealed partial class MainWindow
             {
                 var item = items[i];
                 if (item.Id == movingId) { plan.Add((item, output, false)); above = true; painted = true; continue; }
-                if (above && (item.Clipped || item.Kind == LayerKind.Adjustment || item.Blend != BlendMode.Normal)) { failed = true; return; }
+                // A shadow or glow with its own blend mode reads its backdrop, which above the mover includes it.
+                if (above && (item.Clipped || item.Kind == LayerKind.Adjustment || item.Blend != BlendMode.Normal || LayerEffectRenderer.ReadsBackdrop(item))) { failed = true; return; }
                 if (item.Kind != LayerKind.Group)
                 {
                     plan.Add((item, above ? null : output, above));
@@ -296,7 +308,7 @@ public sealed partial class MainWindow
     void ClearTextMovePreview()
     {
         ++textPreviewGeneration; textPreviewCts?.Cancel(); textPreviewCts = null;
-        textPreviewDocument = null; textPreviewLayerId = null; textPreviewBitmap = null;
+        textPreviewDocument = null; textPreviewLayerId = null; textPreviewBitmap = null; textPreviewOffset = Matrix.Identity;
         textPreviewPlanes = null; textPreviewInterim = false; textPreviewFailed = false; canvas.MovePreviewSettled = false;
         moveInterim = null; canvas.MovePreviewForegroundTiles = null; canvas.MovePreviewBackgroundTiles = null;
         // The planes themselves stay cached for the next drag of the same object.

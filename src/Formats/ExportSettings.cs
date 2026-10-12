@@ -32,9 +32,12 @@ public sealed record ExportSettings(ExportFormat Format = ExportFormat.Png, doub
         return Scaled(document, new Rect(0, 0, document.Width, document.Height), w, h, () => DesignRenderer.RenderOutput(document, token), token);
     }
 
-    /// <summary>An area of the document at width×height: redrawn when it holds drawings, otherwise the 1x pixels resized.</summary>
+    /// <summary>
+    /// An area of the document at width×height: redrawn when it holds drawings or layer effects (strokes and
+    /// glows are drawn at the output resolution), otherwise the 1x pixels resized.
+    /// </summary>
     internal static Raster Scaled(Document document, Rect area, int width, int height, Func<Raster> pixels, CancellationToken token)
-        => DesignRenderer.HasRetainedContent(document) || document.Layers.Any(DrawingLayers.IsContainer)
+        => DesignRenderer.HasRetainedContent(document) || document.Layers.Any(DrawingLayers.IsContainer) || document.Layers.Any(LayerEffects.Any)
             ? DesignRenderer.RenderScaled(document, area, width, height, token) : ImportExport.Resize(pixels(), width, height);
 
     /// <summary>

@@ -191,7 +191,7 @@ public sealed partial class MainWindow : Window
         {
             var x = a.Layers[i]; var y = b.Layers[i];
             if (x.Material != y.Material) return false;
-            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Entourage != y.Entourage) return false;
+            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Entourage != y.Entourage || !LayerEffects.Same(x.Effects, y.Effects)) return false;
             if (x.Id != y.Id || x.Name != y.Name || x.Visible != y.Visible || x.Locked != y.Locked || x.Opacity != y.Opacity || x.Blend != y.Blend || x.X != y.X || x.Y != y.Y || x.Scale != y.Scale || x.Rotation != y.Rotation || x.FlipX != y.FlipX || x.FlipY != y.FlipY || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY || x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.Warp != y.Warp || x.Shape != y.Shape || x.Text != y.Text || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) || !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
         }
         return true;
@@ -482,8 +482,8 @@ public sealed partial class MainWindow : Window
     void OnUp(object sender, MouseButtonEventArgs e) => InteractionUp(sender, e);
     void CancelGesture()
     {
-        // A pending material slider change becomes its own undo step before anything else happens.
-        CommitMaterialPreview(true);
+        // A pending material or layer-effect slider change becomes its own undo step before anything else happens.
+        CommitMaterialPreview(true); CommitEffectPreview(true);
         if (resizingBrush) EndBrushResize(true);
         ResetInteractionTransient();
         if (CancelTransformHandle()) return;

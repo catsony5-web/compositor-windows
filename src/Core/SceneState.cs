@@ -65,5 +65,6 @@ public sealed class SceneState
         (l.Clipped ? 1 << 11 : 0) | (l.FlipX ? 1 << 12 : 0) | (l.FlipY ? 1 << 13 : 0) | (l.PassThrough ? 1 << 14 : 0);
     // Value records can be replaced by equal copies; hash their values, as the
     // previous per-frame state hash did. Few layers carry any of them.
-    static int SpecHash(Layer l) => l.Text == null && l.Shape == null && l.Adjustment == null && l.Warp == null ? 0 : HashCode.Combine(l.Text, l.Shape, l.Adjustment, l.Warp);
+    static int SpecHash(Layer l) => l.Text == null && l.Shape == null && l.Adjustment == null && l.Warp == null && l.Effects == null ? 0
+        : HashCode.Combine(l.Text, l.Shape, l.Adjustment, l.Warp, LayerEffects.Hash(l.Effects));
 }

@@ -89,6 +89,10 @@ public sealed partial class MainWindow
         menu.Items.Add(new Separator());
         Item("피사체를 글자 앞으로", "", PlaceSubjectInFront);
         menu.Items.Add(new Separator());
+        Item("획 추가", "", AddStrokeEffect);
+        Item("레이어 효과 복사", "", CopyLayerEffects);
+        Item("레이어 효과 붙여넣기", "", PasteLayerEffects);
+        menu.Items.Add(new Separator());
         Item("레이어 삭제", "", DeleteLayer);
         return menu;
     }

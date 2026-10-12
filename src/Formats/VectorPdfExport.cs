@@ -10,7 +10,8 @@ namespace Compositor.Windows;
 public static class VectorPdfExport
 {
     public static string? Limitation(Document doc) => doc.Layers.Any(l => l.Visible &&
-        (l.Mask != null || l.Clipped || l.Warp != null || l.Kind == LayerKind.Adjustment || l.Blend != BlendMode.Normal || l.Opacity != 1))
+        (l.Mask != null || l.Clipped || l.Warp != null || l.Kind == LayerKind.Adjustment || l.Blend != BlendMode.Normal || l.Opacity != 1 ||
+            LayerEffects.Any(l) && !DrawsEffectsAsVectors(l)))
         ? "마스크·클리핑 레이어·원근·조정·혼합·불투명도 효과가 있는 문서는 합성 PDF로 내보내거나 효과를 먼저 병합해 주세요."
         : null;
     public static void Write(Document doc, Stream output, CancellationToken token = default)
@@ -27,6 +28,15 @@ public static class VectorPdfExport
             {
                 token.ThrowIfCancellationRequested(); if (!layer.Visible) return;
                 var saved = graphics.Save(); Transform(graphics, layer.Matrix);
+                if (layer.Kind != LayerKind.Group && LayerEffects.Any(layer))
+                {
+                    var reach = LayerEffectRenderer.LocalBounds(layer); graphics.IntersectClip(new XRect(reach.X, reach.Y, reach.Width, reach.Height));
+                    DrawStrokeEffects(graphics, layer, true, token);
+                    var inner = graphics.Save(); graphics.IntersectClip(new XRect(0, 0, layer.Pixels.Width, layer.Pixels.Height));
+                    DrawContent(graphics, layer, token); graphics.Restore(inner);
+                    DrawStrokeEffects(graphics, layer, false, token);
+                    graphics.Restore(saved); return;
+                }
                 graphics.IntersectClip(new XRect(0, 0, layer.Pixels.Width, layer.Pixels.Height));
                 if (layer.Kind == LayerKind.Group) foreach (var child in children.GetValueOrDefault(layer.Id) ?? []) Layer(child);
                 else DrawContent(graphics, layer, token);
@@ -82,6 +92,79 @@ public static class VectorPdfExport
             default: throw new NotSupportedException("이 벡터 그리기 종류는 PDF 내보내기를 지원하지 않습니다.");
         }
     }
+    // ---- Layer effects as vectors ------------------------------------------------------------
+
+    /// <summary>
+    /// Text and shapes whose effects are only strokes in opaque colors keep those strokes as vectors:
+    /// the outline of the layer's drawing widened by the stroke (round or square corners).
+    /// Anything else with effects is placed as an image of its visible result.
+    /// </summary>
+    internal static bool DrawsEffectsAsVectors(Layer layer)
+    {
+        var effects = LayerEffects.Active(layer);
+        if (effects.Length == 0 || layer.Kind is not (LayerKind.Text or LayerKind.Shape) || layer.Mask != null || layer.Warp != null) return false;
+        if (!effects.All(e => e.Kind == LayerEffectKind.Stroke && e.Blend == BlendMode.Normal && e.ColorArgb >> 24 == 255)) return false;
+        // An outside stroke runs under the layer; translucent content would show it through.
+        return layer.Kind == LayerKind.Text ? layer.Text!.ColorArgb >> 24 == 255 && (!layer.Text.Outline || layer.Text.OutlineArgb >> 24 == 255)
+            : (!layer.Shape!.FillEnabled || layer.Shape.FillArgb >> 24 is 0 or 255) && (!layer.Shape.StrokeEnabled || layer.Shape.StrokeArgb >> 24 is 0 or 255);
+    }
+
+    /// <summary>
+    /// Draws the stroke effects of <paramref name="layer"/> in its local coordinates, in list order: the outside
+    /// strokes (which go under the layer) when <paramref name="under"/>, otherwise the centre and inside strokes.
+    /// </summary>
+    internal static void DrawStrokeEffects(XGraphics graphics, Layer layer, bool under, CancellationToken token)
+    {
+        var strokes = LayerEffects.Active(layer).Where(e => (e.Position == StrokePosition.Outside) == under).ToArray();
+        if (strokes.Length == 0) return;
+        var outline = Coverage(layer.Kind == LayerKind.Text ? DesignRenderer.TextDrawing(layer.Text!) : ShapeDrawing(layer.Shape!));
+        if (outline == null) return;
+        foreach (var stroke in strokes)
+        {
+            token.ThrowIfCancellationRequested();
+            var color = DocumentFeatures.Color(stroke.ColorArgb);
+            var brush = new XSolidBrush(XColor.FromArgb(Imaging.Byte(255 * stroke.Opacity), color.R, color.G, color.B));
+            var pen = new Pen(Brushes.Black, stroke.Position == StrokePosition.Center ? stroke.Size : stroke.Size * 2)
+            { LineJoin = stroke.Rounded ? PenLineJoin.Round : PenLineJoin.Miter, MiterLimit = 1.5 };
+            var band = outline.GetWidenedPathGeometry(pen);
+            if (stroke.Position == StrokePosition.Inside)
+            {
+                var state = graphics.Save(); graphics.IntersectClip(Path(outline));
+                graphics.DrawPath(brush, Path(band)); graphics.Restore(state);
+            }
+            else graphics.DrawPath(brush, Path(band));
+        }
+    }
+
+    // The area a drawing covers (fills, pens and glyphs) as one outline.
+    static Geometry? Coverage(Drawing drawing)
+    {
+        Geometry? union = null;
+        void Add(Geometry geometry, Matrix transform)
+        {
+            var copy = geometry.CloneCurrentValue();
+            var own = copy.Transform?.Value ?? Matrix.Identity; own.Append(transform); copy.Transform = new MatrixTransform(own);
+            union = union == null ? copy : Geometry.Combine(union, copy, GeometryCombineMode.Union, null);
+        }
+        void Walk(Drawing node, Matrix transform)
+        {
+            switch (node)
+            {
+                case DrawingGroup group:
+                    var inner = group.Transform?.Value ?? Matrix.Identity; inner.Append(transform);
+                    foreach (var child in group.Children) Walk(child, inner);
+                    break;
+                case GeometryDrawing shape:
+                    if (shape.Brush != null) Add(shape.Geometry, transform);
+                    if (shape.Pen is { Thickness: > 0 } pen) Add(shape.Geometry.GetWidenedPathGeometry(pen), transform);
+                    break;
+                case GlyphRunDrawing glyphs: Add(glyphs.GlyphRun.BuildGeometry(), transform); break;
+            }
+        }
+        Walk(drawing, Matrix.Identity);
+        return union;
+    }
+
     static XGraphicsPath Path(Geometry geometry)
     {
         var source = PathGeometry.CreateFromGeometry(geometry);

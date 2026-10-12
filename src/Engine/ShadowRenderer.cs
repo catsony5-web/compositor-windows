@@ -183,7 +183,7 @@ public static class ShadowRenderer
             {
                 var subtree = new Document { Width = width, Height = height, Name = doc.Name };
                 foreach (var source in roots) Include(subtree, source, children, 0, true, source.Clipped && bases.GetValueOrDefault(source.Id) is { } b && members.Contains(b.Id));
-                return roots.Count == 1 && roots[0].Kind is LayerKind.Raster or LayerKind.Shape && !subtree.Layers[0].Clipped
+                return roots.Count == 1 && roots[0].Kind is LayerKind.Raster or LayerKind.Shape && !subtree.Layers[0].Clipped && !LayerEffects.Any(subtree.Layers[0])
                     ? CompositeAlpha(subtree.Layers[0], box, scale, token) : RenderAlpha(subtree, box, scale, token);
             }
             var alpha = direct.Length > 0 ? Alpha(direct) : new byte[checked(box.Width * box.Height)];
@@ -236,7 +236,14 @@ public static class ShadowRenderer
             foreach (var child in Content(children[layer.Id])) Accumulate(child, Map, children, ref bounds, depth + 1, false);
             return;
         }
-        foreach (var corner in new[] { new Point(0, 0), new Point(layer.Pixels.Width, 0), new Point(layer.Pixels.Width, layer.Pixels.Height), new Point(0, layer.Pixels.Height) })
+        // A stroke around the layer (레이어 효과) is part of its form; it reaches beyond the layer's rectangle.
+        var rect = new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height);
+        if (LayerEffects.Supports(layer) && LayerEffects.ForSilhouette(layer.Effects) is { } strokes)
+        {
+            double reach = strokes.Max(e => e.Reach) + 2;
+            rect.Inflate(reach / Math.Max(1e-6, Math.Abs(layer.Scale * layer.ScaleX)), reach / Math.Max(1e-6, Math.Abs(layer.Scale * layer.ScaleY)));
+        }
+        foreach (var corner in new[] { rect.TopLeft, rect.TopRight, rect.BottomRight, rect.BottomLeft })
         {
             var p = Map(corner);
             if (double.IsFinite(p.X) && double.IsFinite(p.Y)) bounds.Union(p);
@@ -247,6 +254,8 @@ public static class ShadowRenderer
     static void Include(Document subtree, Layer layer, ILookup<Guid, Layer> children, int depth, bool root, bool keepClip = false)
     {
         var copy = layer.Snapshot();
+        // Of the layer's effects only strokes widen its form; glows, shadows and overlays cast nothing.
+        copy.Effects = LayerEffects.ForSilhouette(copy.Effects);
         // Entourage casts its whole silhouette, also when it is drawn as lines only (EntourageRenderer.ShadowSource).
         if (copy.Entourage != null) EntourageRenderer.ShadowSource(copy);
         if (root) { copy.ParentId = null; copy.Visible = true; copy.Opacity = 1; copy.Blend = BlendMode.Normal; copy.Clipped = keepClip; }

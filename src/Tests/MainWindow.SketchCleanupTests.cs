@@ -181,7 +181,7 @@ public sealed partial class MainWindow
             }
             var photo = w.doc.Layers[0];
             var row = w.CreateLayerRow(new LayerListEntry(photo, 0, true, true));
-            Check(row.ContextMenu is { } menu && menu.Items.OfType<MenuItem>().Select(i => (string)i.Header).SequenceEqual(["스케치 사진 정리…", "레이어 복제", "이름 변경…", "피사체를 글자 앞으로", "레이어 삭제"]), "The photo row has no right-click menu");
+            Check(row.ContextMenu is { } menu && menu.Items.OfType<MenuItem>().Select(i => (string)i.Header).SequenceEqual(["스케치 사진 정리…", "레이어 복제", "이름 변경…", "피사체를 글자 앞으로", "획 추가", "레이어 효과 복사", "레이어 효과 붙여넣기", "레이어 삭제"]), "The photo row has no right-click menu");
             var text = DocumentFeatures.CreateText(new TextSpec { Content = "글", FontSize = 12 });
             Check(w.CreateLayerRow(new LayerListEntry(text, 0, false, true)).ContextMenu is { } textMenu && !textMenu.Items.OfType<MenuItem>().Any(i => Equals(i.Header, "스케치 사진 정리…")), "A text row offers the photo menu");
             w.doc.ActiveId = Guid.Empty; w.selectedLayers.Clear();
