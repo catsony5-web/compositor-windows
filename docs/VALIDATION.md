@@ -1,3 +1,12 @@
+# Preview 46 validation
+
+- Source self-tests: **974/974 passed** on Windows x64 (942 in Preview 45; +32). The packaged build made by `scripts/Publish.ps1` ran its own self-test with the developer samples supplied and passed every check.
+- Layer effects (+20): stroke widths outside / center / inside on a known shape, color and opacity; glow falloff and reach; color overlay keeping alpha; effect order and on/off; drop shadow distance and angle; project round trip and old-file compatibility; canvas render equal to export render at 1× and 2×; layered .psd with effects drawn into the pixels; PDF/.ai vector strokes for opaque text and shapes; the fast move preview equal to the full render with effects (and falling back for multiply/screen shadows and glows); dirty-rectangle settle and viewport tiles grown by the effects' reach; copy/paste onto several layers; `set_layer_effects` in a batch. 4K cut-out with shadow, glow and stroke: first render 272 ms (73 ms without effects), 122–156 ms after edits, move-preview image 85 ms.
+- Axonometric entourage and plan symbols (+12): every new item renders non-empty and deterministically; ground contact and foreshortening for isometric, dimetric and plan oblique; flips; all 81 Preview 45 drawings unchanged (size, anchor and covered pixels recorded beforehand); scatter on projected ground; projected ground shadows; AI view and projection parameters (a projection on a plan item is refused).
+- AI connection: contract 11, 44 tools, 17 batch step kinds; `tools/qa/automation-smoke.cjs` against the release build. UI text: 3,270 entries per language, 0 missing; English count templates reworded to read correctly for one.
+- Release build reported zero warnings and zero errors; the privacy check passed on the staged index. Offscreen captures in Korean and English reviewed.
+- Not covered offscreen: real mouse interaction with effect sliders and the axonometric palette; effects on groups (not supported yet); click-picking does not include an effect's reach.
+
 # Preview 45 validation
 
 - Source self-tests: **942/942 passed** on Windows x64 (883 in Preview 44; +59). The packaged build made by `scripts/Publish.ps1` ran its own self-test with the developer samples supplied and passed every check.

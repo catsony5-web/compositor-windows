@@ -6,7 +6,7 @@ namespace Compositor.Windows;
 
 public static partial class AutomationCatalog
 {
-    public const int ContractVersion = 10;
+    public const int ContractVersion = 11;
     public const int MaximumBatchSteps = 64;
     public const int MaximumBatchReceipts = 128;
     static readonly string[] BatchCommands = ["add_text", "update_text", "add_shape", "update_shape", "add_callout", "set_layer", "delete_layer", "reorder_layer", "add_adjustment", "apply_material", "update_material", "add_artboard", "update_artboard", "delete_artboard", "clean_sketch", "place_entourage", "set_layer_effects"];

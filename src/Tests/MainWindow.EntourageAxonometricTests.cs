@@ -153,7 +153,7 @@ public sealed partial class MainWindow
             var wrong = Call("place_entourage", Write(("itemId", "tree.axo-round"), ("x", 10), ("y", 10), ("projection", "oblique")));
             Check(wrong["ok"]?.GetValue<bool>() == false && SameDocument(before, w.doc), "An unknown projection was accepted");
             var capabilities = Success(Call("get_capabilities", new JsonObject()));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 10 && capabilities["entourage"]!["views"]!.AsArray().Any(v => v!.GetValue<string>() == "axonometric")
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 11 && capabilities["entourage"]!["views"]!.AsArray().Any(v => v!.GetValue<string>() == "axonometric")
                 && capabilities["entourage"]!["projections"]!.AsArray().Count == 3, "Capabilities do not advertise the axonometric view");
         });
     }
