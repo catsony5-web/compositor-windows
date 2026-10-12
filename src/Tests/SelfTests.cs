@@ -143,6 +143,8 @@ public static class SelfTests
         SelectedLayerExportTests.Run(Test, directory);
         ShadowTests.Run(Test, directory);
         MainWindow.RunShadowCommandTests(Test);
+        LayerEffectTests.Run(Test, directory);
+        MainWindow.RunLayerEffectUiTests(Test);
         EntourageTests.Run(Test, directory);
         MainWindow.RunEntourageTests(Test, directory);
         EntourageAxonometricTests.Run(Test, directory);

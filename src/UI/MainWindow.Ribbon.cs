@@ -281,7 +281,7 @@ public sealed partial class MainWindow
             ("피사체를 글자 앞으로", Theme.Glyphs.SubjectFront), ("지도 만들기", Theme.Glyphs.Map), ("인터넷에서 지도 데이터 받기", Theme.Glyphs.Globe),
             ("그림자", Theme.Glyphs.Shadow), ("한계값", Theme.Glyphs.Threshold), ("망점", Theme.Glyphs.Halftone), ("종이·인쇄 질감", Theme.Glyphs.PaperTexture), ("빛 번짐", Theme.Glyphs.Glow),
             ("디자인 스타일", Theme.Glyphs.Style), ("친절한 화면", Theme.Glyphs.ScreenFriendly), ("간결한 화면", Theme.Glyphs.ScreenCompact),
-            ("점경", Theme.Glyphs.Entourage), ("내 점경", Theme.Glyphs.Entourage)
+            ("점경", Theme.Glyphs.Entourage), ("내 점경", Theme.Glyphs.Entourage), ("획 추가", Theme.Glyphs.StrokeEffect), ("레이어 효과", Theme.Glyphs.Effects)
         ];
         if (Loc.Languages.Any(l => l.Native == label)) return Theme.Glyphs.Globe;
         if (UserProfiles.All.FirstOrDefault(p => p.Name == label) is { } profile) return profile.Glyph;

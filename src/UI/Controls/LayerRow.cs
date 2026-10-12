@@ -39,17 +39,29 @@ public sealed class LayerRow : Grid
             Width = thumbSize, Height = thumbSize, CornerRadius = new CornerRadius(compact ? 2 : 5), BorderThickness = new Thickness(1), BorderBrush = Theme.Stroke,
             Background = ThumbnailBacking(layer), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
         };
+        bool effects = LayerEffects.Any(layer);
         thumb.Child = layer.Kind is LayerKind.Group or LayerKind.Adjustment
             ? Theme.Glyph(layer.Kind == LayerKind.Adjustment ? Theme.Glyphs.Adjustment : layer.Style != null ? Theme.Glyphs.Style : Theme.Glyphs.Folder, compact ? 14 : 16, compact ? Theme.Muted : Theme.Accent, 1.6)
-            : new Image { Source = (layer.Material is { } fill ? MaterialRenderer.PatternThumbnail(fill) : null) ?? layer.Pixels.Thumbnail(), Stretch = Stretch.Uniform, Margin = new Thickness(compact ? 1 : 2) };
+            : new Image { Source = (layer.Material is { } fill ? MaterialRenderer.PatternThumbnail(fill) : null) ?? (effects ? EffectThumbnail(layer) : layer.Pixels.Thumbnail()), Stretch = Stretch.Uniform, Margin = new Thickness(compact ? 1 : 2) };
         content.Children.Add(thumb);
 
         var labels = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = compact ? new Thickness(6, 2, 4, 2) : new Thickness(8, 4, 4, 4) };
-        labels.Children.Add(Loc.Keep(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = layer.Name }));
+        var name = Loc.Keep(new TextBlock { Text = layer.Name, FontSize = Theme.BodySize, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = layer.Name });
+        if (effects)
+        {
+            // fx badge: the layer has live effects (레이어 효과).
+            var nameRow = new DockPanel();
+            var badge = Theme.Glyph(Theme.Glyphs.Effects, compact ? 13 : 14, Theme.Accent, 1.6); badge.Margin = new Thickness(4, 0, 0, 0); badge.VerticalAlignment = VerticalAlignment.Center;
+            Density.Mark(badge, DensityRole.Keep); AutomationProperties.SetName(badge, "레이어 효과");
+            DockPanel.SetDock(badge, Dock.Right); nameRow.Children.Add(badge); nameRow.Children.Add(name);
+            labels.Children.Add(nameRow);
+        }
+        else labels.Children.Add(name);
         var kind = layer.Kind switch { _ when layer.Entourage != null => "점경", LayerKind.Material when LinePatterns.IsPattern(layer.Material?.Asset) => "해치 패턴", LayerKind.Material => "재료 맵핑", LayerKind.Vector => "벡터 원본", LayerKind.Shape => "벡터 도형", LayerKind.Text => "텍스트", LayerKind.Adjustment => "조정", LayerKind.Group when layer.Style != null => "스타일 그룹", LayerKind.Group => "그룹", _ => "이미지" };
         var detail = description ?? $"{kind} · {layer.Opacity * 100:0}%";
         if (layer.Clipped) detail += " · 클리핑";
         if (layer.Mask != null) detail += " · 마스크";
+        if (effects) detail += " · 레이어 효과";
         labels.Children.Add(new TextBlock { Text = detail, Foreground = Theme.Subtle, FontSize = Theme.CaptionSize, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 0), Visibility = compact ? Visibility.Collapsed : Visibility.Visible });
         SetColumn(labels, 1); content.Children.Add(labels);
 
@@ -93,6 +105,13 @@ public sealed class LayerRow : Grid
         var locked = IconButton(LockIcon(layer.Locked, compact), layer.Locked ? "레이어 잠금 해제" : "레이어 잠금", toggleLock, compact);
         AutomationProperties.SetName(locked, $"레이어 잠금: {layer.Name}, {(layer.Locked ? "잠김" : "잠금 해제")}");
         SetColumn(locked, 4); Children.Add(locked);
+    }
+
+    // A thumbnail with the layer's effects; the plain pixels if they cannot be drawn.
+    static System.Windows.Media.Imaging.BitmapSource EffectThumbnail(Layer layer)
+    {
+        try { return LayerEffectRenderer.Thumbnail(layer); }
+        catch (Exception e) when (e is InvalidOperationException or System.IO.InvalidDataException or ArgumentException or OutOfMemoryException) { return layer.Pixels.Thumbnail(); }
     }
 
     // Drawing line work is mostly dark; it sits on paper as it does on the canvas.

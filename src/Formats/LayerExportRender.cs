@@ -72,7 +72,7 @@ internal static class LayerExportRender
             grey.Data[p] = grey.Data[p + 1] = grey.Data[p + 2] = mask?[i] ?? 255; grey.Data[p + 3] = 255;
         }
         var copy = Plain(layer); copy.Kind = LayerKind.Raster; copy.Pixels = grey;
-        copy.Text = null; copy.Shape = null; copy.Vector = null; copy.Material = null; copy.Adjustment = null;
+        copy.Text = null; copy.Shape = null; copy.Vector = null; copy.Material = null; copy.Adjustment = null; copy.Effects = null;
         return Render(document, ancestors, [copy], children, region, token);
     }
 
@@ -91,11 +91,11 @@ internal static class LayerExportRender
         return output;
     }
 
-    /// <summary>Document-space bounding box of a layer's raster, including perspective and ancestor transforms.</summary>
+    /// <summary>Document-space bounding box of a layer's raster and its effects, including perspective and ancestor transforms.</summary>
     internal static Rect DocumentBounds(Layer layer, IReadOnlyList<Layer> ancestors)
     {
-        double w = layer.Pixels.Width, h = layer.Pixels.Height;
-        var points = new[] { new Point(0, 0), new Point(w, 0), new Point(w, h), new Point(0, h) }.Select(layer.Document).ToArray();
+        var local = LayerEffectRenderer.LocalBounds(layer);
+        var points = new[] { local.TopLeft, local.TopRight, local.BottomRight, local.BottomLeft }.Select(layer.Document).ToArray();
         for (int i = ancestors.Count - 1; i >= 0; i--) { var matrix = ancestors[i].Matrix; for (int p = 0; p < points.Length; p++) points[p] = matrix.Transform(points[p]); }
         double left = points.Min(p => p.X), top = points.Min(p => p.Y), right = points.Max(p => p.X), bottom = points.Max(p => p.Y);
         return double.IsFinite(left + top + right + bottom) ? new Rect(left, top, right - left, bottom - top) : Rect.Empty;

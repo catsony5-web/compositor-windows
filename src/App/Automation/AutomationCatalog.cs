@@ -25,7 +25,7 @@ public static partial class AutomationCatalog
 
         public JsonObject Schema()
         {
-            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : ArrayShape == "ids" ? IdArraySchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
+            if (Type == "array") { var items = ArrayShape == null ? BatchStepsSchema() : ArrayShape == "ids" ? IdArraySchema() : ArrayShape == "effects" ? EffectsSchema() : MaterialArraySchema(ArrayShape); items["description"] = Description; return items; }
             if (Type == "object") { var shape = StyleParametersSchema(); shape["description"] = Description; return shape; }
             var schema = new JsonObject { ["type"] = Type, ["description"] = Description };
             if (Minimum is { } min) schema["minimum"] = min;
@@ -284,6 +284,7 @@ public static partial class AutomationCatalog
         Add("update_material", "Change the source material (a registered image by materialId, or a built-in hatch pattern by patternId) or repeat size (tileWidth/tileHeight or scale/verticalRatio), direction, offset, pattern ink, line weight, gradient (gradientAngle, gradientStart, gradientEnd, gradientSeed of dot-gradient and stipple-gradient), opacity and blend of an existing material layer, preserving its boundary and layer transform. Omitted fields keep their values. Can be included in apply_batch.", false,
             Mutation(pattern.Select(p => (p.Key, p.Value)).Append(("layerId", Id)).ToArray()), WriteRequired("layerId"));
         AddEntourageCommands(Add, Mutation, WriteRequired);
+        AddLayerEffectCommands(Add, Mutation, WriteRequired);
         return commands;
     }
 
@@ -317,6 +318,7 @@ public static partial class AutomationCatalog
             {
                 if (field.ArrayShape == null) ValidateBatchSteps(value!.AsArray(), arguments);
                 else if (field.ArrayShape == "ids") ValidateIdArray(value!.AsArray());
+                else if (field.ArrayShape == "effects") ValidateEffectsArray(value!.AsArray());
                 else ValidateMaterialArray(value!.AsArray(), field.ArrayShape);
             }
             else if (field.Type is "boolean" or "object")

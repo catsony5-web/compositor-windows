@@ -138,6 +138,9 @@ public sealed class Layer
     public MapTag? Map { get; set; }
     // 점경: a placed entourage item (Core/Entourage.cs); its vector or image content is regenerated from it.
     public EntourageSpec? Entourage { get; set; }
+    // 레이어 효과 (Core/LayerEffects.cs): an ordered, immutable list drawn from the layer's coverage on every
+    // render. Null when the layer has none. Lists are replaced, never changed in place, so snapshots share them.
+    public LayerEffect[]? Effects { get; set; }
     public Layer Snapshot()
     {
         var copy = (Layer)MemberwiseClone();
@@ -287,6 +290,7 @@ public sealed class Document
         else if (layer.Adjustment != null) throw new InvalidDataException("조정 레이어 종류가 일치하지 않습니다.");
         ShadowSpec.ValidateLayer(layer);
         EntourageSpec.ValidateLayer(layer, validateRasterDimensions);
+        LayerEffects.ValidateLayer(layer);
         if ((layer.PassThrough || layer.Style != null) && layer.Kind != LayerKind.Group) throw new InvalidDataException("디자인 스타일 정보는 그룹에만 둘 수 있습니다.");
         layer.Style?.Validate();
         layer.Map?.Validate();
@@ -360,7 +364,7 @@ public sealed class History
                 x.Kind != y.Kind || x.ParentId != y.ParentId || x.Category != y.Category || x.SourceLayerName != y.SourceLayerName || x.Clipped != y.Clipped || x.ScaleX != y.ScaleX || x.ScaleY != y.ScaleY ||
                 x.Shape != y.Shape || x.Text != y.Text || x.Vector != y.Vector || x.Material != y.Material || x.Warp != y.Warp || !DocumentFeatures.SameAdjustment(x.Adjustment, y.Adjustment) ||
                 !ReferenceEquals(x.Pixels.Data, y.Pixels.Data) || !ReferenceEquals(x.Mask, y.Mask)) return false;
-            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Map != y.Map || x.Entourage != y.Entourage) return false;
+            if (x.Shadow != y.Shadow || x.PassThrough != y.PassThrough || x.Style != y.Style || x.Map != y.Map || x.Entourage != y.Entourage || !LayerEffects.Same(x.Effects, y.Effects)) return false;
         }
         return true;
     }

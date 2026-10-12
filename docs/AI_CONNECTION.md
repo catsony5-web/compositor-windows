@@ -63,7 +63,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ## 할 수 있는 작업
 
-현재 MCP는 다음 **43개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
+현재 MCP는 다음 **44개 도구**를 제공합니다. CLI에서는 앞의 `morupixel_`를 뺀 명령 이름을 사용합니다.
 
 | 작업 | MCP 도구 |
 | --- | --- |
@@ -74,6 +74,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 | 이미지·수정 가능한 문자·도형 | `morupixel_add_image`, `morupixel_add_text`, `morupixel_update_text`, `morupixel_add_shape`, `morupixel_update_shape` |
 | 라벨·지시선 | `morupixel_add_callout` |
 | 레이어 속성·삭제·순서 | `morupixel_set_layer`, `morupixel_delete_layer`, `morupixel_reorder_layer` |
+| 레이어 효과(획·그림자·광선·색 오버레이) | `morupixel_set_layer_effects` |
 | 조정 레이어·AI 배경 제거 | `morupixel_add_adjustment`, `morupixel_remove_background` |
 | 스케치 사진을 선 그림으로 정리 | `morupixel_clean_sketch` |
 | OpenStreetMap 데이터로 지도 포스터·대지 위치도 만들기 | `morupixel_create_map` |
@@ -272,6 +273,27 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 { "command": "place_entourage", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
   "itemId": "person.axo-walking", "x": 1240, "y": 760, "projection": "isometric", "count": 6, "spread": 240, "seed": 2 } }
 ```
+### 레이어 효과 넣기
+
+`set_layer_effects`는 레이어(`layerId`)의 **레이어 효과** 목록을 통째로 바꿉니다. 앱의 속성 패널 **레이어 효과**와 같은 기능으로, 효과는 레이어 내용에서 매번 다시 그려지므로 레이어를 옮기거나 크기·내용을 바꿔도 따라가고 언제든 다시 고칠 수 있습니다. 이미지·텍스트·도형·도면·재료 레이어에 쓸 수 있고 그룹과 조정 레이어는 `wrong_layer_kind`입니다. 실행 취소 한 번으로 되돌리고 `apply_batch` 단계로 쓸 수 있습니다.
+
+- `effects`: 효과 목록(최대 10개). **아래(먼저 그림)에서 위(나중에 그림) 순서**입니다. 빈 배열 `[]`은 효과를 모두 지웁니다.
+- 항목마다 `kind`: `stroke`(획), `drop_shadow`(그림자), `outer_glow`(외부 광선), `inner_glow`(내부 광선), `color_overlay`(색 오버레이), `gradient_overlay`(그라데이션 오버레이). `enabled`(기본 true; 끈 효과도 설정은 남음).
+- 공통: `color`(`#RRGGBB`·`#AARRGGBB`), `opacity`(0~1). 길이(`size`, `distance`)는 부모 레이어 픽셀(최상위 레이어는 문서 픽셀)이며 레이어 배율과 관계없이 유지됩니다. 각도는 0°가 오른쪽, 90°가 아래쪽입니다.
+- `stroke`: `size`(두께, 0.5~250), `position`(`outside`·`center`·`inside`), `rounded`(둥근 모서리, 기본 true).
+- `drop_shadow`: `distance`, `angle`(떨어지는 방향), `size`(부드러움), `spread`(0~1, 진하게 남는 비율), `blend`(`Normal`·`Multiply`).
+- `outer_glow`·`inner_glow`: `size`(번지는 거리), `spread`, `blend`(`Normal`·`Screen`).
+- `color_overlay`: `blend`(`Normal`·`Multiply`·`Screen`·`Color`). 레이어의 투명도는 그대로 두고 색만 바꿉니다(오린 사진·아이콘 색 바꾸기).
+- `gradient_overlay`: `color`(시작)·`endColor`(끝), `angle`(방향), `blend`.
+- 종류에 없는 인자(예: `stroke`의 `distance`)나 허용하지 않는 `blend`는 `invalid_arguments`입니다. 생략한 값은 그 종류의 기본값입니다.
+
+그리는 순서: 그림자와 외부 광선은 레이어 **뒤**(아래 레이어 위)에, 나머지는 레이어 **위**에 목록 순서대로 그립니다. 바깥쪽 획은 레이어 픽셀 밑에 깔리고, 가운데 획은 가장자리에 걸치며, 안쪽 획·내부 광선·오버레이는 레이어가 덮은 곳 안에만 그립니다. 결과의 `effects`와 `get_layer`의 `effects`에는 각 효과의 모든 값이 들어가며, 그대로 `set_layer_effects`에 다시 넘길 수 있습니다(`get_layer`의 `editing.effects`는 고칠 수 있는지). `get_capabilities`의 `layerEffects`에 종류와 규칙이 있습니다. 내보내기: PNG·JPEG·TIFF는 출력 해상도로 다시 그리고, .psd는 효과를 레이어 픽셀에 합쳐 저장하며, PDF·.ai는 텍스트·도형의 획(불투명한 색)만 벡터로 남기고 다른 효과가 있는 레이어는 보이는 모습 그대로 이미지로 넣습니다.
+
+```json
+{ "command": "set_layer_effects", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>", "layerId": "<cut-out layerId>",
+  "effects": [ { "kind": "drop_shadow", "distance": 14, "angle": 60, "size": 20, "opacity": 0.45 },
+               { "kind": "stroke", "size": 12, "color": "#FFFFFF", "position": "outside" } ] } }
+```
 ### AI가 큰 도면을 다루는 순서
 
 1. `get_capabilities`로 현재 편집기의 명령·좌표계·제한을 읽습니다. 새 MCP 실행 파일을 등록해도 이미 열린 이전 버전의 편집기가 업그레이드되지는 않습니다.
@@ -295,7 +317,7 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 `apply_batch`는 최대 64개 편집을 복사본에서 차례로 실행합니다. 하나라도 실패하거나 적용 직전 문서가 달라지면 실제 문서와 실행 취소 기록을 변경하지 않습니다. 성공한 변경은 실행 취소 한 번으로 되돌립니다. 내용이 같으면 실행 취소 기록을 추가하지 않습니다.
 
-묶음에는 `add_text`, `update_text`, `add_shape`, `update_shape`, `add_callout`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`, `place_entourage`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
+묶음에는 `add_text`, `update_text`, `add_shape`, `update_shape`, `add_callout`, `set_layer`, `delete_layer`, `reorder_layer`, `add_adjustment`, `apply_material`, `update_material`, `add_artboard`, `update_artboard`, `delete_artboard`, `clean_sketch`, `place_entourage`, `set_layer_effects`를 사용할 수 있습니다. 대지 단계의 결과에는 `artboardId`가 들어갑니다(사전 검증과 삭제에서는 null). 각 단계에는 명령별 인자만 넣으며 `documentId`와 `expectedRevision`은 묶음 전체에 지정합니다. 새로 만든 객체 ID는 적용 결과에서 받습니다. 같은 묶음 안에서 방금 만든 객체를 쓰려면 단계에 `"ref": "title"`처럼 이름을 붙이고, 뒤 단계의 ID 인자(`layerId`, `artboardId` 등)에 `"@title"`을 넣습니다. 이름은 영문자로 시작하는 64자 이내이며 묶음 안에서 한 번만 쓸 수 있습니다. 사전 검증(`dryRun`)에서도 참조가 풀리고, 없는 이름은 `invalid_arguments`입니다. ID가 아닌 인자(글자 내용 등)의 `@`는 그대로 글자입니다.
 
 파일 가져오기·저장·출력, 재료 등록·영역 캡처, 배경 제거, 디자인 스타일 적용은 묶음에 포함하지 않습니다. 이미지 생성, 3D UV 맵핑, 자동 방 인식, 실측 CAD 축척, 벡터 경로 수정, 그룹 생성은 현재 MCP 지원 범위 밖입니다. 대지는 위의 대지 명령으로 편집합니다. 기능을 추가하는 기준은 [AI 도구 구조](AI_TOOL_ARCHITECTURE.md)에 정리했습니다.
 

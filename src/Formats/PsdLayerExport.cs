@@ -12,7 +12,9 @@ namespace Compositor.Windows;
 /// pixel layers of their visible appearance. An adjustment layer is stored as the adjusted result
 /// of the layers below it, keeping its opacity, blend mode and mask. Each layer is cropped to its
 /// content, and channels use PackBits when that is smaller than raw data. Records are stored
-/// bottom-first as the format specifies.
+/// bottom-first as the format specifies. Layer effects (레이어 효과) are drawn into their layer's pixels
+/// (the layer keeps its name, opacity and blend mode); a masked layer with effects is stored with its
+/// mask applied, since the effects follow the masked shape.
 /// </summary>
 internal static class PsdLayerExport
 {
@@ -37,7 +39,7 @@ internal static class PsdLayerExport
     }
 
     /// <summary>What the export will contain; built without rendering so dialogs can explain it.</summary>
-    internal sealed record Plan(IReadOnlyList<Node> Roots, int Layers, int Folders, int Converted, int Adjustments, int Perspective, int Collapsed)
+    internal sealed record Plan(IReadOnlyList<Node> Roots, int Layers, int Folders, int Converted, int Adjustments, int Perspective, int Collapsed, int Effects = 0)
     {
         public int Records => Layers + Folders * 2;
     }
@@ -70,7 +72,7 @@ internal static class PsdLayerExport
 
     static Plan Build(Document document, Dictionary<Guid, Layer[]> children, int limit)
     {
-        int layers = 0, folders = 0, converted = 0, adjustments = 0, perspective = 0, collapsed = 0;
+        int layers = 0, folders = 0, converted = 0, adjustments = 0, perspective = 0, collapsed = 0, withEffects = 0;
         static bool AllNormal(IEnumerable<Node> nodes) => nodes.All(n => n.Source.Blend == BlendMode.Normal && (n.Kind != NodeKind.Folder || AllNormal(n.Children)));
         bool Covers(Layer layer, Layer[] ancestors, Int32Rect region)
         {
@@ -125,8 +127,10 @@ internal static class PsdLayerExport
                 }
                 else
                 {
-                    node = new Node(layer, ancestors, NodeKind.Pixels) { Members = [LayerExportRender.Plain(layer)], Region = LayerExportRender.Footprint(document, layer, ancestors), HasMask = layer.Mask != null };
+                    bool effects = LayerEffects.Any(layer);
+                    node = new Node(layer, ancestors, NodeKind.Pixels) { Members = [LayerExportRender.Plain(layer, keepMask: effects)], Region = LayerExportRender.Footprint(document, layer, ancestors), HasMask = layer.Mask != null && !effects };
                     if (layer.Kind != LayerKind.Raster) converted++;
+                    if (effects) withEffects++;
                 }
                 if (node.Kind != NodeKind.Folder) { layers++; node.BlendKey = Key(layer.Blend); }
                 node.Hidden = !layer.Visible || orphan;
@@ -135,7 +139,7 @@ internal static class PsdLayerExport
             return nodes;
         }
         var roots = Stack(LayerExportRender.Roots(document), [], 0);
-        return new Plan(roots, layers, folders, converted, adjustments, perspective, collapsed);
+        return new Plan(roots, layers, folders, converted, adjustments, perspective, collapsed, withEffects);
     }
 
     static string Key(BlendMode blend) => PsdCompatibility.Blends.First(p => p.Value == blend).Key;

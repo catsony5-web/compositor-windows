@@ -18,7 +18,7 @@ public static class AutomationProtocolTests
         test("automation catalog advertises session revision and bounded typed arguments without sharing mutable schemas", () =>
         {
             var tools = AutomationCatalog.Tools();
-            Check(tools.Count == 43 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
+            Check(tools.Count == 44 && tools.Select(t => t!["name"]!.GetValue<string>()).Distinct().Count() == tools.Count, "Unexpected or duplicate tools.");
             foreach (var tool in tools)
             {
                 var schema = tool!["inputSchema"]!.AsObject();
@@ -92,7 +92,7 @@ public static class AutomationProtocolTests
                 "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"]);
             Check(replies.Count == 3 && replies[0]["id"]!.GetValue<string>() == "initialize-id", "Notification reply or changed request ID.");
             Check(replies[0]["result"]!["protocolVersion"]!.GetValue<string>() == AutomationMcpServer.LegacyVersion, "Unsupported legacy version must negotiate the supported one.");
-            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 43 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
+            Check(replies[1]["result"]!["tools"]!.AsArray().Count == 44 && replies[2]["result"]!.AsObject().Count == 0, "Legacy tool list/ping failed.");
         });
 
         test("MCP modern discovery requires request metadata reports versions and includes complete cache metadata", () =>
@@ -132,7 +132,7 @@ public static class AutomationProtocolTests
         {
             var schema = AutomationCatalog.Tools().Single(t => t!["name"]!.GetValue<string>() == "morupixel_apply_batch")!["inputSchema"]!;
             var stepsSchema = schema["properties"]!["steps"]!;
-            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 16,
+            Check(stepsSchema["maxItems"]!.GetValue<int>() == 64 && stepsSchema["items"]!["oneOf"]!.AsArray().Count == 17,
                 "Atomic edits must advertise their supported typed steps");
             var args = Mutation(); args["sessionId"] = Session; args["operationId"] = "55555555-5555-4555-8555-555555555555";
             args["dryRun"] = true;

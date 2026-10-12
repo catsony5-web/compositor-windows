@@ -34,8 +34,8 @@ public sealed partial class MainWindow
                     var inPalette = palette == null ? [] : Descendants(palette).ToHashSet();
                     Check(design == (palette != null), "The 점경 palette is not (only) in the design panel");
                     var buttons = Descendants(window.studioContents[0]).OfType<Button>().Where(b => !inPalette.Contains(b)).ToArray();
-                    // Photo: 16 commands + 스케치 사진 정리 + four 스타일 효과 tiles + 피사체를 글자 앞으로 + 디자인 스타일; design: 16 + 선 · 곡선 + 지시선 + 피사체를 글자 앞으로 + 디자인 스타일 + the two 지도 commands.
-                    Check(buttons.Length == (design ? 22 : 23), "Quick actions are missing or duplicated");
+                    // Photo: 16 commands + 스케치 사진 정리 + four 스타일 효과 tiles + 피사체를 글자 앞으로 + 획 추가 + 디자인 스타일; design: 16 + 선 · 곡선 + 지시선 + 피사체를 글자 앞으로 + 획 추가 + 디자인 스타일 + the two 지도 commands.
+                    Check(buttons.Length == (design ? 23 : 24), "Quick actions are missing or duplicated");
                     Check(buttons.All(b => b.Content is not string && !string.IsNullOrWhiteSpace(AutomationProperties.GetName(b)) && b.ToolTip is string { Length: > 0 }), "A quick action is text-only or lacks a name or tooltip");
                     var names = buttons.Select(AutomationProperties.GetName).ToArray();
                     Check(names.Distinct().Count() == names.Length && names.All(n => !n.Contains('…') && !n.Contains("...")), "Quick action names repeat or are abbreviated");
