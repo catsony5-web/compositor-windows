@@ -145,6 +145,8 @@ public static class SelfTests
         MainWindow.RunShadowCommandTests(Test);
         EntourageTests.Run(Test, directory);
         MainWindow.RunEntourageTests(Test, directory);
+        EntourageAxonometricTests.Run(Test, directory);
+        MainWindow.RunEntourageAxonometricTests(Test);
         MainWindow.RunMixedWorkspaceTests(Test);
         VectorShapeTests.Run(Test, directory);
         DiagramShapeTests.Run(Test, directory);

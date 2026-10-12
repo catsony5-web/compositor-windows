@@ -20,7 +20,7 @@ public static partial class AutomationCatalog
         "export_image writes PNG/JPEG/TIFF; export_document writes PDF, .psd or .ai with layers kept or flattened, exactly as the app's export dialog. " +
         "clean_sketch turns a photographed hand sketch layer into clean line art (sheet found automatically or from corners; the photo stays hidden). " +
         "create_map makes a map poster or site location map from an OpenStreetMap .osm/.geojson file; online data only when the user allowed it in the app (online_map_not_allowed otherwise). Keep its © OpenStreetMap contributors attribution. " +
-        "query_entourage lists people, trees, vehicles and street furniture (entourage); place_entourage stands one on a ground point (or centres a plan symbol) at a real height in metres, scatters several, or restyles a placed one. " +
+        "query_entourage lists people, trees, vehicles and street furniture (entourage); place_entourage stands one on a ground point (or centres a plan symbol; axonometric items stand on the projected ground in an isometric, dimetric or plan-oblique projection) at a real height in metres, scatters several, or restyles a placed one. " +
         "Image generation belongs to the user's separate AI provider. Never substitute bounding boxes for room boundaries. " +
         "Verify returned revision and preview. Unsupported capabilities must not be simulated or claimed as completed. " +
         "If an older editor rejects get_capabilities, use only its legacy commands; do not assume the adapter upgrades that editor.";

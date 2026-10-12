@@ -10,8 +10,14 @@ namespace Compositor.Windows;
 // placed as image layers that carry their original. Both keep an EntourageSpec, so size, colour,
 // fill and shape variant stay editable after placement.
 public enum EntourageCategory { People, Plants, Vehicles, Props }
-// Elevation also serves sections and axonometric boards; plan is the top-down symbol.
-public enum EntourageView { Elevation, Plan }
+// Elevation also serves sections; plan is the top-down symbol; axonometric items are drawn in a
+// parallel projection (EntourageProjection) and stand on the projected ground plane.
+public enum EntourageView { Elevation, Plan, Axonometric }
+// Parallel projections of axonometric items, all with vertical lines kept vertical. Isometric: the
+// plan axes 30° from the horizontal, every axis true length. Dimetric: plan axes on a 2:1 slope
+// (about 26.6°), verticals 1.1× as an orthographic view from 30° above. Military (plan oblique): the
+// plan turned 45° and kept true shape, verticals true length.
+public enum EntourageProjection { Isometric, Dimetric, Military }
 // None: lines only. White / Gray: the silhouette filled under the lines. Solid: the silhouette in the line colour.
 // A user's photo cut-out reads them as original colours / faded / greyscale / silhouette.
 public enum EntourageFill { None, White, Gray, Solid }
@@ -37,7 +43,15 @@ public sealed record EntourageSpec
     public uint LineArgb { get; init; } = DefaultLine;
     public EntourageFill Fill { get; init; } = EntourageFill.White;
     public double LineWeight { get; init; } = 1;
-    public EntourageView View { get; init; }
+    // Saved as two fields so that versions without the axonometric view read an axonometric item as an
+    // elevation item they do not know (kept as drawn) instead of refusing the document.
+    [JsonIgnore] public EntourageView View { get; init; }
+    [JsonInclude, JsonPropertyName("View")]
+    EntourageView SavedView { get => View == EntourageView.Axonometric ? EntourageView.Elevation : View; init { if (View != EntourageView.Axonometric) View = value; } }
+    [JsonInclude, JsonPropertyName("Axonometric"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    bool SavedAxonometric { get => View == EntourageView.Axonometric; init { if (value) View = EntourageView.Axonometric; } }
+    // Axonometric items: the projection they are drawn in (items of one drawing share it).
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public EntourageProjection Projection { get; init; }
     // 내 점경 only: the image is a line drawing (ink coverage recoloured with the line colour)
     // rather than a cut-out photo or drawing in its own colours.
     public bool LineDrawing { get; init; }
@@ -59,11 +73,12 @@ public sealed record EntourageSpec
         static bool In(double n, double low, double high) => double.IsFinite(n) && n >= low && n <= high;
         if (!IsValidId(ItemId)) throw new InvalidDataException("점경 항목 ID가 올바르지 않습니다.");
         if (Variant < 0 || Variant > MaxVariant || !In(Meters, MinMeters, MaxMeters) || !In(PixelsPerMeter, MinPixelsPerMeter, MaxPixelsPerMeter) ||
-            !In(LineWeight, MinLineWeight, MaxLineWeight) || !Enum.IsDefined(Fill) || !Enum.IsDefined(View) || LineArgb >> 24 == 0)
+            !In(LineWeight, MinLineWeight, MaxLineWeight) || !Enum.IsDefined(Fill) || !Enum.IsDefined(View) || !Enum.IsDefined(Projection) || LineArgb >> 24 == 0)
             throw new InvalidDataException("점경 크기·축척·선 설정이 올바르지 않습니다.");
         if (SizePixels > MaxSide) throw new InvalidDataException($"점경은 긴 변 {MaxSide:N0}px까지 놓을 수 있습니다. 높이나 축척을 줄이세요.");
         if (Source != null && !IsCustom) throw new InvalidDataException("내장 점경에는 원본 이미지가 없습니다.");
         if (LineDrawing && !IsCustom) throw new InvalidDataException("선 그림 표시는 내 점경에만 쓸 수 있습니다.");
+        if (IsCustom && View == EntourageView.Axonometric) throw new InvalidDataException("내 점경은 입면·단면이나 평면으로 놓습니다.");
     }
 
     // A layer keeps its entourage description only for its own kind: built-in items are vector

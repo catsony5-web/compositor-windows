@@ -72,6 +72,9 @@ async function main() {
   const entourage = data(await call('query_entourage', { category: 'people', view: 'elevation' })); assert(entourage.items.length >= 6 && entourage.items.every(i => i.category === 'people'));
   await edit('place_entourage', { itemId: 'person.walking', x: 480, y: 560, height: 1.7, fill: 'solid', lineColor: '#FFFFFF', count: 3, spread: 300, seed: 2 }); assert.equal(state.layerIds.length, 3);
   await edit('undo'); checks.push('Entourage is listed, scattered as one undo step and undone');
+  const axonometric = data(await call('query_entourage', { view: 'axonometric' })); assert(axonometric.items.length >= 15 && axonometric.items.every(i => i.view === 'axonometric' && i.projections.length === 3));
+  await edit('place_entourage', { itemId: 'tree.axo-round', x: 300, y: 520, projection: 'military', count: 3, spread: 160, seed: 4 }); assert.equal(state.layerIds.length, 3);
+  await edit('undo'); checks.push('Axonometric entourage is listed, scattered on the projected ground in one undo step and undone');
   await edit('set_layer', { layerId: imageId, scaleX: .24, scaleY: .24 });
   await edit('reorder_layer', { layerId: imageId, direction: 'down' });
   await edit('add_adjustment', { kind: 'exposure', exposure: .1, name: '밝기' });

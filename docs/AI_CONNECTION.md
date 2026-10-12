@@ -253,21 +253,24 @@ MCP는 편집 도구 연결이며 이미지 생성 구독이나 API 사용 권�
 
 ### 점경 놓기
 
-`query_entourage`는 앱의 **점경** 라이브러리를 돌려줍니다. 내장 점경은 Morupixel이 코드로 직접 그린 선 그림이며(사람 · 나무 · 식물 · 탈것 · 소품, 입면·단면과 평면), 각 항목에 `itemId`(예: `person.walking`, `tree.round`, `car.plan`), 한국어 이름과 표시 이름, `category`(`people`·`plants`·`vehicles`·`props`), `view`(`elevation`·`plan`), 기본 크기 `defaultHeight`(미터), 기본 채우기 `defaultFill`, 모양 변형 수 `variants`, 검색어 `keywords`가 들어갑니다. 이어서 사용자의 **내 점경**(이 PC의 목록과 문서가 가진 항목, `itemId: "custom:<32자리 16진수>"`, `lineDrawing`, `inLibrary`, `inDocument`)이 `custom`에 들어갑니다. `category`·`view`·`nameContains`로 거를 수 있고 문서가 없어도 됩니다. `documentId`(생략 시 현재 문서)가 있으면 그 문서의 점경 축척 `scale`(`pixelsPerMeter`, 1.7 m 사람의 px `personPixels`, 근거 `basis`: `user` 사용자가 정한 값, `document_entourage` 이미 놓인 점경, `default_1_to_100_at_dpi` 문서 DPI의 1:100)과 놓인 점경 목록 `placed`(`layerId`, `itemId`, `height`, `pixelsPerMeter`, `fill`, `lineColor`, `lineWeight`, `variant`, `flip`, 문서 픽셀 기준 `anchor`)도 돌려줍니다.
+`query_entourage`는 앱의 **점경** 라이브러리를 돌려줍니다. 내장 점경은 Morupixel이 코드로 직접 그린 선 그림이며(사람 · 나무 · 식물 · 탈것 · 소품, 입면·단면, 평면, 액소노메트릭), 각 항목에 `itemId`(예: `person.walking`, `tree.round`, `car.plan`, `person.plan-pair`, `tree.axo-round`), 한국어 이름과 표시 이름, `category`(`people`·`plants`·`vehicles`·`props`), `view`(`elevation`·`plan`·`axonometric`), 기본 크기 `defaultHeight`(미터), 기본 채우기 `defaultFill`, 모양 변형 수 `variants`, 검색어 `keywords`, 액소노메트릭 점경은 그릴 수 있는 투상 `projections`(`isometric`·`dimetric`·`military`, 다른 보기는 null)가 들어갑니다. 이어서 사용자의 **내 점경**(이 PC의 목록과 문서가 가진 항목, `itemId: "custom:<32자리 16진수>"`, `lineDrawing`, `inLibrary`, `inDocument`)이 `custom`에 들어갑니다. `category`·`view`·`nameContains`로 거를 수 있고 문서가 없어도 됩니다. `documentId`(생략 시 현재 문서)가 있으면 그 문서의 점경 축척 `scale`(`pixelsPerMeter`, 1.7 m 사람의 px `personPixels`, 근거 `basis`: `user` 사용자가 정한 값, `document_entourage` 이미 놓인 점경, `default_1_to_100_at_dpi` 문서 DPI의 1:100), 액소노메트릭 점경의 투상 `axonometric`(`projection`, 근거 `basis`: `user`·`document_entourage`·`default_isometric`)과 놓인 점경 목록 `placed`(`layerId`, `itemId`, `view`, `projection`, `height`, `pixelsPerMeter`, `fill`, `lineColor`, `lineWeight`, `variant`, `flip`, 문서 픽셀 기준 `anchor`)도 돌려줍니다.
 
-`place_entourage`는 점경 하나를 `x`, `y`(문서 픽셀)에 놓습니다. 이 점은 입면·단면 점경에서는 **바닥점**(발끝·밑동·바퀴가 닿는 곳, 바닥선)이고 평면 점경에서는 **가운데**입니다. 실행 취소 한 번으로 되돌리고 `apply_batch` 단계로 쓸 수 있습니다.
+`place_entourage`는 점경 하나를 `x`, `y`(문서 픽셀)에 놓습니다. 이 점은 입면·단면 점경에서는 **바닥점**(발끝·밑동·바퀴가 닿는 곳, 바닥선), 평면 점경에서는 **가운데**, 액소노메트릭 점경에서는 투상된 바닥 위의 **바닥점**(발밑·밑동, 자동차·벤치는 바닥 면의 가운데)입니다. 실행 취소 한 번으로 되돌리고 `apply_batch` 단계로 쓸 수 있습니다.
 
-- `height`: 실제 크기(미터). 입면은 바닥에서 꼭대기까지 높이, 평면은 긴 쪽 길이(나무는 수관 지름). 생략하면 항목의 기본 크기(사람 1.7 m, 둥근 활엽수 8 m 등).
+- `height`: 실제 크기(미터). 입면·액소노메트릭은 바닥에서 꼭대기까지 높이, 평면은 긴 쪽 길이(나무는 수관 지름). 생략하면 항목의 기본 크기(사람 1.7 m, 둥근 활엽수 8 m 등).
+- `projection`(액소노메트릭 점경만): `isometric`(등각, 두 평면 축이 수평에서 30°, 모든 축 실제 길이), `dimetric`(이등각, 평면 축이 2:1 기울기, 수직 ×1.1), `military`(평면 사투상, 평면을 45° 돌려 그대로, 수직 실제 길이). 생략하면 문서에 놓인 액소노메트릭 점경의 투상(없으면 `isometric`)이고, 한 도면의 점경은 같은 투상을 쓰는 것이 좋습니다. 다른 보기의 점경에 주면 `invalid_arguments`입니다.
 - `pixelsPerMeter`: 축척(1 m가 몇 px인지). 생략하면 `query_entourage`의 `scale`과 같습니다. 크기 × 축척이 긴 변 4,096px를 넘으면 `invalid_arguments`입니다.
-- `fill`: `none`(선만), `white`·`gray`(실루엣을 흰색·회색으로 채움), `solid`(선 색 실루엣). 내 점경 사진은 원본 색·흐리게·회색조·실루엣입니다. `lineColor`: `#RRGGBB`·`#AARRGGBB`. `lineWeight`: 0.25~4(1은 축척에 맞춘 굵기로, 같은 축척의 점경은 같은 굵기). `flip`: 좌우 뒤집기. `variant`: 같은 항목의 다른 모양.
-- `count`(2~24): 크기·뒤집기·모양을 조금씩 달리해 자연스럽게 흩어 놓고 새 그룹으로 묶습니다. 입면은 `x`를 가운데로 너비 `spread` px의 바닥선 위에, 평면은 반지름 `spread` px 안에 놓고(평면 점경은 방향도 돌림), `seed`가 같으면 같은 배치입니다. 결과의 `layerId`는 그룹이고 `layerIds`에 점경들이 들어갑니다.
-- `layerId`(`itemId`·`x`·`y` 대신): 이미 놓인 점경의 크기·축척·채우기·색·굵기·뒤집기·모양을 바꿉니다. 지정하지 않은 값은 유지하고 바닥점은 그대로입니다. `height`나 `pixelsPerMeter`를 주면 손잡이로 바꾼 크기는 지웁니다.
+- `fill`: `none`(선만), `white`·`gray`(실루엣을 흰색·회색으로 채움), `solid`(선 색 실루엣). 내 점경 사진은 원본 색·흐리게·회색조·실루엣입니다. `lineColor`: `#RRGGBB`·`#AARRGGBB`. `lineWeight`: 0.25~4(1은 축척에 맞춘 굵기로, 같은 축척의 점경은 같은 굵기). `flip`: 좌우 뒤집기(액소노메트릭에서는 두 평면 축이 서로 바뀌어 같은 바닥에서 다른 쪽을 향함). `variant`: 같은 항목의 다른 모양.
+- `count`(2~24): 크기·뒤집기·모양을 조금씩 달리해 자연스럽게 흩어 놓고 새 그룹으로 묶습니다. 입면은 `x`를 가운데로 너비 `spread` px의 바닥선 위에, 평면은 반지름 `spread` px 안에 놓고(평면 점경은 방향도 돌림), 액소노메트릭은 투상된 바닥 위 반지름 `spread` px(평면 축 방향 길이)의 원(화면에서는 타원) 안에 바닥 기준 간격으로 놓습니다. `seed`가 같으면 같은 배치입니다. 결과의 `layerId`는 그룹이고 `layerIds`에 점경들이 들어갑니다.
+- `layerId`(`itemId`·`x`·`y` 대신): 이미 놓인 점경의 크기·축척·채우기·색·굵기·뒤집기·모양·투상을 바꿉니다. 지정하지 않은 값은 유지하고 바닥점은 그대로입니다. `height`나 `pixelsPerMeter`를 주면 손잡이로 바꾼 크기는 지웁니다.
 
 내장 점경은 경로를 보관하는 벡터 레이어라 확대해도 선명하고 PDF·.ai 내보내기에서도 벡터로 남습니다. 내 점경은 원본 이미지를 함께 저장한 이미지 레이어입니다. `get_layer`의 `entourage`에 같은 정보가 들어갑니다. 없는 항목은 `entourage_not_found`, 점경이 아닌 레이어는 `wrong_layer_kind`입니다.
 
 ```json
 { "command": "place_entourage", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
   "itemId": "tree.round", "x": 820, "y": 1080, "height": 9, "count": 5, "spread": 900, "seed": 3, "fill": "white" } }
+{ "command": "place_entourage", "arguments": { "documentId": "<documentId>", "expectedRevision": "<revision>",
+  "itemId": "person.axo-walking", "x": 1240, "y": 760, "projection": "isometric", "count": 6, "spread": 240, "seed": 2 } }
 ```
 ### AI가 큰 도면을 다루는 순서
 

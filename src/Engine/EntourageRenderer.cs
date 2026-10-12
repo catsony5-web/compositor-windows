@@ -10,8 +10,9 @@ public sealed record EntouragePlacement(Point Anchor, double Meters, bool Flip, 
 /// <summary>
 /// Turns an EntourageSpec into layer content. Built-in items become retained vector paths (crisp at
 /// any zoom and exported as vectors) with a same-size preview; 내 점경 become image layers styled from
-/// their original. Every item has an anchor: the ground point under an elevation item (its base) or
-/// the centre of a plan symbol. Placing and restyling keep that anchor where it was.
+/// their original. Every item has an anchor: the ground point under an elevation item (its base), the
+/// centre of a plan symbol, or the ground point of an axonometric item (the middle of its footprint on
+/// the projected ground). Placing and restyling keep that anchor where it was.
 /// </summary>
 public static class EntourageRenderer
 {
@@ -42,12 +43,17 @@ public static class EntourageRenderer
         };
     }
 
-    /// <summary>A new spec for an item with its defaults at a scale.</summary>
-    public static EntourageSpec Spec(EntourageItem item, double pixelsPerMeter, int variant = 0) => new()
+    /// <summary>A new spec for an item with its defaults at a scale (axonometric items in the projection given).</summary>
+    public static EntourageSpec Spec(EntourageItem item, double pixelsPerMeter, int variant = 0, EntourageProjection projection = EntourageProjection.Isometric) => new()
     {
         ItemId = item.Id, View = item.View, Meters = item.DefaultMeters, PixelsPerMeter = pixelsPerMeter, Fill = item.DefaultFill,
-        Variant = item.Variants <= 1 ? 0 : ((variant % item.Variants) + item.Variants) % item.Variants
+        Variant = item.Variants <= 1 ? 0 : ((variant % item.Variants) + item.Variants) % item.Variants,
+        Projection = item.View == EntourageView.Axonometric ? projection : EntourageProjection.Isometric
     };
+
+    /// <summary>The projection axonometric entourage in this document already uses (the topmost placed item), or null.</summary>
+    public static EntourageProjection? DocumentProjection(Document doc) =>
+        doc.Layers.LastOrDefault(l => l.Entourage is { View: EntourageView.Axonometric, IsCustom: false })?.Entourage!.Projection;
 
     // ---- Built-in vector items -----------------------------------------------------------------
 
@@ -56,9 +62,10 @@ public static class EntourageRenderer
     static Frame Measure(EntourageSpec spec)
     {
         var item = EntourageLibrary.Find(spec.ItemId) ?? throw new InvalidDataException($"알 수 없는 점경 항목입니다: {spec.ItemId}");
-        var art = EntourageLibrary.Art(item, spec.Variant); var b = art.Bounds;
-        // Elevation: height above the ground line; plan: the longer side.
-        double size = spec.View == EntourageView.Plan || item.View == EntourageView.Plan ? Math.Max(b.Width, b.Height) : Math.Max(1, -b.Top);
+        var art = EntourageLibrary.Art(item, spec.Variant, spec.Projection); var b = art.Bounds;
+        // Elevation: height above the ground line; plan: the longer side; axonometric: the modelled height.
+        double size = item.View == EntourageView.Axonometric ? art.ModelHeight
+            : spec.View == EntourageView.Plan || item.View == EntourageView.Plan ? Math.Max(b.Width, b.Height) : Math.Max(1, -b.Top);
         double scale = spec.SizePixels / size, pen = BasePen(spec.PixelsPerMeter) * spec.LineWeight;
         double pad = Math.Ceiling(pen + 1.5);
         int width = Math.Max(1, (int)Math.Ceiling(b.Width * scale + 2 * pad)), height = Math.Max(1, (int)Math.Ceiling(b.Height * scale + 2 * pad));
@@ -262,16 +269,34 @@ public static class EntourageRenderer
         catch (InvalidDataException) { }
     }
 
+    /// <summary>
+    /// A ground shadow for axonometric items: a sun direction on the ground (degrees from the first
+    /// plan axis toward the second; the default falls to the back right) and its height above the
+    /// horizon turned into the direction and length the shadow takes on the projected ground.
+    /// </summary>
+    public static ShadowSpec AxonometricShadow(EntourageProjection projection, ShadowSpec spec, double azimuth = -70, double altitude = 40)
+    {
+        var p = AxoProjection.Of(projection); double a = azimuth * Math.PI / 180;
+        var screen = p.X * Math.Cos(a) + p.Y * Math.Sin(a);
+        double angle = Math.Atan2(screen.Y, screen.X) * 180 / Math.PI; if (angle < 0) angle += 360;
+        // The ground shadow's length per unit of height on the sheet: ground length over the projected vertical.
+        double ratio = screen.Length / (Math.Tan(altitude * Math.PI / 180) * p.VerticalScale);
+        double elevation = Math.Clamp(Math.Atan(1 / ratio) * 180 / Math.PI, ShadowSpec.MinElevation, ShadowSpec.MaxElevation);
+        return spec with { Angle = Math.Round(angle, 1), Elevation = Math.Round(elevation, 1) };
+    }
+
     // ---- Natural scatter ---------------------------------------------------------------------
 
     /// <summary>
     /// Positions for several copies of one item: along the ground line of `area` (or around `center`)
-    /// in elevation, spread over `area` (or a disc around `center`) in plan, each with a slight size
-    /// change, a random flip and shape variant, and (plan) a random turn. The same seed gives the same
-    /// arrangement. `inside` limits plan positions to a selection.
+    /// in elevation, spread over `area` (or a disc around `center`) in plan, over `area` or a disc on
+    /// the projected ground (an ellipse in isometric and dimetric) in axonometric, each with a slight
+    /// size change, a random flip and shape variant, and (plan) a random turn. Axonometric spacing is
+    /// measured on the ground, not on the sheet. The same seed gives the same arrangement. `inside`
+    /// limits plan and axonometric positions to a selection.
     /// </summary>
     public static IReadOnlyList<EntouragePlacement> Scatter(EntourageCategory category, EntourageView view, double meters, double pixelsPerMeter, double footprint,
-        int variants, int count, Point center, Rect? area, Func<Point, bool>? inside, int seed)
+        int variants, int count, Point center, Rect? area, Func<Point, bool>? inside, int seed, EntourageProjection projection = EntourageProjection.Isometric)
     {
         count = Math.Clamp(count, 1, 64);
         var random = new EntourageRandom((ulong)(uint)seed * 0x9E3779B97F4A7C15UL + 17);
@@ -291,6 +316,30 @@ public static class EntourageRenderer
                 result.Add(Make(new Point(x, ground)));
             }
             return result;
+        }
+        if (view == EntourageView.Axonometric)
+        {
+            // A disc of ground around the centre (or the selection on the sheet); distances on the ground.
+            var p = AxoProjection.Of(projection);
+            double groundRadius = width * (.75 + .55 * Math.Sqrt(count)), spacing = width * .95;
+            Point Sheet(double gx, double gy) => center + p.X * gx + p.Y * gy;
+            Rect box = area ?? Rect.Union(Rect.Union(new Rect(Sheet(-groundRadius, -groundRadius), Sheet(groundRadius, groundRadius)), Sheet(groundRadius, -groundRadius)), Sheet(-groundRadius, groundRadius));
+            bool OnGround(Point q) { var g = p.Ground(q - center); return g.Length <= groundRadius; }
+            bool Fits(Point q) => area != null ? inside?.Invoke(q) ?? box.Contains(q) : OnGround(q);
+            for (int i = 0; i < count; i++)
+            {
+                Point? best = null; double bestDistance = -1;
+                for (int attempt = 0; attempt < 40; attempt++)
+                {
+                    var q = new Point(box.Left + random.Unit() * box.Width, box.Top + random.Unit() * box.Height);
+                    if (!Fits(q)) continue;
+                    double nearest = result.Count == 0 ? double.MaxValue : result.Min(r => p.Ground(r.Anchor - q).Length);
+                    if (nearest >= spacing) { best = q; break; }
+                    if (nearest > bestDistance) { bestDistance = nearest; best = q; }
+                }
+                if (best is { } chosen) result.Add(Make(chosen));
+            }
+            return result.OrderBy(q => q.Anchor.Y).ToList();
         }
         double radius = Math.Max(width, size) * (.55 + .5 * Math.Sqrt(count));
         Rect bounds = area ?? new Rect(center.X - radius, center.Y - radius, radius * 2, radius * 2);

@@ -54,7 +54,8 @@ public static class EntourageTests
         {
             var ids = EntourageLibrary.All.Select(i => i.Id).ToArray();
             Check(ids.Distinct().Count() == ids.Length && ids.All(EntourageSpec.IsValidId), "Duplicate or malformed entourage ids");
-            Check(ids.SequenceEqual(StableIds), "Built-in entourage ids changed: " + string.Join(", ", ids));
+            // New items may join the library; the ids of Preview 45 stay, in their order.
+            Check(ids.Where(StableIds.Contains).SequenceEqual(StableIds), "Built-in entourage ids changed: " + string.Join(", ", ids));
             foreach (var category in Enum.GetValues<EntourageCategory>())
                 foreach (var view in Enum.GetValues<EntourageView>())
                     Check(EntourageLibrary.All.Any(i => i.Category == category && i.View == view), $"No {category} item in {view}");
@@ -73,7 +74,8 @@ public static class EntourageTests
                     Check(a.Silhouette.ToString(System.Globalization.CultureInfo.InvariantCulture) == b.Silhouette.ToString(System.Globalization.CultureInfo.InvariantCulture) &&
                         a.Lines.Count == b.Lines.Count, $"{item.Id} {v} is not deterministic");
                     if (item.View == EntourageView.Elevation) Check(Math.Abs(a.Bounds.Bottom) < 8, $"{item.Id} {v} does not stand on the ground: {a.Bounds.Bottom}");
-                    else Check(Math.Abs(a.Bounds.X + a.Bounds.Width / 2) < a.Bounds.Width * .2 && Math.Abs(a.Bounds.Y + a.Bounds.Height / 2) < a.Bounds.Height * .2, $"{item.Id} {v} is not centred");
+                    // Axonometric items are checked in each projection by EntourageAxonometricTests.
+                    else if (item.View == EntourageView.Plan) Check(Math.Abs(a.Bounds.X + a.Bounds.Width / 2) < a.Bounds.Width * .2 && Math.Abs(a.Bounds.Y + a.Bounds.Height / 2) < a.Bounds.Height * .2, $"{item.Id} {v} is not centred");
                     var (vector, preview, _) = EntourageRenderer.Draw(EntourageRenderer.Spec(item, 30, v));
                     Check(Covered(preview, 128) > 20 && vector.Width == preview.Width && vector.Height == preview.Height, $"{item.Id} {v} draws nothing");
                     var (again, _, _) = EntourageRenderer.Draw(EntourageRenderer.Spec(item, 30, v));

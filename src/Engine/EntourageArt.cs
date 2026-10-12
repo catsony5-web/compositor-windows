@@ -7,9 +7,11 @@ namespace Compositor.Windows;
 /// One built-in entourage drawing in authoring units (centimetres, y down): the silhouette (the
 /// union of the body parts, filled for white, grey and solid styles and cast by shadows) and the
 /// line work drawn over it. Elevation items stand on y = 0 with x = 0 at their ground point; plan
-/// items are centred on the origin. OutlineWeight scales the silhouette's own outline (0 = none).
+/// items are centred on the origin; axonometric items have their ground point at the origin and
+/// keep their real height (ModelHeight, centimetres) because the drawing's top is not their height.
+/// OutlineWeight scales the silhouette's own outline (0 = none).
 /// </summary>
-internal sealed record EntourageArt(Geometry Silhouette, IReadOnlyList<EntourageStroke> Lines, Rect Bounds, double OutlineWeight)
+internal sealed record EntourageArt(Geometry Silhouette, IReadOnlyList<EntourageStroke> Lines, Rect Bounds, double OutlineWeight, double ModelHeight = 0)
 {
     // A plan symbol is placed by its centre: move the drawing so its bounds are centred on the origin.
     public EntourageArt Centered()
@@ -17,7 +19,7 @@ internal sealed record EntourageArt(Geometry Silhouette, IReadOnlyList<Entourage
         var shift = new TranslateTransform(-(Bounds.X + Bounds.Width / 2), -(Bounds.Y + Bounds.Height / 2)); shift.Freeze();
         Geometry Move(Geometry g) { var moved = EntourageShapes.Transformed(g, shift); moved.Freeze(); return moved; }
         var bounds = Bounds; bounds.Offset(shift.X, shift.Y);
-        return new(Move(Silhouette), Lines.Select(l => new EntourageStroke(Move(l.Geometry), l.Weight, l.Clip is { } clip ? Move(clip) : null)).ToArray(), bounds, OutlineWeight);
+        return new(Move(Silhouette), Lines.Select(l => new EntourageStroke(Move(l.Geometry), l.Weight, l.Clip is { } clip ? Move(clip) : null)).ToArray(), bounds, OutlineWeight, ModelHeight);
     }
 }
 
@@ -32,6 +34,8 @@ internal sealed class EntourageSketch
     public double OutlineWeight { get; set; } = 1;
     // Elevation items stand on y = 0: nothing of their body reaches below the ground line.
     public bool Ground { get; init; }
+    // Axonometric items: their real height in centimetres.
+    public double ModelHeight { get; set; }
 
     public void Body(params Geometry[] parts) => body.AddRange(parts);
     public void Line(Geometry geometry, double weight = .55, Geometry? clip = null) => lines.Add(new(geometry, weight, clip));
@@ -55,7 +59,7 @@ internal sealed class EntourageSketch
         silhouette.Freeze();
         var bounds = silhouette.Bounds;
         foreach (var line in lines) { line.Geometry.Freeze(); line.Clip?.Freeze(); var b = line.Geometry.Bounds; if (!b.IsEmpty) bounds.Union(b); }
-        return new(silhouette, lines.ToArray(), bounds, OutlineWeight);
+        return new(silhouette, lines.ToArray(), bounds, OutlineWeight, ModelHeight);
     }
 }
 
