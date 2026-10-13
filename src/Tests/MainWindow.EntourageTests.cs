@@ -261,7 +261,7 @@ public sealed partial class MainWindow
             Rejected("wrong_layer_kind", ("layerId", w.doc.Layers[0].Id.ToString()), ("fill", "none"));
             Rejected("layer_not_found", ("layerId", Guid.NewGuid().ToString()), ("fill", "none"));
             var capabilities = Success(Call("get_capabilities", new JsonObject()));
-            Check(capabilities["contractVersion"]!.GetValue<int>() == 10 && capabilities["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "place_entourage")
+            Check(capabilities["contractVersion"]!.GetValue<int>() == 11 && capabilities["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "place_entourage")
                 && capabilities["batch"]!["commands"]!.AsArray().Any(c => c!.GetValue<string>() == "place_entourage") && capabilities["entourage"]!["count"]!.GetValue<int>() == EntourageLibrary.All.Count,
                 "Capabilities do not advertise the entourage commands");
         });

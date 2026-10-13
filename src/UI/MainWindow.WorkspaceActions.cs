@@ -6,6 +6,8 @@ namespace Compositor.Windows;
 
 public sealed partial class MainWindow
 {
+    const string StrokeEffectTip = "선택한 오린 사진·텍스트·도형의 가장자리에 흰 테두리를 레이어 효과로 더합니다 · 색과 두께는 속성 패널의 레이어 효과에서 바꿉니다";
+
     // Section titles fold their groups; the detail explains the group on hover.
     static void WorkspaceSection(StackPanel panel, string title, string? detail = null)
     {
@@ -63,6 +65,7 @@ public sealed partial class MainWindow
             (Theme.Glyphs.Duplicate, "선택 픽셀 복제", ExtractSelection, "선택한 픽셀을 새 레이어에 복사", null),
             (Theme.Glyphs.Sparkle, "AI 배경 제거", () => WorkspacePixelAction(RemoveAiBackground), "이 컴퓨터에서 배경을 분석해 레이어 마스크 만들기", null));
         panel.Children.Add(Theme.ActionRow("피사체를 글자 앞으로", Run(PlaceSubjectInFront), SubjectFrontTip, Theme.Glyphs.SubjectFront));
+        panel.Children.Add(Theme.ActionRow("획 추가", Run(AddStrokeEffect), StrokeEffectTip, Theme.Glyphs.StrokeEffect));
         WorkspaceSection(panel, "리터치", "잡티를 지우고 빈 곳을 주변 픽셀로 채웁니다.");
         WorkspaceCommands(panel,
             (ToolIcons.PathData(Tool.Heal), "복구 브러시", () => SetTool(Tool.Heal), "Alt+클릭으로 참조 위치 지정 후 드래그", null),
@@ -86,6 +89,7 @@ public sealed partial class MainWindow
             (ToolIcons.PathData(Tool.Callout), "지시선", () => SetTool(Tool.Callout), "대상에서 라벨까지 끌어 점·지시선·글자를 한 번에 · N"),
             (Theme.Glyphs.FillStroke, "채우기 · 선", () => ShowStudioPage(1), "선택한 도형의 채우기·선 색상과 두께, 점선과 끝 모양 조절"));
         panel.Children.Add(Theme.ActionRow("피사체를 글자 앞으로", Run(PlaceSubjectInFront), SubjectFrontTip, Theme.Glyphs.SubjectFront));
+        panel.Children.Add(Theme.ActionRow("획 추가", Run(AddStrokeEffect), StrokeEffectTip, Theme.Glyphs.StrokeEffect));
         AddMapActions(panel);
         AddEntourageSection(panel);
         WorkspaceSection(panel, "캔버스에 정렬", "선택한 이미지·도형·텍스트 각각을 캔버스 기준으로 정렬합니다.");

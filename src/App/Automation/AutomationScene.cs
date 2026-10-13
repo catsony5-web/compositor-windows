@@ -90,6 +90,8 @@ public sealed class AutomationScene
         result["opacity"] = layer.Opacity; result["blend"] = layer.Blend.ToString();
         result["hasMask"] = layer.Mask != null; result["clipped"] = layer.Clipped;
         result["warp"] = layer.Warp == null ? null : JsonSerializer.SerializeToNode(layer.Warp);
+        // Live layer effects, bottom first, as set_layer_effects takes them.
+        result["effects"] = AutomationCatalog.EffectsJson(layer.Effects);
         result["frameBoundsMeaning"] = "Transformed surface corners before ancestor clipping; not ink bounds or a semantic room boundary.";
         if (finite) result["documentCorners"] = new JsonArray(corners.Select(p => (JsonNode?)new JsonObject { ["x"] = p.X, ["y"] = p.Y }).ToArray());
         if (layer.Text != null) result["text"] = JsonSerializer.SerializeToNode(layer.Text);
@@ -117,6 +119,7 @@ public sealed class AutomationScene
             ["material"] = layer.Kind == LayerKind.Material && !layer.Locked && !ancestorLocked,
             ["vectorGeometryViaMcp"] = false,
             ["shapeDefinitionViaMcp"] = layer.Kind == LayerKind.Shape && !layer.Locked && !ancestorLocked,
+            ["effects"] = LayerEffects.Supports(layer) && !layer.Locked && !ancestorLocked,
             ["positionNote"] = "Set x/y in parent coordinates. Use the parent chain and documentCorners to reason about placement."
         };
         return result;

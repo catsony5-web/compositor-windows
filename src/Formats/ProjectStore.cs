@@ -76,7 +76,11 @@ public static partial class ProjectStore
         // layer's vector or image content. A 내 점경 original is stored as entourage/<index>.png.
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public EntourageSpec? Entourage { get; set; }
-        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()), PassThrough = PassThrough, Style = Style, Map = Map, Entourage = Entourage };
+        // Optional and written only for layers with effects (레이어 효과): older readers ignore it and show the
+        // plain layer; the project version does not change, so those readers still open the file.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public LayerEffect[]? Effects { get; set; }
+        public Layer ToLayer(Raster pixels, byte[]? mask = null, IReadOnlyDictionary<Guid, MaterialAsset>? assets = null) => new() { Id = Id, Name = Name!, Pixels = pixels, Mask = mask, Visible = Visible, Locked = Locked, Opacity = Opacity, Blend = Blend, X = X, Y = Y, Scale = Scale, Rotation = Rotation, FlipX = FlipX, FlipY = FlipY, Kind = Kind, ParentId = ParentId, Category = Category, SourceLayerName = SourceLayerName, Clipped = Clipped, ScaleX = ScaleX, ScaleY = ScaleY, Shape = Shape, Text = Text, Adjustment = Adjustment, Warp = Warp, Material = Material?.Fill(assets ?? new Dictionary<Guid, MaterialAsset>()), PassThrough = PassThrough, Style = Style, Map = Map, Entourage = Entourage, Effects = LayerEffects.Normalize(Effects) };
     }
     public sealed record VectorInfo(VectorFormat Format, int Width, int Height, int Page);
     public static void AtomicWrite(string path, Action<Stream> write)
@@ -113,6 +117,7 @@ public static partial class ProjectStore
             manifest.Layers[^1]!.Shadow = l.Shadow;
             manifest.Layers[^1]!.PassThrough = l.PassThrough; manifest.Layers[^1]!.Style = l.Style; manifest.Layers[^1]!.Map = l.Map;
             manifest.Layers[^1]!.Entourage = l.Entourage;
+            manifest.Layers[^1]!.Effects = LayerEffects.Normalize(l.Effects);
         }
         if (doc.Artboards.Count > 0 || doc.Layers.Any(l => l.Category != LayerCategory.Automatic || l.SourceLayerName != null)) manifest.Version = 5;
         if (materials.Count > 0 || doc.MaterialRegions.Count > 0) manifest.Version = 6;

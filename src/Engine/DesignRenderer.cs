@@ -187,12 +187,20 @@ public static partial class DesignRenderer
                 else if (passes.Cull is { } cull && layer.Kind != LayerKind.Group && layer.Warp == null && !Reaches(layer, World(layer, parent), cull)) { }
                 else
                 {
+                    // Effects (레이어 효과): shadows and glows onto what is below each layer, the rest onto its own image.
+                    bool effects = layer.Kind != LayerKind.Group && LayerEffects.Any(layer);
+                    if (effects) LayerEffectRenderer.PaintBehind(output, layer, World(layer, parent), true, false, layer.Opacity, token);
                     var image = Image(layer, parent, depth);
+                    if (effects) LayerEffectRenderer.PaintFront(image, layer, World(layer, parent), true, token);
                     for (int j = index + 1; j < end; j++)
                     {
                         var clip = stack[j]; if (!clip.Visible || clip.Opacity <= 0) continue;
-                        if (clip.Kind == LayerKind.Adjustment) Imaging.ApplyAdjustment(image, clip, token, World(clip, parent));
-                        else Imaging.Merge(image, Image(clip, parent, depth), clip.Opacity, clip.Blend, true, token);
+                        if (clip.Kind == LayerKind.Adjustment) { Imaging.ApplyAdjustment(image, clip, token, World(clip, parent)); continue; }
+                        bool clipEffects = clip.Kind != LayerKind.Group && LayerEffects.Any(clip);
+                        if (clipEffects) LayerEffectRenderer.PaintBehind(image, clip, World(clip, parent), true, true, clip.Opacity, token);
+                        var clipImage = Image(clip, parent, depth);
+                        if (clipEffects) LayerEffectRenderer.PaintFront(clipImage, clip, World(clip, parent), true, token);
+                        Imaging.Merge(image, clipImage, clip.Opacity, clip.Blend, true, token);
                     }
                     Imaging.Merge(output, image, layer.Opacity, layer.Blend, false, token);
                 }
@@ -206,10 +214,12 @@ public static partial class DesignRenderer
     /// Giving the folder its own blend mode or a perspective makes it an isolated group again.
     /// </summary>
     public static bool IsPassThrough(Layer layer) => layer.Kind == LayerKind.Group && layer.PassThrough && layer.Warp == null && layer.Blend == BlendMode.Normal;
-    // Every leaf paints only inside its pixel rectangle (shapes and resampling add a pixel).
+    // Every leaf paints only inside its pixel rectangle (shapes and resampling add a pixel), grown by
+    // the reach of its effects.
     static bool Reaches(Layer layer, Matrix world, Rect cull)
     {
         var bounds = new Rect(0, 0, layer.Pixels.Width, layer.Pixels.Height); bounds.Transform(world);
+        if (LayerEffects.Any(layer)) { double reach = LayerEffectRenderer.OutputReach(layer, world); bounds.Inflate(reach, reach); }
         return bounds.IntersectsWith(cull);
     }
     internal static DrawingGroup TextDrawing(TextSpec text) => textDrawings.GetValue(text, spec => DocumentFeatures.TextDrawing(spec).Drawing);

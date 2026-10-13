@@ -30,8 +30,10 @@ internal static class PdfLayerExport
     /// <summary>What the export will contain; built without rendering so dialogs can explain it.</summary>
     internal sealed record Plan(IReadOnlyList<Unit> Units, bool Layered, bool Expanded, int VectorParts, int ImageParts, int HiddenLayers, bool OmitsHiddenChildren);
 
+    // Layer effects make a leaf an image of its visible result, except strokes on text and shapes (VectorPdfExport.DrawsEffectsAsVectors).
     static bool CleanLeaf(Layer layer) => layer.Kind is LayerKind.Raster or LayerKind.Text or LayerKind.Shape or LayerKind.Vector &&
-        layer.Opacity == 1 && layer.Blend == BlendMode.Normal && layer.Mask == null && !layer.Clipped && layer.Warp == null;
+        layer.Opacity == 1 && layer.Blend == BlendMode.Normal && layer.Mask == null && !layer.Clipped && layer.Warp == null &&
+        (!LayerEffects.Any(layer) || VectorPdfExport.DrawsEffectsAsVectors(layer));
     static bool CleanGroup(Layer layer, Dictionary<Guid, Layer[]> children) => layer.Kind == LayerKind.Group &&
         layer.Opacity == 1 && layer.Blend == BlendMode.Normal && layer.Mask == null && !layer.Clipped && layer.Warp == null &&
         !LayerExportRender.ChildrenOf(layer, children).Any(child => child.Kind == LayerKind.Adjustment || DesignRenderer.IsPassThrough(child));
@@ -162,15 +164,29 @@ internal static class PdfLayerExport
                     VectorPdfExport.Transform(graphics, ancestor.Matrix);
                     if (!DrawingLayers.IsContainer(ancestor)) graphics.IntersectClip(new XRect(0, 0, ancestor.Pixels.Width, ancestor.Pixels.Height));
                 }
-                VectorPdfExport.Transform(graphics, layer.Matrix); graphics.IntersectClip(new XRect(0, 0, layer.Pixels.Width, layer.Pixels.Height));
-                VectorPdfExport.DrawContent(graphics, layer, token);
+                VectorPdfExport.Transform(graphics, layer.Matrix);
+                if (LayerEffects.Any(layer))
+                {
+                    // Vector strokes (레이어 효과) reach beyond the layer's rectangle; its content stays clipped to it.
+                    var reach = LayerEffectRenderer.LocalBounds(layer); graphics.IntersectClip(new XRect(reach.X, reach.Y, reach.Width, reach.Height));
+                    VectorPdfExport.DrawStrokeEffects(graphics, layer, true, token);
+                    var inner = graphics.Save(); graphics.IntersectClip(new XRect(0, 0, layer.Pixels.Width, layer.Pixels.Height));
+                    VectorPdfExport.DrawContent(graphics, layer, token); graphics.Restore(inner);
+                    VectorPdfExport.DrawStrokeEffects(graphics, layer, false, token);
+                }
+                else { graphics.IntersectClip(new XRect(0, 0, layer.Pixels.Width, layer.Pixels.Height)); VectorPdfExport.DrawContent(graphics, layer, token); }
                 graphics.Restore(state);
             }
             void Image(Surface surface, Layer[] members, Layer[] ancestors, Int32Rect region, BlendMode blend, Layer? clipBase)
             {
                 if (region.Width <= 0 || region.Height <= 0 || members.Length == 0) return;
                 var raster = LayerExportRender.Render(document, ancestors, members, children, region, token);
-                if (clipBase != null) LayerExportRender.MultiplyAlpha(raster, LayerExportRender.Render(document, ancestors, [LayerExportRender.Plain(clipBase, keepMask: true)], children, region, token), token);
+                if (clipBase != null)
+                {
+                    // Clipped layers clip to the base and its own effects, not to its shadows and glows.
+                    var basis = LayerExportRender.Plain(clipBase, keepMask: true); basis.Effects = LayerEffects.Normalize(basis.Effects?.Where(e => !e.Behind));
+                    LayerExportRender.MultiplyAlpha(raster, LayerExportRender.Render(document, ancestors, [basis], children, region, token), token);
+                }
                 var local = LayerExportRender.Opaque(raster, token); if (local.Width == 0) return;
                 using var encoded = new MemoryStream(); LayerExportRender.Crop(raster, local).WritePng(encoded); encoded.Position = 0;
                 using var picture = XImage.FromStream(encoded);

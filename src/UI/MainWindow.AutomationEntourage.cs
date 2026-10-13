@@ -44,6 +44,11 @@ public sealed partial class MainWindow
                 ["pixelsPerMeter"] = ppm, ["personPixels"] = Math.Round(1.7 * ppm, 1),
                 ["basis"] = entourageScaleByTab.ContainsKey(tab.Id) ? "user" : EntourageRenderer.DocumentPixelsPerMeter(d) != null ? "document_entourage" : "default_1_to_100_at_dpi"
             };
+            result["axonometric"] = new JsonObject
+            {
+                ["projection"] = EntourageLibrary.ProjectionKey(AutomationEntourageProjection(tab, d)),
+                ["basis"] = entourageProjectionByTab.ContainsKey(tab.Id) ? "user" : EntourageRenderer.DocumentProjection(d) != null ? "document_entourage" : "default_isometric"
+            };
             var placed = d.Layers.Where(l => l.Entourage != null).ToArray();
             result["placed"] = new JsonArray(placed.Take(200).Select(l => (JsonNode?)AutomationCatalog.EntouragePlacedJson(l, d)).ToArray());
             result["placedCount"] = placed.Length; result["placedTruncated"] = placed.Length > 200;
@@ -53,6 +58,9 @@ public sealed partial class MainWindow
 
     double AutomationEntourageScale(WorkspaceTab tab, Document d) => entourageScaleByTab.TryGetValue(tab.Id, out var chosen) ? chosen
         : EntourageRenderer.DocumentPixelsPerMeter(d) ?? EntourageRenderer.DefaultPixelsPerMeter(d);
+
+    EntourageProjection AutomationEntourageProjection(WorkspaceTab? tab, Document d) => tab != null && entourageProjectionByTab.TryGetValue(tab.Id, out var chosen) ? chosen
+        : EntourageRenderer.DocumentProjection(d) ?? EntourageProjection.Isometric;
 
     // The user's items a document carries (they may come from another PC).
     static IEnumerable<EntourageCustomItem> CarriedCustomEntourage(Document? document)
@@ -72,10 +80,13 @@ public sealed partial class MainWindow
             Fill = args.ContainsKey("fill") ? AutomationCatalog.ParseFill(AString(args, "fill")) : spec.Fill,
             LineArgb = args.ContainsKey("lineColor") ? AutomationMaterials.ParseInk(AString(args, "lineColor")) : spec.LineArgb,
             LineWeight = ANumber(args, "lineWeight", spec.LineWeight),
-            Variant = args.ContainsKey("variant") ? (int)ANumber(args, "variant") : spec.Variant
+            Variant = args.ContainsKey("variant") ? (int)ANumber(args, "variant") : spec.Variant,
+            Projection = args.ContainsKey("projection") ? EntourageLibrary.ParseProjection(AString(args, "projection"))!.Value : spec.Projection
         };
         EntourageSpec Checked(EntourageSpec spec)
         {
+            if (args.ContainsKey("projection") && (spec.View != EntourageView.Axonometric || spec.IsCustom))
+                throw new AutomationFault("invalid_arguments", "projection은 액소노메트릭 점경에만 쓸 수 있습니다.");
             if (!spec.IsCustom && EntourageLibrary.Find(spec.ItemId) is { } item) spec = spec with { Variant = item.Variants <= 1 ? 0 : spec.Variant % item.Variants };
             try { spec.Validate(); } catch (System.IO.InvalidDataException e) { throw new AutomationFault("invalid_arguments", e.Message); }
             return spec;
@@ -104,7 +115,9 @@ public sealed partial class MainWindow
         else throw new AutomationFault("entourage_not_found", "점경 항목을 찾을 수 없습니다. query_entourage의 itemId를 사용하세요.");
         var tab = activeTab >= 0 ? tabs[activeTab] : null;
         double ppm = tab != null ? AutomationEntourageScale(tab, candidate) : EntourageRenderer.DefaultPixelsPerMeter(candidate);
-        var spec = Checked(Styled(EntourageSpecFor(choice, ppm) with { LineArgb = EntourageSpec.DefaultLine, LineWeight = 1 }));
+        var spec = EntourageSpecFor(choice, ppm) with { LineArgb = EntourageSpec.DefaultLine, LineWeight = 1 };
+        if (spec.View == EntourageView.Axonometric && !spec.IsCustom) spec = spec with { Projection = AutomationEntourageProjection(tab, candidate) };
+        spec = Checked(Styled(spec));
         var anchor = new Point(ANumber(args, "x"), ANumber(args, "y"));
         string name = args.ContainsKey("name") ? AString(args, "name") : choice.Name;
         int count = (int)ANumber(args, "count", 1);
@@ -121,9 +134,17 @@ public sealed partial class MainWindow
         {
             double spread = ANumber(args, "spread");
             if (spec.View == EntourageView.Elevation) area = new Rect(anchor.X - spread / 2, anchor.Y, spread, 0);
+            else if (spec.View == EntourageView.Axonometric)
+            {
+                // A disc of `spread` on the projected ground: its bounds on the sheet and a ground-distance test.
+                var projection = AxoProjection.Of(spec.Projection);
+                var corners = new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) }.Select(c => anchor + projection.X * (c.Item1 * spread) + projection.Y * (c.Item2 * spread)).ToArray();
+                area = new Rect(new Point(corners.Min(c => c.X), corners.Min(c => c.Y)), new Point(corners.Max(c => c.X), corners.Max(c => c.Y)));
+                inside = p => projection.Ground(p - anchor).Length <= spread;
+            }
             else { area = new Rect(anchor.X - spread, anchor.Y - spread, spread * 2, spread * 2); inside = p => (p - anchor).Length <= spread; }
         }
-        var placements = EntourageRenderer.Scatter(choice.Category, spec.View, spec.Meters, spec.PixelsPerMeter, EntourageFootprint(spec), choice.Variants, count, anchor, area, inside, (int)ANumber(args, "seed", 1));
+        var placements = EntourageRenderer.Scatter(choice.Category, spec.View, spec.Meters, spec.PixelsPerMeter, EntourageFootprint(spec), choice.Variants, count, anchor, area, inside, (int)ANumber(args, "seed", 1), spec.Projection);
         var group = DocumentFeatures.CreateGroup(candidate, $"{name} ×{placements.Count}");
         candidate.Add(group);
         var ids = new JsonArray();

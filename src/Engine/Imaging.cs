@@ -77,7 +77,8 @@ public static class Imaging
                     cancellationToken.ThrowIfCancellationRequested();
                     // Normal source-over is associative. Any operation that
                     // reads the group's isolated backdrop must keep that surface.
-                    if (child.Clipped || child.Blend != BlendMode.Normal || child.Kind == LayerKind.Adjustment ||
+                    // A shadow or glow with its own blend mode reads the group's backdrop too.
+                    if (child.Clipped || child.Blend != BlendMode.Normal || child.Kind == LayerKind.Adjustment || LayerEffectRenderer.ReadsBackdrop(child) ||
                         child.Kind == LayerKind.Group && !CanCompositeGroupDirectly(child, width, height, depth + 1))
                     { direct = false; break; }
                 }
@@ -108,7 +109,10 @@ public static class Imaging
                 int end = index + 1; while (end < stack.Length && stack[end].Clipped) end++;
                 if (!layer.Visible || layer.Opacity <= 0) { index = end - 1; continue; }
                 if (layer.Kind == LayerKind.Adjustment) ApplyAdjustment(output, layer, cancellationToken);
-                else if (end == index + 1 && layer.Kind != LayerKind.Group) Composite(output, layer, cancellationToken);
+                else if (end == index + 1 && layer.Kind != LayerKind.Group)
+                {
+                    if (LayerEffects.Any(layer)) CompositeWithEffects(output, layer, cancellationToken); else Composite(output, layer, cancellationToken);
+                }
                 else if (end == index + 1 && CanCompositeGroupDirectly(layer, width, height, depth))
                 {
                     // Imported CAD groups are identity containers for tight
@@ -119,12 +123,20 @@ public static class Imaging
                 else
                 {
                     // An un-clipped layer and its following clipped layers form an alpha-preserving stack.
+                    // Effects: shadows and glows go onto what is below each layer, the rest onto its own image.
+                    bool effects = layer.Kind != LayerKind.Group && LayerEffects.Any(layer);
+                    if (effects) LayerEffectRenderer.PaintBehind(output, layer, layer.Matrix, false, false, layer.Opacity, cancellationToken);
                     var image = LayerImage(layer, width, height, depth);
+                    if (effects) LayerEffectRenderer.PaintFront(image, layer, layer.Matrix, false, cancellationToken);
                     for (int j = index + 1; j < end; j++)
                     {
                         var clip = stack[j]; if (!clip.Visible || clip.Opacity <= 0) continue;
-                        if (clip.Kind == LayerKind.Adjustment) ApplyAdjustment(image, clip, cancellationToken);
-                        else Merge(image, LayerImage(clip, width, height, depth), clip.Opacity, clip.Blend, true, cancellationToken);
+                        if (clip.Kind == LayerKind.Adjustment) { ApplyAdjustment(image, clip, cancellationToken); continue; }
+                        bool clipEffects = clip.Kind != LayerKind.Group && LayerEffects.Any(clip);
+                        if (clipEffects) LayerEffectRenderer.PaintBehind(image, clip, clip.Matrix, false, true, clip.Opacity, cancellationToken);
+                        var clipImage = LayerImage(clip, width, height, depth);
+                        if (clipEffects) LayerEffectRenderer.PaintFront(clipImage, clip, clip.Matrix, false, cancellationToken);
+                        Merge(image, clipImage, clip.Opacity, clip.Blend, true, cancellationToken);
                     }
                     Merge(output, image, layer.Opacity, layer.Blend, false, cancellationToken);
                 }
@@ -146,6 +158,40 @@ public static class Imaging
                     var color = BlendRgb(target.Data[i + 2] / 255.0, target.Data[i + 1] / 255.0, target.Data[i] / 255.0, source.Data[i + 2] / 255.0, source.Data[i + 1] / 255.0, source.Data[i] / 255.0, blend);
                     target.Data[i] = Byte(target.Data[i] * (1 - a) + color.B * a * 255); target.Data[i + 1] = Byte(target.Data[i + 1] * (1 - a) + color.G * a * 255); target.Data[i + 2] = Byte(target.Data[i + 2] * (1 - a) + color.R * a * 255);
                 }
+            }
+        });
+    }
+    // A layer with effects (레이어 효과): its shadows and glows onto the output, then the layer and its own
+    // effects on a surface that covers only their reach, merged with the layer's opacity and blend mode.
+    internal static void CompositeWithEffects(Raster output, Layer layer, CancellationToken token)
+    {
+        var world = layer.Matrix;
+        LayerEffectRenderer.PaintBehind(output, layer, world, false, false, layer.Opacity, token);
+        var local = LayerEffectRenderer.LocalBounds(layer);
+        var corners = new[] { local.TopLeft, local.TopRight, local.BottomRight, local.BottomLeft }
+            .Select(p => world.Transform(layer.Warp?.Forward(p, layer.Pixels.Width, layer.Pixels.Height) ?? p)).ToArray();
+        if (corners.Any(p => !double.IsFinite(p.X) || !double.IsFinite(p.Y))) corners = [new(0, 0), new(output.Width, output.Height)];
+        int left = (int)Math.Clamp(Math.Floor(corners.Min(p => p.X)) - 1, 0, output.Width), top = (int)Math.Clamp(Math.Floor(corners.Min(p => p.Y)) - 1, 0, output.Height);
+        int right = (int)Math.Clamp(Math.Ceiling(corners.Max(p => p.X)) + 1, 0, output.Width), bottom = (int)Math.Clamp(Math.Ceiling(corners.Max(p => p.Y)) + 1, 0, output.Height);
+        if (right <= left || bottom <= top) return;
+        var surface = new Raster(right - left, bottom - top);
+        var shifted = world; shifted.Translate(-left, -top);
+        var copy = layer.Snapshot(); copy.Opacity = 1; copy.Blend = BlendMode.Normal;
+        Composite(surface, copy, token, shifted);
+        LayerEffectRenderer.PaintFront(surface, layer, shifted, false, token);
+        MergeAt(output, surface, left, top, layer.Opacity, layer.Blend, token);
+    }
+    // Merge of a smaller source placed at (left, top): the same result as Merge over the whole target.
+    internal static void MergeAt(Raster target, Raster source, int left, int top, double opacity, BlendMode blend, CancellationToken token)
+    {
+        Parallel.For(0, source.Height, new ParallelOptions { CancellationToken = token }, y =>
+        {
+            int ty = top + y; if (ty < 0 || ty >= target.Height) return;
+            for (int x = 0; x < source.Width; x++)
+            {
+                int tx = left + x; if (tx < 0 || tx >= target.Width) continue;
+                int s = (y * source.Width + x) * 4, i = (ty * target.Width + tx) * 4; double a = source.Data[s + 3] / 255.0 * opacity;
+                Over(target.Data, i, source.Data[s] / 255.0, source.Data[s + 1] / 255.0, source.Data[s + 2] / 255.0, a, blend);
             }
         });
     }

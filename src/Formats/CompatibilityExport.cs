@@ -103,6 +103,7 @@ public static class CompatibilityExport
                     lines.Add("이름·순서·표시·불투명도·혼합 모드·마스크·클리핑을 유지합니다.");
                     if (plan.Converted > 0) lines.Add($"문자·도형·벡터 레이어 {plan.Converted:N0}개는 보이는 모습 그대로 픽셀 레이어로 바뀝니다.");
                     if (plan.Adjustments > 0) lines.Add($"조정 레이어 {plan.Adjustments:N0}개는 아래 레이어에 적용한 결과를 픽셀로 담습니다.");
+                    if (plan.Effects > 0) lines.Add($"레이어 효과가 있는 레이어 {plan.Effects:N0}개는 획·광선·그림자를 레이어 픽셀에 합쳐 저장합니다.");
                     if (plan.Perspective > 0) lines.Add($"원근 변형이 있는 그룹 {plan.Perspective:N0}개는 한 장의 레이어로 합칩니다.");
                     if (plan.Collapsed > 0) lines.Add($"레이어가 {Document.MaxLayers}개를 넘지 않도록 그룹 {plan.Collapsed:N0}개를 각각 한 장의 레이어로 합칩니다.");
                     break;

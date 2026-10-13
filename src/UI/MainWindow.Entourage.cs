@@ -39,6 +39,8 @@ public sealed partial class MainWindow
     double entourageWeight = 1;
     // The 1 m = px a user set for a document tab; otherwise the document's own entourage or 1:100.
     readonly Dictionary<Guid, double> entourageScaleByTab = [];
+    // The axonometric projection a user chose for a document tab; otherwise the document's own or isometric.
+    readonly Dictionary<Guid, EntourageProjection> entourageProjectionByTab = [];
     internal string? entourageStore;
     List<EntourageCustomItem>? entourageLibrary;
     internal Func<EntourageImportDialog, bool>? entourageDialogRunner;
@@ -64,6 +66,24 @@ public sealed partial class MainWindow
     {
         if (!HasDocument || activeTab < 0) return;
         entourageScaleByTab[tabs[activeTab].Id] = Math.Round(Math.Clamp(pixelsPerMeter, EntourageSpec.MinPixelsPerMeter, EntourageSpec.MaxPixelsPerMeter), 3);
+        RefreshEntouragePalettes();
+    }
+
+    /// <summary>The projection new axonometric items take, so they match the drawing's other axonometric entourage.</summary>
+    internal EntourageProjection EntourageAxoProjection
+    {
+        get
+        {
+            if (!HasDocument) return EntourageProjection.Isometric;
+            if (activeTab >= 0 && entourageProjectionByTab.TryGetValue(tabs[activeTab].Id, out var chosen)) return chosen;
+            return EntourageRenderer.DocumentProjection(doc) ?? EntourageProjection.Isometric;
+        }
+    }
+
+    internal void SetEntourageProjection(EntourageProjection projection)
+    {
+        if (!HasDocument || activeTab < 0) return;
+        entourageProjectionByTab[tabs[activeTab].Id] = projection;
         RefreshEntouragePalettes();
     }
 
@@ -150,11 +170,11 @@ public sealed partial class MainWindow
     {
         var image = EntourageImport.Load(path);
         var category = entourageTab is >= 0 and < EntourageCustomTab ? (EntourageCategory)entourageTab : EntourageCategory.People;
-        var dialog = new EntourageImportDialog(headlessTesting ? null : this, image, Path.GetFileNameWithoutExtension(path), category, entourageView);
+        var dialog = new EntourageImportDialog(headlessTesting ? null : this, image, Path.GetFileNameWithoutExtension(path), category, entourageView == EntourageView.Axonometric ? EntourageView.Elevation : entourageView);
         bool accepted = entourageDialogRunner?.Invoke(dialog) ?? dialog.ShowDialog() == true;
         if (!accepted || dialog.Result is not { } created) return null;
         var stored = AddCustomEntourage(created);
-        entourageTab = EntourageCustomTab; entourageView = stored.View;
+        entourageTab = EntourageCustomTab; if (!(entourageView == EntourageView.Axonometric && stored.View == EntourageView.Elevation)) entourageView = stored.View;
         RefreshEntouragePalettes();
         if (HasDocument) PlaceEntourage(new EntourageChoice(null, stored), scatter: false);
         status.Text = $"내 점경에 추가했습니다: {stored.Name}";
@@ -188,13 +208,27 @@ public sealed partial class MainWindow
         }
         FitSegments(tabs);
         root.Children.Add(tabs);
-        var views = new SegmentedChoice<EntourageView>([(EntourageView.Elevation, "입면·단면"), (EntourageView.Plan, "평면")], entourageView) { Margin = new Thickness(2, 0, 2, 6) };
+        var views = new SegmentedChoice<EntourageView>([(EntourageView.Elevation, "입면·단면"), (EntourageView.Plan, "평면"), (EntourageView.Axonometric, "액소노메트릭")], entourageView) { Margin = new Thickness(2, 0, 2, 6) };
         foreach (var button in views.Buttons)
         {
-            button.MinWidth = 0; button.Padding = new Thickness(8, 4, 8, 4);
+            button.MinWidth = 0; button.Padding = new Thickness(6, 4, 6, 4);
             if (button.Content is string caption) { button.Content = new KeepWordsTextBlock { Text = caption, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center }; button.ToolTip = caption; }
         }
+        views.ToolTip = "입면·단면, 평면, 액소노메트릭(평행 투상) 가운데 도면에 맞는 점경을 보여 줍니다.";
+        AutomationProperties.SetName(views, "점경 보기");
+        FitSegments(views);
         root.Children.Add(views);
+        // Axonometric items share the drawing's projection; the choice also redraws the swatches.
+        var projections = new SegmentedChoice<EntourageProjection>(Enum.GetValues<EntourageProjection>().Select(p => (p, EntourageLibrary.ProjectionName(p))).ToArray(), EntourageAxoProjection) { Margin = new Thickness(2, 0, 2, 6) };
+        foreach (var button in projections.Buttons)
+        {
+            button.MinWidth = 0; button.Padding = new Thickness(5, 4, 5, 4);
+            if (button.Content is string caption) { button.Content = new KeepWordsTextBlock { Text = caption, FontSize = Theme.CaptionSize, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center }; button.ToolTip = caption; }
+        }
+        projections.ToolTip = "새로 놓는 액소노메트릭 점경의 투상입니다. 등각 30°는 두 평면 축이 수평에서 30°, 이등각 2:1은 2:1 기울기, 평면 사투상 45°는 평면을 45° 돌려 그대로 세운 투상입니다.";
+        AutomationProperties.SetName(projections, "액소노메트릭 투상");
+        FitSegments(projections);
+        root.Children.Add(projections);
         var search = new Grid { Margin = new Thickness(2, 0, 2, 8) };
         search.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(26) }); search.ColumnDefinitions.Add(new ColumnDefinition());
         var icon = Theme.Glyph(Theme.Glyphs.Search, 15, Theme.Muted); icon.VerticalAlignment = VerticalAlignment.Center; icon.HorizontalAlignment = HorizontalAlignment.Center; search.Children.Add(icon);
@@ -210,7 +244,7 @@ public sealed partial class MainWindow
         {
             string q = query.Text.Trim();
             var custom = CustomEntourageChoices();
-            var key = (entourageTab, entourageView, q, string.Join(",", custom.Select(c => c.Id + c.Name)), HasDocument);
+            var key = (entourageTab, entourageView, q, string.Join(",", custom.Select(c => c.Id + c.Name)), HasDocument, EntourageAxoProjection);
             if (Equals(key, shownKey)) { UpdateOptions(); return; }
             shownKey = key;
             body.Children.Clear();
@@ -218,7 +252,8 @@ public sealed partial class MainWindow
             if (q.Length > 0)
                 choices = EntourageLibrary.All.Where(i => EntourageLibrary.Matches(i, q)).Select(i => new EntourageChoice(i, null))
                     .Concat(custom.Where(c => c.Name.Contains(q, StringComparison.OrdinalIgnoreCase)).Select(c => new EntourageChoice(null, c)));
-            else if (entourageTab == EntourageCustomTab) choices = custom.Where(c => c.View == entourageView).Select(c => new EntourageChoice(null, c));
+            // 내 점경 are elevation or plan images; an elevation image also stands in an axonometric drawing.
+            else if (entourageTab == EntourageCustomTab) choices = custom.Where(c => c.View == (entourageView == EntourageView.Axonometric ? EntourageView.Elevation : entourageView)).Select(c => new EntourageChoice(null, c));
             else choices = EntourageLibrary.All.Where(i => (int)i.Category == entourageTab && i.View == entourageView).Select(i => new EntourageChoice(i, null));
             var list = choices.ToList();
             if (list.Count > 0) body.Children.Add(QuickActions.Grid(4, list.Select(EntourageTile), 76));
@@ -236,6 +271,8 @@ public sealed partial class MainWindow
         TextBlock? scaleNote = null; TextBox? scaleBox = null;
         void UpdateOptions()
         {
+            projections.Visibility = entourageView == EntourageView.Axonometric ? Visibility.Visible : Visibility.Collapsed;
+            if (projections.Selected != EntourageAxoProjection) projections.Select(EntourageAxoProjection);
             if (scaleNote != null) scaleNote.Text = EntourageScaleNote();
             if (scaleBox != null && !scaleBox.IsKeyboardFocusWithin) scaleBox.Text = EntourageScale.ToString("0.##", CultureInfo.InvariantCulture);
         }
@@ -270,11 +307,12 @@ public sealed partial class MainWindow
         options.Children.Add(PropertyRows.Inline("축척 · 1 m당 px", scaleBox, 78, new Thickness(2, 0, 2, 2)));
         scaleNote = Theme.Label("", Theme.CaptionSize, Theme.Subtle); scaleNote.Margin = new Thickness(2, 0, 2, 4);
         options.Children.Add(scaleNote);
-        var hint = Density.Mark(Theme.Label("누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다. 입면은 발끝·밑동이 놓은 곳(바닥선)에 닿습니다.", Theme.CaptionSize, Theme.Subtle), DensityRole.Description);
+        var hint = Density.Mark(Theme.Label("누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다. 입면은 발끝·밑동이 놓은 곳(바닥선)에, 액소노메트릭은 발밑·밑동·바닥 면 가운데가 놓은 곳(바닥)에 닿습니다.", Theme.CaptionSize, Theme.Subtle), DensityRole.Description);
         hint.Margin = new Thickness(2, 2, 2, 4); options.Children.Add(hint);
 
         tabs.Changed += t => { entourageTab = t; Rebuild(); };
         views.Changed += v => { entourageView = v; Rebuild(); };
+        projections.Changed += p => Guard(() => { if (p != EntourageAxoProjection) SetEntourageProjection(p); });
         query.TextChanged += (_, _) => { placeholder.Visibility = query.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed; Rebuild(); };
         // The open document can change under the palette: catch up when the pointer comes back.
         root.MouseEnter += (_, _) => Rebuild();
@@ -319,7 +357,7 @@ public sealed partial class MainWindow
         var button = Theme.Button("", () => { }, $"{shown} · {Loc.T(category)} · {Loc.T(view)} · {choice.Meters:0.##} m\n누르면 화면 가운데에, 끌어 놓으면 그 자리에 놓습니다.");
         button.Tag = choice;
         var content = new StackPanel();
-        var image = new Image { Source = EntourageThumbnail(choice), Stretch = Stretch.Uniform, Margin = new Thickness(4) };
+        var image = new Image { Source = EntourageThumbnail(choice, EntourageAxoProjection), Stretch = Stretch.Uniform, Margin = new Thickness(4) };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
         content.Children.Add(new Border { Height = 64, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1), BorderBrush = Theme.Stroke, Background = Brushes.White, Child = image });
         var label = new KeepWordsTextBlock { Text = choice.Name, FontSize = Theme.CaptionSize, Foreground = Theme.Muted, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 5, 0, 0) };
@@ -358,7 +396,7 @@ public sealed partial class MainWindow
         return menu;
     }
 
-    static BitmapSource EntourageThumbnail(EntourageChoice choice)
+    static BitmapSource EntourageThumbnail(EntourageChoice choice, EntourageProjection projection = EntourageProjection.Isometric)
     {
         const int side = 112;
         if (choice.Custom is { } custom)
@@ -366,13 +404,13 @@ public sealed partial class MainWindow
             var spec = new EntourageSpec { ItemId = custom.ItemId, View = custom.View, Meters = custom.Meters, Fill = EntourageFill.None, LineDrawing = custom.LineDrawing, Source = custom.Pixels, PixelsPerMeter = 40 };
             return EntourageRenderer.Style(custom.Pixels, spec).Thumbnail(side);
         }
-        var item = choice.Item!; var key = (item.Id, 0, EntourageSpec.DefaultLine);
+        var item = choice.Item!; var key = (item.Id, (int)projection, EntourageSpec.DefaultLine);
         lock (entourageThumbnails) if (entourageThumbnails.TryGetValue(key, out var cached)) return cached;
-        var b = EntourageLibrary.Art(item, 0).Bounds;
-        double size = item.View == EntourageView.Plan ? Math.Max(b.Width, b.Height) : Math.Max(1, -b.Top);
+        var art = EntourageLibrary.Art(item, 0, projection); var b = art.Bounds;
+        double size = item.View switch { EntourageView.Plan => Math.Max(b.Width, b.Height), EntourageView.Axonometric => art.ModelHeight, _ => Math.Max(1, -b.Top) };
         // The longer side fills the swatch; the line stays readable (about 1.15 px) whatever the item's size.
         double ppm = Math.Clamp((side - 8) / Math.Max(b.Width, b.Height) * size / item.DefaultMeters, EntourageSpec.MinPixelsPerMeter, EntourageSpec.MaxPixelsPerMeter);
-        var spec2 = EntourageRenderer.Spec(item, ppm) with
+        var spec2 = EntourageRenderer.Spec(item, ppm, 0, projection) with
         {
             LineWeight = Math.Clamp(1.15 / EntourageRenderer.BasePen(ppm), EntourageSpec.MinLineWeight, EntourageSpec.MaxLineWeight),
             Fill = item.DefaultFill == EntourageFill.None ? EntourageFill.None : EntourageFill.White
@@ -405,7 +443,7 @@ public sealed partial class MainWindow
 
     EntourageSpec EntourageSpecFor(EntourageChoice choice, double pixelsPerMeter)
     {
-        var spec = choice.Item is { } item ? EntourageRenderer.Spec(item, pixelsPerMeter)
+        var spec = choice.Item is { } item ? EntourageRenderer.Spec(item, pixelsPerMeter, 0, EntourageAxoProjection)
             : new EntourageSpec { ItemId = choice.Custom!.ItemId, View = choice.Custom.View, Meters = choice.Custom.Meters, PixelsPerMeter = pixelsPerMeter, Fill = EntourageFill.None, LineDrawing = choice.Custom.LineDrawing, Source = choice.Custom.Pixels };
         spec = spec with { LineArgb = entourageLine, LineWeight = entourageWeight };
         // Very large items at a fine scale are made smaller rather than refused.
@@ -417,7 +455,10 @@ public sealed partial class MainWindow
     static double EntourageFootprint(EntourageSpec spec)
     {
         if (spec.Source is { } source) return spec.SizePixels * source.Width / (spec.View == EntourageView.Plan ? Math.Max(source.Width, source.Height) : source.Height);
-        var item = EntourageLibrary.Find(spec.ItemId)!; var b = EntourageLibrary.Art(item, spec.Variant).Bounds;
+        var item = EntourageLibrary.Find(spec.ItemId)!;
+        // Axonometric items are spaced by their real footprint on the ground.
+        if (item.View == EntourageView.Axonometric) return spec.SizePixels * item.Footprint;
+        var b = EntourageLibrary.Art(item, spec.Variant).Bounds;
         double size = item.View == EntourageView.Plan ? Math.Max(b.Width, b.Height) : Math.Max(1, -b.Top);
         return spec.SizePixels * b.Width / size;
     }
@@ -439,7 +480,7 @@ public sealed partial class MainWindow
         { area = bounds; inside = p => region.Contains(p.X, p.Y); }
         Point anchor;
         if (at is { } point) anchor = point;
-        else if (area is { } a) anchor = spec.View == EntourageView.Plan ? new Point(a.X + a.Width / 2, a.Y + a.Height / 2) : new Point(a.X + a.Width / 2, a.Bottom);
+        else if (area is { } a) anchor = spec.View is EntourageView.Plan or EntourageView.Axonometric ? new Point(a.X + a.Width / 2, a.Y + a.Height / 2) : new Point(a.X + a.Width / 2, a.Bottom);
         else
         {
             var view = canvas.ActualWidth > 0 && canvas.Zoom > 0 ? Rect.Intersect(canvas.VisibleDocumentRect, page) : page;
@@ -460,7 +501,7 @@ public sealed partial class MainWindow
         }
         else
         {
-            var placements = EntourageRenderer.Scatter(spec.IsCustom ? choice.Category : choice.Item!.Category, spec.View, spec.Meters, spec.PixelsPerMeter, footprint, choice.Variants, n, anchor, area, inside, entourageSeed++);
+            var placements = EntourageRenderer.Scatter(spec.IsCustom ? choice.Category : choice.Item!.Category, spec.View, spec.Meters, spec.PixelsPerMeter, footprint, choice.Variants, n, anchor, area, inside, entourageSeed++, spec.Projection);
             Edit("점경 흩어 놓기", () =>
             {
                 group = DocumentFeatures.CreateGroup(doc, $"{name} ×{placements.Count}");
@@ -527,14 +568,16 @@ public sealed partial class MainWindow
         var identity = new DockPanel { Margin = new Thickness(2, 0, 2, 6) };
         var choice = item != null ? new EntourageChoice(item, null) : custom ? new EntourageChoice(null, new EntourageCustomItem(Guid.Empty, targets[0].Name, EntourageCategory.Props, first.View, first.Meters, first.LineDrawing, first.Source!)) : null;
         var swatch = new Border { Width = 40, Height = 40, CornerRadius = new CornerRadius(6), BorderBrush = Theme.Stroke, BorderThickness = new Thickness(1), Background = Brushes.White, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top };
-        if (choice != null) swatch.Child = new Image { Source = EntourageThumbnail(choice), Stretch = Stretch.Uniform, Margin = new Thickness(3) };
+        if (choice != null) swatch.Child = new Image { Source = EntourageThumbnail(choice, first.Projection), Stretch = Stretch.Uniform, Margin = new Thickness(3) };
         DockPanel.SetDock(swatch, Dock.Left); identity.Children.Add(swatch);
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         var title = Theme.Label(many ? $"점경 {targets.Length}개" : item != null ? item.Name : targets[0].Name, Theme.BodySize); title.FontWeight = FontWeights.SemiBold;
         if (!many && item == null) Loc.Keep(title);
         titles.Children.Add(title);
         string kind = custom ? "내 점경" : item != null ? EntourageLibrary.CategoryName(item.Category) : "점경";
-        titles.Children.Add(Theme.Label($"{Loc.T(kind)} · {Loc.T(EntourageLibrary.ViewName(first.View))}", Theme.CaptionSize, Theme.Muted));
+        titles.Children.Add(Theme.Label(first.View == EntourageView.Axonometric && !custom
+            ? $"{Loc.T(kind)} · {Loc.T(EntourageLibrary.ViewName(first.View))} · {Loc.T(EntourageLibrary.ProjectionName(first.Projection))}"
+            : $"{Loc.T(kind)} · {Loc.T(EntourageLibrary.ViewName(first.View))}", Theme.CaptionSize, Theme.Muted));
         identity.Children.Add(titles); properties.Children.Add(identity);
         if (!known)
         {
@@ -591,6 +634,22 @@ public sealed partial class MainWindow
             fill.Changed += f => Guard(() => { if (Current()) EditEntourage("점경 채우기", s => s with { Fill = f }); });
             properties.Children.Add(fill);
         }
+        if (first.View == EntourageView.Axonometric && !custom)
+        {
+            // Redraws the selected items in another projection; their ground points stay.
+            properties.Children.Add(PropertyRows.Caption("투상"));
+            var projection = new SegmentedChoice<EntourageProjection>(Enum.GetValues<EntourageProjection>().Select(p => (p, EntourageLibrary.ProjectionName(p))).ToArray(), first.Projection) { Margin = new Thickness(2, 0, 2, 8) };
+            foreach (var button in projection.Buttons)
+            {
+                button.MinWidth = 0; button.Padding = new Thickness(5, 4, 5, 4);
+                if (button.Content is string label) { button.Content = new KeepWordsTextBlock { Text = label, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center }; button.ToolTip = label; }
+            }
+            FitSegments(projection);
+            AutomationProperties.SetName(projection, "점경 투상");
+            projection.ToolTip = "같은 도면의 액소노메트릭 점경은 한 투상으로 그립니다. 바꾸면 선택한 점경을 그 투상으로 다시 그리고 새로 놓는 점경도 따릅니다.";
+            projection.Changed += p => Guard(() => { if (Current()) SetEntourageItemsProjection(p); });
+            properties.Children.Add(projection);
+        }
         var row = new DockPanel { Margin = new Thickness(2, 0, 2, 8) };
         var reset = Theme.IconButton(Theme.Glyphs.Revert, () => Guard(() => { if (Current()) { entourageLine = EntourageSpec.DefaultLine; EditEntourage("점경 선 색", s => s with { LineArgb = EntourageSpec.DefaultLine }); } }), "선 색 기본값", 26, 14);
         reset.IsEnabled = first.LineArgb != EntourageSpec.DefaultLine; reset.Margin = new Thickness(4, 0, 0, 0); DockPanel.SetDock(reset, Dock.Right); row.Children.Add(reset);
@@ -613,13 +672,27 @@ public sealed partial class MainWindow
         }
         var commands = new List<Button>
         {
-            QuickActions.Command(Theme.Glyphs.FlipHorizontal, "좌우 뒤집기", Run(() => FlipEntourage()), "선택한 점경을 좌우로 뒤집습니다. 놓인 자리는 그대로입니다.", "점경 좌우 뒤집기"),
+            QuickActions.Command(Theme.Glyphs.FlipHorizontal, "좌우 뒤집기", Run(() => FlipEntourage()),
+                first.View == EntourageView.Axonometric ? "선택한 점경을 좌우로 뒤집습니다. 액소노메트릭에서는 두 평면 축이 서로 바뀌어 같은 바닥에서 다른 쪽을 향합니다." : "선택한 점경을 좌우로 뒤집습니다. 놓인 자리는 그대로입니다.", "점경 좌우 뒤집기"),
             QuickActions.Command(Theme.Glyphs.Shadow, first.View == EntourageView.Plan ? "그림자 드리우기" : "바닥에 그림자", Run(AddShadow),
-                first.View == EntourageView.Plan ? "실제 높이에 맞춘 평면 그림자를 새 레이어로 만듭니다." : "발끝·밑동에서 바닥으로 눕는 그림자를 새 레이어로 만듭니다.", "점경 그림자 드리우기"),
+                first.View switch
+                {
+                    EntourageView.Plan => "실제 높이에 맞춘 평면 그림자를 새 레이어로 만듭니다.",
+                    EntourageView.Axonometric => "발밑·밑동에서 투상된 바닥을 따라 눕는 그림자를 새 레이어로 만듭니다.",
+                    _ => "발끝·밑동에서 바닥으로 눕는 그림자를 새 레이어로 만듭니다."
+                }, "점경 그림자 드리우기"),
             QuickActions.Command(Theme.Glyphs.Transform, "축척 기준으로", Run(UseEntourageAsScale), "이 점경의 지금 크기를 새로 놓을 점경의 축척으로 씁니다. 손잡이로 크기를 맞춘 뒤 누르세요.", "이 크기를 점경 축척 기준으로"),
             QuickActions.Command(Theme.Glyphs.LayerStack, "모두 같은 축척", Run(MatchEntourageScale), "문서의 모든 점경을 이 점경의 축척으로 다시 그립니다. 실제 높이는 그대로입니다.", "문서의 모든 점경을 같은 축척으로")
         };
         properties.Children.Add(QuickActions.Grid(2, commands, QuickActions.CommandWidth));
+    }
+
+    // The selected axonometric items in another projection; new items follow it.
+    internal void SetEntourageItemsProjection(EntourageProjection projection)
+    {
+        if (activeTab >= 0) entourageProjectionByTab[tabs[activeTab].Id] = projection;
+        EditEntourage("점경 투상", s => s.View == EntourageView.Axonometric && !s.IsCustom ? s with { Projection = projection } : s);
+        RefreshEntouragePalettes();
     }
 
     internal void SetEntourageLineColor(Color color)
@@ -687,6 +760,10 @@ public sealed partial class MainWindow
         var view = placed[0].Entourage!.View;
         var projection = view == EntourageView.Plan ? ShadowProjection.Plan : ShadowProjection.Ground;
         var spec = lastShadowSpec is { } last && last.Projection == projection ? last : ShadowSpec.Default(projection);
+        // Axonometric items lay their shadow along the projected ground: a sun direction and height
+        // turned into the drawing's direction and length (the last settings' angle is kept).
+        if (view == EntourageView.Axonometric && !(lastShadowSpec is { } previous && previous.Projection == projection))
+            spec = EntourageRenderer.AxonometricShadow(placed[0].Entourage!.Projection, spec);
         if (view == EntourageView.Plan)
         {
             double Height(Layer l)

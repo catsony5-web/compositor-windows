@@ -713,6 +713,11 @@ public sealed partial class MainWindow
                 if (args.ContainsKey("visible")) layer.Visible = ABool(args, "visible");
                 if (args.ContainsKey("locked")) layer.Locked = ABool(args, "locked");
                 if (args.ContainsKey("blend")) layer.Blend = Enum.Parse<BlendMode>(AString(args, "blend")); break;
+            case "set_layer_effects":
+                var styled = Target();
+                if (!LayerEffects.Supports(styled)) throw new AutomationFault("wrong_layer_kind", "그룹과 조정 레이어에는 레이어 효과를 둘 수 없습니다. 이미지·텍스트·도형 레이어를 고르세요.");
+                styled.Effects = AutomationCatalog.ParseEffects(args["effects"]!.AsArray());
+                automationStepDetails = new JsonObject { ["effects"] = AutomationCatalog.EffectsJson(styled.Effects) }; break;
             case "delete_layer":
                 var removed = Target();
                 if (candidate.Layers.Any(l => l.Locked && Parents(candidate, l).Any(p => p.Id == removed.Id)))

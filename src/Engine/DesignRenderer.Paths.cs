@@ -9,7 +9,7 @@ public static partial class DesignRenderer
     static bool CanBatchPaths(Layer layer, Dictionary<Guid, Layer[]> children, int depth, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        if (depth > 16 || layer.Clipped || layer.Mask != null || layer.Warp != null || layer.Opacity != 1 || layer.Blend != BlendMode.Normal) return false;
+        if (depth > 16 || layer.Clipped || layer.Mask != null || layer.Warp != null || layer.Opacity != 1 || layer.Blend != BlendMode.Normal || LayerEffects.Any(layer)) return false;
         if (layer.Kind == LayerKind.Group)
             return (children.GetValueOrDefault(layer.Id) ?? []).All(child => CanBatchPaths(child, children, depth + 1, token));
         return layer.Kind == LayerKind.Vector && layer.Vector?.Format == VectorFormat.Paths;

@@ -188,7 +188,7 @@ public sealed partial class MainWindow
                 Placed("Ctrl+K", () => window.RunCommand(command));
                 var row = window.CreateLayerRow(new LayerListEntry(window.doc.Layers[0], 0, true, true));
                 var item = row.ContextMenu!.Items.OfType<MenuItem>().Single(i => Equals(i.Header, "피사체를 글자 앞으로"));
-                Check(row.ContextMenu.Items.OfType<MenuItem>().Select(i => (string)i.Header).Where(h => h != "스케치 사진 정리…").SequenceEqual(["레이어 복제", "이름 변경…", "피사체를 글자 앞으로", "레이어 삭제"]), "The layer right-click menu changed");
+                Check(row.ContextMenu.Items.OfType<MenuItem>().Select(i => (string)i.Header).Where(h => h != "스케치 사진 정리…").SequenceEqual(["레이어 복제", "이름 변경…", "피사체를 글자 앞으로", "획 추가", "레이어 효과 복사", "레이어 효과 붙여넣기", "레이어 삭제"]), "The layer right-click menu changed");
                 Placed("The layer right-click menu", () => Click(item));
                 foreach (bool design in new[] { false, true })
                 {

@@ -107,6 +107,7 @@ public static class CompositorPackage
             if (width < 1 || height < 1 || width > 300_000 || height > 300_000) throw Unsupported(layer.Name, "원본 범위를 벗어난 변형 크기");
             if (layer.Warp != null || layer.Clipped) throw Unsupported(layer.Name, "원근 왜곡/클리핑 마스크");
             if (layer.Kind == LayerKind.Group && (layer.Opacity != 1 || layer.Blend != BlendMode.Normal)) throw Unsupported(layer.Name, "그룹 불투명도/혼합");
+            if (LayerEffects.Any(layer)) throw Unsupported(layer.Name, "레이어 효과");
             if (layer.Shape != null) warnings.Add($"{layer.Name}: 도형은 .comp에서 픽셀 이미지로 저장됩니다. 벡터 속성은 .moruproj로 보존하세요.");
             if (layer.Locked) warnings.Add($"{layer.Name}: 원본 형식에 잠금 속성이 없어 잠금 상태는 저장하지 않습니다.");
             object? text = null;

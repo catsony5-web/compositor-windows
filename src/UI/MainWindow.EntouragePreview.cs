@@ -7,9 +7,10 @@ using System.Windows.Media.Imaging;
 namespace Compositor.Windows;
 
 // Offscreen review of the 점경 library (--render-studio-previews, or --render-entourage-previews
-// alone): contact sheets of every built-in item and variant, a section and a site plan dressed with
-// entourage (also as a dark section), the library panel in 친절한 화면 and 간결한 화면, the properties
-// of a placed item, 내 점경 and its import dialog.
+// alone): contact sheets of every built-in item and variant (the axonometric items also in each
+// projection), a section and a site plan dressed with entourage (also as a dark section), the library
+// panel in 친절한 화면 and 간결한 화면, the properties of a placed item, 내 점경 and its import dialog,
+// then the axonometric and richer plan reviews (MainWindow.EntourageAxonometricPreview.cs).
 public sealed partial class MainWindow
 {
     public void RenderEntouragePreviews(string directory)
@@ -19,6 +20,8 @@ public sealed partial class MainWindow
         SaveEntourageSheet(Path.Combine(directory, "entourage-sheet-elevation.png"), EntourageView.Elevation, EntourageFill.White, 0xFF262626, 0xFFFFFFFF);
         SaveEntourageSheet(Path.Combine(directory, "entourage-sheet-plan.png"), EntourageView.Plan, EntourageFill.None, 0xFF262626, 0xFFFFFFFF);
         SaveEntourageSheet(Path.Combine(directory, "entourage-sheet-styles.png"), EntourageView.Elevation, EntourageFill.Gray, 0xFF2B4A6F, 0xFFF4F1EA, styles: true);
+        SaveEntourageSheet(Path.Combine(directory, "entourage-sheet-axonometric.png"), EntourageView.Axonometric, EntourageFill.White, 0xFF262626, 0xFFFFFFFF);
+        SaveEntourageProjectionSheet(Path.Combine(directory, "entourage-sheet-projections.png"));
         void Save(Raster image, string name)
         {
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image.Bitmap()));
@@ -73,6 +76,7 @@ public sealed partial class MainWindow
         }
         finally { SetScreenStyle(false); }
         TrimPreviewTabs();
+        RenderEntourageAxonometricPreviews(directory);
     }
 
     // Scrolls the 디자인 tab so the 점경 section heads the visible part.
@@ -239,6 +243,42 @@ public sealed partial class MainWindow
         return document;
     }
 
+    // Every axonometric item (first variant) in each projection, side by side, at one scale per item.
+    static void SaveEntourageProjectionSheet(string path)
+    {
+        const int cell = 200, rowHeight = 250, groups = 2;
+        var projections = Enum.GetValues<EntourageProjection>();
+        var items = EntourageLibrary.All.Where(i => i.View == EntourageView.Axonometric).ToArray();
+        int columns = groups * projections.Length, rows = (items.Length + groups - 1) / groups, width = cell * columns, height = rowHeight * rows;
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, width, height));
+            var typeface = new Typeface(Theme.UiFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+            for (int i = 0; i < items.Length; i++)
+            {
+                var item = items[i];
+                // One scale for the three drawings: the largest of them fits its cell.
+                double unit = projections.Min(p => { var b = EntourageLibrary.Art(item, 0, p).Bounds; return Math.Min((cell - 24) / b.Width, (rowHeight - 50) / b.Height); });
+                for (int j = 0; j < projections.Length; j++)
+                {
+                    var projection = projections[j]; var art = EntourageLibrary.Art(item, 0, projection);
+                    double ppm = Math.Max(EntourageSpec.MinPixelsPerMeter, unit * art.ModelHeight / item.DefaultMeters);
+                    var spec = EntourageRenderer.Spec(item, ppm, 0, projection) with { LineArgb = 0xFF262626 };
+                    var (vector, _, _) = EntourageRenderer.Draw(spec);
+                    double x = (i % groups * projections.Length + j) * cell, y = i / groups * rowHeight;
+                    dc.PushTransform(new TranslateTransform(Math.Round(x + (cell - vector.Width) / 2), Math.Round(y + (rowHeight - 40 - vector.Height) / 2))); dc.DrawDrawing(vector.Drawing); dc.Pop();
+                    var text = new FormattedText(Loc.T(item.Name) + " · " + Loc.T(EntourageLibrary.ProjectionName(projection)), CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, 11, new SolidColorBrush(Color.FromRgb(90, 90, 90)), 1)
+                    { MaxTextWidth = cell - 10, TextAlignment = TextAlignment.Center };
+                    dc.DrawText(text, new Point(x + 5, y + rowHeight - 34));
+                }
+            }
+        }
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output = File.Create(path); encoder.Save(output);
+    }
+
     // Every item (and its variants) of one view in cells of 220 × 250 px, each scaled to fit its cell.
     static void SaveEntourageSheet(string path, EntourageView view, EntourageFill fill, uint line, uint background, bool styles = false)
     {
@@ -262,9 +302,11 @@ public sealed partial class MainWindow
                 var art = EntourageLibrary.Art(item, variant);
                 double aspect = view == EntourageView.Plan ? 1 : art.Bounds.Width / Math.Max(1, -art.Bounds.Top);
                 double target = Math.Min(rowHeight - 50, (cell - 30) / Math.Max(1, aspect));
+                // Axonometric drawings fit their whole extent (their top is not their height).
+                if (view == EntourageView.Axonometric) target = Math.Min((cell - 24) / art.Bounds.Width, (rowHeight - 50) / art.Bounds.Height) * art.ModelHeight;
                 var spec = EntourageRenderer.Spec(item, Math.Max(EntourageSpec.MinPixelsPerMeter, target / item.DefaultMeters), variant) with { LineArgb = line, Fill = style };
                 var (vector, _, anchor) = EntourageRenderer.Draw(spec);
-                double ox = x + (cell - vector.Width) / 2, oy = view == EntourageView.Plan ? y + (rowHeight - 40 - vector.Height) / 2 : y + rowHeight - 34 - anchor.Y;
+                double ox = x + (cell - vector.Width) / 2, oy = view != EntourageView.Elevation ? y + (rowHeight - 40 - vector.Height) / 2 : y + rowHeight - 34 - anchor.Y;
                 dc.PushTransform(new TranslateTransform(Math.Round(ox), Math.Round(oy))); dc.DrawDrawing(vector.Drawing); dc.Pop();
                 if (view == EntourageView.Elevation) dc.DrawLine(new Pen(new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)), 1), new Point(x + 10, y + rowHeight - 33.5), new Point(x + cell - 10, y + rowHeight - 33.5));
                 string label = Loc.T(item.Name) + (styles ? " · " + style : item.Variants > 1 ? $" · {variant + 1}" : "");
